@@ -10,10 +10,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import de.hpi.isg.metadata_store.domain.impl.HDFSLocation;
-import de.hpi.isg.metadata_store.domain.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.impl.MetadataStore;
+import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
+import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.targets.IColumn;
 import de.hpi.isg.metadata_store.domain.targets.ISchema;
+import de.hpi.isg.metadata_store.domain.targets.ITable;
 import de.hpi.isg.metadata_store.domain.targets.impl.Column;
 import de.hpi.isg.metadata_store.domain.targets.impl.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.Table;
@@ -62,20 +66,33 @@ public class MetadataStoreTest {
 
 	@Test
 	public void testStoringOfFilledMetadataStore() {
+		//setup store
 		IMetadataStore store1 = new MetadataStore(2, "test");
-		store1.getSchemas().add(
-				new Schema(2, "PDB", new HDFSLocation("hdfs://foobar"))
-						.addTable(new Table(3, "gene", new HDFSLocation(
-								"hdfs://bla")).addColumn(new Column(4, "foo",
-								new IndexedLocation(0, new HDFSLocation(
-										"hdfs://bla"))))));
+		//setup schema
+		ISchema dummySchema = Schema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+		
+		HDFSLocation dummyTableLocation =  new HDFSLocation("hdfs://foobar/dummyTable.csv");
+		
+		ITable dummyTable = Table.buildAndRegister(store1,3, "dummyTable", dummyTableLocation);
+		
+		IColumn dummyColumn = Column.buildAndRegister(store1,4, "dummyColumn", new IndexedLocation(0, dummyTableLocation));
+		
+		IConstraint dummyContraint = new TypeConstraint(5, "dummyTypeConstraint", new SingleTargetReference(dummyColumn));
+
+		store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
+		
+		store1.addConstraint(dummyContraint);
+		
 		try {
 			MetadataStore.saveMetadataStore(dir, store1);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		//retrieve store
 		IMetadataStore store2 = null;
+		
 		try {
 			store2 = MetadataStore.getMetadataStoreForId(dir, 2);
 		} catch (ClassNotFoundException | IOException e) {
@@ -83,16 +100,75 @@ public class MetadataStoreTest {
 			e.printStackTrace();
 		}
 		
+		
+		
 		assertEquals(store1, store2);
 		
 		ISchema schema = store2.getSchemas().iterator().next();
 		
-		
-		assertEquals(new Schema(2, "PDB", new HDFSLocation("hdfs://foobar"))
-						.addTable(new Table(3, "gene", new HDFSLocation(
-								"hdfs://bla")).addColumn(new Column(4, "foo",
-								new IndexedLocation(0, new HDFSLocation(
-										"hdfs://bla"))))), schema);
+		assertEquals(dummySchema, schema);
 	}
 
+	
+	@Test
+	public void testStoringOfFilledMetadataStore2() {
+		//setup store
+		IMetadataStore store1 = new MetadataStore(3, "test");
+		//setup schema
+		ISchema dummySchema = Schema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+		store1.getSchemas().add(dummySchema);
+		
+		try {
+			MetadataStore.saveMetadataStore(dir, store1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//retrieve store
+		IMetadataStore store2 = null;
+		
+		try {
+			store2 = MetadataStore.getMetadataStoreForId(dir, 3);
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		assertEquals(store1, store2);
+		
+		ISchema schema = store2.getSchemas().iterator().next();
+		
+		assertEquals(dummySchema, schema);
+	}
+	
+	@Test
+	public void testStoringOfFilledMetadataStore3() {
+		//setup store
+		IMetadataStore store1 = new MetadataStore(4, "test");
+		//setup schema
+		ISchema dummySchema1 = Schema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar")).addTable(Table.buildAndRegister(store1, 45, "foo", null));
+		store1.getSchemas().add(dummySchema1);
+		
+		try {
+			MetadataStore.saveMetadataStore(dir, store1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//retrieve store
+		IMetadataStore store2 = null;
+		
+		try {
+			store2 = MetadataStore.getMetadataStoreForId(dir, 4);
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		assertEquals(store1, store2);
+	}
 }

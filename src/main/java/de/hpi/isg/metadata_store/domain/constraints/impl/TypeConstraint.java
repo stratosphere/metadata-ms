@@ -1,4 +1,4 @@
-package de.hpi.isg.metadata_store.domain.constraints;
+package de.hpi.isg.metadata_store.domain.constraints.impl;
 
 import de.hpi.isg.metadata_store.domain.IConstraint;
 import de.hpi.isg.metadata_store.domain.ITargetReference;
@@ -10,6 +10,13 @@ public class TypeConstraint extends AbstractConstraint implements IConstraint{
 
 	public TypeConstraint(long id, String name, ITargetReference target) {
 		super(id, name, target);
+	}
+
+	@Override
+	public String toString() {
+		return "TypeConstraint [getProperties()=" + getProperties()
+				+ ", getTargetReference()=" + getTargetReference()
+				+ ", getId()=" + getId() + ", getName()=" + getName() + "]";
 	}
 
 }

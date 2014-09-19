@@ -1,4 +1,4 @@
-package de.hpi.isg.metadata_store.domain.impl;
+package de.hpi.isg.metadata_store.domain.location.impl;
 
 import de.hpi.isg.metadata_store.domain.ILocation;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
@@ -34,4 +34,10 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements
 		this.index = index;
 	}
 
+	@Override
+	public String toString() {
+		return "IndexedLocation [index=" + index + ", parentLocation="
+				+ parentLocation + ", getParentLocation()="
+				+ getParentLocation() + ", getIndex()=" + getIndex() + "]";
+	}
 }
