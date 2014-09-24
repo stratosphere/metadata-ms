@@ -13,11 +13,11 @@ import java.util.HashSet;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
-import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
+import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
-public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implements MetadataStore {
+public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
     private static final long serialVersionUID = -1214605256534100452L;
 
@@ -26,7 +26,6 @@ public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implement
     private Collection<Target> allTargets;
 
     public DefaultMetadataStore(long id, String name) {
-	super(id, name);
 	this.schemas = new HashSet<Schema>();
 	this.constraints = new HashSet<Constraint>();
 	this.allTargets = new HashSet<>();
@@ -69,9 +68,9 @@ public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implement
     // Static methods
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static MetadataStore getMetadataStoreForId(File dir, long id) throws IOException, ClassNotFoundException {
+    public static MetadataStore getMetadataStoreForId(File file) throws IOException, ClassNotFoundException {
 
-	FileInputStream fin = new FileInputStream(dir.getAbsolutePath() + File.separator + id + ".ms");
+	FileInputStream fin = new FileInputStream(file);
 	ObjectInputStream ois = new ObjectInputStream(fin);
 	MetadataStore metadataStore = (MetadataStore) ois.readObject();
 	ois.close();
@@ -79,9 +78,8 @@ public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implement
 	return metadataStore;
     }
 
-    public static void saveMetadataStore(File dir, MetadataStore metadataStore) throws IOException {
-	FileOutputStream fout = new FileOutputStream(dir.getAbsolutePath() + File.separator + metadataStore.getId()
-		+ ".ms");
+    public static void saveMetadataStore(File file, MetadataStore metadataStore) throws IOException {
+	FileOutputStream fout = new FileOutputStream(file);
 	ObjectOutputStream oos = new ObjectOutputStream(fout);
 	oos.writeObject(metadataStore);
 	oos.close();
@@ -90,7 +88,6 @@ public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implement
     @Override
     public String toString() {
 	return "MetadataStore [schemas=" + schemas + ", constraints=" + constraints + ", allTargets=" + allTargets
-		+ ", getSchemas()=" + getSchemas() + ", getConstraints()=" + getConstraints() + ", getId()=" + getId()
-		+ ", getName()=" + getName() + "]";
+		+ ", getSchemas()=" + getSchemas() + ", getConstraints()=" + getConstraints() + "]";
     }
 }

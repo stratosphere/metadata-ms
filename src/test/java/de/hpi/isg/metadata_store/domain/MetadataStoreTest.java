@@ -49,16 +49,17 @@ public class MetadataStoreTest {
 
     @Test
     public void testStoringOfEmptyMetadataStore() {
+	File file = new File(dir, "emptyStore.ms");
 	MetadataStore store1 = new DefaultMetadataStore(1, "test");
 	try {
-	    DefaultMetadataStore.saveMetadataStore(dir, store1);
+	    DefaultMetadataStore.saveMetadataStore(file, store1);
 	} catch (IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
 	MetadataStore store2 = null;
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(dir, 1);
+	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
 	} catch (ClassNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -68,6 +69,7 @@ public class MetadataStoreTest {
 
     @Test
     public void testStoringOfFilledMetadataStore() {
+	File file = new File(dir, "filledStore.ms");
 	// setup store
 	MetadataStore store1 = new DefaultMetadataStore(2, "test");
 	// setup schema
@@ -87,7 +89,7 @@ public class MetadataStoreTest {
 	store1.addConstraint(dummyContraint);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(dir, store1);
+	    DefaultMetadataStore.saveMetadataStore(file, store1);
 	} catch (IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -97,7 +99,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(dir, 2);
+	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
 	} catch (ClassNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -110,6 +112,7 @@ public class MetadataStoreTest {
 
     @Test
     public void testStoringOfFilledMetadataStore2() {
+	File file = new File(dir, "filledStore.ms");
 	// setup store
 	MetadataStore store1 = new DefaultMetadataStore(3, "test");
 	// setup schema
@@ -117,7 +120,7 @@ public class MetadataStoreTest {
 	store1.getSchemas().add(dummySchema);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(dir, store1);
+	    DefaultMetadataStore.saveMetadataStore(file, store1);
 	} catch (IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -127,7 +130,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(dir, 3);
+	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
 	} catch (ClassNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -142,6 +145,7 @@ public class MetadataStoreTest {
 
     @Test
     public void testStoringOfFilledMetadataStore3() {
+	File file = new File(dir, "filledStore.ms");
 	// setup store
 	MetadataStore store1 = new DefaultMetadataStore(4, "test");
 	// setup schema
@@ -150,7 +154,7 @@ public class MetadataStoreTest {
 	store1.getSchemas().add(dummySchema1);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(dir, store1);
+	    DefaultMetadataStore.saveMetadataStore(file, store1);
 	} catch (IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -160,7 +164,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(dir, 4);
+	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
 	} catch (ClassNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
