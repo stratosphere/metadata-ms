@@ -12,24 +12,20 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 
 public class DefaultSchema extends AbstractTarget implements Schema {
 
-    private static final long serialVersionUID = 8383281581697630605L;
-    @ExcludeHashCodeEquals
-    private Collection<Table> tables;
-
-    private DefaultSchema(Observer observer, long id, String name, Location location) {
-	super(observer, id, name, location);
-	this.tables = new HashSet<Table>();
-    }
-
-    public static DefaultSchema buildAndRegister(Observer observer, long id, String name, Location location) {
-	DefaultSchema newSchema = new DefaultSchema(observer, id, name, location);
+    public static DefaultSchema buildAndRegister(Observer observer, int id, String name, Location location) {
+	final DefaultSchema newSchema = new DefaultSchema(observer, id, name, location);
 	newSchema.notifyListeners();
 	return newSchema;
     }
 
-    @Override
-    public Collection<Table> getTables() {
-	return tables;
+    private static final long serialVersionUID = 8383281581697630605L;
+
+    @ExcludeHashCodeEquals
+    private final Collection<Table> tables;
+
+    private DefaultSchema(Observer observer, int id, String name, Location location) {
+	super(observer, id, name, location);
+	this.tables = new HashSet<Table>();
     }
 
     @Override
@@ -39,8 +35,13 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     }
 
     @Override
+    public Collection<Table> getTables() {
+	return this.tables;
+    }
+
+    @Override
     public String toString() {
-	return "Schema [tables=" + tables + ", getTables()=" + getTables() + ", getLocation()=" + getLocation()
-		+ ", getId()=" + getId() + ", getName()=" + getName() + "]";
+	return "Schema [tables=" + this.tables + ", getTables()=" + this.getTables() + ", getLocation()="
+		+ this.getLocation() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
     }
 }

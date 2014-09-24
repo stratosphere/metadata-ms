@@ -12,24 +12,20 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 
 public class DefaultTable extends AbstractTarget implements Table {
 
-    private static final long serialVersionUID = 1695408629652071459L;
-    @ExcludeHashCodeEquals
-    private Collection<Column> columns;
-
-    private DefaultTable(Observer observer, long id, String name, Location location) {
-	super(observer, id, name, location);
-	this.columns = new HashSet<Column>();
-    }
-
-    public static DefaultTable buildAndRegister(Observer observer, long id, String name, Location location) {
-	DefaultTable newTable = new DefaultTable(observer, id, name, location);
+    public static DefaultTable buildAndRegister(Observer observer, int id, String name, Location location) {
+	final DefaultTable newTable = new DefaultTable(observer, id, name, location);
 	newTable.notifyListeners();
 	return newTable;
     }
 
-    @Override
-    public Collection<Column> getColumns() {
-	return columns;
+    private static final long serialVersionUID = 1695408629652071459L;
+
+    @ExcludeHashCodeEquals
+    private final Collection<Column> columns;
+
+    private DefaultTable(Observer observer, int id, String name, Location location) {
+	super(observer, id, name, location);
+	this.columns = new HashSet<Column>();
     }
 
     @Override
@@ -39,8 +35,13 @@ public class DefaultTable extends AbstractTarget implements Table {
     }
 
     @Override
+    public Collection<Column> getColumns() {
+	return this.columns;
+    }
+
+    @Override
     public String toString() {
-	return "Table [columns=" + columns + ", getColumns()=" + getColumns() + ", getLocation()=" + getLocation()
-		+ ", getId()=" + getId() + ", getName()=" + getName() + "]";
+	return "Table [columns=" + this.columns + ", getColumns()=" + this.getColumns() + ", getLocation()="
+		+ this.getLocation() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
     }
 }

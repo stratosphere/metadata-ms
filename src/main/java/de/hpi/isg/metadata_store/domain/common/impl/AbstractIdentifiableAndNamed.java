@@ -9,25 +9,25 @@ public class AbstractIdentifiableAndNamed extends AbstractHashCodeAndEquals impl
 	Serializable {
 
     private static final long serialVersionUID = -2489903063142674900L;
-    private long id;
+    private int id;
     private String name;
 
-    public AbstractIdentifiableAndNamed(long id, String name) {
+    public AbstractIdentifiableAndNamed(int id, String name) {
 	this.id = id;
 	this.name = name;
     }
 
     @Override
-    public long getId() {
-	return id;
+    public int getId() {
+	return this.id;
     }
 
     @Override
     public String getName() {
-	return name;
+	return this.name;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
 	this.id = id;
     }
 

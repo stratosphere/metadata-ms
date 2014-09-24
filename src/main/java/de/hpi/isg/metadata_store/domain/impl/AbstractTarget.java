@@ -16,19 +16,19 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
 
     private final Location location;
 
-    public AbstractTarget(Observer observer, long id, String name, Location location) {
+    public AbstractTarget(Observer observer, int id, String name, Location location) {
 	super(id, name);
 	this.location = location;
 	this.observer = observer;
     }
 
-    protected Observer getObserver() {
-	return observer;
-    }
-
     @Override
     public Location getLocation() {
-	return location;
+	return this.location;
+    }
+
+    protected Observer getObserver() {
+	return this.observer;
     }
 
     @Override

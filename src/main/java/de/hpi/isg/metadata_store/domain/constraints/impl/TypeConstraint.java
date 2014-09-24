@@ -8,14 +8,14 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     private static final long serialVersionUID = 3194245498846860560L;
 
-    public TypeConstraint(long id, String name, TargetReference target) {
+    public TypeConstraint(int id, String name, TargetReference target) {
 	super(id, name, target);
     }
 
     @Override
     public String toString() {
-	return "TypeConstraint [getProperties()=" + getProperties() + ", getTargetReference()=" + getTargetReference()
-		+ ", getId()=" + getId() + ", getName()=" + getName() + "]";
+	return "TypeConstraint [getProperties()=" + this.getProperties() + ", getTargetReference()="
+		+ this.getTargetReference() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
     }
 
 }

@@ -11,10 +11,10 @@ public class AbstractConstraint extends AbstractIdentifiableAndNamed implements 
 
     private static final long serialVersionUID = 6125996484450631741L;
 
-    private Map<Object, Object> properties;
-    private TargetReference target;
+    private final Map<Object, Object> properties;
+    private final TargetReference target;
 
-    public AbstractConstraint(long id, String name, TargetReference target) {
+    public AbstractConstraint(int id, String name, TargetReference target) {
 	super(id, name);
 	this.properties = new HashMap<Object, Object>();
 	this.target = target;
@@ -22,12 +22,12 @@ public class AbstractConstraint extends AbstractIdentifiableAndNamed implements 
 
     @Override
     public Map<Object, Object> getProperties() {
-	return properties;
+	return this.properties;
     }
 
     @Override
     public TargetReference getTargetReference() {
-	return target;
+	return this.target;
     }
 
 }
