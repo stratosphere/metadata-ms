@@ -3,41 +3,39 @@ package de.hpi.isg.metadata_store.domain.location.impl;
 import de.hpi.isg.metadata_store.domain.ILocation;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
-public class IndexedLocation extends AbstractHashCodeAndEquals implements
-		ILocation {
+public class IndexedLocation extends AbstractHashCodeAndEquals implements ILocation {
 
-	private static final long serialVersionUID = -4987116057109358698L;
+    private static final long serialVersionUID = -4987116057109358698L;
 
-	private long index;
+    private long index;
 
-	private HDFSLocation parentLocation;
+    private HDFSLocation parentLocation;
 
-	public IndexedLocation(long index, HDFSLocation parentLocation) {
-		super();
-		this.index = index;
-		this.parentLocation = parentLocation;
-	}
+    public IndexedLocation(long index, HDFSLocation parentLocation) {
+	super();
+	this.index = index;
+	this.parentLocation = parentLocation;
+    }
 
-	public HDFSLocation getParentLocation() {
-		return parentLocation;
-	}
+    public HDFSLocation getParentLocation() {
+	return parentLocation;
+    }
 
-	public void setParentLocation(HDFSLocation parentLocation) {
-		this.parentLocation = parentLocation;
-	}
+    public void setParentLocation(HDFSLocation parentLocation) {
+	this.parentLocation = parentLocation;
+    }
 
-	public long getIndex() {
-		return index;
-	}
+    public long getIndex() {
+	return index;
+    }
 
-	public void setIndex(long index) {
-		this.index = index;
-	}
+    public void setIndex(long index) {
+	this.index = index;
+    }
 
-	@Override
-	public String toString() {
-		return "IndexedLocation [index=" + index + ", parentLocation="
-				+ parentLocation + ", getParentLocation()="
-				+ getParentLocation() + ", getIndex()=" + getIndex() + "]";
-	}
+    @Override
+    public String toString() {
+	return "IndexedLocation [index=" + index + ", parentLocation=" + parentLocation + ", getParentLocation()="
+		+ getParentLocation() + ", getIndex()=" + getIndex() + "]";
+    }
 }

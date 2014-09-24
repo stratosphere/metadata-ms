@@ -7,23 +7,22 @@ import de.hpi.isg.metadata_store.domain.ITarget;
 import de.hpi.isg.metadata_store.domain.ITargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
-public class SingleTargetReference extends AbstractHashCodeAndEquals implements
-		ITargetReference {
-	private static final long serialVersionUID = 9068771036941499754L;
+public class SingleTargetReference extends AbstractHashCodeAndEquals implements ITargetReference {
+    private static final long serialVersionUID = 9068771036941499754L;
 
-	private final ITarget target;
+    private final ITarget target;
 
-	public SingleTargetReference(ITarget target) {
-		this.target = target;
-	}
+    public SingleTargetReference(ITarget target) {
+	this.target = target;
+    }
 
-	public ITarget getTarget() {
-		return target;
-	}
+    public ITarget getTarget() {
+	return target;
+    }
 
-	@Override
-	public Collection<ITarget> getAllTargets() {
-		return Arrays.asList(target);
-	}
+    @Override
+    public Collection<ITarget> getAllTargets() {
+	return Arrays.asList(target);
+    }
 
 }
