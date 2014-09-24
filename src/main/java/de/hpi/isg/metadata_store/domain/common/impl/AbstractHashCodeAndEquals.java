@@ -14,7 +14,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * the {@link ExcludeHashCodeEquals} annotation.
  *
  */
-public class AbstractHashCodeAndEquals {
+public abstract class AbstractHashCodeAndEquals {
     @Override
     public boolean equals(Object obj) {
 	return EqualsBuilder.reflectionEquals(this, obj, this.getExlcudedFields());

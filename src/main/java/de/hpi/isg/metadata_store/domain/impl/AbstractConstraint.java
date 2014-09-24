@@ -5,6 +5,7 @@ import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.TargetReference;
+import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
 
 /**
@@ -14,15 +15,15 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed
  *
  */
 
-public class AbstractConstraint extends AbstractIdentifiableAndNamed implements Constraint {
+public abstract class AbstractConstraint extends AbstractIdentifiableAndNamed implements Constraint {
 
     private static final long serialVersionUID = 6125996484450631741L;
 
     private final Map<Object, Object> properties;
     private final TargetReference target;
 
-    public AbstractConstraint(int id, String name, TargetReference target) {
-	super(id, name);
+    public AbstractConstraint(Observer observer, int id, String name, TargetReference target) {
+	super(observer, id, name);
 	this.properties = new HashMap<Object, Object>();
 	this.target = target;
     }

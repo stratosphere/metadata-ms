@@ -52,7 +52,7 @@ public class MetadataStoreTest {
     @Test
     public void testAddingOfSchema() {
 	final MetadataStore store1 = new DefaultMetadataStore();
-	final Schema schema1 = DefaultSchema.buildAndRegister(store1, 1, "pdb", new HDFSLocation("hdfs://..."));
+	final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", new HDFSLocation("hdfs://..."));
 	store1.addSchema(schema1);
 	assertTrue(store1.getSchemas().contains(schema1));
 	assertTrue(store1.getAllTargets().contains(schema1));
@@ -71,16 +71,16 @@ public class MetadataStoreTest {
 	// setup store
 	final MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
-	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 
 	final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation);
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation));
 
-	final Constraint dummyContraint = new TypeConstraint(5, "dummyTypeConstraint", new SingleTargetReference(
+	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
 		dummyColumn));
 
 	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
@@ -146,16 +146,16 @@ public class MetadataStoreTest {
 	// setup store
 	final MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
-	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 
 	final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation);
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation));
 
-	final Constraint dummyContraint = new TypeConstraint(5, "dummyTypeConstraint", new SingleTargetReference(
+	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
 		dummyColumn));
 
 	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
@@ -190,7 +190,7 @@ public class MetadataStoreTest {
 	// setup store
 	final MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
-	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 	store1.getSchemas().add(dummySchema);
 
 	try {
@@ -223,8 +223,8 @@ public class MetadataStoreTest {
 	// setup store
 	final MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
-	final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"))
-		.addTable(DefaultTable.buildAndRegister(store1, 45, "foo", null));
+	final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"))
+		.addTable(DefaultTable.buildAndRegister(store1, "foo", null));
 	store1.getSchemas().add(dummySchema1);
 
 	try {

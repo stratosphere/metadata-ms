@@ -16,9 +16,15 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  */
 public class DefaultSchema extends AbstractTarget implements Schema {
 
-    public static DefaultSchema buildAndRegister(Observer observer, int id, String name, Location location) {
+    public static Schema buildAndRegister(Observer observer, int id, String name, Location location) {
 	final DefaultSchema newSchema = new DefaultSchema(observer, id, name, location);
-	newSchema.notifyListeners();
+	newSchema.notifyObserver();
+	return newSchema;
+    }
+
+    public static Schema buildAndRegister(Observer observer, String name, Location location) {
+	final DefaultSchema newSchema = new DefaultSchema(observer, -1, name, location);
+	newSchema.notifyObserver();
 	return newSchema;
     }
 

@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
 
@@ -24,11 +25,10 @@ public class ConstraintTest {
 
 	final MetadataStore store1 = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, 2, "dummyColumn1", new IndexedLocation(0,
-		null));
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, "dummyColumn1", new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(
-		dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store1, "dummyTypeConstraint",
+		new SingleTargetReference(dummyColumn));
 
 	store1.getConstraints().add(dummyTypeContraint);
     }
@@ -38,10 +38,11 @@ public class ConstraintTest {
 
 	final MetadataStore store1 = new DefaultMetadataStore();
 
-	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "dummySchema", new Location() {
+	@SuppressWarnings("serial")
+	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", new Location() {
 	});
 
-	new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(dummySchema));
+	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummySchema));
 
     }
 
@@ -50,25 +51,37 @@ public class ConstraintTest {
 
 	final MetadataStore store1 = new DefaultMetadataStore();
 
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, 2, "dummySchema", new Location() {
+	@SuppressWarnings("serial")
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummySchema", new Location() {
 	});
 
-	new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(dummyTable));
+	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummyTable));
+
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreatingATypeConstraintWithTakenIdFails() {
+
+	final MetadataStore store1 = new DefaultMetadataStore();
+
+	@SuppressWarnings("serial")
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummySchema", new Location() {
+	});
+
+	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummyTable));
 
     }
 
     @Test
     public void testTypeConstraint() {
 
-	final MetadataStore store1 = new DefaultMetadataStore();
+	final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), "dummyColumn1",
+		new IndexedLocation(0, null));
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, 2, "dummyColumn1", new IndexedLocation(0,
-		null));
-
-	final Constraint dummyTypeContraint1 = new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(
-		dummyColumn));
-	final Constraint dummyTypeContraint2 = new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(
-		dummyColumn));
+	final Constraint dummyTypeContraint1 = new TypeConstraint(mock(MetadataStore.class), 1, "dummyTypeConstraint",
+		new SingleTargetReference(dummyColumn));
+	final Constraint dummyTypeContraint2 = new TypeConstraint(mock(MetadataStore.class), 1, "dummyTypeConstraint",
+		new SingleTargetReference(dummyColumn));
 
 	assertEquals(dummyTypeContraint1, dummyTypeContraint2);
     }
@@ -76,19 +89,18 @@ public class ConstraintTest {
     @Test
     public void testTypeConstraintOnAddedColumn() {
 
-	final MetadataStore store3 = new DefaultMetadataStore();
+	final MetadataStore store = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store3, 2, "dummyColumn3 ", new IndexedLocation(0,
-		null));
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store, "dummyColumn3 ", new IndexedLocation(0, null));
 
-	store3.getSchemas().add(
-		DefaultSchema.buildAndRegister(store3, 3, "dummySchema", null).addTable(
-			DefaultTable.buildAndRegister(store3, 4, "dummyTable", null).addColumn(dummyColumn)));
+	store.getSchemas().add(
+		DefaultSchema.buildAndRegister(store, "dummySchema", null).addTable(
+			DefaultTable.buildAndRegister(store, "dummyTable", null).addColumn(dummyColumn)));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(
-		dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store, "dummyTypeConstraint",
+		new SingleTargetReference(dummyColumn));
 
-	store3.addConstraint(dummyTypeContraint);
+	store.addConstraint(dummyTypeContraint);
     }
 
     @Test(expected = NotAllTargetsInStoreException.class)
@@ -96,17 +108,11 @@ public class ConstraintTest {
 
 	final MetadataStore store2 = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(new Observer() {
+	final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), "dummyColumn2",
+		new IndexedLocation(0, null));
 
-	    @Override
-	    public void update(Object message) {
-		// TODO Auto-generated method stub
-
-	    }
-	}, 2, "dummyColumn2", new IndexedLocation(0, null));
-
-	final Constraint dummyTypeContraint = new TypeConstraint(3, "dummyTypeConstraint", new SingleTargetReference(
-		dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store2, "dummyTypeConstraint",
+		new SingleTargetReference(dummyColumn));
 
 	store2.addConstraint(dummyTypeContraint);
     }

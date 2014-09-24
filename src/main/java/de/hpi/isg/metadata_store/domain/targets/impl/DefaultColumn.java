@@ -12,9 +12,15 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
 
 public class DefaultColumn extends AbstractTarget implements Column {
 
-    public static DefaultColumn buildAndRegister(Observer observer, int id, String name, Location location) {
+    public static Column buildAndRegister(Observer observer, int id, String name, Location location) {
 	final DefaultColumn newColumn = new DefaultColumn(observer, id, name, location);
-	newColumn.notifyListeners();
+	newColumn.notifyObserver();
+	return newColumn;
+    }
+
+    public static Column buildAndRegister(Observer observer, String name, Location location) {
+	final DefaultColumn newColumn = new DefaultColumn(observer, -1, name, location);
+	newColumn.notifyObserver();
 	return newColumn;
     }
 

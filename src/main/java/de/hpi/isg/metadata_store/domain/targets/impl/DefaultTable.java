@@ -16,9 +16,15 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  */
 public class DefaultTable extends AbstractTarget implements Table {
 
-    public static DefaultTable buildAndRegister(Observer observer, int id, String name, Location location) {
+    public static Table buildAndRegister(Observer observer, int id, String name, Location location) {
 	final DefaultTable newTable = new DefaultTable(observer, id, name, location);
-	newTable.notifyListeners();
+	newTable.notifyObserver();
+	return newTable;
+    }
+
+    public static Table buildAndRegister(Observer observer, String name, Location location) {
+	final DefaultTable newTable = new DefaultTable(observer, -1, name, location);
+	newTable.notifyObserver();
 	return newTable;
     }
 
