@@ -1,19 +1,11 @@
 package de.hpi.isg.metadata_store.domain;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
-import de.hpi.isg.metadata_store.domain.impl.MetadataStore;
-import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
-import de.hpi.isg.metadata_store.domain.targets.IColumn;
-import de.hpi.isg.metadata_store.domain.targets.impl.Column;
-import de.hpi.isg.metadata_store.domain.targets.impl.Schema;
-import de.hpi.isg.metadata_store.domain.targets.impl.Table;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class LocationTest {
 

@@ -1,9 +1,9 @@
 package de.hpi.isg.metadata_store.domain.location.impl;
 
-import de.hpi.isg.metadata_store.domain.ILocation;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
-public class HDFSLocation extends AbstractHashCodeAndEquals implements ILocation {
+public class HDFSLocation extends AbstractHashCodeAndEquals implements Location {
 
     private String path;
 

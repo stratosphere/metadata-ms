@@ -10,46 +10,46 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
-import de.hpi.isg.metadata_store.domain.IConstraint;
-import de.hpi.isg.metadata_store.domain.IMetadataStore;
-import de.hpi.isg.metadata_store.domain.ITarget;
+import de.hpi.isg.metadata_store.domain.Constraint;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
+import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
-import de.hpi.isg.metadata_store.domain.targets.ISchema;
+import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
-public class MetadataStore extends AbstractIdentifiableAndNamed implements IMetadataStore {
+public class DefaultMetadataStore extends AbstractIdentifiableAndNamed implements MetadataStore {
 
     private static final long serialVersionUID = -1214605256534100452L;
 
-    private Collection<ISchema> schemas;
-    private Collection<IConstraint> constraints;
-    private Collection<ITarget> allTargets;
+    private Collection<Schema> schemas;
+    private Collection<Constraint> constraints;
+    private Collection<Target> allTargets;
 
-    public MetadataStore(long id, String name) {
+    public DefaultMetadataStore(long id, String name) {
 	super(id, name);
-	this.schemas = new HashSet<ISchema>();
-	this.constraints = new HashSet<IConstraint>();
+	this.schemas = new HashSet<Schema>();
+	this.constraints = new HashSet<Constraint>();
 	this.allTargets = new HashSet<>();
     }
 
     @Override
-    public Collection<ISchema> getSchemas() {
+    public Collection<Schema> getSchemas() {
 	return schemas;
     }
 
     @Override
-    public Collection<IConstraint> getConstraints() {
+    public Collection<Constraint> getConstraints() {
 	return Collections.unmodifiableCollection(constraints);
     }
 
     @Override
-    public Collection<ITarget> getAllTargets() {
+    public Collection<Target> getAllTargets() {
 	return Collections.unmodifiableCollection(allTargets);
     }
 
     @Override
-    public void addConstraint(IConstraint constraint) {
-	for (ITarget target : constraint.getTargetReference().getAllTargets()) {
+    public void addConstraint(Constraint constraint) {
+	for (Target target : constraint.getTargetReference().getAllTargets()) {
 	    if (!this.allTargets.contains(target)) {
 		throw new NotAllTargetsInStoreException(target);
 	    }
@@ -60,8 +60,8 @@ public class MetadataStore extends AbstractIdentifiableAndNamed implements IMeta
 
     @Override
     public void update(Object message) {
-	if (message instanceof ITarget) {
-	    this.allTargets.add((ITarget) message);
+	if (message instanceof Target) {
+	    this.allTargets.add((Target) message);
 	}
     }
 
@@ -69,17 +69,17 @@ public class MetadataStore extends AbstractIdentifiableAndNamed implements IMeta
     // Static methods
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static IMetadataStore getMetadataStoreForId(File dir, long id) throws IOException, ClassNotFoundException {
+    public static MetadataStore getMetadataStoreForId(File dir, long id) throws IOException, ClassNotFoundException {
 
 	FileInputStream fin = new FileInputStream(dir.getAbsolutePath() + File.separator + id + ".ms");
 	ObjectInputStream ois = new ObjectInputStream(fin);
-	IMetadataStore metadataStore = (IMetadataStore) ois.readObject();
+	MetadataStore metadataStore = (MetadataStore) ois.readObject();
 	ois.close();
 
 	return metadataStore;
     }
 
-    public static void saveMetadataStore(File dir, IMetadataStore metadataStore) throws IOException {
+    public static void saveMetadataStore(File dir, MetadataStore metadataStore) throws IOException {
 	FileOutputStream fout = new FileOutputStream(dir.getAbsolutePath() + File.separator + metadataStore.getId()
 		+ ".ms");
 	ObjectOutputStream oos = new ObjectOutputStream(fout);

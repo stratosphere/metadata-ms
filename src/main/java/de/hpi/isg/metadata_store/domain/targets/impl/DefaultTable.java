@@ -3,37 +3,37 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 import java.util.Collection;
 import java.util.HashSet;
 
-import de.hpi.isg.metadata_store.domain.ILocation;
-import de.hpi.isg.metadata_store.domain.common.MyObserver;
+import de.hpi.isg.metadata_store.domain.Location;
+import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
-import de.hpi.isg.metadata_store.domain.targets.IColumn;
-import de.hpi.isg.metadata_store.domain.targets.ITable;
+import de.hpi.isg.metadata_store.domain.targets.Column;
+import de.hpi.isg.metadata_store.domain.targets.Table;
 
-public class Table extends AbstractTarget implements ITable {
+public class DefaultTable extends AbstractTarget implements Table {
 
     private static final long serialVersionUID = 1695408629652071459L;
     @ExcludeHashCodeEquals
-    private Collection<IColumn> columns;
+    private Collection<Column> columns;
 
-    private Table(MyObserver observer, long id, String name, ILocation location) {
+    private DefaultTable(Observer observer, long id, String name, Location location) {
 	super(observer, id, name, location);
-	this.columns = new HashSet<IColumn>();
+	this.columns = new HashSet<Column>();
     }
 
-    public static Table buildAndRegister(MyObserver observer, long id, String name, ILocation location) {
-	Table newTable = new Table(observer, id, name, location);
+    public static DefaultTable buildAndRegister(Observer observer, long id, String name, Location location) {
+	DefaultTable newTable = new DefaultTable(observer, id, name, location);
 	newTable.notifyListeners();
 	return newTable;
     }
 
     @Override
-    public Collection<IColumn> getColumns() {
+    public Collection<Column> getColumns() {
 	return columns;
     }
 
     @Override
-    public ITable addColumn(IColumn column) {
+    public Table addColumn(Column column) {
 	this.columns.add(column);
 	return this;
     }

@@ -8,56 +8,54 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
-import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
-import de.hpi.isg.metadata_store.domain.impl.MetadataStore;
-import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
+import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
-import de.hpi.isg.metadata_store.domain.targets.IColumn;
-import de.hpi.isg.metadata_store.domain.targets.ISchema;
-import de.hpi.isg.metadata_store.domain.targets.ITable;
-import de.hpi.isg.metadata_store.domain.targets.impl.Column;
-import de.hpi.isg.metadata_store.domain.targets.impl.Schema;
-import de.hpi.isg.metadata_store.domain.targets.impl.Table;
+import de.hpi.isg.metadata_store.domain.targets.Column;
+import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.domain.targets.Table;
+import de.hpi.isg.metadata_store.domain.targets.impl.DefaultColumn;
+import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
+import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
 
 public class TargetTest {
 
     @Test
     public void testColumnHashCodeAndEquals() {
-	IMetadataStore store1 = new MetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore(1, "test");
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
-	Column column1 = Column.buildAndRegister(store1, 1, "foo", loc);
+	DefaultColumn column1 = DefaultColumn.buildAndRegister(store1, 1, "foo", loc);
 
-	Column column2 = Column.buildAndRegister(store1, 1, "foo", loc);
+	DefaultColumn column2 = DefaultColumn.buildAndRegister(store1, 1, "foo", loc);
 
-	Column column3 = Column.buildAndRegister(store1, 2, "foo2", loc);
+	DefaultColumn column3 = DefaultColumn.buildAndRegister(store1, 2, "foo2", loc);
 
 	assertEquals(column1, column2);
 
 	assertEquals(column1.hashCode(), column2.hashCode());
 
-	HashSet<ITarget> set = new HashSet<ITarget>();
+	HashSet<Target> set = new HashSet<Target>();
 	set.add(column1);
 	assertTrue(set.contains(column1));
-	assertTrue(set.contains((ITarget) column2));
-	assertFalse(set.contains((ITarget) column3));
+	assertTrue(set.contains((Target) column2));
+	assertFalse(set.contains((Target) column3));
     }
 
     @Test
     public void testTableHashCodeAndEquals() {
-	IMetadataStore store1 = new MetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore(1, "test");
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
-	Column column1 = Column.buildAndRegister(store1, 1, "foo", loc);
+	DefaultColumn column1 = DefaultColumn.buildAndRegister(store1, 1, "foo", loc);
 
-	ITable table1 = Table.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
+	Table table1 = DefaultTable.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
 
-	ITable table2 = Table.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
+	Table table2 = DefaultTable.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
 
-	ITable table3 = Table.buildAndRegister(store1, 2, "foo2", loc);
+	Table table3 = DefaultTable.buildAndRegister(store1, 2, "foo2", loc);
 
 	assertEquals(table1, table2);
 
@@ -67,18 +65,18 @@ public class TargetTest {
 
     @Test
     public void testSchemaHashCodeAndEquals() {
-	IMetadataStore store1 = new MetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore(1, "test");
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
-	Column column1 = Column.buildAndRegister(store1, 1, "foo", loc);
+	DefaultColumn column1 = DefaultColumn.buildAndRegister(store1, 1, "foo", loc);
 
-	ITable table1 = Table.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
+	Table table1 = DefaultTable.buildAndRegister(store1, 1, "foo", loc).addColumn(column1);
 
-	ISchema schema1 = Schema.buildAndRegister(store1, 1, "foo", loc).addTable(table1);
-	ISchema schema2 = Schema.buildAndRegister(store1, 1, "foo", loc).addTable(table1);
+	Schema schema1 = DefaultSchema.buildAndRegister(store1, 1, "foo", loc).addTable(table1);
+	Schema schema2 = DefaultSchema.buildAndRegister(store1, 1, "foo", loc).addTable(table1);
 
-	ISchema schema3 = Schema.buildAndRegister(store1, 2, "foo2", loc);
+	Schema schema3 = DefaultSchema.buildAndRegister(store1, 2, "foo2", loc);
 
 	assertEquals(schema1, schema2);
 
@@ -88,28 +86,27 @@ public class TargetTest {
 
     @Test
     public void testSchemaEquals() {
-	IMetadataStore store1 = new MetadataStore(2, "test");
+	MetadataStore store1 = new DefaultMetadataStore(2, "test");
 	// setup schema
-	ISchema dummySchema = Schema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+	Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
 
 	HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	ITable dummyTable = Table.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation);
+	Table dummyTable = DefaultTable.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation);
 
-	IColumn dummyColumn = Column.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
+	Column dummyColumn = DefaultColumn.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation));
 
 	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
-	IMetadataStore store2 = new MetadataStore(2, "test");
 	// setup schema
-	ISchema dummySchema2 = Schema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+	Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
 
 	HDFSLocation dummyTableLocation2 = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	ITable dummyTable2 = Table.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation2);
+	Table dummyTable2 = DefaultTable.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation2);
 
-	IColumn dummyColumn2 = Column.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
+	Column dummyColumn2 = DefaultColumn.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation2));
 
 	store1.getSchemas().add(dummySchema2.addTable(dummyTable2.addColumn(dummyColumn2)));

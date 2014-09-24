@@ -1,33 +1,33 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import de.hpi.isg.metadata_store.domain.ILocation;
-import de.hpi.isg.metadata_store.domain.ITarget;
-import de.hpi.isg.metadata_store.domain.common.MyObservable;
-import de.hpi.isg.metadata_store.domain.common.MyObserver;
+import de.hpi.isg.metadata_store.domain.Location;
+import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.common.Observable;
+import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 
-public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implements ITarget, MyObservable {
+public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implements Target, Observable {
 
     private static final long serialVersionUID = -583488154227852034L;
 
     @ExcludeHashCodeEquals
-    private final MyObserver observer;
+    private final Observer observer;
 
-    private final ILocation location;
+    private final Location location;
 
-    public AbstractTarget(MyObserver observer, long id, String name, ILocation location) {
+    public AbstractTarget(Observer observer, long id, String name, Location location) {
 	super(id, name);
 	this.location = location;
 	this.observer = observer;
     }
 
-    protected MyObserver getObserver() {
+    protected Observer getObserver() {
 	return observer;
     }
 
     @Override
-    public ILocation getLocation() {
+    public Location getLocation() {
 	return location;
     }
 

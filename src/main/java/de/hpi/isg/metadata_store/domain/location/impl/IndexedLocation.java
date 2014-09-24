@@ -1,9 +1,9 @@
 package de.hpi.isg.metadata_store.domain.location.impl;
 
-import de.hpi.isg.metadata_store.domain.ILocation;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
-public class IndexedLocation extends AbstractHashCodeAndEquals implements ILocation {
+public class IndexedLocation extends AbstractHashCodeAndEquals implements Location {
 
     private static final long serialVersionUID = -4987116057109358698L;
 

@@ -3,37 +3,37 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 import java.util.Collection;
 import java.util.HashSet;
 
-import de.hpi.isg.metadata_store.domain.ILocation;
-import de.hpi.isg.metadata_store.domain.common.MyObserver;
+import de.hpi.isg.metadata_store.domain.Location;
+import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
-import de.hpi.isg.metadata_store.domain.targets.ISchema;
-import de.hpi.isg.metadata_store.domain.targets.ITable;
+import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.domain.targets.Table;
 
-public class Schema extends AbstractTarget implements ISchema {
+public class DefaultSchema extends AbstractTarget implements Schema {
 
     private static final long serialVersionUID = 8383281581697630605L;
     @ExcludeHashCodeEquals
-    private Collection<ITable> tables;
+    private Collection<Table> tables;
 
-    private Schema(MyObserver observer, long id, String name, ILocation location) {
+    private DefaultSchema(Observer observer, long id, String name, Location location) {
 	super(observer, id, name, location);
-	this.tables = new HashSet<ITable>();
+	this.tables = new HashSet<Table>();
     }
 
-    public static Schema buildAndRegister(MyObserver observer, long id, String name, ILocation location) {
-	Schema newSchema = new Schema(observer, id, name, location);
+    public static DefaultSchema buildAndRegister(Observer observer, long id, String name, Location location) {
+	DefaultSchema newSchema = new DefaultSchema(observer, id, name, location);
 	newSchema.notifyListeners();
 	return newSchema;
     }
 
     @Override
-    public Collection<ITable> getTables() {
+    public Collection<Table> getTables() {
 	return tables;
     }
 
     @Override
-    public ISchema addTable(ITable table) {
+    public Schema addTable(Table table) {
 	this.tables.add(table);
 	return this;
     }
