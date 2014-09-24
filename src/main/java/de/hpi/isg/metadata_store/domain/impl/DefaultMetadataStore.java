@@ -2,7 +2,6 @@ package de.hpi.isg.metadata_store.domain.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -21,11 +20,45 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
+    public static MetadataStore getMetadataStore(File file) throws MetadataStoreNotFoundException {
+
+	FileInputStream fin;
+	try {
+	    fin = new FileInputStream(file);
+	    final ObjectInputStream ois = new ObjectInputStream(fin);
+	    final MetadataStore metadataStore = (MetadataStore) ois.readObject();
+	    ois.close();
+	    return metadataStore;
+	} catch (IOException | ClassNotFoundException e) {
+	    throw new MetadataStoreNotFoundException(e);
+	}
+
+    }
+
+    public static MetadataStore getOrCreateAndSaveMetadataStore(File file) throws IOException {
+	try {
+	    return DefaultMetadataStore.getMetadataStore(file);
+	} catch (final MetadataStoreNotFoundException e) {
+	    final MetadataStore metadataStore = new DefaultMetadataStore();
+	    DefaultMetadataStore.saveMetadataStore(file, metadataStore);
+	    return metadataStore;
+	}
+    }
+
+    public static void saveMetadataStore(File file, MetadataStore metadataStore) throws IOException {
+	final FileOutputStream fout = new FileOutputStream(file);
+	final ObjectOutputStream oos = new ObjectOutputStream(fout);
+	oos.writeObject(metadataStore);
+	oos.close();
+    }
+
     private static final long serialVersionUID = -1214605256534100452L;
 
-    private Collection<Schema> schemas;
-    private Collection<Constraint> constraints;
-    private Collection<Target> allTargets;
+    private final Collection<Schema> schemas;
+
+    private final Collection<Constraint> constraints;
+
+    private final Collection<Target> allTargets;
 
     public DefaultMetadataStore() {
 	this.schemas = new HashSet<Schema>();
@@ -34,23 +67,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public Collection<Schema> getSchemas() {
-	return schemas;
-    }
-
-    @Override
-    public Collection<Constraint> getConstraints() {
-	return Collections.unmodifiableCollection(constraints);
-    }
-
-    @Override
-    public Collection<Target> getAllTargets() {
-	return Collections.unmodifiableCollection(allTargets);
-    }
-
-    @Override
     public void addConstraint(Constraint constraint) {
-	for (Target target : constraint.getTargetReference().getAllTargets()) {
+	for (final Target target : constraint.getTargetReference().getAllTargets()) {
 	    if (!this.allTargets.contains(target)) {
 		throw new NotAllTargetsInStoreException(target);
 	    }
@@ -60,51 +78,41 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public void update(Object message) {
-	if (message instanceof Target) {
-	    this.allTargets.add((Target) message);
-	}
+    public void addSchema(Schema schema) {
+	this.schemas.add(schema);
+
     }
 
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Static methods
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static MetadataStore getMetadataStore(File file) throws MetadataStoreNotFoundException {
-
-	FileInputStream fin;
-	try {
-	    fin = new FileInputStream(file);
-	    ObjectInputStream ois = new ObjectInputStream(fin);
-	    MetadataStore metadataStore = (MetadataStore) ois.readObject();
-	    ois.close();
-	    return metadataStore;
-	} catch (IOException | ClassNotFoundException e) {
-	    throw new MetadataStoreNotFoundException(e);
-	}
-
+    @Override
+    public Collection<Target> getAllTargets() {
+	return Collections.unmodifiableCollection(this.allTargets);
     }
 
-    public static void saveMetadataStore(File file, MetadataStore metadataStore) throws IOException {
-	FileOutputStream fout = new FileOutputStream(file);
-	ObjectOutputStream oos = new ObjectOutputStream(fout);
-	oos.writeObject(metadataStore);
-	oos.close();
+    @Override
+    public Collection<Constraint> getConstraints() {
+	return Collections.unmodifiableCollection(this.constraints);
+    }
+
+    @Override
+    public Collection<Schema> getSchemas() {
+	return this.schemas;
     }
 
     @Override
     public String toString() {
-	return "MetadataStore [schemas=" + schemas + ", constraints=" + constraints + ", allTargets=" + allTargets
-		+ ", getSchemas()=" + getSchemas() + ", getConstraints()=" + getConstraints() + "]";
+	return "MetadataStore [schemas=" + this.schemas + ", constraints=" + this.constraints + ", allTargets="
+		+ this.allTargets + ", getSchemas()=" + this.getSchemas() + ", getConstraints()="
+		+ this.getConstraints() + "]";
     }
 
-    public static MetadataStore getOrCreateAndSaveMetadataStore(File file) throws IOException {
-	try {
-	    return DefaultMetadataStore.getMetadataStore(file);
-	} catch (MetadataStoreNotFoundException e) {
-	    MetadataStore metadataStore = new DefaultMetadataStore();
-	    DefaultMetadataStore.saveMetadataStore(file, metadataStore);
-	    return metadataStore;
+    @Override
+    public void update(Object message) {
+	if (message instanceof Target) {
+	    this.allTargets.add((Target) message);
 	}
     }
 }
