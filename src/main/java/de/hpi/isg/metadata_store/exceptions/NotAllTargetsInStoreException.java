@@ -6,10 +6,7 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 
 /**
- * This {@link Exception} is thrown if the user tries to add a
- * {@link Constraint} to a {@link MetadataStore} with referenced {@link Target}
- * (via {@link TargetReference}) that are unknown to the {@link MetadataStore}.
- * 
+ * This {@link Exception} is thrown if the user tries to add a {@link Constraint} to a {@link MetadataStore} with referenced {@link Target} (via {@link TargetReference}) that are unknown to the {@link MetadataStore}.
  * @author fabian
  *
  */

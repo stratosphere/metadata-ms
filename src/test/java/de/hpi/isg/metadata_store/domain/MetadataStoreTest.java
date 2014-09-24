@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
@@ -61,7 +62,7 @@ public class MetadataStoreTest {
     public void testGetMetaDataStoreOnNotExistingFails() {
 	final File file = new File(this.dir, "nooooootExisting.ms");
 
-	DefaultMetadataStore.getMetadataStore(file);
+	MetadataStoreFactory.getMetadataStore(file);
     }
 
     @Test
@@ -87,7 +88,7 @@ public class MetadataStoreTest {
 	store1.addConstraint(dummyContraint);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	    MetadataStoreFactory.saveMetadataStore(file, store1);
 	} catch (final IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -95,7 +96,7 @@ public class MetadataStoreTest {
 
 	MetadataStore store2 = null;
 	try {
-	    store2 = DefaultMetadataStore.getOrCreateAndSaveMetadataStore(file);
+	    store2 = MetadataStoreFactory.getOrCreateAndSaveMetadataStore(file);
 	} catch (MetadataStoreNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -110,7 +111,7 @@ public class MetadataStoreTest {
 
 	MetadataStore store2 = null;
 	try {
-	    store2 = DefaultMetadataStore.getOrCreateAndSaveMetadataStore(file);
+	    store2 = MetadataStoreFactory.getOrCreateAndSaveMetadataStore(file);
 	} catch (MetadataStoreNotFoundException | IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -124,14 +125,14 @@ public class MetadataStoreTest {
 	final File file = new File(this.dir, "emptyStore.ms");
 	final MetadataStore store1 = new DefaultMetadataStore();
 	try {
-	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	    MetadataStoreFactory.saveMetadataStore(file, store1);
 	} catch (final IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
 	MetadataStore store2 = null;
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	    store2 = MetadataStoreFactory.getMetadataStore(file);
 	} catch (final MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -162,7 +163,7 @@ public class MetadataStoreTest {
 	store1.addConstraint(dummyContraint);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	    MetadataStoreFactory.saveMetadataStore(file, store1);
 	} catch (final IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -172,7 +173,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	    store2 = MetadataStoreFactory.getMetadataStore(file);
 	} catch (final MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -193,7 +194,7 @@ public class MetadataStoreTest {
 	store1.getSchemas().add(dummySchema);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	    MetadataStoreFactory.saveMetadataStore(file, store1);
 	} catch (final IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -203,7 +204,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	    store2 = MetadataStoreFactory.getMetadataStore(file);
 	} catch (final MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -227,7 +228,7 @@ public class MetadataStoreTest {
 	store1.getSchemas().add(dummySchema1);
 
 	try {
-	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	    MetadataStoreFactory.saveMetadataStore(file, store1);
 	} catch (final IOException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -237,7 +238,7 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	    store2 = MetadataStoreFactory.getMetadataStore(file);
 	} catch (final MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
