@@ -5,6 +5,11 @@ import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
+/**
+ * The default implementation of the {@link Column}.
+ *
+ */
+
 public class DefaultColumn extends AbstractTarget implements Column {
 
     public static DefaultColumn buildAndRegister(Observer observer, int id, String name, Location location) {

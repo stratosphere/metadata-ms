@@ -5,6 +5,11 @@ import java.io.Serializable;
 import de.hpi.isg.metadata_store.domain.common.Identifiable;
 import de.hpi.isg.metadata_store.domain.common.Named;
 
+/**
+ * This abstract class is a convenience class taking car for {@link Named} and
+ * {@link Identifiable} objects by providing the fields and accesors.
+ *
+ */
 public class AbstractIdentifiableAndNamed extends AbstractHashCodeAndEquals implements Identifiable, Named,
 	Serializable {
 

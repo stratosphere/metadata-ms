@@ -6,6 +6,12 @@ import java.util.Collection;
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 
+/**
+ * A {@link MetadataStore} stores schema information as well as
+ * {@link Constraint}s holding on the objects stored in it.
+ *
+ */
+
 public interface MetadataStore extends Serializable, Observer {
     public void addConstraint(Constraint constraint);
 

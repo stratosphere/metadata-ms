@@ -7,6 +7,13 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
 
+/**
+ * {@link AbstractConstraint} is an abstract super class for all
+ * {@link Constraint} implementations, already taking care of
+ * {@link TargetReference} and the storing of the internal {@link Map}.
+ *
+ */
+
 public class AbstractConstraint extends AbstractIdentifiableAndNamed implements Constraint {
 
     private static final long serialVersionUID = 6125996484450631741L;

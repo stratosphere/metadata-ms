@@ -18,6 +18,11 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
+/**
+ * The default implementation of the {@link MetadataStore}.
+ *
+ */
+
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
     public static MetadataStore getMetadataStore(File file) throws MetadataStoreNotFoundException {

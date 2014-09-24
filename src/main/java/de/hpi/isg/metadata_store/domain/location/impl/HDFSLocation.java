@@ -3,6 +3,12 @@ package de.hpi.isg.metadata_store.domain.location.impl;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
+/**
+ * A {@link Location} representing a HDFS location.
+ *
+ *
+ */
+
 public class HDFSLocation extends AbstractHashCodeAndEquals implements Location {
 
     private String path;
@@ -14,7 +20,7 @@ public class HDFSLocation extends AbstractHashCodeAndEquals implements Location 
     }
 
     public String getPath() {
-	return path;
+	return this.path;
     }
 
     public void setPath(String path) {
@@ -23,6 +29,6 @@ public class HDFSLocation extends AbstractHashCodeAndEquals implements Location 
 
     @Override
     public String toString() {
-	return "HDFSLocation [path=" + path + ", getPath()=" + getPath() + "]";
+	return "HDFSLocation [path=" + this.path + ", getPath()=" + this.getPath() + "]";
     }
 }

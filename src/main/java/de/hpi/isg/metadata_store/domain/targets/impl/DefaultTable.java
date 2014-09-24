@@ -10,6 +10,10 @@ import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
+/**
+ * The default implementation of the {@link Table}.
+ *
+ */
 public class DefaultTable extends AbstractTarget implements Table {
 
     public static DefaultTable buildAndRegister(Observer observer, int id, String name, Location location) {

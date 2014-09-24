@@ -2,6 +2,15 @@ package de.hpi.isg.metadata_store.domain.location.impl;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.targets.Column;
+
+/**
+ * A {@link Location} representing a {@link Column} within a file by an index.
+ * Therefore it holds a reference to its parent {@link HDFSLocation}.
+ * 
+ * @author fabian
+ *
+ */
 
 public class IndexedLocation extends AbstractHashCodeAndEquals implements Location {
 
@@ -17,25 +26,25 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
 	this.parentLocation = parentLocation;
     }
 
-    public HDFSLocation getParentLocation() {
-	return parentLocation;
-    }
-
-    public void setParentLocation(HDFSLocation parentLocation) {
-	this.parentLocation = parentLocation;
-    }
-
     public long getIndex() {
-	return index;
+	return this.index;
+    }
+
+    public HDFSLocation getParentLocation() {
+	return this.parentLocation;
     }
 
     public void setIndex(long index) {
 	this.index = index;
     }
 
+    public void setParentLocation(HDFSLocation parentLocation) {
+	this.parentLocation = parentLocation;
+    }
+
     @Override
     public String toString() {
-	return "IndexedLocation [index=" + index + ", parentLocation=" + parentLocation + ", getParentLocation()="
-		+ getParentLocation() + ", getIndex()=" + getIndex() + "]";
+	return "IndexedLocation [index=" + this.index + ", parentLocation=" + this.parentLocation
+		+ ", getParentLocation()=" + this.getParentLocation() + ", getIndex()=" + this.getIndex() + "]";
     }
 }

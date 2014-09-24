@@ -10,6 +10,10 @@ import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
+/**
+ * The default implementation of the {@link Schema}.
+ *
+ */
 public class DefaultSchema extends AbstractTarget implements Schema {
 
     public static DefaultSchema buildAndRegister(Observer observer, int id, String name, Location location) {
