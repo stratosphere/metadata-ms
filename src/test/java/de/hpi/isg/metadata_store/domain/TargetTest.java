@@ -22,7 +22,7 @@ public class TargetTest {
 
     @Test
     public void testColumnHashCodeAndEquals() {
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
@@ -45,7 +45,7 @@ public class TargetTest {
 
     @Test
     public void testTableHashCodeAndEquals() {
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
@@ -65,7 +65,7 @@ public class TargetTest {
 
     @Test
     public void testSchemaHashCodeAndEquals() {
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 
 	HDFSLocation loc = new HDFSLocation("foobar");
 
@@ -86,7 +86,7 @@ public class TargetTest {
 
     @Test
     public void testSchemaEquals() {
-	MetadataStore store1 = new DefaultMetadataStore(2, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
 	Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
 

@@ -23,6 +23,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
+import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 
 public class MetadataStoreTest {
 
@@ -50,7 +51,7 @@ public class MetadataStoreTest {
     @Test
     public void testStoringOfEmptyMetadataStore() {
 	File file = new File(dir, "emptyStore.ms");
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 	try {
 	    DefaultMetadataStore.saveMetadataStore(file, store1);
 	} catch (IOException e) {
@@ -59,8 +60,8 @@ public class MetadataStoreTest {
 	}
 	MetadataStore store2 = null;
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
-	} catch (ClassNotFoundException | IOException e) {
+	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	} catch (MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
@@ -68,10 +69,74 @@ public class MetadataStoreTest {
     }
 
     @Test
+    public void testGetOrCreateOfExisting() {
+	File file = new File(dir, "filledStore.ms");
+	// setup store
+	MetadataStore store1 = new DefaultMetadataStore();
+	// setup schema
+	Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
+
+	HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
+
+	Table dummyTable = DefaultTable.buildAndRegister(store1, 3, "dummyTable", dummyTableLocation);
+
+	Column dummyColumn = DefaultColumn.buildAndRegister(store1, 4, "dummyColumn", new IndexedLocation(0,
+		dummyTableLocation));
+
+	Constraint dummyContraint = new TypeConstraint(5, "dummyTypeConstraint", new SingleTargetReference(dummyColumn));
+
+	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
+
+	store1.addConstraint(dummyContraint);
+
+	try {
+	    DefaultMetadataStore.saveMetadataStore(file, store1);
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+
+	MetadataStore store2 = null;
+	try {
+	    store2 = DefaultMetadataStore.getOrCreateAndSaveMetadataStore(file);
+	} catch (MetadataStoreNotFoundException | IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+
+	assertEquals(store1, store2);
+    }
+
+    @Test
+    public void testGetOrCreateOfNotExisting() {
+	File file = new File(dir, "notExisting.ms");
+
+	MetadataStore store2 = null;
+	try {
+	    store2 = DefaultMetadataStore.getOrCreateAndSaveMetadataStore(file);
+	} catch (MetadataStoreNotFoundException | IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+
+	assertEquals(store2, new DefaultMetadataStore());
+    }
+
+    @Test(expected = MetadataStoreNotFoundException.class)
+    public void testGetMetaDataStoreOnNotExistingFails() {
+	File file = new File(dir, "nooooootExisting.ms");
+
+	@SuppressWarnings("unused")
+	MetadataStore store2;
+
+	store2 = DefaultMetadataStore.getMetadataStore(file);
+    }
+
+    @Test
     public void testStoringOfFilledMetadataStore() {
 	File file = new File(dir, "filledStore.ms");
 	// setup store
-	MetadataStore store1 = new DefaultMetadataStore(2, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
 	Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -99,8 +164,8 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
-	} catch (ClassNotFoundException | IOException e) {
+	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	} catch (MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
@@ -114,7 +179,7 @@ public class MetadataStoreTest {
     public void testStoringOfFilledMetadataStore2() {
 	File file = new File(dir, "filledStore.ms");
 	// setup store
-	MetadataStore store1 = new DefaultMetadataStore(3, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
 	Schema dummySchema = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"));
 	store1.getSchemas().add(dummySchema);
@@ -130,8 +195,8 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
-	} catch (ClassNotFoundException | IOException e) {
+	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	} catch (MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
@@ -147,7 +212,7 @@ public class MetadataStoreTest {
     public void testStoringOfFilledMetadataStore3() {
 	File file = new File(dir, "filledStore.ms");
 	// setup store
-	MetadataStore store1 = new DefaultMetadataStore(4, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
 	Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, 2, "PDB", new HDFSLocation("hdfs://foobar"))
 		.addTable(DefaultTable.buildAndRegister(store1, 45, "foo", null));
@@ -164,8 +229,8 @@ public class MetadataStoreTest {
 	MetadataStore store2 = null;
 
 	try {
-	    store2 = DefaultMetadataStore.getMetadataStoreForId(file);
-	} catch (ClassNotFoundException | IOException e) {
+	    store2 = DefaultMetadataStore.getMetadataStore(file);
+	} catch (MetadataStoreNotFoundException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}

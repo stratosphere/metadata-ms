@@ -20,7 +20,7 @@ public class ConstraintTest {
     @Test
     public void testTypeConstraint() {
 
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 
 	Column dummyColumn = DefaultColumn.buildAndRegister(store1, 2, "dummyColumn1", new IndexedLocation(0, null));
 
@@ -35,7 +35,7 @@ public class ConstraintTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testAddingConstraintsToUnmodifiableConstraintCollectionFails() {
 
-	MetadataStore store1 = new DefaultMetadataStore(1, "test");
+	MetadataStore store1 = new DefaultMetadataStore();
 
 	Column dummyColumn = DefaultColumn.buildAndRegister(store1, 2, "dummyColumn1", new IndexedLocation(0, null));
 
@@ -48,7 +48,7 @@ public class ConstraintTest {
     @Test(expected = NotAllTargetsInStoreException.class)
     public void testTypeConstraintOnNotAddedColumnFails() {
 
-	MetadataStore store2 = new DefaultMetadataStore(1, "test");
+	MetadataStore store2 = new DefaultMetadataStore();
 
 	Column dummyColumn = DefaultColumn.buildAndRegister(new Observer() {
 
@@ -68,7 +68,7 @@ public class ConstraintTest {
     @Test
     public void testTypeConstraintOnAddedColumn() {
 
-	MetadataStore store3 = new DefaultMetadataStore(1, "test");
+	MetadataStore store3 = new DefaultMetadataStore();
 
 	Column dummyColumn = DefaultColumn.buildAndRegister(store3, 2, "dummyColumn3 ", new IndexedLocation(0, null));
 

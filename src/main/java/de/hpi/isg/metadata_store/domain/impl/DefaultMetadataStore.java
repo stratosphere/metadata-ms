@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -15,6 +16,7 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
@@ -25,7 +27,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private Collection<Constraint> constraints;
     private Collection<Target> allTargets;
 
-    public DefaultMetadataStore(long id, String name) {
+    public DefaultMetadataStore() {
 	this.schemas = new HashSet<Schema>();
 	this.constraints = new HashSet<Constraint>();
 	this.allTargets = new HashSet<>();
@@ -68,14 +70,19 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     // Static methods
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static MetadataStore getMetadataStoreForId(File file) throws IOException, ClassNotFoundException {
+    public static MetadataStore getMetadataStore(File file) throws MetadataStoreNotFoundException {
 
-	FileInputStream fin = new FileInputStream(file);
-	ObjectInputStream ois = new ObjectInputStream(fin);
-	MetadataStore metadataStore = (MetadataStore) ois.readObject();
-	ois.close();
+	FileInputStream fin;
+	try {
+	    fin = new FileInputStream(file);
+	    ObjectInputStream ois = new ObjectInputStream(fin);
+	    MetadataStore metadataStore = (MetadataStore) ois.readObject();
+	    ois.close();
+	    return metadataStore;
+	} catch (IOException | ClassNotFoundException e) {
+	    throw new MetadataStoreNotFoundException(e);
+	}
 
-	return metadataStore;
     }
 
     public static void saveMetadataStore(File file, MetadataStore metadataStore) throws IOException {
@@ -89,5 +96,15 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     public String toString() {
 	return "MetadataStore [schemas=" + schemas + ", constraints=" + constraints + ", allTargets=" + allTargets
 		+ ", getSchemas()=" + getSchemas() + ", getConstraints()=" + getConstraints() + "]";
+    }
+
+    public static MetadataStore getOrCreateAndSaveMetadataStore(File file) throws IOException {
+	try {
+	    return DefaultMetadataStore.getMetadataStore(file);
+	} catch (MetadataStoreNotFoundException e) {
+	    MetadataStore metadataStore = new DefaultMetadataStore();
+	    DefaultMetadataStore.saveMetadataStore(file, metadataStore);
+	    return metadataStore;
+	}
     }
 }
