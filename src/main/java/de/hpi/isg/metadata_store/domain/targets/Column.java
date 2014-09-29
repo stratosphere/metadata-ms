@@ -14,4 +14,8 @@ public interface Column extends Target {
 	 */
 	Table getTable();
 
+	/**
+	 * @return the name of this column with the table name prepended
+	 */
+	String getNameWithTableName();
 }

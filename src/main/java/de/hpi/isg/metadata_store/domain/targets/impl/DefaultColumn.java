@@ -41,6 +41,11 @@ public class DefaultColumn extends AbstractTarget implements Column {
 	public Table getTable() {
 		return table;
 	}
+	
+	@Override
+	public String getNameWithTableName() {
+		return getTable().getName() + "." + getName();
+	}
     
     @Override
     public String toString() {
