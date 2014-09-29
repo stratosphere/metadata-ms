@@ -81,7 +81,6 @@ public class DefaultTable extends AbstractTarget implements Table {
 	
     @Override
     public String toString() {
-	return "Table [columns=" + this.columns + ", getColumns()=" + this.getColumns() + ", getLocation()="
-		+ this.getLocation() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
+    	return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
     }
 }

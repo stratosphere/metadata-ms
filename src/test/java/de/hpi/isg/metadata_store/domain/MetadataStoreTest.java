@@ -257,11 +257,11 @@ public class MetadataStoreTest {
     public void testConstructingAComplexSchema() {
     	MetadataStore metadataStore = new DefaultMetadataStore();
     	for (int schemaNumber = 0; schemaNumber < 10; schemaNumber++) {
-    		Schema schema = metadataStore.addSchema(String.format("schema-%3d", schemaNumber), null);
+    		Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
     		for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
-    			Table table = schema.addTable(metadataStore, String.format("table-%3d", schemaNumber), null);
+    			Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
     			for (int columnNumber = 0; columnNumber < 100; columnNumber++) {
-    				table.addColumn(metadataStore, String.format("table-%3d", columnNumber), columnNumber);
+    				table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
     			}
     		}
     	}

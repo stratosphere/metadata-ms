@@ -63,7 +63,6 @@ public class DefaultSchema extends AbstractTarget implements Schema {
 
     @Override
     public String toString() {
-	return "Schema [tables=" + this.tables + ", getTables()=" + this.getTables() + ", getLocation()="
-		+ this.getLocation() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
+	return String.format("Schema[%s, %d tables, %08x]", getName(), getTables().size(), getId());
     }
 }

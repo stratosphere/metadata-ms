@@ -43,4 +43,9 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     public void notifyObserver() {
 	this.observer.registerTargetObject(this);
     }
+    
+    @Override
+    public int hashCode() {
+    	return getId();
+    }
 }

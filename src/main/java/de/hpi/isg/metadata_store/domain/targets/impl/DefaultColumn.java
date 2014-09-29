@@ -49,7 +49,7 @@ public class DefaultColumn extends AbstractTarget implements Column {
     
     @Override
     public String toString() {
-	return "Column [getLocation()=" + this.getLocation() + ", getId()=" + this.getId() + ", getName()="
-		+ this.getName() + "]";
+    	return String.format("Column[%s, %08x]", getNameWithTableName(), getId());
+
     }
 }

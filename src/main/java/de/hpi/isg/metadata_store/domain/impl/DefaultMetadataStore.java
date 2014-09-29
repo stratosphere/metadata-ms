@@ -148,8 +148,6 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public String toString() {
-	return "MetadataStore [schemas=" + this.schemas + ", constraints=" + this.constraints + ", allTargets="
-		+ this.allTargets + ", getSchemas()=" + this.getSchemas() + ", getConstraints()="
-		+ this.getConstraints() + "]";
+	return "MetadataStore[" + this.schemas.size() + " schemas, " + this.constraints.size() + " constraints]";
     }
 }
