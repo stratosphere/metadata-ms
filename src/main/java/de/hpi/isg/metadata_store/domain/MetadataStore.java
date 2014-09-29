@@ -15,11 +15,29 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 public interface MetadataStore extends Serializable, Observer {
     public void addConstraint(Constraint constraint);
 
+    /**
+     * @deprecated use {@link #addSchema(String, Location)} instead
+     */
     public void addSchema(Schema schema);
+    
+    public Schema addSchema(String name, Location location);
 
     public Collection<Target> getAllTargets();
 
     public Collection<Constraint> getConstraints();
 
     public Collection<Schema> getSchemas();
+
+	/**
+	 * Looks for an ID that can be assigned to a new schema.
+	 * @return the unused schema ID
+	 */
+	int getUnusedSchemaId();
+
+	/**
+	 * Looks for an ID that can be assigned to a new table within the given schema.
+	 * @param schema is the schema to which the new table shall be added
+	 * @return the unused table ID
+	 */
+	int getUnusedTableId(Schema schema);
 }

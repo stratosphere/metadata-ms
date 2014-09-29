@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,9 +76,9 @@ public class MetadataStoreTest {
 
 	final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummyTable", dummyTableLocation);
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, "dummyColumn", new IndexedLocation(0,
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation));
 
 	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
@@ -150,9 +151,9 @@ public class MetadataStoreTest {
 
 	final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, "dummyTable", dummyTableLocation);
+	final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, "dummyColumn", new IndexedLocation(0,
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", new IndexedLocation(0,
 		dummyTableLocation));
 
 	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
@@ -224,7 +225,7 @@ public class MetadataStoreTest {
 	final MetadataStore store1 = new DefaultMetadataStore();
 	// setup schema
 	final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"))
-		.addTable(DefaultTable.buildAndRegister(store1, "foo", null));
+		.addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null));
 	store1.getSchemas().add(dummySchema1);
 
 	try {

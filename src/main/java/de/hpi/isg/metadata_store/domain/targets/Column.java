@@ -8,5 +8,10 @@ import de.hpi.isg.metadata_store.domain.Target;
  */
 
 public interface Column extends Target {
+	
+	/**
+	 * @return the parent table of this column
+	 */
+	Table getTable();
 
 }

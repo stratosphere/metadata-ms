@@ -8,12 +8,17 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 
+import org.apache.commons.lang3.Validate;
+
 import de.hpi.isg.metadata_store.domain.Constraint;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
@@ -59,7 +64,41 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	this.schemas.add(schema);
 
     }
+    
+	@Override
+	public Schema addSchema(String name, Location location) {
+		int id = getUnusedSchemaId();
+		return DefaultSchema.buildAndRegister(this, id, name, location);
+	}
 
+	@Override
+	public int getUnusedSchemaId() {
+		int freeSchemaNumber = IdUtils.MIN_SCHEMA_NUMBER;
+		int id;
+		do {
+			if (freeSchemaNumber > IdUtils.MAX_SCHEMA_NUMBER) {
+				throw new IllegalArgumentException("No free schema ID left.");
+			}
+			id = IdUtils.createGlobalId(freeSchemaNumber);
+			freeSchemaNumber++;
+		} while (idIsInUse(id));
+		return id;
+	}
+
+	@Override
+    public int getUnusedTableId(Schema schema) {
+    	Validate.isTrue(this.schemas.contains(schema));
+    	int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
+    	for (int tableNumber = IdUtils.MIN_TABLE_NUMBER; tableNumber <= IdUtils.MAX_TABLE_NUMBER; tableNumber++) {
+    		int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
+    		if (!idIsInUse(id)) {
+    			return id;
+    		}
+    	}
+    	throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
+    }
+	
+	
     @Override
     public int generateRandomId() {
 	final int id = Math.abs(this.randomGenerator.nextInt(Integer.MAX_VALUE));

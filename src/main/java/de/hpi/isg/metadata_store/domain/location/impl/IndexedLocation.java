@@ -18,9 +18,9 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
 
     private long index;
 
-    private HDFSLocation parentLocation;
+    private Location parentLocation;
 
-    public IndexedLocation(long index, HDFSLocation parentLocation) {
+    public IndexedLocation(long index, Location parentLocation) {
 	super();
 	this.index = index;
 	this.parentLocation = parentLocation;
@@ -30,7 +30,7 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
 	return this.index;
     }
 
-    public HDFSLocation getParentLocation() {
+    public Location getParentLocation() {
 	return this.parentLocation;
     }
 
