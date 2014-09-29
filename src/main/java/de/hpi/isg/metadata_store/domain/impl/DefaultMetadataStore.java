@@ -1,6 +1,6 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.Collection;
@@ -37,7 +37,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     private final Collection<Target> allTargets;
 
-    private final IntSet idsInUse = new IntArraySet();
+    private final IntSet idsInUse = new IntOpenHashSet();
 
     @ExcludeHashCodeEquals
     private final Random randomGenerator = new Random();
@@ -56,47 +56,52 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    }
 
 	}
-
     }
 
     @Override
     public void addSchema(Schema schema) {
 	this.schemas.add(schema);
-
     }
     
 	@Override
 	public Schema addSchema(String name, Location location) {
 		int id = getUnusedSchemaId();
-		return DefaultSchema.buildAndRegister(this, id, name, location);
+		Schema schema = DefaultSchema.buildAndRegister(this, id, name, location);
+		addSchema(schema);
+		return schema;
 	}
 
 	@Override
 	public int getUnusedSchemaId() {
-		int freeSchemaNumber = IdUtils.MIN_SCHEMA_NUMBER;
-		int id;
-		do {
-			if (freeSchemaNumber > IdUtils.MAX_SCHEMA_NUMBER) {
-				throw new IllegalArgumentException("No free schema ID left.");
-			}
-			id = IdUtils.createGlobalId(freeSchemaNumber);
-			freeSchemaNumber++;
-		} while (idIsInUse(id));
-		return id;
+		int searchOffset = getSchemas().size();
+		for (int baseSchemaNumber = IdUtils.MIN_SCHEMA_NUMBER; baseSchemaNumber <= IdUtils.MAX_SCHEMA_NUMBER; baseSchemaNumber++) {
+			int schemaNumber = baseSchemaNumber + searchOffset;
+			schemaNumber = schemaNumber > IdUtils.MAX_SCHEMA_NUMBER ? schemaNumber
+					- (IdUtils.MAX_SCHEMA_NUMBER - IdUtils.MIN_SCHEMA_NUMBER) : schemaNumber;
+					int id = IdUtils.createGlobalId(schemaNumber, baseSchemaNumber);
+					if (!idIsInUse(id)) {
+						return id;
+					}
+		}
+		throw new IllegalStateException(String.format("No free schema ID left within schema."));
 	}
 
 	@Override
-    public int getUnusedTableId(Schema schema) {
-    	Validate.isTrue(this.schemas.contains(schema));
-    	int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
-    	for (int tableNumber = IdUtils.MIN_TABLE_NUMBER; tableNumber <= IdUtils.MAX_TABLE_NUMBER; tableNumber++) {
-    		int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
-    		if (!idIsInUse(id)) {
-    			return id;
-    		}
-    	}
-    	throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
-    }
+	public int getUnusedTableId(Schema schema) {
+		Validate.isTrue(this.schemas.contains(schema));
+		int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
+		int searchOffset = schema.getTables().size();
+		for (int baseTableNumber = IdUtils.MIN_TABLE_NUMBER; baseTableNumber <= IdUtils.MAX_TABLE_NUMBER; baseTableNumber++) {
+			int tableNumber = baseTableNumber + searchOffset;
+			tableNumber = tableNumber > IdUtils.MAX_TABLE_NUMBER ? tableNumber
+					- (IdUtils.MAX_TABLE_NUMBER - IdUtils.MIN_TABLE_NUMBER) : tableNumber;
+			int id = IdUtils.createGlobalId(schemaNumber, baseTableNumber);
+			if (!idIsInUse(id)) {
+				return id;
+			}
+		}
+		throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
+	}
 	
 	
     @Override
