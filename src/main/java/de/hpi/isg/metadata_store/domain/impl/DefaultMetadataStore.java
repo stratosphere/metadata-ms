@@ -56,6 +56,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    }
 
 	}
+	this.constraints.add(constraint);
     }
 
     @Override
