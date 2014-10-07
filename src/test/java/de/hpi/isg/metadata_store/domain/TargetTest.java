@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.util.Collection;
 import java.util.HashSet;
 
 import org.junit.Test;
@@ -18,6 +20,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class TargetTest {
 
@@ -45,10 +48,11 @@ public class TargetTest {
 
 	final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable", dummyTableLocation);
+	DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable",
+		dummyTableLocation);
 
-	DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn", new IndexedLocation(0,
-		dummyTableLocation));
+	DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn",
+		new IndexedLocation(0, dummyTableLocation));
 
 	// setup schema
 	final Schema dummySchema2 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), 2, "PDB",
@@ -56,13 +60,51 @@ public class TargetTest {
 
 	final HDFSLocation dummyTableLocation2 = new HDFSLocation("hdfs://foobar/dummyTable.csv");
 
-	DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable", dummyTableLocation2);
+	DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable",
+		dummyTableLocation2);
 
-	DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn", new IndexedLocation(0,
-		dummyTableLocation2));
+	DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn",
+		new IndexedLocation(0, dummyTableLocation2));
 
 	assertEquals(dummySchema, dummySchema2);
 
+    }
+
+    @Test
+    public void testSchemaGetTable() {
+	final HDFSLocation loc = new HDFSLocation("foobar");
+
+	final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", loc);
+
+	final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc).addTable(table1);
+
+	assertEquals(schema1.getTable("foo"), table1);
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testSchemaGetTableForAmbigousNameFails() {
+	final MetadataStore ms = mock(MetadataStore.class);
+	final Collection schemas = mock(Collection.class);
+
+	final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", mock(Location.class));
+
+	when(ms.getSchemas()).thenReturn(schemas);
+	when(schemas.contains(schema1)).thenReturn(true);
+
+	schema1.addTable(ms, "foo", mock(Location.class));
+	schema1.addTable(ms, "foo", mock(Location.class));
+
+	schema1.getTable("foo");
+
+    }
+
+    @Test
+    public void testSchemaGetTableForUnknownTableReturnNull() {
+	final HDFSLocation loc = new HDFSLocation("foobar");
+
+	final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc);
+
+	assertEquals(schema1.getTable("foo"), null);
     }
 
     @Test
@@ -71,7 +113,8 @@ public class TargetTest {
 
 	final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "foo", loc);
 
-	final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", loc).addColumn(column1);
+	final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", loc)
+		.addColumn(column1);
 
 	final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc).addTable(table1);
 	final Schema schema2 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc).addTable(table1);
@@ -89,13 +132,17 @@ public class TargetTest {
 
 	final HDFSLocation loc = new HDFSLocation("foobar");
 
-	final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class),mock(Table.class), 1, "foo", loc);
+	final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 1, "foo",
+		loc);
 
-	final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class),  2, "foo", loc).addColumn(column1);
+	final Table table1 = DefaultTable
+		.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", loc).addColumn(column1);
 
-	final Table table2 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", loc).addColumn(column1);
+	final Table table2 = DefaultTable
+		.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", loc).addColumn(column1);
 
-	final Table table3 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "foo2", loc);
+	final Table table3 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "foo2",
+		loc);
 
 	assertEquals(table1, table2);
 

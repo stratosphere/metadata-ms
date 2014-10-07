@@ -15,8 +15,8 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     private static final long serialVersionUID = 3194245498846860560L;
 
-    public TypeConstraint(Observer observer, int id, String name, SingleTargetReference target) {
-	super(observer, id, name, target);
+    public TypeConstraint(Observer observer, int id, SingleTargetReference target) {
+	super(observer, id, target);
 	for (final Target t : target.getAllTargets()) {
 	    if (!(t instanceof Column)) {
 		throw new IllegalArgumentException("TypeConstrains can only be defined on Columns.");
@@ -25,13 +25,13 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
     }
 
     public TypeConstraint(Observer observer, String name, SingleTargetReference target) {
-	this(observer, -1, name, target);
+	this(observer, -1, target);
 
     }
 
     @Override
     public String toString() {
 	return "TypeConstraint [getProperties()=" + this.getProperties() + ", getTargetReference()="
-		+ this.getTargetReference() + ", getId()=" + this.getId() + ", getName()=" + this.getName() + "]";
+		+ this.getTargetReference() + ", getId()=" + this.getId() + "]";
     }
 }

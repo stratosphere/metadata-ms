@@ -32,6 +32,9 @@ public class MetadataStoreFactory {
 	    return MetadataStoreFactory.getMetadataStore(file);
 	} catch (final MetadataStoreNotFoundException e) {
 	    final MetadataStore metadataStore = new DefaultMetadataStore();
+	    if (!file.exists()) {
+		file.createNewFile();
+	    }
 	    MetadataStoreFactory.saveMetadataStore(file, metadataStore);
 	    return metadataStore;
 	}
