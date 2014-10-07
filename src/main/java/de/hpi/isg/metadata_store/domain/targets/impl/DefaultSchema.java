@@ -1,7 +1,9 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
@@ -12,6 +14,7 @@ import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * The default implementation of the {@link Schema}.
@@ -42,20 +45,37 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     }
 
     @Override
+    public Table addTable(MetadataStore metadataStore, String name, Location location) {
+	Validate.isTrue(metadataStore.getSchemas().contains(this));
+	final int tableId = metadataStore.getUnusedTableId(this);
+	final Table table = DefaultTable.buildAndRegister(metadataStore, this, tableId, name, location);
+	this.addTable(table);
+	return table;
+    }
+
+    @Override
     public Schema addTable(Table table) {
 	this.tables.add(table);
 	return this;
     }
-    
+
     @Override
-    public Table addTable(MetadataStore metadataStore, String name, Location location) {
-    	Validate.isTrue(metadataStore.getSchemas().contains(this));
-    	int tableId = metadataStore.getUnusedTableId(this);
-    	Table table = DefaultTable.buildAndRegister(metadataStore, this, tableId, name, location);
-    	addTable(table);
-    	return table;
+    public Table getTable(String name) throws NameAmbigousException {
+	final List<Table> results = new ArrayList<>();
+	for (final Table table : this.tables) {
+	    if (table.getName().equals(name)) {
+		results.add(table);
+	    }
+	}
+	if (results.size() > 1) {
+	    throw new NameAmbigousException(name);
+	}
+	if (results.isEmpty()) {
+	    return null;
+	}
+	return results.get(0);
     }
-    
+
     @Override
     public Collection<Table> getTables() {
 	return this.tables;
@@ -63,6 +83,6 @@ public class DefaultSchema extends AbstractTarget implements Schema {
 
     @Override
     public String toString() {
-	return String.format("Schema[%s, %d tables, %08x]", getName(), getTables().size(), getId());
+	return String.format("Schema[%s, %d tables, %08x]", this.getName(), this.getTables().size(), this.getId());
     }
 }

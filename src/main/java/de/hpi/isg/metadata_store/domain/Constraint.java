@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.common.Identifiable;
-import de.hpi.isg.metadata_store.domain.common.Named;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -18,7 +17,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * {@link Map} fore easier use.
  *
  */
-public interface Constraint extends Identifiable, Named, Serializable {
+public interface Constraint extends Identifiable, Serializable {
 
     public Map<Object, Object> getProperties();
 

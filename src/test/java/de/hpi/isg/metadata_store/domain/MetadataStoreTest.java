@@ -26,6 +26,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.DefaultColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
 import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class MetadataStoreTest {
 
@@ -59,6 +60,20 @@ public class MetadataStoreTest {
 	assertTrue(store1.getAllTargets().contains(schema1));
     }
 
+    @Test
+    public void testConstructingAComplexSchema() {
+	final MetadataStore metadataStore = new DefaultMetadataStore();
+	for (int schemaNumber = 0; schemaNumber < 10; schemaNumber++) {
+	    final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
+	    for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
+		final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
+		for (int columnNumber = 0; columnNumber < 100; columnNumber++) {
+		    table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
+		}
+	    }
+	}
+    }
+
     @Test(expected = MetadataStoreNotFoundException.class)
     public void testGetMetaDataStoreOnNotExistingFails() {
 	final File file = new File(this.dir, "nooooootExisting.ms");
@@ -78,8 +93,8 @@ public class MetadataStoreTest {
 
 	final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", new IndexedLocation(0,
-		dummyTableLocation));
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
+		new IndexedLocation(0, dummyTableLocation));
 
 	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
 		dummyColumn));
@@ -122,6 +137,40 @@ public class MetadataStoreTest {
     }
 
     @Test
+    public void testRetrievingOfSchemaByName() {
+	// setup store
+	final MetadataStore store1 = new DefaultMetadataStore();
+	// setup schema
+	final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+	store1.getSchemas().add(dummySchema1);
+
+	assertEquals(store1.getSchema("PDB"), dummySchema1);
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testRetrievingOfSchemaByNameWithAmbigousNameFails() {
+	// setup store
+	final MetadataStore store1 = new DefaultMetadataStore();
+	// setup schema
+	final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+	store1.getSchemas().add(dummySchema1);
+
+	final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+	store1.getSchemas().add(dummySchema2);
+
+	store1.getSchema("PDB");
+    }
+
+    @Test
+    public void testRetrievingOfSchemaByNameWithUnknownNameReturnsNull() {
+	// setup store
+	final MetadataStore store1 = new DefaultMetadataStore();
+	// setup schema
+
+	assertEquals(store1.getSchema("PDB"), null);
+    }
+
+    @Test
     public void testStoringOfEmptyMetadataStore() {
 	final File file = new File(this.dir, "emptyStore.ms");
 	final MetadataStore store1 = new DefaultMetadataStore();
@@ -153,8 +202,8 @@ public class MetadataStoreTest {
 
 	final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", new IndexedLocation(0,
-		dummyTableLocation));
+	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
+		new IndexedLocation(0, dummyTableLocation));
 
 	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
 		dummyColumn));
@@ -251,19 +300,5 @@ public class MetadataStoreTest {
 	assertTrue(allTargets2.contains(dummySchema1));
 
 	assertEquals(store1, store2);
-    }
-    
-    @Test
-    public void testConstructingAComplexSchema() {
-    	MetadataStore metadataStore = new DefaultMetadataStore();
-    	for (int schemaNumber = 0; schemaNumber < 10; schemaNumber++) {
-    		Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
-    		for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
-    			Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
-    			for (int columnNumber = 0; columnNumber < 100; columnNumber++) {
-    				table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
-    			}
-    		}
-    	}
     }
 }
