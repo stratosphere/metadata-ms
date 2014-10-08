@@ -28,8 +28,7 @@ public class ConstraintTest {
 	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
 		new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store1, "dummyTypeConstraint",
-		new SingleTargetReference(dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(dummyColumn));
 
 	store1.getConstraints().add(dummyTypeContraint);
     }
@@ -43,7 +42,7 @@ public class ConstraintTest {
 	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", new Location() {
 	});
 
-	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummySchema));
+	new TypeConstraint(store1, new SingleTargetReference(dummySchema));
 
     }
 
@@ -57,7 +56,7 @@ public class ConstraintTest {
 		new Location() {
 		});
 
-	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummyTable));
+	new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 
     }
 
@@ -71,7 +70,7 @@ public class ConstraintTest {
 		new Location() {
 		});
 
-	new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(dummyTable));
+	new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 
     }
 
@@ -102,8 +101,7 @@ public class ConstraintTest {
 			DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null).addColumn(
 				dummyColumn)));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store, "dummyTypeConstraint",
-		new SingleTargetReference(dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store, new SingleTargetReference(dummyColumn));
 
 	store.addConstraint(dummyTypeContraint);
     }
@@ -116,8 +114,7 @@ public class ConstraintTest {
 	final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
 		"dummyColumn2", new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store2, "dummyTypeConstraint",
-		new SingleTargetReference(dummyColumn));
+	final Constraint dummyTypeContraint = new TypeConstraint(store2, new SingleTargetReference(dummyColumn));
 
 	store2.addConstraint(dummyTypeContraint);
     }

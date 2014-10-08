@@ -12,17 +12,21 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 
 public class IdUtilsTest {
 
-	private static final boolean VERBOSE = false;
+	private static final boolean VERBOSE = true;
 
 	@Test
 	public void testIdAssembling() {
@@ -93,6 +97,20 @@ public class IdUtilsTest {
 				Assert.assertFalse(localColumnId >= IdUtils.MIN_COLUMN_NUMBER
 						&& localColumnId <= IdUtils.MAX_COLUMN_NUMBER);
 		}
+	}
+	
+	@Test
+	public void testGenerationOfIds() {
+		MetadataStore store = new DefaultMetadataStore();
+		store.addSchema("foo", mock(Location.class)).addTable(store, "bar", mock(Location.class)).addColumn(store, "column1", 0);
+		assertEquals(0b111111111111111111111111, store.getSchema("foo").getId());
+		assertEquals(0b000000000000111111111111, store.getSchema("foo").getTable("bar").getId());
+		assertEquals(0b000000000000000000000000, store.getSchema("foo").getTable("bar").getColumns().iterator().next().getId());
+		
+		store.addSchema("foo2", mock(Location.class)).addTable(store, "bar2", mock(Location.class)).addColumn(store, "column1", 0);
+		assertEquals(0b1111111111111111111111111, store.getSchema("foo2").getId());
+		assertEquals(0b1000000000000111111111111, store.getSchema("foo2").getTable("bar2").getId());
+		assertEquals(0b1000000000000000000000000, store.getSchema("foo2").getTable("bar2").getColumns().iterator().next().getId());
 	}
 
 }

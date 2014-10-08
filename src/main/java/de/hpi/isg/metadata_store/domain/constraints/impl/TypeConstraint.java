@@ -11,7 +11,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * This class is a {@link Constraint} representing the data type of a certain
  * {@link Column}. {@link Column}.
  */
-public class TypeConstraint extends AbstractConstraint implements Constraint {
+public class TypeConstraint extends AbstractConstraint {
 
     private static final long serialVersionUID = 3194245498846860560L;
 
@@ -24,7 +24,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 	}
     }
 
-    public TypeConstraint(Observer observer, String name, SingleTargetReference target) {
+    public TypeConstraint(Observer observer, SingleTargetReference target) {
 	this(observer, -1, target);
 
     }

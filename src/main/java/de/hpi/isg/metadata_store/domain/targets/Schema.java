@@ -36,4 +36,12 @@ public interface Schema extends Target {
 
     public Collection<Table> getTables();
 
+    /**
+     * Searches for a {@link Column} inside all of its known {@link Table}s.
+     * 
+     * @param id
+     * @return
+     */
+    Column findColumn(int id);
+
 }

@@ -22,8 +22,8 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
+import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 /**
  * The default implementation of the {@link MetadataStore}.
@@ -123,10 +123,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    int schemaNumber = baseSchemaNumber + searchOffset;
 	    schemaNumber = schemaNumber > IdUtils.MAX_SCHEMA_NUMBER ? schemaNumber
 		    - (IdUtils.MAX_SCHEMA_NUMBER - IdUtils.MIN_SCHEMA_NUMBER) : schemaNumber;
-		    final int id = IdUtils.createGlobalId(schemaNumber, baseSchemaNumber);
-		    if (!this.idIsInUse(id)) {
-			return id;
-		    }
+	    final int id = IdUtils.createGlobalId(schemaNumber);
+	    if (!this.idIsInUse(id)) {
+		return id;
+	    }
 	}
 	throw new IllegalStateException(String.format("No free schema ID left within schema."));
     }
@@ -140,10 +140,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    int tableNumber = baseTableNumber + searchOffset;
 	    tableNumber = tableNumber > IdUtils.MAX_TABLE_NUMBER ? tableNumber
 		    - (IdUtils.MAX_TABLE_NUMBER - IdUtils.MIN_TABLE_NUMBER) : tableNumber;
-		    final int id = IdUtils.createGlobalId(schemaNumber, baseTableNumber);
-		    if (!this.idIsInUse(id)) {
-			return id;
-		    }
+	    final int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
+	    if (!this.idIsInUse(id)) {
+		return id;
+	    }
 	}
 	throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
     }

@@ -106,6 +106,30 @@ public class TargetTest {
 
 	assertEquals(schema1.getTable("foo"), null);
     }
+    
+    @Test
+    public void testSchemaFindColumn() {
+	
+	MetadataStore ms = mock(MetadataStore.class);
+	final Schema schema1 = DefaultSchema.buildAndRegister(ms, "foo", mock(Location.class));
+	final Table table1 = DefaultTable.buildAndRegister(ms, schema1, "table1", mock(Location.class));
+	Column column1 = DefaultColumn.buildAndRegister(ms, table1, "column1", mock(Location.class));
+	
+	schema1.addTable(table1);
+	table1.addColumn(column1);
+
+	assertEquals(column1, schema1.findColumn(column1.getId()));
+    }
+    
+    @Test
+    public void testSchemaFindColumnForUnknownColumnIdReturnNull() {
+
+	final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", mock(Location.class));
+	
+	final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "column1", mock(Location.class));
+
+	assertEquals(null, schema1.findColumn(column1.getId()));
+    }
 
     @Test
     public void testSchemaHashCodeAndEquals() {

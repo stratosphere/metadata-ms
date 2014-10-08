@@ -96,7 +96,7 @@ public class MetadataStoreTest {
 	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
 		new IndexedLocation(0, dummyTableLocation));
 
-	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
+	final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
 		dummyColumn));
 
 	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
@@ -205,7 +205,7 @@ public class MetadataStoreTest {
 	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
 		new IndexedLocation(0, dummyTableLocation));
 
-	final Constraint dummyContraint = new TypeConstraint(store1, "dummyTypeConstraint", new SingleTargetReference(
+	final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
 		dummyColumn));
 
 	store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));

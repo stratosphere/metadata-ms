@@ -12,6 +12,7 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
+import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
@@ -79,6 +80,18 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     @Override
     public Collection<Table> getTables() {
 	return this.tables;
+    }
+
+    @Override
+    public Column findColumn(int columnId) {
+	for (Table table : getTables()) {
+	    for (Column column : table.getColumns()) {
+		if (column.getId() == columnId) {
+		    return column;
+		}
+	    }
+	}
+	return null;
     }
 
     @Override
