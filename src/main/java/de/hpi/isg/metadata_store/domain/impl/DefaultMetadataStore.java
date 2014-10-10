@@ -1,6 +1,6 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.ArrayList;
@@ -40,15 +40,15 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     private final Collection<Target> allTargets;
 
-    private final IntSet idsInUse = new IntOpenHashSet();
+    private final IntSet idsInUse = new IntOpenHashBigSet();
 
     @ExcludeHashCodeEquals
     private final Random randomGenerator = new Random();
 
     public DefaultMetadataStore() {
-	this.schemas = new HashSet<Schema>();
-	this.constraints = new HashSet<Constraint>();
-	this.allTargets = new HashSet<>();
+	this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
+	this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
+	this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
     }
 
     @Override
@@ -149,15 +149,18 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     private boolean idIsInUse(int id) {
-	return this.idsInUse.contains(id);
+    	synchronized (this.idsInUse) {
+    		return this.idsInUse.contains(id);
+		}
     }
 
     @Override
     public void registerId(int id) {
-	if (this.idsInUse.contains(id)) {
-	    throw new IdAlreadyInUseException("id is already in use: " + id);
-	}
-	this.idsInUse.add(id);
+    	synchronized (this.idsInUse) {
+    		if (!this.idsInUse.add(id)) {
+    			throw new IdAlreadyInUseException("id is already in use: " + id);
+    		}
+		}
     }
 
     @Override

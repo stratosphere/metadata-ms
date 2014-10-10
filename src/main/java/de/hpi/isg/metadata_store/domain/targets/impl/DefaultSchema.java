@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class DefaultSchema extends AbstractTarget implements Schema {
 
     private DefaultSchema(Observer observer, int id, String name, Location location) {
 	super(observer, id, name, location);
-	this.tables = new HashSet<Table>();
+	this.tables = Collections.synchronizedSet(new HashSet<Table>());
     }
 
     @Override
