@@ -19,11 +19,18 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
     private long index;
 
     private Location parentLocation;
+    
+    private int offset;
+    
+	public IndexedLocation(long index, Location parentLocation) {
+		this(index, parentLocation, 1);
+	}
 
-    public IndexedLocation(long index, Location parentLocation) {
+	public IndexedLocation(long index, Location parentLocation, int offset) {
 	super();
 	this.index = index;
 	this.parentLocation = parentLocation;
+	this.offset = offset;
     }
 
     public long getIndex() {
@@ -41,6 +48,14 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
     public void setParentLocation(HDFSLocation parentLocation) {
 	this.parentLocation = parentLocation;
     }
+    
+    public int getOffset() {
+		return offset;
+	}
+
+	public void setOffset(int offset) {
+		this.offset = offset;
+	}
 
     @Override
     public String toString() {
