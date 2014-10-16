@@ -18,24 +18,9 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  *
  */
 public interface Constraint extends Identifiable, Serializable {
-	public enum BASIC_STATS {
-		TYPE
-	}
 
-	public enum STRING_STATS {
-		MIN_STRING, MAX_STRING, MIN_LENGTH, MAX_LENGTH, AVG_LENGTH, DISTINCT_COUNT
-	};
+    public Map<Object, Object> getProperties();
 
-	public enum INTEGER_STATS {
-		MIN_INTEGER, MAX_INTEGER, AVG_INTEGER
-	};
-
-	public enum DECIMAL_STATS {
-		MIN_DECIMAL, MAX_DECIMAL, AVG_DECIMAL
-	};
-
-	public Map<Object, Object> getProperties();
-
-	public TargetReference getTargetReference();
+    public TargetReference getTargetReference();
 
 }
