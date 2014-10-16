@@ -1,6 +1,6 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.ArrayList;
@@ -22,8 +22,8 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
+import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 /**
  * The default implementation of the {@link MetadataStore}.
@@ -40,15 +40,15 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     private final Collection<Target> allTargets;
 
-    private final IntSet idsInUse = new IntOpenHashBigSet();
+    private final IntSet idsInUse = new IntOpenHashSet();
 
     @ExcludeHashCodeEquals
     private final Random randomGenerator = new Random();
 
     public DefaultMetadataStore() {
-	this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
-	this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
-	this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
+	this.schemas = new HashSet<Schema>();
+	this.constraints = new HashSet<Constraint>();
+	this.allTargets = new HashSet<>();
     }
 
     @Override
@@ -123,10 +123,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    int schemaNumber = baseSchemaNumber + searchOffset;
 	    schemaNumber = schemaNumber > IdUtils.MAX_SCHEMA_NUMBER ? schemaNumber
 		    - (IdUtils.MAX_SCHEMA_NUMBER - IdUtils.MIN_SCHEMA_NUMBER) : schemaNumber;
-		    final int id = IdUtils.createGlobalId(schemaNumber, baseSchemaNumber);
-		    if (!this.idIsInUse(id)) {
-			return id;
-		    }
+	    final int id = IdUtils.createGlobalId(schemaNumber);
+	    if (!this.idIsInUse(id)) {
+		return id;
+	    }
 	}
 	throw new IllegalStateException(String.format("No free schema ID left within schema."));
     }
@@ -140,27 +140,24 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	    int tableNumber = baseTableNumber + searchOffset;
 	    tableNumber = tableNumber > IdUtils.MAX_TABLE_NUMBER ? tableNumber
 		    - (IdUtils.MAX_TABLE_NUMBER - IdUtils.MIN_TABLE_NUMBER) : tableNumber;
-		    final int id = IdUtils.createGlobalId(schemaNumber, baseTableNumber);
-		    if (!this.idIsInUse(id)) {
-			return id;
-		    }
+	    final int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
+	    if (!this.idIsInUse(id)) {
+		return id;
+	    }
 	}
 	throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
     }
 
     private boolean idIsInUse(int id) {
-    	synchronized (this.idsInUse) {
-    		return this.idsInUse.contains(id);
-		}
+	return this.idsInUse.contains(id);
     }
 
     @Override
     public void registerId(int id) {
-    	synchronized (this.idsInUse) {
-    		if (!this.idsInUse.add(id)) {
-    			throw new IdAlreadyInUseException("id is already in use: " + id);
-    		}
-		}
+	if (this.idsInUse.contains(id)) {
+	    throw new IdAlreadyInUseException("id is already in use: " + id);
+	}
+	this.idsInUse.add(id);
     }
 
     @Override
