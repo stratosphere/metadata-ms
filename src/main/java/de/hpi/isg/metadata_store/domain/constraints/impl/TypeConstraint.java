@@ -12,6 +12,10 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * {@link Column}. {@link Column}.
  */
 public class TypeConstraint extends AbstractConstraint {
+	
+	public enum TYPES {
+		STRING, INTEGER, DECIMAL
+	};
 
     private static final long serialVersionUID = 3194245498846860560L;
 
