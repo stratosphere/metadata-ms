@@ -16,17 +16,17 @@ public class SingleTargetReference extends AbstractHashCodeAndEquals implements 
 
     private final Target target;
 
-    public SingleTargetReference(Target target) {
-	this.target = target;
+    public SingleTargetReference(final Target target) {
+        this.target = target;
     }
 
     @Override
     public Collection<Target> getAllTargets() {
-	return Arrays.asList(this.target);
+        return Arrays.asList(this.target);
     }
 
     public Target getTarget() {
-	return this.target;
+        return this.target;
     }
 
 }

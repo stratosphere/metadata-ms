@@ -15,20 +15,20 @@ public class HDFSLocation extends AbstractHashCodeAndEquals implements Location 
 
     private static final long serialVersionUID = 4906351571223005639L;
 
-    public HDFSLocation(String path) {
-	this.path = path;
+    public HDFSLocation(final String path) {
+        this.path = path;
     }
 
     public String getPath() {
-	return this.path;
+        return this.path;
     }
 
-    public void setPath(String path) {
-	this.path = path;
+    public void setPath(final String path) {
+        this.path = path;
     }
 
     @Override
     public String toString() {
-	return "HDFSLocation [path=" + this.path + ", getPath()=" + this.getPath() + "]";
+        return "HDFSLocation [path=" + this.path + ", getPath()=" + this.getPath() + "]";
     }
 }

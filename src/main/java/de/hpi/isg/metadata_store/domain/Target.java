@@ -9,9 +9,8 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
- * Every physical data store object is represented as a {@link Target}. So
- * {@link Schema}s, {@link Table}s, and {@link Column}s are {@link Target}s that
- * can be referenced in {@link Constraint}s via {@link TargetReference}s.
+ * Every physical data store object is represented as a {@link Target}. So {@link Schema}s, {@link Table}s, and
+ * {@link Column}s are {@link Target}s that can be referenced in {@link Constraint}s via {@link TargetReference}s.
  *
  */
 

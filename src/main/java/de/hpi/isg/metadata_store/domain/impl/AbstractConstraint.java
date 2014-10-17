@@ -9,9 +9,8 @@ import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 
 /**
- * {@link AbstractConstraint} is an abstract super class for all
- * {@link Constraint} implementations, already taking care of
- * {@link TargetReference} and the storing of the internal {@link Map}.
+ * {@link AbstractConstraint} is an abstract super class for all {@link Constraint} implementations, already taking care
+ * of {@link TargetReference} and the storing of the internal {@link Map}.
  *
  */
 
@@ -22,20 +21,20 @@ public abstract class AbstractConstraint extends AbstractIdentifiable implements
     private final Map<Object, Object> properties;
     private final TargetReference target;
 
-    public AbstractConstraint(Observer observer, int id, TargetReference target) {
-	super(observer, id);
-	this.properties = new HashMap<Object, Object>();
-	this.target = target;
+    public AbstractConstraint(final Observer observer, final int id, final TargetReference target) {
+        super(observer, id);
+        this.properties = new HashMap<Object, Object>();
+        this.target = target;
     }
 
     @Override
     public Map<Object, Object> getProperties() {
-	return this.properties;
+        return this.properties;
     }
 
     @Override
     public TargetReference getTargetReference() {
-	return this.target;
+        return this.target;
     }
 
 }

@@ -8,14 +8,14 @@ import de.hpi.isg.metadata_store.domain.Target;
  */
 
 public interface Column extends Target {
-	
-	/**
-	 * @return the parent table of this column
-	 */
-	Table getTable();
 
-	/**
-	 * @return the name of this column with the table name prepended
-	 */
-	String getNameWithTableName();
+    /**
+     * @return the parent table of this column
+     */
+    Table getTable();
+
+    /**
+     * @return the name of this column with the table name prepended
+     */
+    String getNameWithTableName();
 }

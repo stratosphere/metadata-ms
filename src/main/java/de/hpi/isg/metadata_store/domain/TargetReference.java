@@ -4,8 +4,7 @@ import java.io.Serializable;
 import java.util.Collection;
 
 /**
- * A {@link TargetReference} stores the information about {@link Target}s for
- * which a certains {@link Constraint} holds.
+ * A {@link TargetReference} stores the information about {@link Target}s for which a certains {@link Constraint} holds.
  *
  */
 

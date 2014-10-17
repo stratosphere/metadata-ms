@@ -8,8 +8,7 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
- * A {@link MetadataStore} stores schema information as well as
- * {@link Constraint}s holding on the objects stored in it.
+ * A {@link MetadataStore} stores schema information as well as {@link Constraint}s holding on the objects stored in it.
  *
  */
 
@@ -46,11 +45,10 @@ public interface MetadataStore extends Serializable, Observer {
     int getUnusedSchemaId();
 
     /**
-     * Looks for an ID that can be assigned to a new table within the given
-     * schema.
+     * Looks for an ID that can be assigned to a new table within the given schema.
      *
      * @param schema
-     *            is the schema to which the new table shall be added
+     *        is the schema to which the new table shall be added
      * @return the unused table ID
      */
     int getUnusedTableId(Schema schema);

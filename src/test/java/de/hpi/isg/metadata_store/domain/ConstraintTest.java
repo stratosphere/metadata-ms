@@ -23,100 +23,100 @@ public class ConstraintTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testAddingConstraintsToUnmodifiableConstraintCollectionFails() {
 
-	final MetadataStore store1 = new DefaultMetadataStore();
+        final MetadataStore store1 = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
-		new IndexedLocation(0, null));
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
+                new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(dummyColumn));
+        final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(dummyColumn));
 
-	store1.getConstraints().add(dummyTypeContraint);
+        store1.getConstraints().add(dummyTypeContraint);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreatingATypeConstraintOnSchemasFails() {
 
-	final MetadataStore store1 = new DefaultMetadataStore();
+        final MetadataStore store1 = new DefaultMetadataStore();
 
-	@SuppressWarnings("serial")
-	final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", new Location() {
-	});
+        @SuppressWarnings("serial")
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", new Location() {
+        });
 
-	new TypeConstraint(store1, new SingleTargetReference(dummySchema));
+        new TypeConstraint(store1, new SingleTargetReference(dummySchema));
 
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreatingATypeConstraintOnTablesFails() {
 
-	final MetadataStore store1 = new DefaultMetadataStore();
+        final MetadataStore store1 = new DefaultMetadataStore();
 
-	@SuppressWarnings("serial")
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
-		new Location() {
-		});
+        @SuppressWarnings("serial")
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
+                new Location() {
+        });
 
-	new TypeConstraint(store1, new SingleTargetReference(dummyTable));
+        new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreatingATypeConstraintWithTakenIdFails() {
 
-	final MetadataStore store1 = new DefaultMetadataStore();
+        final MetadataStore store1 = new DefaultMetadataStore();
 
-	@SuppressWarnings("serial")
-	final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
-		new Location() {
-		});
+        @SuppressWarnings("serial")
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
+                new Location() {
+        });
 
-	new TypeConstraint(store1, new SingleTargetReference(dummyTable));
+        new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 
     }
 
     @Test
     public void testTypeConstraint() {
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-		"dummyColumn1", new IndexedLocation(0, null));
+        final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
+                "dummyColumn1", new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint1 = new TypeConstraint(mock(MetadataStore.class), 1,
-		new SingleTargetReference(dummyColumn));
-	final Constraint dummyTypeContraint2 = new TypeConstraint(mock(MetadataStore.class), 1,
-		new SingleTargetReference(dummyColumn));
+        final Constraint dummyTypeContraint1 = new TypeConstraint(mock(MetadataStore.class), 1,
+                new SingleTargetReference(dummyColumn));
+        final Constraint dummyTypeContraint2 = new TypeConstraint(mock(MetadataStore.class), 1,
+                new SingleTargetReference(dummyColumn));
 
-	assertEquals(dummyTypeContraint1, dummyTypeContraint2);
+        assertEquals(dummyTypeContraint1, dummyTypeContraint2);
     }
 
     @Test
     public void testTypeConstraintOnAddedColumn() {
 
-	final MetadataStore store = new DefaultMetadataStore();
+        final MetadataStore store = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(store, mock(Table.class), "dummyColumn3 ",
-		new IndexedLocation(0, null));
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store, mock(Table.class), "dummyColumn3 ",
+                new IndexedLocation(0, null));
 
-	store.getSchemas().add(
-		DefaultSchema.buildAndRegister(store, "dummySchema", null).addTable(
-			DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null).addColumn(
-				dummyColumn)));
+        store.getSchemas().add(
+                DefaultSchema.buildAndRegister(store, "dummySchema", null).addTable(
+                        DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null).addColumn(
+                                dummyColumn)));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store, new SingleTargetReference(dummyColumn));
+        final Constraint dummyTypeContraint = new TypeConstraint(store, new SingleTargetReference(dummyColumn));
 
-	store.addConstraint(dummyTypeContraint);
+        store.addConstraint(dummyTypeContraint);
     }
 
     @Test(expected = NotAllTargetsInStoreException.class)
     public void testTypeConstraintOnNotAddedColumnFails() {
 
-	final MetadataStore store2 = new DefaultMetadataStore();
+        final MetadataStore store2 = new DefaultMetadataStore();
 
-	final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
-		"dummyColumn2", new IndexedLocation(0, null));
+        final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
+                "dummyColumn2", new IndexedLocation(0, null));
 
-	final Constraint dummyTypeContraint = new TypeConstraint(store2, new SingleTargetReference(dummyColumn));
+        final Constraint dummyTypeContraint = new TypeConstraint(store2, new SingleTargetReference(dummyColumn));
 
-	store2.addConstraint(dummyTypeContraint);
+        store2.addConstraint(dummyTypeContraint);
     }
 
 }

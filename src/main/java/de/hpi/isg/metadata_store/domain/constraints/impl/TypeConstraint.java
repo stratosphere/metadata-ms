@@ -8,34 +8,33 @@ import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
- * This class is a {@link Constraint} representing the data type of a certain
- * {@link Column}. {@link Column}.
+ * This class is a {@link Constraint} representing the data type of a certain {@link Column}. {@link Column}.
  */
 public class TypeConstraint extends AbstractConstraint {
-	
-	public enum TYPES {
-		STRING, INTEGER, DECIMAL
-	};
+
+    public enum TYPES {
+        STRING, INTEGER, DECIMAL
+    };
 
     private static final long serialVersionUID = 3194245498846860560L;
 
-    public TypeConstraint(Observer observer, int id, SingleTargetReference target) {
-	super(observer, id, target);
-	for (final Target t : target.getAllTargets()) {
-	    if (!(t instanceof Column)) {
-		throw new IllegalArgumentException("TypeConstrains can only be defined on Columns.");
-	    }
-	}
+    public TypeConstraint(final Observer observer, final int id, final SingleTargetReference target) {
+        super(observer, id, target);
+        for (final Target t : target.getAllTargets()) {
+            if (!(t instanceof Column)) {
+                throw new IllegalArgumentException("TypeConstrains can only be defined on Columns.");
+            }
+        }
     }
 
-    public TypeConstraint(Observer observer, SingleTargetReference target) {
-	this(observer, -1, target);
+    public TypeConstraint(final Observer observer, final SingleTargetReference target) {
+        this(observer, -1, target);
 
     }
 
     @Override
     public String toString() {
-	return "TypeConstraint [getProperties()=" + this.getProperties() + ", getTargetReference()="
-		+ this.getTargetReference() + ", getId()=" + this.getId() + "]";
+        return "TypeConstraint [getProperties()=" + this.getProperties() + ", getTargetReference()="
+                + this.getTargetReference() + ", getId()=" + this.getId() + "]";
     }
 }

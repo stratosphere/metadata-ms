@@ -16,8 +16,8 @@ public class MultiTargetReference extends AbstractHashCodeAndEquals implements T
 
     @Override
     public Collection<Target> getAllTargets() {
-	// TODO Auto-generated method stub
-	return null;
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

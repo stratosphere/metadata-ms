@@ -23,65 +23,68 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
  */
 public class DefaultTable extends AbstractTarget implements Table {
 
-    public static Table buildAndRegister(Observer observer, Schema schema, int id, String name, Location location) {
-	final DefaultTable newTable = new DefaultTable(observer, schema, id, name, location);
-	newTable.notifyObserver();
-	return newTable;
+    public static Table buildAndRegister(final Observer observer, final Schema schema, final int id, final String name,
+            final Location location) {
+        final DefaultTable newTable = new DefaultTable(observer, schema, id, name, location);
+        newTable.notifyObserver();
+        return newTable;
     }
 
-    public static Table buildAndRegister(Observer observer, Schema schema, String name, Location location) {
-	final DefaultTable newTable = new DefaultTable(observer, schema, -1, name, location);
-	newTable.notifyObserver();
-	return newTable;
+    public static Table buildAndRegister(final Observer observer, final Schema schema, final String name,
+            final Location location) {
+        final DefaultTable newTable = new DefaultTable(observer, schema, -1, name, location);
+        newTable.notifyObserver();
+        return newTable;
     }
 
     private static final long serialVersionUID = 1695408629652071459L;
 
     @ExcludeHashCodeEquals
     private final Collection<Column> columns;
-    
+
     @ExcludeHashCodeEquals
     private final Schema schema;
 
-    private DefaultTable(Observer observer, Schema schema, int id, String name, Location location) {
-	super(observer, id, name, location);
-	this.columns = Collections.synchronizedSet(new HashSet<Column>());
-	this.schema = schema;
+    private DefaultTable(final Observer observer, final Schema schema, final int id, final String name,
+            final Location location) {
+        super(observer, id, name, location);
+        this.columns = Collections.synchronizedSet(new HashSet<Column>());
+        this.schema = schema;
     }
 
     @Override
-    public Table addColumn(Column column) {
-	this.columns.add(column);
-	return this;
+    public Table addColumn(final Column column) {
+        this.columns.add(column);
+        return this;
     }
-    
+
     @Override
-    public Column addColumn(MetadataStore metadataStore, String name, int index) {
-    	Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
-    	int localSchemaId = IdUtils.getLocalSchemaId(getId());
-    	int localTableId = IdUtils.getLocalTableId(getId());
-    	int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
-    	Location location = new IndexedLocation(index, getLocation());
-    	Column column = DefaultColumn.buildAndRegister(metadataStore, this, columnId, name, location);
-    	addColumn(column);
-    	return column;
+    public Column addColumn(final MetadataStore metadataStore, final String name, final int index) {
+        Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
+        final int localSchemaId = IdUtils.getLocalSchemaId(getId());
+        final int localTableId = IdUtils.getLocalTableId(getId());
+        final int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
+        final Location location = new IndexedLocation(index, getLocation());
+        final Column column = DefaultColumn.buildAndRegister(metadataStore, this, columnId, name, location);
+        addColumn(column);
+        return column;
     }
 
     @Override
     public Collection<Column> getColumns() {
-	return this.columns;
+        return this.columns;
     }
 
-    
-	/**
-	 * @return the parent schema
-	 */
-	public Schema getSchema() {
-		return schema;
-	}
-	
+    /**
+     * @return the parent schema
+     */
+    @Override
+    public Schema getSchema() {
+        return this.schema;
+    }
+
     @Override
     public String toString() {
-    	return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
+        return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
     }
 }

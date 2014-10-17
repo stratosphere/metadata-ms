@@ -12,20 +12,20 @@ public class LocationTest {
     @Test
     public void testHDFSLocation() {
 
-	HDFSLocation location1 = new HDFSLocation("foo");
-	HDFSLocation location2 = new HDFSLocation("foo");
+        final HDFSLocation location1 = new HDFSLocation("foo");
+        final HDFSLocation location2 = new HDFSLocation("foo");
 
-	assertEquals(location1, location2);
+        assertEquals(location1, location2);
     }
 
     @Test
     public void testIndexedLocation() {
 
-	HDFSLocation location1 = new HDFSLocation("foo");
-	IndexedLocation iLocation1 = new IndexedLocation(1, location1);
-	IndexedLocation iLocation2 = new IndexedLocation(1, location1);
+        final HDFSLocation location1 = new HDFSLocation("foo");
+        final IndexedLocation iLocation1 = new IndexedLocation(1, location1);
+        final IndexedLocation iLocation2 = new IndexedLocation(1, location1);
 
-	assertEquals(iLocation1, iLocation2);
+        assertEquals(iLocation1, iLocation2);
     }
 
 }

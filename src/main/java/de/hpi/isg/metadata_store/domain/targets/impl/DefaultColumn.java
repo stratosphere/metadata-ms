@@ -13,43 +13,46 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 
 public class DefaultColumn extends AbstractTarget implements Column {
 
-    public static Column buildAndRegister(Observer observer, Table table, int id, String name, Location location) {
-	final DefaultColumn newColumn = new DefaultColumn(observer, table, id, name, location);
-	newColumn.notifyObserver();
-	return newColumn;
+    public static Column buildAndRegister(final Observer observer, final Table table, final int id, final String name,
+            final Location location) {
+        final DefaultColumn newColumn = new DefaultColumn(observer, table, id, name, location);
+        newColumn.notifyObserver();
+        return newColumn;
     }
 
-    public static Column buildAndRegister(Observer observer, Table table, String name, Location location) {
-	final DefaultColumn newColumn = new DefaultColumn(observer, table, -1, name, location);
-	newColumn.notifyObserver();
-	return newColumn;
+    public static Column buildAndRegister(final Observer observer, final Table table, final String name,
+            final Location location) {
+        final DefaultColumn newColumn = new DefaultColumn(observer, table, -1, name, location);
+        newColumn.notifyObserver();
+        return newColumn;
     }
 
     private static final long serialVersionUID = 6715373932483124301L;
-    
+
     private final Table table;
 
-    private DefaultColumn(Observer observer, Table table, int id, String name, Location location) {
-	super(observer, id, name, location);
-	this.table = table;
+    private DefaultColumn(final Observer observer, final Table table, final int id, final String name,
+            final Location location) {
+        super(observer, id, name, location);
+        this.table = table;
     }
 
-    
-	/**
-	 * @return the parent table
-	 */
-	public Table getTable() {
-		return table;
-	}
-	
-	@Override
-	public String getNameWithTableName() {
-		return getTable().getName() + "." + getName();
-	}
-    
+    /**
+     * @return the parent table
+     */
+    @Override
+    public Table getTable() {
+        return this.table;
+    }
+
+    @Override
+    public String getNameWithTableName() {
+        return getTable().getName() + "." + getName();
+    }
+
     @Override
     public String toString() {
-    	return String.format("Column[%s, %08x]", getNameWithTableName(), getId());
+        return String.format("Column[%s, %08x]", getNameWithTableName(), getId());
 
     }
 }

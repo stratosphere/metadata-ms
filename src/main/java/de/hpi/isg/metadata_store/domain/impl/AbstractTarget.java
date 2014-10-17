@@ -8,10 +8,9 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 
 /**
- * {@link AbstractTarget} is a convenience class for all {@link Target}
- * implementation already taking car of {@link Location} and holding the
- * observing {@link MetadataStore} that acts as an {@link Observer} where new
- * targets have to be registered right after creation.
+ * {@link AbstractTarget} is a convenience class for all {@link Target} implementation already taking car of
+ * {@link Location} and holding the observing {@link MetadataStore} that acts as an {@link Observer} where new targets
+ * have to be registered right after creation.
  *
  */
 
@@ -24,28 +23,28 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
 
     private final Location location;
 
-    public AbstractTarget(Observer observer, int id, String name, Location location) {
-	super(observer, id, name);
-	this.location = location;
-	this.observer = observer;
+    public AbstractTarget(final Observer observer, final int id, final String name, final Location location) {
+        super(observer, id, name);
+        this.location = location;
+        this.observer = observer;
     }
 
     @Override
     public Location getLocation() {
-	return this.location;
+        return this.location;
     }
 
     protected Observer getObserver() {
-	return this.observer;
+        return this.observer;
     }
 
     @Override
     public void notifyObserver() {
-	this.observer.registerTargetObject(this);
+        this.observer.registerTargetObject(this);
     }
-    
+
     @Override
     public int hashCode() {
-    	return getId();
+        return getId();
     }
 }

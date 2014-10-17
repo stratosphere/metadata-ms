@@ -6,9 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation can be used by sub classes of
- * {@link AbstractHashCodeAndEquals} to signal that a certain member shall not
- * be taken into account for hashCode() and equals().
+ * This annotation can be used by sub classes of {@link AbstractHashCodeAndEquals} to signal that a certain member shall
+ * not be taken into account for hashCode() and equals().
  *
  * @author fabian
  *
