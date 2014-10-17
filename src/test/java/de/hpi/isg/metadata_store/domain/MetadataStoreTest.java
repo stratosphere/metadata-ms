@@ -7,6 +7,10 @@ import static org.mockito.Mockito.mock;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -71,6 +75,38 @@ public class MetadataStoreTest {
 		    table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
 		}
 	    }
+	}
+	Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
+	Random random = new Random();
+	for (Schema schema : metadataStore.getSchemas()) {
+		OuterLoop:
+		for (Table table1 : schema.getTables()) {
+			for (Table table2 : schema.getTables()) {
+				for (Column column1 : table1.getColumns()) {
+					for (Column column2 : table2.getColumns()) {
+						List<Column> dependentColumns;
+						List<Column> referencedColumns;
+						if (column1 != column2 && random.nextInt(1000) <= 0) {
+							dependentColumns = Collections.singletonList(column1);
+							referencedColumns = Collections.singletonList(column2);
+							String name = String.format("IND[%s < %s]", dependentColumns, referencedColumns);
+							InclusionDependency.Reference reference = new InclusionDependency.Reference(
+							dependentColumns.toArray(new Column[dependentColumns.size()]),
+							referencedColumns.toArray(new Column[referencedColumns.size()]));
+							InclusionDependency inclusionDependency = new InclusionDependency(metadataStore, -1, name, reference);
+							inclusionDependencies.add(inclusionDependency);
+							if (inclusionDependencies.size() >= 300000) {
+								break OuterLoop;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	System.out.println(String.format("Adding %d inclusion dependencies.", inclusionDependencies.size()));
+	for (InclusionDependency inclusionDependency : inclusionDependencies) {
+		metadataStore.addConstraint(inclusionDependency);
 	}
     }
 

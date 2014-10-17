@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
@@ -44,7 +45,7 @@ public class DefaultTable extends AbstractTarget implements Table {
 
     private DefaultTable(Observer observer, Schema schema, int id, String name, Location location) {
 	super(observer, id, name, location);
-	this.columns = new HashSet<Column>();
+	this.columns = Collections.synchronizedSet(new HashSet<Column>());
 	this.schema = schema;
     }
 
