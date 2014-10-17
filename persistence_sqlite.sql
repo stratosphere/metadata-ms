@@ -41,10 +41,10 @@ CREATE TABLE [Columnn]
 	[tableId] integer NOT NULL,
 	[locationIndex] integer,
 	PRIMARY KEY ([id]),
-	FOREIGN KEY ([id])
-	REFERENCES [Target] ([id]),
 	FOREIGN KEY ([tableId])
-	REFERENCES [Tablee] ([id])
+	REFERENCES [Tablee] ([id]),
+	FOREIGN KEY ([id])
+	REFERENCES [Target] ([id])
 );
 
 
@@ -78,31 +78,21 @@ CREATE TABLE [INDpart]
 	[constraintId] integer NOT NULL,
 	[lhs] integer NOT NULL,
 	[rhs] integer NOT NULL,
-	FOREIGN KEY ([constraintId])
-	REFERENCES [IND] ([constraintId]),
+	FOREIGN KEY ([rhs])
+	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([lhs])
 	REFERENCES [Columnn] ([id]),
-	FOREIGN KEY ([rhs])
-	REFERENCES [Columnn] ([id])
+	FOREIGN KEY ([constraintId])
+	REFERENCES [IND] ([constraintId])
 );
 
 
 CREATE TABLE [Scope]
 (
-	[id] integer NOT NULL,
-	[constraintCollectionId] integer NOT NULL,
-	PRIMARY KEY ([id]),
-	FOREIGN KEY ([constraintCollectionId])
-	REFERENCES [ConstraintCollection] ([id])
-);
-
-
-CREATE TABLE [TargetScope]
-(
-	[scopeId] integer NOT NULL,
 	[targetId] integer NOT NULL,
-	FOREIGN KEY ([scopeId])
-	REFERENCES [Scope] ([id]),
+	[constraintCollectionId] integer NOT NULL,
+	FOREIGN KEY ([constraintCollectionId])
+	REFERENCES [ConstraintCollection] ([id]),
 	FOREIGN KEY ([targetId])
 	REFERENCES [Target] ([id])
 );

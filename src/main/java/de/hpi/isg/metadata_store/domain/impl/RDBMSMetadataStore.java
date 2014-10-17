@@ -3,6 +3,7 @@ package de.hpi.isg.metadata_store.domain.impl;
 import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,6 +20,8 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
+import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
+import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
@@ -31,44 +34,33 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
  *
  */
 
-public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
+public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
-    private static final long serialVersionUID = -1214605256534100452L;
+    private static final long serialVersionUID = 400271996998552017L;
 
-    private final Collection<Schema> schemas;
-
-    private final Collection<ConstraintCollection> constraintCollections;
-
-    private final Collection<Constraint> constraints;
-
-    private final Collection<Target> allTargets;
-
-    private final IntSet idsInUse = new IntOpenHashBigSet();
+    private final SQLInterface sqlInterface;
 
     @ExcludeHashCodeEquals
     private final Random randomGenerator = new Random();
 
-    public DefaultMetadataStore() {
-        this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
-        this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
-        this.constraintCollections = Collections.synchronizedSet(new HashSet<ConstraintCollection>());
-        this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
+    public RDBMSMetadataStore(SQLiteInterface sqliteInterface) {
+        this.sqlInterface = sqliteInterface;
     }
 
     @Override
     public void addConstraint(final Constraint constraint) {
         for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!this.allTargets.contains(target)) {
+            if (!this.sqlInterface.cotainsTarget(target)) {
                 throw new NotAllTargetsInStoreException(target);
             }
 
         }
-        this.constraints.add(constraint);
+        this.sqlInterface.addConstraint(constraint);
     }
 
     @Override
     public void addSchema(final Schema schema) {
-        this.schemas.add(schema);
+        this.sqlInterface.addSchema(schema);
     }
 
     @Override
@@ -90,18 +82,18 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<Target> getAllTargets() {
-        return Collections.unmodifiableCollection(this.allTargets);
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllTargets());
     }
 
     @Override
     public Collection<Constraint> getConstraints() {
-        return Collections.unmodifiableCollection(this.constraints);
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraints());
     }
 
     @Override
     public Schema getSchema(final String schemaName) throws NameAmbigousException {
         final List<Schema> results = new ArrayList<>();
-        for (final Schema schema : this.schemas) {
+        for (final Schema schema : this.sqlInterface.getAllSchemas()) {
             if (schema.getName().equals(schemaName)) {
                 results.add(schema);
             }
@@ -117,7 +109,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<Schema> getSchemas() {
-        return this.schemas;
+        return this.sqlInterface.getAllSchemas();
     }
 
     @Override
@@ -137,7 +129,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public int getUnusedTableId(final Schema schema) {
-        Validate.isTrue(this.schemas.contains(schema));
+        Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
         final int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = schema.getTables().size();
         for (int baseTableNumber = IdUtils.MIN_TABLE_NUMBER; baseTableNumber <= IdUtils.MAX_TABLE_NUMBER; baseTableNumber++) {
@@ -153,33 +145,35 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     private boolean idIsInUse(final int id) {
-        synchronized (this.idsInUse) {
-            return this.idsInUse.contains(id);
+        synchronized (this.sqlInterface.getIdsInUse()) {
+
+            return this.sqlInterface.getIdsInUse().contains(id);
         }
     }
 
     @Override
     public void registerId(final int id) {
-        synchronized (this.idsInUse) {
-            if (!this.idsInUse.add(id)) {
+        synchronized (this.sqlInterface.getIdsInUse()) {
+            if (!this.sqlInterface.addToIdsInUse(id)) {
                 throw new IdAlreadyInUseException("id is already in use: " + id);
             }
         }
     }
 
     @Override
-    public void registerTargetObject(final Target message) {
-        this.allTargets.add(message);
+    public void registerTargetObject(final Target target) {
+        this.sqlInterface.addTarget(target);
     }
 
     @Override
     public String toString() {
-        return "MetadataStore[" + this.schemas.size() + " schemas, " + this.constraints.size() + " constraints]";
+        return "MetadataStore[" + this.sqlInterface.getAllSchemas().size() + " schemas, "
+                + this.sqlInterface.getAllConstraints().size() + " constraints]";
     }
 
     @Override
     public Collection<ConstraintCollection> getConstraintCollections() {
-        return this.constraintCollections;
+        return this.sqlInterface.getAllConstraintCollections();
     }
 
     @Override
@@ -187,6 +181,6 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         for (Constraint constr : constraintCollection.getConstraints()) {
             this.addConstraint(constr);
         }
-        this.constraintCollections.add(constraintCollection);
+        this.sqlInterface.addConstraintCollection(constraintCollection);
     }
 }

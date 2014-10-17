@@ -11,14 +11,17 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
+import de.hpi.isg.metadata_store.domain.impl.DefaultConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
@@ -32,7 +35,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
 import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
-public class MetadataStoreTest {
+public class DefaultMetadataStoreTest {
 
     private final File dir = new File("test/");
 
@@ -122,7 +125,7 @@ public class MetadataStoreTest {
     public void testGetOrCreateOfExisting() {
         final File file = new File(this.dir, "filledStore.ms");
         // setup store
-        final MetadataStore store1 = new DefaultMetadataStore();
+        final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
         final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -184,6 +187,26 @@ public class MetadataStoreTest {
         assertEquals(store1.getSchema("PDB"), dummySchema1);
     }
 
+    @Test
+    public void testConstaintCollections() {
+        // setup store
+        final MetadataStore store1 = new DefaultMetadataStore();
+        // setup schema
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        store1.getSchemas().add(dummySchema1);
+        Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
+        final Set<?> scope = Collections.singleton(dummySchema1);
+        final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(col));
+        final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
+
+        ConstraintCollection constraintCollection = new DefaultConstraintCollection(constraints, (Set<Target>) scope);
+
+        store1.addConstraintCollection(constraintCollection);
+
+        assertTrue(store1.getConstraintCollections().contains(constraintCollection));
+        assertTrue(store1.getConstraints().contains(dummyTypeContraint));
+    }
+
     @Test(expected = NameAmbigousException.class)
     public void testRetrievingOfSchemaByNameWithAmbigousNameFails() {
         // setup store
@@ -210,7 +233,7 @@ public class MetadataStoreTest {
     @Test
     public void testStoringOfEmptyMetadataStore() {
         final File file = new File(this.dir, "emptyStore.ms");
-        final MetadataStore store1 = new DefaultMetadataStore();
+        final DefaultMetadataStore store1 = new DefaultMetadataStore();
         try {
             MetadataStoreFactory.saveMetadataStore(file, store1);
         } catch (final IOException e) {
@@ -231,7 +254,7 @@ public class MetadataStoreTest {
     public void testStoringOfFilledMetadataStore() {
         final File file = new File(this.dir, "filledStore.ms");
         // setup store
-        final MetadataStore store1 = new DefaultMetadataStore();
+        final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
         final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -275,7 +298,7 @@ public class MetadataStoreTest {
     public void testStoringOfFilledMetadataStore2() {
         final File file = new File(this.dir, "filledStore.ms");
         // setup store
-        final MetadataStore store1 = new DefaultMetadataStore();
+        final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
         final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
         store1.getSchemas().add(dummySchema);
@@ -308,7 +331,7 @@ public class MetadataStoreTest {
     public void testStoringOfFilledMetadataStore3() {
         final File file = new File(this.dir, "filledStore.ms");
         // setup store
-        final MetadataStore store1 = new DefaultMetadataStore();
+        final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
         final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"))
                 .addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null));
