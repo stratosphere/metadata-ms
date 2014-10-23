@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
@@ -81,7 +82,7 @@ public class RDBMSSchema extends RDBMSTarget implements Schema {
 
     @Override
     public Collection<Table> getTables() {
-        return this.getSqlInterface().getAllTablesForSchema(this);
+        return Collections.unmodifiableCollection(this.getSqlInterface().getAllTablesForSchema(this));
     }
 
     @Override

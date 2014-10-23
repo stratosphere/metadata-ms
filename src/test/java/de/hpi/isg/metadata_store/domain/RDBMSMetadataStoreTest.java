@@ -213,6 +213,28 @@ public class RDBMSMetadataStoreTest {
         assertTrue(store1.getConstraints().contains(dummyTypeContraint));
     }
 
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetSchemasAddingFails() {
+        // setup store
+        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        store1.getSchemas().add(mock(Schema.class));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetTablesAddingFails() {
+        // setup store
+        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        store1.addSchema("foo", mock(Location.class)).getTables().add(mock(Table.class));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetColumnsAddingFails() {
+        // setup store
+        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        store1.addSchema("foo", mock(Location.class)).addTable(store1, "bar", mock(Location.class)).getColumns()
+                .add(mock(Column.class));
+    }
+
     @SuppressWarnings("unused")
     @Test(expected = NameAmbigousException.class)
     public void testRetrievingOfSchemaByNameWithAmbigousNameFails() {

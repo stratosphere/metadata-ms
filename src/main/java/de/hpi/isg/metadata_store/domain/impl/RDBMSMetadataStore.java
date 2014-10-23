@@ -105,7 +105,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public Collection<Schema> getSchemas() {
-        return this.sqlInterface.getAllSchemas();
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllSchemas());
     }
 
     @Override

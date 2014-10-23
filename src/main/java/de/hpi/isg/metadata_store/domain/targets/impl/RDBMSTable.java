@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import javax.naming.OperationNotSupportedException;
 
@@ -80,7 +81,7 @@ public class RDBMSTable extends RDBMSTarget implements Table {
 
     @Override
     public Collection<Column> getColumns() {
-        return this.getSqlInterface().getAllColumnsForTable(this);
+        return Collections.unmodifiableCollection(this.getSqlInterface().getAllColumnsForTable(this));
     }
 
     /**

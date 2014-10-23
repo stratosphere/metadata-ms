@@ -347,8 +347,26 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            Collection<Column> columns = new HashSet<>();
+            Statement stmt = this.connection.createStatement();
+
+            String sqlTablesForSchema = String
+                    .format("SELECT columnn.id as id, target.name as name, target.location as location from columnn, target where target.id = columnn.id and columnn.tableId=%d;",
+                            rdbmsTable.getId());
+
+            ResultSet rs = stmt
+                    .executeQuery(sqlTablesForSchema);
+            while (rs.next()) {
+                columns.add(RDBMSColumn.build(this.store, rdbmsTable, rs.getInt("id"), rs.getString("name"),
+                        new HDFSLocation(rs.getString("location"))));
+            }
+            rs.close();
+            stmt.close();
+            return columns;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
