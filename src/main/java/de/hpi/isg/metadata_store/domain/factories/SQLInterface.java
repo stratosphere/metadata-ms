@@ -5,6 +5,7 @@ import java.util.Collection;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
@@ -55,4 +56,17 @@ public interface SQLInterface {
     public void addColumnToTable(RDBMSColumn newColumn, Table table);
 
     boolean tablesExist();
+
+    public void addScope(Target target, ConstraintCollection constraintCollection);
+
+    public Collection<Constraint> getConstraintsOfConstraintCollection(
+            RDBMSConstraintCollection rdbmsConstraintCollection);
+
+    public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
+
+    public Column getColumnById(int columnId);
+
+    public Table getTableById(int tableId);
+
+    Schema getSchemaById(int schemaId);
 }

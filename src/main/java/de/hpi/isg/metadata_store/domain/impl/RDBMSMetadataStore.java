@@ -174,10 +174,17 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void addConstraintCollection(ConstraintCollection constraintCollection) {
+
+        this.sqlInterface.addConstraintCollection(constraintCollection);
+
         for (Constraint constr : constraintCollection.getConstraints()) {
             this.addConstraint(constr);
         }
-        this.sqlInterface.addConstraintCollection(constraintCollection);
+
+        for (Target target : constraintCollection.getScope()) {
+            this.sqlInterface.addScope(target, constraintCollection);
+        }
+
     }
 
     public SQLInterface getSQLInterface() {

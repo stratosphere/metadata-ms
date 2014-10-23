@@ -31,7 +31,7 @@ public interface Constraint extends Identifiable, Serializable {
         MIN_DECIMAL, MAX_DECIMAL, AVG_DECIMAL
     };
 
-    public Map<Object, Object> getProperties();
+    public ConstraintCollection getConstraintCollection();
 
     public TargetReference getTargetReference();
 

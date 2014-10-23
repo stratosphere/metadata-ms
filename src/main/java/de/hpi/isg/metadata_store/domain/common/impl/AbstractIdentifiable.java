@@ -22,6 +22,10 @@ public abstract class AbstractIdentifiable extends AbstractHashCodeAndEquals imp
         this.id = id;
     }
 
+    public AbstractIdentifiable(int id) {
+        this.id = id;
+    }
+
     @Override
     public int getId() {
         return this.id;

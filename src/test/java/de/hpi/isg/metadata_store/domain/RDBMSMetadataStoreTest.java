@@ -26,10 +26,12 @@ import org.junit.Test;
 
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.DefaultConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
@@ -133,9 +135,8 @@ public class RDBMSMetadataStoreTest {
                                 final InclusionDependency.Reference reference = new InclusionDependency.Reference(
                                         dependentColumns.toArray(new Column[dependentColumns.size()]),
                                         referencedColumns.toArray(new Column[referencedColumns.size()]));
-                                final InclusionDependency inclusionDependency = new InclusionDependency(metadataStore,
-                                        -1,
-                                        name, reference);
+                                final InclusionDependency inclusionDependency = new InclusionDependency(1,
+                                        reference, mock(ConstraintCollection.class));
                                 inclusionDependencies.add(inclusionDependency);
                                 if (inclusionDependencies.size() >= 300000) {
                                     break OuterLoop;
@@ -165,8 +166,8 @@ public class RDBMSMetadataStoreTest {
         Column dummyColumn = dummySchema.addTable(store1, "dummyTable", dummyTableLocation).addColumn(store1,
                 "dummyColumn", 0);
 
-        final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
-                dummyColumn));
+        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
+                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
 
         store1.addConstraint(dummyContraint);
 
@@ -198,17 +199,20 @@ public class RDBMSMetadataStoreTest {
         final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
-        store1.getSchemas().add(dummySchema1);
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(col));
+        final Constraint dummyTypeContraint = new TypeConstraint(1, new SingleTargetReference(col), TYPES.STRING,
+                mock(ConstraintCollection.class));
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
         @SuppressWarnings("unchecked")
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(constraints, (Set<Target>) scope);
+        ConstraintCollection constraintCollection = new RDBMSConstraintCollection(1, constraints, (Set<Target>) scope,
+                new SQLiteInterface(connection));
 
         store1.addConstraintCollection(constraintCollection);
 
+        System.out.println(store1.getConstraintCollections());
+        System.out.println(constraintCollection);
         assertTrue(store1.getConstraintCollections().contains(constraintCollection));
         assertTrue(store1.getConstraints().contains(dummyTypeContraint));
     }
@@ -270,8 +274,8 @@ public class RDBMSMetadataStoreTest {
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 0);
 
-        final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
-                dummyColumn));
+        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
+                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
 
         store1.addConstraint(dummyContraint);
 

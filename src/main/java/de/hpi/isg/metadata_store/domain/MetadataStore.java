@@ -23,6 +23,7 @@ public interface MetadataStore extends Serializable, Observer {
      */
     public void addConstraintCollection(ConstraintCollection constraintCollection);
 
+    @Deprecated
     public void addConstraint(Constraint constraint);
 
     /**

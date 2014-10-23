@@ -13,9 +13,15 @@ import java.util.Set;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -177,11 +183,6 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addConstraint(Constraint constraint) {
-
-    }
-
-    @Override
     public void addSchema(Schema schema) {
         try {
             Statement stmt = this.connection.createStatement();
@@ -212,11 +213,6 @@ public class SQLiteInterface implements SQLInterface {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public Collection<? extends Constraint> getAllConstraints() {
-        return null;
     }
 
     @Override
@@ -289,14 +285,215 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<ConstraintCollection> getAllConstraintCollections() {
-        // TODO Auto-generated method stub
+    public void addConstraint(Constraint constraint) {
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlAddTypeConstraint1 = String.format(
+                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
+                    constraint.getId(), constraint.getConstraintCollection().getId());
+            stmt.executeUpdate(sqlAddTypeConstraint1);
+
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (constraint instanceof TypeConstraint) {
+            TypeConstraint typeConstraint = (TypeConstraint) constraint;
+            try {
+                Statement stmt = this.connection.createStatement();
+                String sqlAddTypee = String.format(
+                        "INSERT INTO Typee (typee, columnId, constraintId) VALUES ('%s', %d, %d);",
+                        typeConstraint.getType().name(), constraint.getTargetReference().getAllTargets().iterator()
+                                .next().getId(), constraint.getId());
+                stmt.executeUpdate(sqlAddTypee);
+
+                stmt.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (constraint instanceof InclusionDependency) {
+
+        } else {
+            throw new IllegalArgumentException("Unknown constraint type!");
+        }
+    }
+
+    @Override
+    public Collection<Constraint> getConstraintsOfConstraintCollection(
+            RDBMSConstraintCollection rdbmsConstraintCollection) {
+        Collection<Constraint> constraintsOfCollection = new HashSet<>();
+        try {
+            Collection<Constraint> typeConstraints = new HashSet<>();
+            Statement stmt = this.connection.createStatement();
+            String sqlGetTypeConstraints = String
+                    .format("SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee from typee, constraintt"
+                            + " where typee.constraintId = constraintt.id and constraintt.constraintCollectionId=%d;",
+                            rdbmsConstraintCollection.getId());
+            ResultSet rs = stmt.executeQuery(sqlGetTypeConstraints);
+            while (rs.next()) {
+                typeConstraints.add(new TypeConstraint(rs.getInt("id"), new SingleTargetReference(this.getColumnById(rs
+                        .getInt("columnId"))), TYPES.valueOf(rs.getString("typee")), rdbmsConstraintCollection));
+            }
+            rs.close();
+            stmt.close();
+            constraintsOfCollection.addAll(typeConstraints);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return constraintsOfCollection;
+    }
+
+    @Override
+    public Column getColumnById(int columnId) {
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlColumnById = String
+                    .format("SELECT target.id as id, target.name as name, target.location as location,"
+                            + " columnn.tableId as tableId, columnn.locationIndex as locationIndex"
+                            + " from target, column where target.id = columnn.id and columnn.id=%d",
+                            columnId);
+            ResultSet rs = stmt.executeQuery(sqlColumnById);
+            while (rs.next()) {
+                return RDBMSColumn
+                        .build(store,
+                                this.getTableById(rs.getInt("tableId")),
+                                rs.getInt("id"),
+                                rs.getString("name"),
+                                new IndexedLocation(rs.getInt("locationIndex"), new HDFSLocation(rs
+                                        .getString("location"))));
+            }
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         return null;
     }
 
     @Override
+    public Table getTableById(int tableId) {
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlTableById = String
+                    .format("SELECT target.id as id, target.name as name, target.location as location, table.schemaId as schemaId"
+                            + " from target, tablee where target.id = tablee.id and tablee.id=%d",
+                            tableId);
+            ResultSet rs = stmt.executeQuery(sqlTableById);
+            while (rs.next()) {
+                return RDBMSTable
+                        .build(store,
+                                this.getSchemaById(rs.getInt("schemaId")),
+                                rs.getInt("id"),
+                                rs.getString("name"),
+                                new HDFSLocation(rs.getString("location")));
+            }
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    @Override
+    public Schema getSchemaById(int schemaId) {
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name, target.location as location"
+                            + " from target, schemaa where target.id = schemaa.id and schemaa.id=%d",
+                            schemaId);
+            ResultSet rs = stmt.executeQuery(sqlSchemaeById);
+            while (rs.next()) {
+                return RDBMSSchema
+                        .build(store,
+                                rs.getInt("id"),
+                                rs.getString("name"),
+                                new HDFSLocation(rs.getString("location")));
+            }
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    @Override
+    public Collection<? extends Constraint> getAllConstraints() {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection) {
+        try {
+            Collection<Target> targets = new HashSet<>();
+            Statement stmt = this.connection.createStatement();
+            String sqlGetScope = String
+                    .format("SELECT id, name, location from target, scope where scope.targetId = target.id and scope.constraintCollectionId=%d;",
+                            rdbmsConstraintCollection.getId());
+            ResultSet rs = stmt.executeQuery(sqlGetScope);
+            while (rs.next()) {
+                targets.add(new RDBMSTarget(this.store, rs.getInt("id"), rs.getString("name"),
+                        new HDFSLocation(rs.getString("location"))));
+            }
+            rs.close();
+            stmt.close();
+            return targets;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Collection<ConstraintCollection> getAllConstraintCollections() {
+        try {
+            Collection<ConstraintCollection> constraintCollections = new HashSet<>();
+            Statement stmt = this.connection.createStatement();
+            ResultSet rs = stmt
+                    .executeQuery("SELECT id from ConstraintCollection;");
+            while (rs.next()) {
+                RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), this);
+                constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
+                constraintCollection.setConstraints(this.getConstraintsOfConstraintCollection(constraintCollection));
+                constraintCollections.add(constraintCollection);
+            }
+            rs.close();
+            stmt.close();
+            return constraintCollections;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void addScope(Target target, ConstraintCollection constraintCollection) {
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlAddScope = String.format("INSERT INTO Scope (targetId, constraintCollectionId) VALUES (%d, %d);",
+                    target.getId(), constraintCollection.getId());
+            stmt.executeUpdate(sqlAddScope);
+
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void addConstraintCollection(ConstraintCollection constraintCollection) {
-        // TODO Auto-generated method stub
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlAddConstraintCollection = String.format("INSERT INTO ConstraintCollection (id) VALUES (%d);",
+                    constraintCollection.getId());
+            stmt.executeUpdate(sqlAddConstraintCollection);
+
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -406,5 +603,4 @@ public class SQLiteInterface implements SQLInterface {
         }
         return false;
     }
-
 }

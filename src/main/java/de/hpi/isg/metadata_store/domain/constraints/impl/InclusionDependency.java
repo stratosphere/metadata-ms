@@ -17,10 +17,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import de.hpi.isg.metadata_store.domain.Constraint;
+import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.Observer;
-import de.hpi.isg.metadata_store.domain.impl.AbstractConstraint;
+import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -28,7 +30,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * 
  * @author Sebastian Kruse
  */
-public class InclusionDependency extends AbstractConstraint {
+public class InclusionDependency extends AbstractConstraint implements Constraint {
 
     public static class Reference implements TargetReference {
 
@@ -66,18 +68,20 @@ public class InclusionDependency extends AbstractConstraint {
     }
 
     private static final long serialVersionUID = -932394088609862495L;
+    private InclusionDependency.Reference target;
 
     /**
      * @see AbstractConstraint
      */
-    public InclusionDependency(final Observer observer, final int id, final String name, final TargetReference target) {
-        super(observer, id, target);
-
+    public InclusionDependency(final int id, final InclusionDependency.Reference target,
+            ConstraintCollection constraintCollection) {
+        super(id, constraintCollection);
+        this.target = target;
     }
 
     @Override
     public InclusionDependency.Reference getTargetReference() {
-        return (InclusionDependency.Reference) super.getTargetReference();
+        return target;
     }
 
     public int getArity() {

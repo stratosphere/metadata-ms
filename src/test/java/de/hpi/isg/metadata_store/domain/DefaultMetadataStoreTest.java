@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
 import de.hpi.isg.metadata_store.domain.impl.DefaultConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
@@ -91,13 +92,11 @@ public class DefaultMetadataStoreTest {
                             if (column1 != column2 && random.nextInt(1000) <= 0) {
                                 dependentColumns = Collections.singletonList(column1);
                                 referencedColumns = Collections.singletonList(column2);
-                                final String name = String.format("IND[%s < %s]", dependentColumns, referencedColumns);
                                 final InclusionDependency.Reference reference = new InclusionDependency.Reference(
                                         dependentColumns.toArray(new Column[dependentColumns.size()]),
                                         referencedColumns.toArray(new Column[referencedColumns.size()]));
-                                final InclusionDependency inclusionDependency = new InclusionDependency(metadataStore,
-                                        -1,
-                                        name, reference);
+                                final InclusionDependency inclusionDependency = new InclusionDependency(1,
+                                        reference, mock(ConstraintCollection.class));
                                 inclusionDependencies.add(inclusionDependency);
                                 if (inclusionDependencies.size() >= 300000) {
                                     break OuterLoop;
@@ -136,8 +135,9 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new IndexedLocation(0, dummyTableLocation));
 
-        final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
-                dummyColumn));
+        final ConstraintCollection cC = new DefaultConstraintCollection(1, null, null);
+        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
+                dummyColumn), TYPES.STRING, cC);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
@@ -196,10 +196,11 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeContraint = new TypeConstraint(store1, new SingleTargetReference(col));
+        final Constraint dummyTypeContraint = new TypeConstraint(1, new SingleTargetReference(col), TYPES.STRING,
+                mock(ConstraintCollection.class));
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(constraints, (Set<Target>) scope);
+        ConstraintCollection constraintCollection = new DefaultConstraintCollection(1, constraints, (Set<Target>) scope);
 
         store1.addConstraintCollection(constraintCollection);
 
@@ -265,8 +266,8 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new IndexedLocation(0, dummyTableLocation));
 
-        final Constraint dummyContraint = new TypeConstraint(store1, new SingleTargetReference(
-                dummyColumn));
+        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
+                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
