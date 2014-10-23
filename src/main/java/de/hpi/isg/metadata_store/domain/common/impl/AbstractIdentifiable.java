@@ -19,7 +19,6 @@ public abstract class AbstractIdentifiable extends AbstractHashCodeAndEquals imp
         if (id == -1) {
             id = observer.generateRandomId();
         }
-        observer.registerId(id);
         this.id = id;
     }
 

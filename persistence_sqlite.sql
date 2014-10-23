@@ -1,19 +1,34 @@
 
+/* Drop Tables */
+
+DROP TABLE IF EXISTS [INDpart];
+DROP TABLE IF EXISTS [TYPEE];
+DROP TABLE IF EXISTS [Columnn];
+DROP TABLE IF EXISTS [IND];
+DROP TABLE IF EXISTS [Constraintt];
+DROP TABLE IF EXISTS [Scope];
+DROP TABLE IF EXISTS [ConstraintCollection];
+DROP TABLE IF EXISTS [Tablee];
+DROP TABLE IF EXISTS [Schemaa];
+DROP TABLE IF EXISTS [Target];
+
+
+
 
 /* Create Tables */
 
 CREATE TABLE [Target]
 (
 	[id] integer NOT NULL,
+	[name] text,
+	[location] text,
 	PRIMARY KEY ([id])
 );
 
 
 CREATE TABLE [Schemaa]
 (
-	[name] text,
 	[id] integer NOT NULL,
-	[location] text,
 	PRIMARY KEY ([id]),
 	FOREIGN KEY ([id])
 	REFERENCES [Target] ([id])
@@ -22,10 +37,8 @@ CREATE TABLE [Schemaa]
 
 CREATE TABLE [Tablee]
 (
-	[name] text,
 	[id] integer NOT NULL,
 	[schemaId] integer NOT NULL,
-	[location] text,
 	PRIMARY KEY ([id]),
 	FOREIGN KEY ([id])
 	REFERENCES [Target] ([id]),
@@ -36,7 +49,6 @@ CREATE TABLE [Tablee]
 
 CREATE TABLE [Columnn]
 (
-	[name] text,
 	[id] integer NOT NULL,
 	[tableId] integer NOT NULL,
 	[locationIndex] integer,
@@ -78,9 +90,9 @@ CREATE TABLE [INDpart]
 	[constraintId] integer NOT NULL,
 	[lhs] integer NOT NULL,
 	[rhs] integer NOT NULL,
-	FOREIGN KEY ([rhs])
-	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([lhs])
+	REFERENCES [Columnn] ([id]),
+	FOREIGN KEY ([rhs])
 	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([constraintId])
 	REFERENCES [IND] ([constraintId])
@@ -103,10 +115,10 @@ CREATE TABLE [TYPEE]
 	[typee] text,
 	[columnId] integer NOT NULL,
 	[constraintId] integer NOT NULL,
-	FOREIGN KEY ([columnId])
-	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id])
+	REFERENCES [Constraintt] ([id]),
+	FOREIGN KEY ([columnId])
+	REFERENCES [Columnn] ([id])
 );
 
 

@@ -58,7 +58,16 @@ public class MetadataStoreFactory {
         return metadataStore;
     }
 
-    public static RDBMSMetadataStore createMetadataStoreInSQLite(Connection connection) {
+    public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(Connection connection) {
+        SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
+        if (!sqliteInterface.tablesExist()) {
+            sqliteInterface.initializeMetadataStore();
+        }
+        RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
+        return metadataStore;
+    }
+
+    public static RDBMSMetadataStore createEmptyMetadataStoreInSQLite(Connection connection) {
         SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
         sqliteInterface.initializeMetadataStore();
         RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);

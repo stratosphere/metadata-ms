@@ -4,9 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.util.Collection;
 import java.util.HashSet;
 
 import org.junit.Test;
@@ -83,13 +81,9 @@ public class TargetTest {
 
     @Test(expected = NameAmbigousException.class)
     public void testSchemaGetTableForAmbigousNameFails() {
-        final MetadataStore ms = mock(MetadataStore.class);
-        final Collection schemas = mock(Collection.class);
+        final MetadataStore ms = new DefaultMetadataStore();
 
-        final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", mock(Location.class));
-
-        when(ms.getSchemas()).thenReturn(schemas);
-        when(schemas.contains(schema1)).thenReturn(true);
+        final Schema schema1 = ms.addSchema("foo", mock(Location.class));
 
         schema1.addTable(ms, "foo", mock(Location.class));
         schema1.addTable(ms, "foo", mock(Location.class));

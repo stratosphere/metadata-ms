@@ -1,13 +1,8 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
-
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -23,7 +18,7 @@ import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
-import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
+import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
@@ -38,6 +33,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     private static final long serialVersionUID = 400271996998552017L;
 
+    @ExcludeHashCodeEquals
     private final SQLInterface sqlInterface;
 
     @ExcludeHashCodeEquals
@@ -45,12 +41,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     public RDBMSMetadataStore(SQLiteInterface sqliteInterface) {
         this.sqlInterface = sqliteInterface;
+        this.sqlInterface.setMetadataStore(this);
     }
 
     @Override
     public void addConstraint(final Constraint constraint) {
         for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!this.sqlInterface.cotainsTarget(target)) {
+            if (!this.sqlInterface.getAllTargets().contains(target)) {
                 throw new NotAllTargetsInStoreException(target);
             }
 
@@ -66,8 +63,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public Schema addSchema(final String name, final Location location) {
         final int id = this.getUnusedSchemaId();
-        final Schema schema = DefaultSchema.buildAndRegister(this, id, name, location);
-        this.addSchema(schema);
+        final Schema schema = RDBMSSchema.buildAndRegisterAndAdd(this, id, name, location);
         return schema;
     }
 
@@ -182,5 +178,9 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             this.addConstraint(constr);
         }
         this.sqlInterface.addConstraintCollection(constraintCollection);
+    }
+
+    public SQLInterface getSQLInterface() {
+        return this.sqlInterface;
     }
 }

@@ -38,9 +38,7 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        @SuppressWarnings("serial")
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", new Location() {
-        });
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", mock(Location.class));
 
         new TypeConstraint(store1, new SingleTargetReference(dummySchema));
 
@@ -51,10 +49,8 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        @SuppressWarnings("serial")
         final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
-                new Location() {
-        });
+                mock(Location.class));
 
         new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 
@@ -65,10 +61,8 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        @SuppressWarnings("serial")
         final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
-                new Location() {
-        });
+                mock(Location.class));
 
         new TypeConstraint(store1, new SingleTargetReference(dummyTable));
 

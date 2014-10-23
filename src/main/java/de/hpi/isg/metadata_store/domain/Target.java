@@ -17,5 +17,5 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 public interface Target extends Identifiable, Named, Serializable {
     public Location getLocation();
 
-    public void notifyObserver();
+    public void register();
 }

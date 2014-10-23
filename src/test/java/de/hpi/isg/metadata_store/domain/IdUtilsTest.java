@@ -103,14 +103,14 @@ public class IdUtilsTest {
     public void testGenerationOfIds() {
         final MetadataStore store = new DefaultMetadataStore();
         store.addSchema("foo", mock(Location.class)).addTable(store, "bar", mock(Location.class))
-        .addColumn(store, "column1", 0);
+                .addColumn(store, "column1", 0);
         assertEquals(0b111111111111111111111111, store.getSchema("foo").getId());
         assertEquals(0b000000000000111111111111, store.getSchema("foo").getTable("bar").getId());
         assertEquals(0b000000000000000000000000, store.getSchema("foo").getTable("bar").getColumns().iterator().next()
                 .getId());
 
         store.addSchema("foo2", mock(Location.class)).addTable(store, "bar2", mock(Location.class))
-        .addColumn(store, "column1", 0);
+                .addColumn(store, "column1", 0);
         assertEquals(0b1111111111111111111111111, store.getSchema("foo2").getId());
         assertEquals(0b1000000000000111111111111, store.getSchema("foo2").getTable("bar2").getId());
         assertEquals(0b1000000000000000000000000, store.getSchema("foo2").getTable("bar2").getColumns().iterator()

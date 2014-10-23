@@ -16,14 +16,14 @@ public class DefaultColumn extends AbstractTarget implements Column {
     public static Column buildAndRegister(final Observer observer, final Table table, final int id, final String name,
             final Location location) {
         final DefaultColumn newColumn = new DefaultColumn(observer, table, id, name, location);
-        newColumn.notifyObserver();
+        newColumn.register();
         return newColumn;
     }
 
     public static Column buildAndRegister(final Observer observer, final Table table, final String name,
             final Location location) {
         final DefaultColumn newColumn = new DefaultColumn(observer, table, -1, name, location);
-        newColumn.notifyObserver();
+        newColumn.register();
         return newColumn;
     }
 

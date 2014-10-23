@@ -62,4 +62,9 @@ public class IndexedLocation extends AbstractHashCodeAndEquals implements Locati
         return "IndexedLocation [index=" + this.index + ", parentLocation=" + this.parentLocation
                 + ", getParentLocation()=" + this.getParentLocation() + ", getIndex()=" + this.getIndex() + "]";
     }
+
+    @Override
+    public String getPath() {
+        return this.parentLocation.getPath();
+    }
 }

@@ -1,16 +1,16 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+
+import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
-import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
-import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
@@ -21,58 +21,66 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
  * The default implementation of the {@link Table}.
  *
  */
-public class DefaultTable extends AbstractTarget implements Table {
+public class RDBMSTable extends RDBMSTarget implements Table {
 
-    public static Table buildAndRegister(final Observer observer, final Schema schema, final int id, final String name,
-            final Location location) {
-        final DefaultTable newTable = new DefaultTable(observer, schema, id, name, location);
-        newTable.register();
-        return newTable;
-    }
-
-    public static Table buildAndRegister(final Observer observer, final Schema schema, final String name,
-            final Location location) {
-        final DefaultTable newTable = new DefaultTable(observer, schema, -1, name, location);
-        newTable.register();
-        return newTable;
-    }
-
-    private static final long serialVersionUID = 1695408629652071459L;
-
-    @ExcludeHashCodeEquals
-    private final Collection<Column> columns;
+    private static final long serialVersionUID = 8470123808962099640L;
 
     @ExcludeHashCodeEquals
     private final Schema schema;
 
-    private DefaultTable(final Observer observer, final Schema schema, final int id, final String name,
+    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema, final int id,
+            final String name,
+            final Location location) {
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location);
+        newTable.register();
+        newTable.getSqlInterface().addTableToSchema(newTable, schema);
+        return newTable;
+    }
+
+    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
+            final String name,
+            final Location location) {
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, -1, name, location);
+        newTable.register();
+        newTable.getSqlInterface().addTableToSchema(newTable, schema);
+        return newTable;
+    }
+
+    public static Table build(final RDBMSMetadataStore observer, final Schema schema, final int id,
+            final String name,
+            final Location location) {
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location);
+        return newTable;
+    }
+
+    private RDBMSTable(final RDBMSMetadataStore observer, final Schema schema, final int id, final String name,
             final Location location) {
         super(observer, id, name, location);
-        this.columns = Collections.synchronizedSet(new HashSet<Column>());
         this.schema = schema;
     }
 
     @Override
     public Table addColumn(final Column column) {
-        this.columns.add(column);
-        return this;
+        throw new RuntimeException(new OperationNotSupportedException());
     }
 
     @Override
     public Column addColumn(final MetadataStore metadataStore, final String name, final int index) {
+        Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
         Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
         final int localSchemaId = IdUtils.getLocalSchemaId(getId());
         final int localTableId = IdUtils.getLocalTableId(getId());
         final int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
         final Location location = new IndexedLocation(index, getLocation());
-        final Column column = DefaultColumn.buildAndRegister(metadataStore, this, columnId, name, location);
-        addColumn(column);
+        final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
+                name,
+                location);
         return column;
     }
 
     @Override
     public Collection<Column> getColumns() {
-        return this.columns;
+        return this.getSqlInterface().getAllColumnsForTable(this);
     }
 
     /**

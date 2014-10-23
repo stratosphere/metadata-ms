@@ -6,6 +6,7 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
+import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
 
 /**
  * {@link AbstractTarget} is a convenience class for all {@link Target} implementation already taking car of
@@ -21,6 +22,7 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     @ExcludeHashCodeEquals
     private final Observer observer;
 
+    @ExcludeHashCodeEquals
     private final Location location;
 
     public AbstractTarget(final Observer observer, final int id, final String name, final Location location) {
@@ -39,7 +41,8 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     }
 
     @Override
-    public void notifyObserver() {
+    public void register() {
+        observer.registerId(this.getId());
         this.observer.registerTargetObject(this);
     }
 

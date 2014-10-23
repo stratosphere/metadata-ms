@@ -12,7 +12,7 @@ import de.hpi.isg.metadata_store.domain.common.Observer;
  *
  */
 public abstract class AbstractIdentifiableAndNamed extends AbstractHashCodeAndEquals implements Identifiable, Named,
-Serializable {
+        Serializable {
 
     private static final long serialVersionUID = -2489903063142674900L;
     private int id;
@@ -22,7 +22,7 @@ Serializable {
         if (id == -1) {
             id = observer.generateRandomId();
         }
-        observer.registerId(id);
+
         this.id = id;
         this.name = name;
     }

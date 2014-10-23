@@ -8,4 +8,6 @@ import java.io.Serializable;
  */
 public interface Location extends Serializable {
 
+    public String getPath();
+
 }
