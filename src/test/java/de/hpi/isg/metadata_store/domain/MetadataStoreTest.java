@@ -29,6 +29,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.DefaultTable;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
@@ -67,7 +68,7 @@ public class MetadataStoreTest {
     @Test
     public void testConstructingAComplexSchema() {
         final MetadataStore metadataStore = new DefaultMetadataStore();
-        for (int schemaNumber = 0; schemaNumber < 10; schemaNumber++) {
+        for (int schemaNumber = 0; schemaNumber <= IdUtils.MIN_SCHEMA_NUMBER; schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
             for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);

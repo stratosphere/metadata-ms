@@ -18,24 +18,30 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  * This class offers some utility functionality to deal with IDs in a {@link MetadataStore}. Thereby, it obeys the
  * following conventions:
  * <ol>
- * <li>The 32 bit of each ID are assigned to different elements: <tt>xxxxxxxx yyyyyyyy yyyyzzzz zzzzzzzz</tt></li>
- * <li>the high 8 bits are used to encode the schema (<tt>x</tt>, 256 combinations)</li>
- * <li>the mid 12 bits are used to encode the table (<tt>y</tt>, 4096 combinations per schema)</li>
- * <li>the low 12 bits are used to encode the column (<tt>y</tt>, 4096 combinations per table)</li>
- * <li>schema IDs are of the form <tt>xxxxxxxx 11111111 11111111 11111111</tt></li>
- * <li>table IDs are of the form <tt>xxxxxxxx yyyyyyyy yyyy1111 11111111</tt></li>
+ * <li>The 32 bit of each ID are assigned to different elements: <tt>xxxxyyyy yyyyyyyy yyyyyyyy zzzzzzzz</tt></li>
+ * <li>the high 4 bits are used to encode the schema (<tt>x</tt>, 16 combinations)</li>
+ * <li>the mid 20 bits are used to encode the table (<tt>y</tt>, 1,048,576 combinations per schema)</li>
+ * <li>the low 12 bits are used to encode the column (<tt>y</tt>, 256 combinations per table)</li>
+ * <li>schema IDs are of the form <tt>xxxx1111 11111111 11111111 11111111</tt></li>
+ * <li>table IDs are of the form <tt>xxxxyyyy yyyyyyyy yyyyyyyy 11111111</tt></li>
  * </ol>
  */
 public class IdUtils {
 
+    private static final int SCHEMA_ID_BITMASK = 0xF;
+    private static final int SCHEMA_ID_OFFSET = 28;
+    private static final int TABLE_ID_BITMASK = 0xFFFFF;
+    private static final int TABLE_ID_OFFSET = 8;
+    private static final int COLUMN_ID_BITMASK = 0xFF;
+    
     public static final int MIN_SCHEMA_NUMBER = 0;
-    public static final int MAX_SCHEMA_NUMBER = 255;
+    public static final int MAX_SCHEMA_NUMBER = 0xF; // 2 ^ 4
 
     public static final int MIN_TABLE_NUMBER = 0;
-    public static final int MAX_TABLE_NUMBER = 4094; // 2^12 - 2
+    public static final int MAX_TABLE_NUMBER = 0xFFFFF - 1; // 2^20 - 2
 
     public static final int MIN_COLUMN_NUMBER = 0;
-    public static final int MAX_COLUMN_NUMBER = 4094; // 2^12 - 2
+    public static final int MAX_COLUMN_NUMBER = 0xFF - 1; // 2^8 - 2
 
     private IdUtils() {
     }
@@ -54,7 +60,9 @@ public class IdUtils {
      * @return the global ID
      */
     public static int createGlobalId(final int localSchemaId, final int localTableId, final int localColumnId) {
-        return ((localSchemaId & 0xFF) << 24) | ((localTableId & 0xFFF) << 12) | ((localColumnId) & 0xFFF);
+        return ((localSchemaId & SCHEMA_ID_BITMASK) << SCHEMA_ID_OFFSET) 
+                | ((localTableId & TABLE_ID_BITMASK) << TABLE_ID_OFFSET) 
+                | ((localColumnId) & COLUMN_ID_BITMASK);
     }
 
     /**
@@ -90,7 +98,7 @@ public class IdUtils {
      * @return the local schema ID
      */
     public static int getLocalSchemaId(final int globalId) {
-        return (globalId >> 24) & 0xFF;
+        return (globalId >> SCHEMA_ID_OFFSET) & SCHEMA_ID_BITMASK;
     }
 
     /**
@@ -101,7 +109,7 @@ public class IdUtils {
      * @return the local table ID
      */
     public static int getLocalTableId(final int globalId) {
-        return (globalId >> 12) & 0xFFF;
+        return (globalId >> TABLE_ID_OFFSET) & TABLE_ID_BITMASK;
     }
 
     /**
@@ -112,7 +120,7 @@ public class IdUtils {
      * @return the local column ID
      */
     public static int getLocalColumnId(final int globalId) {
-        return globalId & 0xFFF;
+        return globalId & COLUMN_ID_BITMASK;
     }
 
 }
