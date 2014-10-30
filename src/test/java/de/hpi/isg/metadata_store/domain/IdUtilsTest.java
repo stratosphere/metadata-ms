@@ -117,4 +117,15 @@ public class IdUtilsTest {
                 .next().getId());
     }
 
+    @Test
+    public void testIdTypeTest() {
+        Assert.assertTrue(IdUtils.isSchemaId(0b111111111111111111111111));
+        Assert.assertFalse(IdUtils.isTableId(0b1111111111111111111111111));
+
+        Assert.assertFalse(IdUtils.isSchemaId(0b000000000000111111111111));
+        Assert.assertTrue(IdUtils.isTableId(0b1000000000000111111111111));
+
+        Assert.assertFalse(IdUtils.isSchemaId(0b000000000000000000000000));
+        Assert.assertFalse(IdUtils.isTableId(0b1000000000000000000000000));
+    }
 }

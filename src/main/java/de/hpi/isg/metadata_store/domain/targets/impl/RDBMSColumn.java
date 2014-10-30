@@ -2,7 +2,7 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
-import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -12,7 +12,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  *
  */
 
-public class RDBMSColumn extends RDBMSTarget implements Column {
+public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
     private static final long serialVersionUID = 2505519123200337186L;
 

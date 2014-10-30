@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -22,12 +23,26 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
 
     @Override
     public Collection<Constraint> getConstraints() {
-        return this.constraints;
+        return Collections.unmodifiableCollection(this.constraints);
     }
 
     @Override
     public Collection<Target> getScope() {
-        return this.scope;
+        return Collections.unmodifiableCollection(this.scope);
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultConstraintCollection [constraints=" + constraints + ", scope=" + scope + "]";
+    }
+
+    @Override
+    public void add(Constraint constraint) {
+        this.constraints.add(constraint);
+        for (Target t : constraint.getTargetReference().getAllTargets()) {
+            this.scope.add(t);
+        }
+
     }
 
 }

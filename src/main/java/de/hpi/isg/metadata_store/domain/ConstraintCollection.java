@@ -16,4 +16,6 @@ public interface ConstraintCollection extends Identifiable {
     public Collection<Constraint> getConstraints();
 
     public Collection<Target> getScope();
+
+    public void add(Constraint constraint);
 }

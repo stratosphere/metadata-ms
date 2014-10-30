@@ -46,8 +46,10 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
         this.observer.registerTargetObject(this);
     }
 
-    @Override
-    public int hashCode() {
-        return getId();
-    }
+    /*
+     * @Override public int hashCode() { return getId(); }
+     * @Override public boolean equals(Object obj) { if (this == obj) return true; if (!super.equals(obj)) return false;
+     * if (getClass() != obj.getClass()) return false; AbstractTarget other = (AbstractTarget) obj; return this.getId()
+     * == other.getId(); }
+     */
 }

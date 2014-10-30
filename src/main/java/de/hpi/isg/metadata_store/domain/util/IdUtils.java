@@ -115,4 +115,12 @@ public class IdUtils {
         return globalId & 0xFFF;
     }
 
+    public static boolean isSchemaId(final int id) {
+        return (getLocalTableId(id) > MAX_TABLE_NUMBER && getLocalColumnId(id) > MAX_COLUMN_NUMBER);
+    }
+
+    public static boolean isTableId(final int id) {
+        return (getLocalColumnId(id) > MAX_TABLE_NUMBER && !(getLocalTableId(id) > MAX_COLUMN_NUMBER));
+    }
+
 }

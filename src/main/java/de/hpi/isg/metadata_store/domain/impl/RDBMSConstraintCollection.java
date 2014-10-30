@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -36,17 +37,17 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     @Override
     public Collection<Constraint> getConstraints() {
         if (this.constraints != null) {
-            return this.constraints;
+            return Collections.unmodifiableCollection(this.constraints);
         }
-        return this.sqlInterface.getConstraintsOfConstraintCollection(this);
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsOrOfConstraintCollection(this));
     }
 
     @Override
     public Collection<Target> getScope() {
         if (this.scope != null) {
-            return this.scope;
+            return Collections.unmodifiableCollection(this.scope);
         }
-        return this.sqlInterface.getScopeOfConstraintCollection(this);
+        return Collections.unmodifiableCollection(this.sqlInterface.getScopeOfConstraintCollection(this));
     }
 
     public SQLInterface getSqlInterface() {
@@ -63,8 +64,16 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     @Override
     public String toString() {
-        return "RDBMSConstraintCollection [constraints=" + constraints + ", scope=" + scope + ", sqlInterface="
-                + sqlInterface + ", getId()=" + getId() + "]";
+        return "RDBMSConstraintCollection [constraints=" + constraints + ", scope=" + scope + ", getId()=" + getId()
+                + "]";
+    }
+
+    @Override
+    public void add(Constraint constraint) {
+        this.constraints.add(constraint);
+        for (Target t : constraint.getTargetReference().getAllTargets()) {
+            this.scope.add((Target) t);
+        }
     }
 
 }

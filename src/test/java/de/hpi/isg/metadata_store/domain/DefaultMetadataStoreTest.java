@@ -2,12 +2,13 @@ package de.hpi.isg.metadata_store.domain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -95,8 +96,9 @@ public class DefaultMetadataStoreTest {
                                 final InclusionDependency.Reference reference = new InclusionDependency.Reference(
                                         dependentColumns.toArray(new Column[dependentColumns.size()]),
                                         referencedColumns.toArray(new Column[referencedColumns.size()]));
-                                final InclusionDependency inclusionDependency = new InclusionDependency(1,
-                                        reference, mock(ConstraintCollection.class));
+                                final InclusionDependency inclusionDependency = InclusionDependency
+                                        .buildAndAddToCollection(1,
+                                                reference, mock(ConstraintCollection.class));
                                 inclusionDependencies.add(inclusionDependency);
                                 if (inclusionDependencies.size() >= 300000) {
                                     break OuterLoop;
@@ -135,8 +137,9 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new IndexedLocation(0, dummyTableLocation));
 
-        final ConstraintCollection cC = new DefaultConstraintCollection(1, null, null);
-        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
+        final ConstraintCollection cC = new DefaultConstraintCollection(1, new HashSet<Constraint>(),
+                new HashSet<Target>());
+        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
                 dummyColumn), TYPES.STRING, cC);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
@@ -196,7 +199,8 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeContraint = new TypeConstraint(1, new SingleTargetReference(col), TYPES.STRING,
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(col),
+                TYPES.STRING,
                 mock(ConstraintCollection.class));
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
@@ -266,8 +270,13 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new IndexedLocation(0, dummyTableLocation));
 
-        final Constraint dummyContraint = new TypeConstraint(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
+        final ConstraintCollection dummyConstraintCollection = new DefaultConstraintCollection(0,
+                new HashSet<Constraint>(), new HashSet<Target>());
+
+        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
+                dummyColumn), TYPES.STRING, dummyConstraintCollection);
+
+        store1.addConstraintCollection(dummyConstraintCollection);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
@@ -292,6 +301,12 @@ public class DefaultMetadataStoreTest {
 
         assertEquals(dummySchema, store2.getSchemas().iterator().next());
 
+        Constraint cc1 = store1.getConstraintCollections().iterator().next().getConstraints().iterator().next();
+        Constraint cc2 = store2.getConstraintCollections().iterator().next().getConstraints().iterator().next();
+
+        cc1.equals(cc2);
+
+        assertEquals(cc1, cc2);
         assertEquals(store1, store2);
     }
 

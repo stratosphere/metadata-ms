@@ -4,14 +4,14 @@ import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 
-public class RDBMSTarget extends AbstractTarget {
+public abstract class AbstractRDBMSTarget extends AbstractTarget {
 
     private static final long serialVersionUID = -2207050281912169066L;
 
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSTarget(RDBMSMetadataStore observer, int id, String name, Location location) {
+    public AbstractRDBMSTarget(RDBMSMetadataStore observer, int id, String name, Location location) {
         super(observer, id, name, location);
         this.sqlInterface = observer.getSQLInterface();
     }

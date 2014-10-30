@@ -11,14 +11,14 @@ import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
-import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
-public class RDBMSSchema extends RDBMSTarget implements Schema {
+public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
 

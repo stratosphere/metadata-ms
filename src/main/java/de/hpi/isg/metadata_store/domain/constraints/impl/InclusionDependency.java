@@ -21,8 +21,7 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
-import de.hpi.isg.metadata_store.domain.common.Observer;
-import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
+import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -32,7 +31,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  */
 public class InclusionDependency extends AbstractConstraint implements Constraint {
 
-    public static class Reference implements TargetReference {
+    public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
 
         private static final long serialVersionUID = -861294530676768362L;
 
@@ -65,15 +64,34 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         public Column[] getReferencedColumns() {
             return this.referencedColumns;
         }
+
+        @Override
+        public String toString() {
+            return "Reference [dependentColumns=" + Arrays.toString(dependentColumns) + ", referencedColumns="
+                    + Arrays.toString(referencedColumns) + "]";
+        }
     }
 
     private static final long serialVersionUID = -932394088609862495L;
     private InclusionDependency.Reference target;
 
+    public static InclusionDependency build(final int id, final InclusionDependency.Reference target,
+            ConstraintCollection constraintCollection) {
+        InclusionDependency inclusionDependency = new InclusionDependency(id, target, constraintCollection);
+        return inclusionDependency;
+    }
+
+    public static InclusionDependency buildAndAddToCollection(final int id, final InclusionDependency.Reference target,
+            ConstraintCollection constraintCollection) {
+        InclusionDependency inclusionDependency = new InclusionDependency(id, target, constraintCollection);
+        constraintCollection.add(inclusionDependency);
+        return inclusionDependency;
+    }
+
     /**
      * @see AbstractConstraint
      */
-    public InclusionDependency(final int id, final InclusionDependency.Reference target,
+    private InclusionDependency(final int id, final InclusionDependency.Reference target,
             ConstraintCollection constraintCollection) {
         super(id, constraintCollection);
         this.target = target;
@@ -82,6 +100,11 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
     @Override
     public InclusionDependency.Reference getTargetReference() {
         return target;
+    }
+
+    @Override
+    public String toString() {
+        return "InclusionDependency [target=" + target + "]";
     }
 
     public int getArity() {

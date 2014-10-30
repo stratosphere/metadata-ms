@@ -81,7 +81,7 @@ public class DefaultSchema extends AbstractTarget implements Schema {
 
     @Override
     public Collection<Table> getTables() {
-        return this.tables;
+        return Collections.unmodifiableCollection(this.tables);
     }
 
     @Override

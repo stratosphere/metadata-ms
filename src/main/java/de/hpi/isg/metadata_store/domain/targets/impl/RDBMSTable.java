@@ -10,7 +10,7 @@ import org.apache.commons.lang3.Validate;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
-import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -22,7 +22,7 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
  * The default implementation of the {@link Table}.
  *
  */
-public class RDBMSTable extends RDBMSTarget implements Table {
+public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     private static final long serialVersionUID = 8470123808962099640L;
 

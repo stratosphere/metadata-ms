@@ -83,7 +83,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public Collection<Constraint> getConstraints() {
-        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraints());
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsOrOfConstraintCollection(null));
     }
 
     @Override
@@ -164,7 +164,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public String toString() {
         return "MetadataStore[" + this.sqlInterface.getAllSchemas().size() + " schemas, "
-                + this.sqlInterface.getAllConstraints().size() + " constraints]";
+                + this.sqlInterface.getAllConstraintsOrOfConstraintCollection(null) + " constraints]";
     }
 
     @Override

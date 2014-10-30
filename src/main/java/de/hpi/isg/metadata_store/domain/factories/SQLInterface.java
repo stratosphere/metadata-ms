@@ -5,6 +5,7 @@ import java.util.Collection;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -30,8 +31,6 @@ public interface SQLInterface {
     public void addSchema(Schema schema);
 
     public Collection<? extends Target> getAllTargets();
-
-    public Collection<? extends Constraint> getAllConstraints();
 
     public Collection<Integer> getIdsInUse();
 
@@ -59,7 +58,7 @@ public interface SQLInterface {
 
     public void addScope(Target target, ConstraintCollection constraintCollection);
 
-    public Collection<Constraint> getConstraintsOfConstraintCollection(
+    public Collection<Constraint> getAllConstraintsOrOfConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection);
 
     public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
@@ -69,4 +68,8 @@ public interface SQLInterface {
     public Table getTableById(int tableId);
 
     Schema getSchemaById(int schemaId);
+
+    ConstraintCollection getConstraintCollectionById(int id);
+
+    Reference getInclusionDependencyReferences(int int1);
 }

@@ -6,7 +6,6 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
-import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
@@ -25,7 +24,20 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     private final TargetReference target;
 
-    public TypeConstraint(final int id, final SingleTargetReference target, TYPES type,
+    public static TypeConstraint build(final int id, final SingleTargetReference target, TYPES type,
+            ConstraintCollection constraintCollection) {
+        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+        return typeConstraint;
+    }
+
+    public static TypeConstraint buildAndAddToCollection(final int id, final SingleTargetReference target, TYPES type,
+            ConstraintCollection constraintCollection) {
+        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+        constraintCollection.add(typeConstraint);
+        return typeConstraint;
+    }
+
+    private TypeConstraint(final int id, final SingleTargetReference target, TYPES type,
             ConstraintCollection constraintCollection) {
         super(id, constraintCollection);
         Validate.isTrue(target.getAllTargets().size() == 1);

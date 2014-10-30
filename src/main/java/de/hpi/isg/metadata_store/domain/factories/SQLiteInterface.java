@@ -5,20 +5,23 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
+import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.metadata_store.domain.impl.RDBMSTarget;
+import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
@@ -28,6 +31,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 
 /**
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
@@ -202,16 +206,25 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Collection<Target> targets = new HashSet<>();
             Statement stmt = this.connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT id, name, location from target");
+            ResultSet rs = stmt.executeQuery("SELECT id from target");
             while (rs.next()) {
-                targets.add(new RDBMSTarget(this.store, rs.getInt("id"), rs.getString("name"),
-                        new HDFSLocation(rs.getString("location"))));
+                targets.add(buildTarget(rs.getInt("id")));
             }
             rs.close();
             stmt.close();
             return targets;
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private Target buildTarget(int id) {
+        if (IdUtils.isSchemaId(id)) {
+            return getSchemaById(id);
+        } else if (IdUtils.isTableId(id)) {
+            return getTableById(id);
+        } else {
+            return getColumnById(id);
         }
     }
 
@@ -303,9 +316,10 @@ public class SQLiteInterface implements SQLInterface {
             try {
                 Statement stmt = this.connection.createStatement();
                 String sqlAddTypee = String.format(
-                        "INSERT INTO Typee (typee, columnId, constraintId) VALUES ('%s', %d, %d);",
-                        typeConstraint.getType().name(), constraint.getTargetReference().getAllTargets().iterator()
-                                .next().getId(), constraint.getId());
+                        "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
+                        constraint.getId(), typeConstraint.getType().name(), constraint.getTargetReference()
+                                .getAllTargets().iterator()
+                                .next().getId());
                 stmt.executeUpdate(sqlAddTypee);
 
                 stmt.close();
@@ -313,35 +327,125 @@ public class SQLiteInterface implements SQLInterface {
                 throw new RuntimeException(e);
             }
         } else if (constraint instanceof InclusionDependency) {
+            InclusionDependency inclusionDependency = (InclusionDependency) constraint;
+            try {
+                Statement stmt = this.connection.createStatement();
+                String sqlAddIND = String.format(
+                        "INSERT INTO IND (constraintId) VALUES (%d);",
+                        constraint.getId());
+                stmt.executeUpdate(sqlAddIND);
 
+                for (int i = 0; i < inclusionDependency.getArity(); i++) {
+                    String sqlAddINDpart = String.format(
+                            "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
+                            constraint.getId(),
+                            inclusionDependency.getTargetReference().getDependentColumns()[i].getId(),
+                            inclusionDependency.getTargetReference().getReferencedColumns()[i].getId());
+                    stmt.executeUpdate(sqlAddINDpart);
+                }
+
+                stmt.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             throw new IllegalArgumentException("Unknown constraint type!");
         }
     }
 
     @Override
-    public Collection<Constraint> getConstraintsOfConstraintCollection(
+    public Collection<Constraint> getAllConstraintsOrOfConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection) {
+        boolean retrieveConstraintCollection = rdbmsConstraintCollection == null;
+        String constraintCollectionClause = "";
+        if (!retrieveConstraintCollection) {
+            constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                    rdbmsConstraintCollection.getId());
+        }
+
         Collection<Constraint> constraintsOfCollection = new HashSet<>();
         try {
+            // TypeConstraints
             Collection<Constraint> typeConstraints = new HashSet<>();
             Statement stmt = this.connection.createStatement();
+
             String sqlGetTypeConstraints = String
-                    .format("SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee from typee, constraintt"
-                            + " where typee.constraintId = constraintt.id and constraintt.constraintCollectionId=%d;",
-                            rdbmsConstraintCollection.getId());
-            ResultSet rs = stmt.executeQuery(sqlGetTypeConstraints);
-            while (rs.next()) {
-                typeConstraints.add(new TypeConstraint(rs.getInt("id"), new SingleTargetReference(this.getColumnById(rs
-                        .getInt("columnId"))), TYPES.valueOf(rs.getString("typee")), rdbmsConstraintCollection));
+                    .format("SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
+                            + " constraintt.constraintCollectionId as constraintCollectionId"
+                            + " from typee, constraintt where typee.constraintId = constraintt.id%s;",
+                            constraintCollectionClause);
+            ResultSet rsTypeConstraints = stmt.executeQuery(sqlGetTypeConstraints);
+            while (rsTypeConstraints.next()) {
+                if (retrieveConstraintCollection) {
+                    rdbmsConstraintCollection = (RDBMSConstraintCollection) this
+                            .getConstraintCollectionById(rsTypeConstraints
+                                    .getInt("constraintCollectionId"));
+                }
+                typeConstraints
+                        .add(TypeConstraint.build(rsTypeConstraints.getInt("id"),
+                                new SingleTargetReference(this.getColumnById(rsTypeConstraints
+                                        .getInt("columnId"))), TYPES.valueOf(rsTypeConstraints.getString("typee")),
+                                rdbmsConstraintCollection));
+                if (retrieveConstraintCollection) {
+                    rdbmsConstraintCollection = null;
+                }
             }
-            rs.close();
-            stmt.close();
+            rsTypeConstraints.close();
             constraintsOfCollection.addAll(typeConstraints);
+
+            // InclusionDependencies
+            Collection<Constraint> inclusionDependencies = new HashSet<>();
+
+            String sqlGetInclusionDependencies = String
+                    .format("SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
+                            + " from IND, constraintt where IND.constraintId = constraintt.id%s;",
+                            constraintCollectionClause);
+            ResultSet rsInclusionDependencies = stmt.executeQuery(sqlGetInclusionDependencies);
+            while (rsInclusionDependencies.next()) {
+                if (retrieveConstraintCollection) {
+                    rdbmsConstraintCollection = (RDBMSConstraintCollection) this
+                            .getConstraintCollectionById(rsTypeConstraints
+                                    .getInt("constraintCollectionId"));
+                }
+                inclusionDependencies
+                        .add(InclusionDependency.build(rsInclusionDependencies.getInt("id"),
+                                getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
+                                rdbmsConstraintCollection));
+                if (retrieveConstraintCollection) {
+                    rdbmsConstraintCollection = null;
+                }
+            }
+            rsInclusionDependencies.close();
+
+            constraintsOfCollection.addAll(inclusionDependencies);
+
+            stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return constraintsOfCollection;
+    }
+
+    @Override
+    public Reference getInclusionDependencyReferences(int id) {
+        List<Column> lhs = new ArrayList<>();
+        List<Column> rhs = new ArrayList<>();
+        try {
+            Statement stmt = this.connection.createStatement();
+            String inclusionDependencyReferenceQuery = String.format(
+                    "SELECT lhs, rhs from INDpart where INDpart.constraintId = %d;", id);
+            ResultSet rs = stmt
+                    .executeQuery(inclusionDependencyReferenceQuery);
+            while (rs.next()) {
+                lhs.add(this.getColumnById(rs.getInt("lhs")));
+                rhs.add(this.getColumnById(rs.getInt("rhs")));
+            }
+            rs.close();
+            stmt.close();
+            return new Reference(lhs.toArray(new Column[lhs.size()]), rhs.toArray(new Column[rhs.size()]));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -351,7 +455,7 @@ public class SQLiteInterface implements SQLInterface {
             String sqlColumnById = String
                     .format("SELECT target.id as id, target.name as name, target.location as location,"
                             + " columnn.tableId as tableId, columnn.locationIndex as locationIndex"
-                            + " from target, column where target.id = columnn.id and columnn.id=%d",
+                            + " from target, columnn where target.id = columnn.id and columnn.id=%d",
                             columnId);
             ResultSet rs = stmt.executeQuery(sqlColumnById);
             while (rs.next()) {
@@ -376,7 +480,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlTableById = String
-                    .format("SELECT target.id as id, target.name as name, target.location as location, table.schemaId as schemaId"
+                    .format("SELECT target.id as id, target.name as name, target.location as location, tablee.schemaId as schemaId"
                             + " from target, tablee where target.id = tablee.id and tablee.id=%d",
                             tableId);
             ResultSet rs = stmt.executeQuery(sqlTableById);
@@ -421,9 +525,26 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<? extends Constraint> getAllConstraints() {
-        // TODO
-        return null;
+    public ConstraintCollection getConstraintCollectionById(int id) {
+        try {
+            RDBMSConstraintCollection constraintCollection = null;
+            Statement stmt = this.connection.createStatement();
+            String getConstraintCollectionByIdQuery = String.format("SELECT id from ConstraintCollection where id=%d;",
+                    id);
+            ResultSet rs = stmt
+                    .executeQuery(getConstraintCollectionByIdQuery);
+            while (rs.next()) {
+                constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), this);
+                constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
+                constraintCollection.setConstraints(this
+                        .getAllConstraintsOrOfConstraintCollection(constraintCollection));
+            }
+            rs.close();
+            stmt.close();
+            return constraintCollection;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -432,12 +553,11 @@ public class SQLiteInterface implements SQLInterface {
             Collection<Target> targets = new HashSet<>();
             Statement stmt = this.connection.createStatement();
             String sqlGetScope = String
-                    .format("SELECT id, name, location from target, scope where scope.targetId = target.id and scope.constraintCollectionId=%d;",
+                    .format("SELECT id from target, scope where scope.targetId = target.id and scope.constraintCollectionId=%d;",
                             rdbmsConstraintCollection.getId());
             ResultSet rs = stmt.executeQuery(sqlGetScope);
             while (rs.next()) {
-                targets.add(new RDBMSTarget(this.store, rs.getInt("id"), rs.getString("name"),
-                        new HDFSLocation(rs.getString("location"))));
+                targets.add(buildTarget(rs.getInt("id")));
             }
             rs.close();
             stmt.close();
@@ -457,7 +577,8 @@ public class SQLiteInterface implements SQLInterface {
             while (rs.next()) {
                 RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), this);
                 constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
-                constraintCollection.setConstraints(this.getConstraintsOfConstraintCollection(constraintCollection));
+                constraintCollection.setConstraints(this
+                        .getAllConstraintsOrOfConstraintCollection(constraintCollection));
                 constraintCollections.add(constraintCollection);
             }
             rs.close();

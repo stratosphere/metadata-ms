@@ -72,7 +72,7 @@ public class DefaultTable extends AbstractTarget implements Table {
 
     @Override
     public Collection<Column> getColumns() {
-        return this.columns;
+        return Collections.unmodifiableCollection(this.columns);
     }
 
     /**
