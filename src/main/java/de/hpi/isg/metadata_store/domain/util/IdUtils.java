@@ -27,8 +27,8 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  */
 public class IdUtils {
 
-    private static final int NUM_TABLE_BITS = 20;
-    private static final int NUM_COLUMN_BITS = 8;
+    private static final int NUM_TABLE_BITS = 12;
+    private static final int NUM_COLUMN_BITS = 12;
     private static final int NUM_SCHEMA_BITS = 32 - NUM_TABLE_BITS - NUM_COLUMN_BITS;
 
     private static final int SCHEMA_ID_BITMASK = toBitMask(NUM_SCHEMA_BITS);
