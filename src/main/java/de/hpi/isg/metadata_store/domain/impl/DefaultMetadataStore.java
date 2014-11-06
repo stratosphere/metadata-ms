@@ -136,6 +136,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
+    public int getUnusedConstraintCollectonId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+    }
+
+    @Override
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.schemas.contains(schema));
         final int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
@@ -188,5 +193,13 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
             this.addConstraint(constr);
         }
         this.constraintCollections.add(constraintCollection);
+    }
+
+    @Override
+    public ConstraintCollection createConstraintCollection() {
+        ConstraintCollection constraintCollection = new DefaultConstraintCollection(getUnusedConstraintCollectonId(),
+                new HashSet<Constraint>(), new HashSet<Target>());
+        this.constraintCollections.add(constraintCollection);
+        return constraintCollection;
     }
 }

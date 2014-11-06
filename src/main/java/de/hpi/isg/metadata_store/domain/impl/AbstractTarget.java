@@ -22,7 +22,6 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     @ExcludeHashCodeEquals
     private final Observer observer;
 
-    @ExcludeHashCodeEquals
     private final Location location;
 
     public AbstractTarget(final Observer observer, final int id, final String name, final Location location) {

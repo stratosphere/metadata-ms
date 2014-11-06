@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;

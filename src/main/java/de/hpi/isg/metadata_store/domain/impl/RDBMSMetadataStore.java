@@ -3,6 +3,7 @@ package de.hpi.isg.metadata_store.domain.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -34,10 +35,10 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     private static final long serialVersionUID = 400271996998552017L;
 
     @ExcludeHashCodeEquals
-    private final SQLInterface sqlInterface;
+    transient final SQLInterface sqlInterface;
 
     @ExcludeHashCodeEquals
-    private final Random randomGenerator = new Random();
+    transient final Random randomGenerator = new Random();
 
     public RDBMSMetadataStore(SQLiteInterface sqliteInterface) {
         this.sqlInterface = sqliteInterface;
@@ -189,5 +190,17 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     public SQLInterface getSQLInterface() {
         return this.sqlInterface;
+    }
+
+    @Override
+    public int getUnusedConstraintCollectonId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public ConstraintCollection createConstraintCollection() {
+        ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
+                new HashSet<Constraint>(), new HashSet<Target>(), getSQLInterface());
+        return constraintCollection;
     }
 }

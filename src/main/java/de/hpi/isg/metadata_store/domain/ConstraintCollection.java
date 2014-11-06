@@ -13,6 +13,7 @@ import de.hpi.isg.metadata_store.domain.common.Identifiable;
  */
 
 public interface ConstraintCollection extends Identifiable {
+
     public Collection<Constraint> getConstraints();
 
     public Collection<Target> getScope();

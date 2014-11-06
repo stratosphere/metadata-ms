@@ -27,10 +27,11 @@ public class TargetTest {
         final MetadataStore store = new DefaultMetadataStore();
 
         final HDFSLocation loc = new HDFSLocation("foobar");
+        final IndexedLocation iloc = new IndexedLocation(1, loc);
 
-        final Column column1 = DefaultColumn.buildAndRegister(store, mock(Table.class), "foo", loc);
+        final Column column1 = DefaultColumn.buildAndRegister(store, mock(Table.class), "foo", iloc);
 
-        final Column column3 = DefaultColumn.buildAndRegister(store, mock(Table.class), "foo2", loc);
+        final Column column3 = DefaultColumn.buildAndRegister(store, mock(Table.class), "foo2", iloc);
 
         final HashSet<Target> set = new HashSet<Target>();
         set.add(column1);
@@ -107,7 +108,7 @@ public class TargetTest {
         final MetadataStore ms = mock(MetadataStore.class);
         final Schema schema1 = DefaultSchema.buildAndRegister(ms, "foo", mock(Location.class));
         final Table table1 = DefaultTable.buildAndRegister(ms, schema1, "table1", mock(Location.class));
-        final Column column1 = DefaultColumn.buildAndRegister(ms, table1, "column1", mock(Location.class));
+        final Column column1 = DefaultColumn.buildAndRegister(ms, table1, "column1", mock(IndexedLocation.class));
 
         schema1.addTable(table1);
         table1.addColumn(column1);
@@ -121,7 +122,7 @@ public class TargetTest {
         final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", mock(Location.class));
 
         final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "column1",
-                mock(Location.class));
+                mock(IndexedLocation.class));
 
         assertEquals(null, schema1.findColumn(column1.getId()));
     }
@@ -130,7 +131,8 @@ public class TargetTest {
     public void testSchemaHashCodeAndEquals() {
         final HDFSLocation loc = new HDFSLocation("foobar");
 
-        final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "foo", loc);
+        final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "foo",
+                mock(IndexedLocation.class));
 
         final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", loc)
                 .addColumn(column1);
@@ -152,7 +154,7 @@ public class TargetTest {
         final HDFSLocation loc = new HDFSLocation("foobar");
 
         final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 1, "foo",
-                loc);
+                mock(IndexedLocation.class));
 
         final Table table1 = DefaultTable
                 .buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", loc).addColumn(column1);

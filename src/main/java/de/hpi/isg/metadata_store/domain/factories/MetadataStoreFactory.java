@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import org.sqlite.SQLite;
@@ -56,6 +57,19 @@ public class MetadataStoreFactory {
         SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
         RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
         return metadataStore;
+    }
+
+    public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(File file) {
+        Connection connection = null;
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+            String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
+            connection = DriverManager.getConnection(connString);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return getOrCreateMetadataStoreInSQLite(connection);
     }
 
     public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(Connection connection) {

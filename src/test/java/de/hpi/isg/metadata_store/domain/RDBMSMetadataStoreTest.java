@@ -100,7 +100,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testAddingOfSchema() {
         final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
-        final Schema schema1 = store1.addSchema("pdb", mock(Location.class));
+        final Schema schema1 = store1.addSchema("pdb", new HDFSLocation("foo/bar"));
         assertTrue(store1.getSchemas().contains(schema1));
         assertTrue(store1.getAllTargets().contains(schema1));
     }
@@ -111,10 +111,10 @@ public class RDBMSMetadataStoreTest {
         final MetadataStore metadataStore = new RDBMSMetadataStore(new SQLiteInterface(connection));
         for (int schemaNumber = 0; schemaNumber < 3; schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber),
-                    mock(Location.class));
+                    new HDFSLocation("bar"));
             for (int tableNumber = 0; tableNumber < 5; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber),
-                        mock(Location.class));
+                        new HDFSLocation("foo"));
                 for (int columnNumber = 0; columnNumber < 10; columnNumber++) {
                     Column column = table.addColumn(metadataStore, String.format("column-%03d", columnNumber),
                             columnNumber);
@@ -207,8 +207,10 @@ public class RDBMSMetadataStoreTest {
         final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
-        Column col1 = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
-        Column col2 = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "bar", 2);
+        Column col1 = dummySchema1.addTable(store1, "table1", new HDFSLocation("hdfs://foobar")).addColumn(store1,
+                "foo", 1);
+        Column col2 = dummySchema1.addTable(store1, "table1", new HDFSLocation("hdfs://foobar")).addColumn(store1,
+                "bar", 2);
 
         final ConstraintCollection dummyConstraintCollection = new RDBMSConstraintCollection(1,
                 new HashSet<Constraint>(),
@@ -255,7 +257,7 @@ public class RDBMSMetadataStoreTest {
     public void testGetColumnsAddingFails() {
         // setup store
         final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
-        store1.addSchema("foo", mock(Location.class)).addTable(store1, "bar", mock(Location.class)).getColumns()
+        store1.addSchema("foo", new HDFSLocation("foo")).addTable(store1, "bar", new HDFSLocation("bar")).getColumns()
                 .add(mock(Column.class));
     }
 
@@ -292,7 +294,7 @@ public class RDBMSMetadataStoreTest {
 
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
 
-        final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 0);
+        final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 1);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
                 dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
@@ -303,6 +305,9 @@ public class RDBMSMetadataStoreTest {
         MetadataStore store2 = MetadataStoreFactory.getMetadataStoreFromSQLite(connection);
 
         assertEquals(dummySchema, store2.getSchemas().iterator().next());
+
+        assertEquals(dummyColumn, store2.getSchemas().iterator().next().getTables().iterator().next().getColumns()
+                .iterator().next());
 
         assertEquals(store1, store2);
     }

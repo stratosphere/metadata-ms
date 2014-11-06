@@ -72,7 +72,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         final int localSchemaId = IdUtils.getLocalSchemaId(getId());
         final int localTableId = IdUtils.getLocalTableId(getId());
         final int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
-        final Location location = new IndexedLocation(index, getLocation());
+        final IndexedLocation location = new IndexedLocation(index, getLocation());
         final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
                 name,
                 location);

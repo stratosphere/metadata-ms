@@ -65,4 +65,8 @@ public interface MetadataStore extends Serializable, Observer {
      * @return the unused table ID
      */
     int getUnusedTableId(Schema schema);
+
+    int getUnusedConstraintCollectonId();
+
+    ConstraintCollection createConstraintCollection();
 }

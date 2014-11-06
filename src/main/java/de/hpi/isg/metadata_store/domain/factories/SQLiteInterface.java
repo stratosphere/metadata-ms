@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.factories;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -21,7 +22,6 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
 import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
@@ -282,16 +282,19 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public void addTarget(Target target) {
         try {
-            Statement stmt = this.connection.createStatement();
-            String sqlUpdateName = String.format("UPDATE target set name = '%s' where id=%d;", target.getName(),
-                    target.getId());
-            stmt.executeUpdate(sqlUpdateName);
+            PreparedStatement stmt = this.connection.prepareStatement("UPDATE target set name = ? where id=?;");
+            // TODO generic escapeing
+            stmt.setString(1, target.getName().replace("'", "''"));
+            stmt.setInt(2, target.getId());
+            stmt.executeUpdate();
 
             String sqlUpdateLocation = String.format("UPDATE target set location = '%s' where id=%d;", target
                     .getLocation().getPath(), target.getId());
-            stmt.executeUpdate(sqlUpdateLocation);
+            Statement stmt2 = this.connection.createStatement();
+            stmt2.executeUpdate(sqlUpdateLocation);
 
             stmt.close();
+            stmt2.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -301,9 +304,15 @@ public class SQLiteInterface implements SQLInterface {
     public void addConstraint(Constraint constraint) {
         try {
             Statement stmt = this.connection.createStatement();
-            String sqlAddTypeConstraint1 = String.format(
-                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
-                    constraint.getId(), constraint.getConstraintCollection().getId());
+            String sqlAddTypeConstraint1;
+            if (constraint.getId() == -1) {
+                sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
+                        constraint.getConstraintCollection().getId());
+            } else {
+                sqlAddTypeConstraint1 = String.format(
+                        "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
+                        constraint.getId(), constraint.getConstraintCollection().getId());
+            }
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
             stmt.close();
@@ -670,14 +679,13 @@ public class SQLiteInterface implements SQLInterface {
             Statement stmt = this.connection.createStatement();
 
             String sqlTablesForSchema = String
-                    .format("SELECT columnn.id as id, target.name as name, target.location as location from columnn, target where target.id = columnn.id and columnn.tableId=%d;",
+                    .format("SELECT columnn.id as id from columnn, target where target.id = columnn.id and columnn.tableId=%d;",
                             rdbmsTable.getId());
 
             ResultSet rs = stmt
                     .executeQuery(sqlTablesForSchema);
             while (rs.next()) {
-                columns.add(RDBMSColumn.build(this.store, rdbmsTable, rs.getInt("id"), rs.getString("name"),
-                        new HDFSLocation(rs.getString("location"))));
+                columns.add(getColumnById(rs.getInt("id")));
             }
             rs.close();
             stmt.close();
@@ -691,8 +699,9 @@ public class SQLiteInterface implements SQLInterface {
     public void addColumnToTable(RDBMSColumn newColumn, Table table) {
         try {
             Statement stmt = this.connection.createStatement();
-            String sqlColumnAdd = String.format("INSERT INTO Columnn (id, tableId) VALUES (%d, %d);",
-                    newColumn.getId(), table.getId());
+            String sqlColumnAdd = String.format(
+                    "INSERT INTO Columnn (id, tableId, locationIndex) VALUES (%d, %d, %d);",
+                    newColumn.getId(), table.getId(), newColumn.getLocation().getIndex());
             stmt.executeUpdate(sqlColumnAdd);
 
             stmt.close();

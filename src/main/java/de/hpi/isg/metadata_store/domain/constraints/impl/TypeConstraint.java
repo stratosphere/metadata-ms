@@ -43,7 +43,8 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         Validate.isTrue(target.getAllTargets().size() == 1);
         for (final Target t : target.getAllTargets()) {
             if (!(t instanceof Column)) {
-                throw new IllegalArgumentException("TypeConstrains can only be defined on Columns.");
+                throw new IllegalArgumentException("TypeConstrains can only be defined on Columns. But target was: "
+                        + t);
             }
         }
         this.type = type;
