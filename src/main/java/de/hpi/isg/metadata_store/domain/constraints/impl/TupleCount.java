@@ -19,33 +19,33 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.impl.AbstractConstraint;
-import de.hpi.isg.metadata_store.domain.targets.Column;
+import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
- * Constraint implementation distinct value counts of a single column.
+ * Constraint implementation for the number of tuples in a table.
  * 
  * @author Sebastian Kruse
  */
-public class DistinctValueCount extends AbstractConstraint {
+public class TupleCount extends AbstractConstraint {
 
     public static class Reference implements TargetReference {
 
         private static final long serialVersionUID = -861294530676768362L;
 
-        Column column;
+        Table table;
 
-        public Reference(final Column column) {
-            this.column = column;
+        public Reference(final Table column) {
+            this.table = column;
         }
 
         @Override
         public Collection<Target> getAllTargets() {
-            return Collections.<Target>singleton(this.column);
+            return Collections.<Target>singleton(this.table);
         }
 
         @Override
         public String toString() {
-            return "Reference [column=" + column + "]";
+            return "Reference [table=" + table + "]";
         }
         
 
@@ -53,38 +53,38 @@ public class DistinctValueCount extends AbstractConstraint {
 
     private static final long serialVersionUID = -932394088609862495L;
     
-    private int numDistinctValues;
+    private int numTuples;
 
     /**
      * @see AbstractConstraint
      */
-    public DistinctValueCount(final Observer observer, final int id, final String name, final TargetReference target, int numDistinctValues) {
+    public TupleCount(final Observer observer, final int id, final String name, final TargetReference target, int numTuples) {
         super(observer, id, target);
-        this.numDistinctValues = numDistinctValues;
+        this.numTuples = numTuples;
     }
 
     @Override
-    public DistinctValueCount.Reference getTargetReference() {
-        return (DistinctValueCount.Reference) super.getTargetReference();
+    public TupleCount.Reference getTargetReference() {
+        return (TupleCount.Reference) super.getTargetReference();
     }
     
     /**
      * @return the numDistinctValues
      */
-    public int getNumDistinctValues() {
-        return numDistinctValues;
+    public int getNumTuples() {
+        return numTuples;
     }
     
     /**
      * @param numDistinctValues the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
-        this.numDistinctValues = numDistinctValues;
+        this.numTuples = numDistinctValues;
     }
 
     @Override
     public String toString() {
-        return "DistinctValueCount[" + getTargetReference() + ", numDistinctValues=" + numDistinctValues + "]";
+        return "TupleCount[" + getTargetReference() + ", numTuples=" + numTuples + "]";
     }
     
     
