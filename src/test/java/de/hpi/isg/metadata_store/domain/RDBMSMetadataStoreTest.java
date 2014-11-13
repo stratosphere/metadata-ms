@@ -41,20 +41,21 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
 
-    private final File testDb = new File("/tmp/test.db");
+    private File testDb;
     private Connection connection;
 
     @Before
     public void setUp() {
         try {
-            this.testDb.createNewFile();
+            this.testDb = File.createTempFile("test", ".db");
+            this.testDb.deleteOnExit();
             // this.testDb.deleteOnExit();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
             Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:/tmp/test.db");
+            connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
