@@ -15,10 +15,9 @@ package de.hpi.isg.metadata_store.domain.constraints.impl;
 import java.util.Collection;
 import java.util.Collections;
 
+import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
-import de.hpi.isg.metadata_store.domain.common.Observer;
-import de.hpi.isg.metadata_store.domain.impl.AbstractConstraint;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -40,43 +39,48 @@ public class DistinctValueCount extends AbstractConstraint {
 
         @Override
         public Collection<Target> getAllTargets() {
-            return Collections.<Target>singleton(this.column);
+            return Collections.<Target> singleton(this.column);
         }
 
         @Override
         public String toString() {
             return "Reference [column=" + column + "]";
         }
-        
 
     }
 
     private static final long serialVersionUID = -932394088609862495L;
-    
+
     private int numDistinctValues;
+    
+    private Reference target;
 
     /**
      * @see AbstractConstraint
      */
-    public DistinctValueCount(final Observer observer, final int id, final String name, final TargetReference target, int numDistinctValues) {
-        super(observer, id, target);
+    public DistinctValueCount(final int id, final ConstraintCollection constraintCollection, final String name,
+            final Reference target, int numDistinctValues) {
+        
+        super(id, constraintCollection);
+        this.target = target;
         this.numDistinctValues = numDistinctValues;
     }
 
     @Override
     public DistinctValueCount.Reference getTargetReference() {
-        return (DistinctValueCount.Reference) super.getTargetReference();
+        return this.target;
     }
-    
+
     /**
      * @return the numDistinctValues
      */
     public int getNumDistinctValues() {
         return numDistinctValues;
     }
-    
+
     /**
-     * @param numDistinctValues the numDistinctValues to set
+     * @param numDistinctValues
+     *        the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
         this.numDistinctValues = numDistinctValues;
@@ -86,7 +90,5 @@ public class DistinctValueCount extends AbstractConstraint {
     public String toString() {
         return "DistinctValueCount[" + getTargetReference() + ", numDistinctValues=" + numDistinctValues + "]";
     }
-    
-    
 
 }

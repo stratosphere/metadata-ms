@@ -15,10 +15,9 @@ package de.hpi.isg.metadata_store.domain.constraints.impl;
 import java.util.Collection;
 import java.util.Collections;
 
+import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
-import de.hpi.isg.metadata_store.domain.common.Observer;
-import de.hpi.isg.metadata_store.domain.impl.AbstractConstraint;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
@@ -40,43 +39,48 @@ public class TupleCount extends AbstractConstraint {
 
         @Override
         public Collection<Target> getAllTargets() {
-            return Collections.<Target>singleton(this.table);
+            return Collections.<Target> singleton(this.table);
         }
 
         @Override
         public String toString() {
             return "Reference [table=" + table + "]";
         }
-        
 
     }
 
     private static final long serialVersionUID = -932394088609862495L;
-    
+
     private int numTuples;
+
+    private Reference target;
 
     /**
      * @see AbstractConstraint
      */
-    public TupleCount(final Observer observer, final int id, final String name, final TargetReference target, int numTuples) {
-        super(observer, id, target);
+    public TupleCount(final int id, final ConstraintCollection constraintCollection, final String name,
+            final Reference target, int numTuples) {
+        
+        super(id, constraintCollection);
+        this.target = target;
         this.numTuples = numTuples;
     }
 
     @Override
     public TupleCount.Reference getTargetReference() {
-        return (TupleCount.Reference) super.getTargetReference();
+        return this.target;
     }
-    
+
     /**
      * @return the numDistinctValues
      */
     public int getNumTuples() {
         return numTuples;
     }
-    
+
     /**
-     * @param numDistinctValues the numDistinctValues to set
+     * @param numDistinctValues
+     *        the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
         this.numTuples = numDistinctValues;
@@ -86,7 +90,5 @@ public class TupleCount extends AbstractConstraint {
     public String toString() {
         return "TupleCount[" + getTargetReference() + ", numTuples=" + numTuples + "]";
     }
-    
-    
 
 }
