@@ -1,28 +1,39 @@
 
 /* Drop Tables */
 
-DROP TABLE IF EXISTS [INDpart];
-DROP TABLE IF EXISTS [TYPEE];
-DROP TABLE IF EXISTS [Columnn];
-DROP TABLE IF EXISTS [IND];
-DROP TABLE IF EXISTS [Constraintt];
-DROP TABLE IF EXISTS [Scope];
-DROP TABLE IF EXISTS [ConstraintCollection];
-DROP TABLE IF EXISTS [Tablee];
-DROP TABLE IF EXISTS [Schemaa];
-DROP TABLE IF EXISTS [Target];
+DROP TABLE [INDpart];
+DROP TABLE [TYPEE];
+DROP TABLE [Columnn];
+DROP TABLE [Scope];
+DROP TABLE [IND];
+DROP TABLE [Constraintt];
+DROP TABLE [ConstraintCollection];
+DROP TABLE [LocationProperty];
+DROP TABLE [Tablee];
+DROP TABLE [Schemaa];
+DROP TABLE [Target];
+DROP TABLE [Location];
 
 
 
 
 /* Create Tables */
 
+CREATE TABLE [Location]
+(
+	[id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+	[typee] text
+);
+
+
 CREATE TABLE [Target]
 (
 	[id] integer NOT NULL,
 	[name] text,
-	[location] text,
-	PRIMARY KEY ([id])
+	[locationId] integer NOT NULL,
+	PRIMARY KEY ([id]),
+	FOREIGN KEY ([locationId])
+	REFERENCES [Location] ([id])
 );
 
 
@@ -99,6 +110,16 @@ CREATE TABLE [INDpart]
 );
 
 
+CREATE TABLE [LocationProperty]
+(
+	[locationId] integer NOT NULL,
+	[keyy] text,
+	[value] text,
+	FOREIGN KEY ([locationId])
+	REFERENCES [Location] ([id])
+);
+
+
 CREATE TABLE [Scope]
 (
 	[targetId] integer NOT NULL,
@@ -112,13 +133,13 @@ CREATE TABLE [Scope]
 
 CREATE TABLE [TYPEE]
 (
-	[typee] text,
-	[columnId] integer NOT NULL,
 	[constraintId] integer NOT NULL,
-	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id]),
+	[columnId] integer NOT NULL,
+	[typee] text,
 	FOREIGN KEY ([columnId])
-	REFERENCES [Columnn] ([id])
+	REFERENCES [Columnn] ([id]),
+	FOREIGN KEY ([constraintId])
+	REFERENCES [Constraintt] ([id])
 );
 
 
