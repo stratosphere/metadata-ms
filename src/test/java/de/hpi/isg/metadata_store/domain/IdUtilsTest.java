@@ -99,7 +99,7 @@ public class IdUtilsTest {
         }
     }
 
-//    @Test
+    @Test
     public void testGenerationOfIds() {
         final MetadataStore store = new DefaultMetadataStore();
         store.addSchema("foo", mock(Location.class)).addTable(store, "bar", mock(Location.class))

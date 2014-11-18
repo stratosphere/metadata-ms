@@ -11,7 +11,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -108,22 +111,26 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testConstructingAComplexSchema() {
+        final DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+        System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating schemas");
         final MetadataStore metadataStore = new RDBMSMetadataStore(new SQLiteInterface(connection));
         for (int schemaNumber = 0; schemaNumber < 3; schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber),
                     new HDFSLocation("bar"));
-            for (int tableNumber = 0; tableNumber < 5; tableNumber++) {
+            for (int tableNumber = 0; tableNumber < 10; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber),
                         new HDFSLocation("foo"));
-                for (int columnNumber = 0; columnNumber < 10; columnNumber++) {
+                for (int columnNumber = 0; columnNumber < 20; columnNumber++) {
                     Column column = table.addColumn(metadataStore, String.format("column-%03d", columnNumber),
                             columnNumber);
                 }
             }
         }
         System.out.println("Created schemas");
-
+        System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
+        System.out.println("Creating INDS");
         final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
         ConstraintCollection constraintCollection = new RDBMSConstraintCollection(1, new HashSet<Constraint>(),
                 new HashSet<Target>(), new SQLiteInterface(connection));
@@ -155,11 +162,12 @@ public class RDBMSMetadataStoreTest {
                 }
             }
         }
-
+        System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println(String.format("Adding %d inclusion dependencies.", inclusionDependencies.size()));
         metadataStore.addConstraintCollection(constraintCollection);
         assertTrue(metadataStore.getConstraintCollections().iterator().next().getConstraints().size() == inclusionDependencies
                 .size());
+        System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
     }
 
     @Test

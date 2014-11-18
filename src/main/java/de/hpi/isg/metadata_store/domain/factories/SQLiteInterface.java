@@ -42,8 +42,17 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
 
 public class SQLiteInterface implements SQLInterface {
 
+    private final int CACHE_SIZE = 1000;
+
     Connection connection;
     RDBMSMetadataStore store;
+
+    LRUCache<Integer, Column> columnCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, Table> tableCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, Schema> schemaCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Table, Collection<Column>> allColumnsForTableCache = new LRUCache<>(CACHE_SIZE);
+    Collection<Target> allTargets = null;
+    Collection<Schema> allSchemas = null;
 
     public SQLiteInterface(Connection connection) {
         this.connection = connection;
@@ -195,6 +204,9 @@ public class SQLiteInterface implements SQLInterface {
             stmt.executeUpdate(sqlSchemaAdd);
 
             stmt.close();
+
+            // invalidate cache
+            allSchemas = null;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -203,6 +215,9 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Collection<Target> getAllTargets() {
+        if (allTargets != null) {
+            return allTargets;
+        }
         try {
             Collection<Target> targets = new HashSet<>();
             Statement stmt = this.connection.createStatement();
@@ -212,7 +227,8 @@ public class SQLiteInterface implements SQLInterface {
             }
             rs.close();
             stmt.close();
-            return targets;
+            allTargets = targets;
+            return allTargets;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -230,6 +246,9 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Collection<Schema> getAllSchemas() {
+        if (allSchemas != null) {
+            return allSchemas;
+        }
         try {
             Collection<Schema> schemas = new HashSet<>();
             Statement stmt = this.connection.createStatement();
@@ -241,7 +260,8 @@ public class SQLiteInterface implements SQLInterface {
             }
             rs.close();
             stmt.close();
-            return schemas;
+            allSchemas = schemas;
+            return allSchemas;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -273,6 +293,10 @@ public class SQLiteInterface implements SQLInterface {
             stmt.executeUpdate(sql);
 
             stmt.close();
+
+            // invalidate cache
+            allTargets = null;
+
             return true;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -295,6 +319,9 @@ public class SQLiteInterface implements SQLInterface {
 
             stmt.close();
             stmt2.close();
+
+            // invalidate cache
+            allTargets = null;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -459,6 +486,10 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Column getColumnById(int columnId) {
+        Column cached = columnCache.get(columnId);
+        if (cached != null) {
+            return cached;
+        }
         try {
             Statement stmt = this.connection.createStatement();
             String sqlColumnById = String
@@ -468,13 +499,14 @@ public class SQLiteInterface implements SQLInterface {
                             columnId);
             ResultSet rs = stmt.executeQuery(sqlColumnById);
             while (rs.next()) {
-                return RDBMSColumn
+                columnCache.put(columnId, RDBMSColumn
                         .build(store,
                                 this.getTableById(rs.getInt("tableId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
                                 new IndexedLocation(rs.getInt("locationIndex"), new HDFSLocation(rs
-                                        .getString("location"))));
+                                        .getString("location")))));
+                return columnCache.get(columnId);
             }
             rs.close();
             stmt.close();
@@ -486,6 +518,10 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Table getTableById(int tableId) {
+        Table cached = tableCache.get(tableId);
+        if (cached != null) {
+            return cached;
+        }
         try {
             Statement stmt = this.connection.createStatement();
             String sqlTableById = String
@@ -494,12 +530,13 @@ public class SQLiteInterface implements SQLInterface {
                             tableId);
             ResultSet rs = stmt.executeQuery(sqlTableById);
             while (rs.next()) {
-                return RDBMSTable
+                tableCache.put(tableId, RDBMSTable
                         .build(store,
                                 this.getSchemaById(rs.getInt("schemaId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
-                                new HDFSLocation(rs.getString("location")));
+                                new HDFSLocation(rs.getString("location"))));
+                return tableCache.get(tableId);
             }
             rs.close();
             stmt.close();
@@ -511,6 +548,10 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Schema getSchemaById(int schemaId) {
+        Schema cached = schemaCache.get(schemaId);
+        if (cached != null) {
+            return cached;
+        }
         try {
             Statement stmt = this.connection.createStatement();
             String sqlSchemaeById = String
@@ -519,11 +560,12 @@ public class SQLiteInterface implements SQLInterface {
                             schemaId);
             ResultSet rs = stmt.executeQuery(sqlSchemaeById);
             while (rs.next()) {
-                return RDBMSSchema
+                schemaCache.put(schemaId, RDBMSSchema
                         .build(store,
                                 rs.getInt("id"),
                                 rs.getString("name"),
-                                new HDFSLocation(rs.getString("location")));
+                                new HDFSLocation(rs.getString("location"))));
+                return schemaCache.get(schemaId);
             }
             rs.close();
             stmt.close();
@@ -635,6 +677,7 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) {
+        // TODO caching
         try {
             Collection<Table> tables = new HashSet<>();
             Statement stmt = this.connection.createStatement();
@@ -674,6 +717,10 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) {
+        Collection<Column> allColumnsForTable = allColumnsForTableCache.get(rdbmsTable);
+        if (allColumnsForTable != null) {
+            return allColumnsForTable;
+        }
         try {
             Collection<Column> columns = new HashSet<>();
             Statement stmt = this.connection.createStatement();
@@ -689,7 +736,8 @@ public class SQLiteInterface implements SQLInterface {
             }
             rs.close();
             stmt.close();
-            return columns;
+            allColumnsForTableCache.put(rdbmsTable, columns);
+            return allColumnsForTableCache.get(rdbmsTable);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -697,6 +745,11 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public void addColumnToTable(RDBMSColumn newColumn, Table table) {
+        // update cache
+        Collection<Column> allColumnsForTable = allColumnsForTableCache.get(table);
+        if (allColumnsForTable != null) {
+            allColumnsForTable.add(newColumn);
+        }
         try {
             Statement stmt = this.connection.createStatement();
             String sqlColumnAdd = String.format(
