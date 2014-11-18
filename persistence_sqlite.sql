@@ -2,16 +2,16 @@
 /* Drop Tables */
 
 DROP TABLE [INDpart];
-DROP TABLE [TYPEE];
+DROP TABLE [Typee];
 DROP TABLE [Columnn];
 DROP TABLE [Scope];
 DROP TABLE [IND];
 DROP TABLE [Constraintt];
 DROP TABLE [ConstraintCollection];
-DROP TABLE [LocationProperty];
 DROP TABLE [Tablee];
 DROP TABLE [Schemaa];
 DROP TABLE [Target];
+DROP TABLE [LocationProperty];
 DROP TABLE [Location];
 
 
@@ -30,7 +30,7 @@ CREATE TABLE [Target]
 (
 	[id] integer NOT NULL,
 	[name] text,
-	[locationId] integer NOT NULL,
+	[locationId] integer,
 	PRIMARY KEY ([id]),
 	FOREIGN KEY ([locationId])
 	REFERENCES [Location] ([id])
@@ -62,12 +62,11 @@ CREATE TABLE [Columnn]
 (
 	[id] integer NOT NULL,
 	[tableId] integer NOT NULL,
-	[locationIndex] integer,
 	PRIMARY KEY ([id]),
-	FOREIGN KEY ([tableId])
-	REFERENCES [Tablee] ([id]),
 	FOREIGN KEY ([id])
-	REFERENCES [Target] ([id])
+	REFERENCES [Target] ([id]),
+	FOREIGN KEY ([tableId])
+	REFERENCES [Tablee] ([id])
 );
 
 
@@ -101,12 +100,12 @@ CREATE TABLE [INDpart]
 	[constraintId] integer NOT NULL,
 	[lhs] integer NOT NULL,
 	[rhs] integer NOT NULL,
+	FOREIGN KEY ([constraintId])
+	REFERENCES [IND] ([constraintId]),
 	FOREIGN KEY ([lhs])
 	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([rhs])
-	REFERENCES [Columnn] ([id]),
-	FOREIGN KEY ([constraintId])
-	REFERENCES [IND] ([constraintId])
+	REFERENCES [Columnn] ([id])
 );
 
 
@@ -131,15 +130,15 @@ CREATE TABLE [Scope]
 );
 
 
-CREATE TABLE [TYPEE]
+CREATE TABLE [Typee]
 (
 	[constraintId] integer NOT NULL,
 	[columnId] integer NOT NULL,
 	[typee] text,
-	FOREIGN KEY ([columnId])
-	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id])
+	REFERENCES [Constraintt] ([id]),
+	FOREIGN KEY ([columnId])
+	REFERENCES [Columnn] ([id])
 );
 
 

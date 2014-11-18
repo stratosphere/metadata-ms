@@ -10,7 +10,6 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
-import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -27,7 +26,7 @@ public class ConstraintTest {
         final MetadataStore store1 = new DefaultMetadataStore();
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
-                new IndexedLocation(0, null));
+                mock(Location.class));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
                 dummyColumn),
@@ -78,7 +77,7 @@ public class ConstraintTest {
     public void testTypeConstraint() {
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", new IndexedLocation(0, null));
+                "dummyColumn1", mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(1,
@@ -95,7 +94,7 @@ public class ConstraintTest {
         final MetadataStore store = new DefaultMetadataStore();
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(store, mock(Table.class), "dummyColumn3 ",
-                new IndexedLocation(0, null));
+                mock(Location.class));
 
         store.getSchemas().add(
                 DefaultSchema.buildAndRegister(store, "dummySchema", null).addTable(
@@ -115,7 +114,7 @@ public class ConstraintTest {
         final MetadataStore store2 = new DefaultMetadataStore();
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
-                "dummyColumn2", new IndexedLocation(0, null));
+                "dummyColumn2", mock(Location.class));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
                 dummyColumn),

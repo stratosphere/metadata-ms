@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
@@ -72,4 +73,6 @@ public interface SQLInterface {
     ConstraintCollection getConstraintCollectionById(int id);
 
     Reference getInclusionDependencyReferences(int int1);
+
+    Location getLocationFor(int id);
 }

@@ -12,7 +12,7 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -72,7 +72,8 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         final int localSchemaId = IdUtils.getLocalSchemaId(getId());
         final int localTableId = IdUtils.getLocalTableId(getId());
         final int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
-        final IndexedLocation location = new IndexedLocation(index, getLocation());
+        final Location location = new DefaultLocation();
+        location.getProperties().put(Location.INDEX, index + "");
         final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
                 name,
                 location);

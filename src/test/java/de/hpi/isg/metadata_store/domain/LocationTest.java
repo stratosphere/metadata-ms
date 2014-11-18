@@ -1,31 +1,29 @@
 package de.hpi.isg.metadata_store.domain;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import org.junit.Test;
 
-import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
-import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 
 public class LocationTest {
 
     @Test
-    public void testHDFSLocation() {
+    public void testDefaultLocation() {
 
-        final HDFSLocation location1 = new HDFSLocation("foo");
-        final HDFSLocation location2 = new HDFSLocation("foo");
+        final DefaultLocation location1 = new DefaultLocation();
+        location1.getProperties().put(Location.PATH, "hdfs//123");
+
+        final DefaultLocation location2 = new DefaultLocation();
+        location2.getProperties().put(Location.PATH, "hdfs//123");
+
+        final DefaultLocation location3 = new DefaultLocation();
+        location3.getProperties().put(Location.PATH, "hdfs//321");
 
         assertEquals(location1, location2);
-    }
-
-    @Test
-    public void testIndexedLocation() {
-
-        final HDFSLocation location1 = new HDFSLocation("foo");
-        final IndexedLocation iLocation1 = new IndexedLocation(1, location1);
-        final IndexedLocation iLocation2 = new IndexedLocation(1, location1);
-
-        assertEquals(iLocation1, iLocation2);
+        assertFalse(location1.equals(location3));
+        assertFalse(location2.equals(location3));
     }
 
 }
