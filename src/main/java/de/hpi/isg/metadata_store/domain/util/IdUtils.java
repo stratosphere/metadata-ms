@@ -30,6 +30,9 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
 @SuppressWarnings("serial")
 public class IdUtils implements Serializable {
 
+    public static final int DEFAULT_NUM_COLUMN_BITS = 12;
+    public static final int DEFAULT_NUM_TABLE_BITS = 12;
+    
     private final int numTableBits;
     private final int numColumnBits;
     private final int numSchemaBits;

@@ -3,9 +3,12 @@ package de.hpi.isg.metadata_store.domain.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
 
@@ -27,29 +30,60 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 /**
  * The default implementation of the {@link MetadataStore}.
- *
+ * 
  */
 
 public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
+    private static final String NUM_COLUMN_BITS_IN_IDS_KEY = "numColumnBitsInIds";
+
+    private static final String NUM_TABLE_BITS_IN_IDS_KEY = "numTableBitsInIds";
+
     private static final long serialVersionUID = 400271996998552017L;
+    
+    private static final Logger LOGGER = Logger.getLogger(RDBMSMetadataStore.class.getCanonicalName());
 
     @ExcludeHashCodeEquals
     transient final SQLInterface sqlInterface;
 
     @ExcludeHashCodeEquals
     transient final Random randomGenerator = new Random();
-    
+
     @ExcludeHashCodeEquals
     transient final IdUtils idUtils;
 
-    public RDBMSMetadataStore(SQLiteInterface sqliteInterface) {
-        this(sqliteInterface, 12, 12);
+    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface) {
+        return createNewInstance(sqliteInterface, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
+    }
+    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqlInterface, int numTableBitsInIds, int numColumnBitsInIds) {
+        Map<String, String> configuration = new HashMap<>();
+        configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(numTableBitsInIds));
+        configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(numColumnBitsInIds));
+        return RDBMSMetadataStore.createNewInstance(sqlInterface, configuration);
     }
     
-    public RDBMSMetadataStore(SQLiteInterface sqliteInterface, int numTableBitsInIds, int numColumnBitsInIds) {
+    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
+        if (sqliteInterface.tablesExist()) {
+            Logger.getAnonymousLogger().warning("The metadata store will be overwritten.");;
+        }
+        sqliteInterface.initializeMetadataStore();
+        RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface, configuration);
+        sqliteInterface.saveConfiguration();
+        return metadataStore;
+    }
+    
+    public static RDBMSMetadataStore load(SQLiteInterface sqliteInterface) {
+        if (!sqliteInterface.tablesExist()) {
+            throw new IllegalStateException("The metadata store does not seem to be initialized.");
+        }
+        Map<String, String> configuration = sqliteInterface.loadConfiguration();
+        return new RDBMSMetadataStore(sqliteInterface, configuration);
+    }
+    private RDBMSMetadataStore(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
         this.sqlInterface = sqliteInterface;
         this.sqlInterface.setMetadataStore(this);
+        int numTableBitsInIds = Integer.valueOf(configuration.get(NUM_TABLE_BITS_IN_IDS_KEY));
+        int numColumnBitsInIds = Integer.valueOf(configuration.get(NUM_COLUMN_BITS_IN_IDS_KEY));
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
     }
 
@@ -120,7 +154,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public int getUnusedSchemaId() {
         final int searchOffset = this.getSchemas().size();
-        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils.getMaxSchemaNumber(); baseSchemaNumber++) {
+        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils
+                .getMaxSchemaNumber(); baseSchemaNumber++) {
             int schemaNumber = baseSchemaNumber + searchOffset;
             schemaNumber = schemaNumber > this.idUtils.getMaxSchemaNumber() ? schemaNumber
                     - (this.idUtils.getMaxSchemaNumber() - this.idUtils.getMinSchemaNumber()) : schemaNumber;
@@ -137,7 +172,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
         final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = schema.getTables().size();
-        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils.getMaxTableNumber(); baseTableNumber++) {
+        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils
+                .getMaxTableNumber(); baseTableNumber++) {
             int tableNumber = baseTableNumber + searchOffset;
             tableNumber = tableNumber > this.idUtils.getMaxTableNumber() ? tableNumber
                     - (this.idUtils.getMaxTableNumber() - this.idUtils.getMinTableNumber()) : tableNumber;
@@ -211,12 +247,28 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
                 new HashSet<Constraint>(), new HashSet<Target>(), getSQLInterface());
         return constraintCollection;
     }
-    
+
     /**
      * @return the idUtils
      */
     @Override
     public IdUtils getIdUtils() {
         return idUtils;
+    }
+
+    /**
+     * @return key value pairs that describe the configuration of this metadata store.
+     */
+    public Map<String, String> getConfiguration() {
+        Map<String, String> configuration = new HashMap<String, String>();
+        configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumTableBits()));
+        configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumTableBits()));
+        return configuration;
+    }
+
+    @Override
+    public void save(String path) {
+        LOGGER.warning("save(path) is not fully supported for this metadata store.");
+        this.sqlInterface.saveConfiguration();
     }
 }

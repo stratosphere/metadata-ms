@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.domain;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 
@@ -72,4 +73,11 @@ public interface MetadataStore extends Serializable, Observer {
     ConstraintCollection createConstraintCollection();
     
     IdUtils getIdUtils();
+
+    /**
+     * Saves this store to the given path, if manual saving is supported.
+     * @throws IOException 
+     */
+    public void save(String path) throws IOException;
+
 }

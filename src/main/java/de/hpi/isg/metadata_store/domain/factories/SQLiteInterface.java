@@ -9,8 +9,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -75,6 +77,7 @@ public class SQLiteInterface implements SQLInterface {
                     "DROP TABLE IF EXISTS [Tablee];\n" +
                     "DROP TABLE IF EXISTS [Schemaa];\n" +
                     "DROP TABLE IF EXISTS [Target];\n" +
+                    "DROP TABLE IF EXISTS [Config];\n" +
                     "\n" +
                     "\n" +
                     "\n" +
@@ -183,6 +186,13 @@ public class SQLiteInterface implements SQLInterface {
                     "    REFERENCES [Constraintt] ([id]),\n" +
                     "    FOREIGN KEY ([columnId])\n" +
                     "    REFERENCES [Columnn] ([id])\n" +
+                    ");\n" +
+                    "\n" +
+                    "\n" +
+                    "CREATE TABLE [Config]\n" +
+                    "(\n" +
+                    "    [key] text NOT NULL PRIMARY KEY,\n" +
+                    "    [value] text\n" +
                     ");\n" +
                     "\n" +
                     "\n" +
@@ -769,7 +779,7 @@ public class SQLiteInterface implements SQLInterface {
     public boolean tablesExist() {
         DatabaseMetaData meta;
         String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection", "Constraintt", "IND",
-                "INDpart", "Scope", "TYPEE" };
+                "INDpart", "Scope", "TYPEE", "Config" };
         Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
 
         try {
@@ -786,5 +796,42 @@ public class SQLiteInterface implements SQLInterface {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Saves configuration of the metadata store.
+     */
+    @Override
+    public void saveConfiguration() {
+        Map<String, String> configuration = this.store.getConfiguration();
+        try (Statement statement = this.connection.createStatement()) {
+            for (Map.Entry<String, String> configEntry : configuration.entrySet()) {
+                String configKey = configEntry.getKey();
+                String value = configEntry.getValue();
+                statement.addBatch(String.format("DELETE FROM Config WHERE key=\"%s\";", configKey));
+                statement.addBatch(String.format("INSERT INTO Config (key, value) VALUES (\"%s\", \"%s\");", configKey, value));
+            }
+            statement.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not save metadata store configuration.", e);
+        }
+    }
+    
+    /**
+     * Load configuration of the metadata store.
+     */
+    @Override
+    public Map<String, String> loadConfiguration() {
+        Map<String, String> configuration = new HashMap<String, String>();
+        try (Statement statement = this.connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT key, value FROM Config;");
+            while (resultSet.next()) {
+                configuration.put(resultSet.getString("key"), resultSet.getString("value"));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load metadata store configuration.", e);
+        }
+        
+        return configuration;
     }
 }

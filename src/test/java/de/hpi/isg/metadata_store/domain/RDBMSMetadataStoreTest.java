@@ -64,7 +64,7 @@ public class RDBMSMetadataStoreTest {
             System.exit(0);
         }
 
-        MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
     }
 
     @After
@@ -103,7 +103,7 @@ public class RDBMSMetadataStoreTest {
     // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Test
     public void testAddingOfSchema() {
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         final Schema schema1 = store1.addSchema("pdb", new HDFSLocation("foo/bar"));
         assertTrue(store1.getSchemas().contains(schema1));
         assertTrue(store1.getAllTargets().contains(schema1));
@@ -115,7 +115,7 @@ public class RDBMSMetadataStoreTest {
 
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating schemas");
-        final MetadataStore metadataStore = new RDBMSMetadataStore(new SQLiteInterface(connection));
+        final MetadataStore metadataStore = RDBMSMetadataStore.load(new SQLiteInterface(connection));
         for (int schemaNumber = 0; schemaNumber < 3; schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber),
                     new HDFSLocation("bar"));
@@ -174,7 +174,7 @@ public class RDBMSMetadataStoreTest {
     public void testGetOrCreateOfExisting() {
 
         // setup store
-        final RDBMSMetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -188,22 +188,22 @@ public class RDBMSMetadataStoreTest {
 
         store1.addConstraint(dummyContraint);
 
-        MetadataStore store2 = MetadataStoreFactory.getMetadataStoreFromSQLite(connection);
+        MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
 
         assertEquals(store1, store2);
     }
 
     @Test
     public void testCreationOfEmptyRDBMSMetadataStore() {
-        MetadataStore store2 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        MetadataStore store2 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
-        assertEquals(store2, new RDBMSMetadataStore(new SQLiteInterface(connection)));
+        assertEquals(store2, RDBMSMetadataStore.load(new SQLiteInterface(connection)));
     }
 
     @Test
     public void testRetrievingOfSchemaByName() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -213,7 +213,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testConstraintCollections() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
         Column col1 = dummySchema1.addTable(store1, "table1", new HDFSLocation("hdfs://foobar")).addColumn(store1,
@@ -251,21 +251,21 @@ public class RDBMSMetadataStoreTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testGetSchemasAddingFails() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.getSchemas().add(mock(Schema.class));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetTablesAddingFails() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.addSchema("foo", mock(Location.class)).getTables().add(mock(Table.class));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetColumnsAddingFails() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.addSchema("foo", new HDFSLocation("foo")).addTable(store1, "bar", new HDFSLocation("bar")).getColumns()
                 .add(mock(Column.class));
     }
@@ -274,7 +274,7 @@ public class RDBMSMetadataStoreTest {
     @Test(expected = NameAmbigousException.class)
     public void testRetrievingOfSchemaByNameWithAmbigousNameFails() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -286,7 +286,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testRetrievingOfSchemaByNameWithUnknownNameReturnsNull() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
 
         assertEquals(store1.getSchema("PDB"), null);
@@ -295,7 +295,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testStoringOfFilledMetadataStore() {
         // setup store
-        final MetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
 
@@ -311,7 +311,7 @@ public class RDBMSMetadataStoreTest {
         store1.addConstraint(dummyContraint);
 
         // retrieve store
-        MetadataStore store2 = MetadataStoreFactory.getMetadataStoreFromSQLite(connection);
+        MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
 
         assertEquals(dummySchema, store2.getSchemas().iterator().next());
 
@@ -324,12 +324,12 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testStoringOfFilledMetadataStore2() {
         // setup store
-        final RDBMSMetadataStore store1 = MetadataStoreFactory.createEmptyMetadataStoreInSQLite(connection);
+        final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema = store1.addSchema("PDB", new HDFSLocation("hdfs://foobar"));
 
         // retrieve store
-        MetadataStore store2 = MetadataStoreFactory.getMetadataStoreFromSQLite(connection);
+        MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
 
         assertEquals(store1, store2);
 

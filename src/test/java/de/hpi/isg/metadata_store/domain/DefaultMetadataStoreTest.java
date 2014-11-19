@@ -72,7 +72,7 @@ public class DefaultMetadataStoreTest {
     @Test
     public void testConstructingAComplexSchema() {
         final MetadataStore metadataStore = new DefaultMetadataStore();
-        for (int schemaNumber = 0; schemaNumber <= metadataStore.getIdUtils().getMaxSchemaNumber(); schemaNumber++) {
+        for (int schemaNumber = 0; schemaNumber <= Math.min(10, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
             for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
@@ -119,7 +119,7 @@ public class DefaultMetadataStoreTest {
     public void testGetMetaDataStoreOnNotExistingFails() {
         final File file = new File(this.dir, "nooooootExisting.ms");
 
-        MetadataStoreFactory.getMetadataStore(file);
+        MetadataStoreFactory.loadDefaultMetadataStore(file);
     }
 
     @Test
@@ -147,7 +147,7 @@ public class DefaultMetadataStoreTest {
         store1.addConstraint(dummyContraint);
 
         try {
-            MetadataStoreFactory.saveMetadataStore(file, store1);
+            store1.save(file.getAbsolutePath());
         } catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -155,7 +155,7 @@ public class DefaultMetadataStoreTest {
 
         MetadataStore store2 = null;
         try {
-            store2 = MetadataStoreFactory.getOrCreateAndSaveMetadataStore(file);
+            store2 = MetadataStoreFactory.loadOrCreateAndSaveDefaultMetadataStore(file);
         } catch (MetadataStoreNotFoundException | IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -170,7 +170,7 @@ public class DefaultMetadataStoreTest {
 
         MetadataStore store2 = null;
         try {
-            store2 = MetadataStoreFactory.getOrCreateAndSaveMetadataStore(file);
+            store2 = MetadataStoreFactory.loadOrCreateAndSaveDefaultMetadataStore(file);
         } catch (MetadataStoreNotFoundException | IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -240,14 +240,14 @@ public class DefaultMetadataStoreTest {
         final File file = new File(this.dir, "emptyStore.ms");
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         try {
-            MetadataStoreFactory.saveMetadataStore(file, store1);
+            store1.save(file.getAbsolutePath());
         } catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
         MetadataStore store2 = null;
         try {
-            store2 = MetadataStoreFactory.getMetadataStore(file);
+            store2 = MetadataStoreFactory.loadDefaultMetadataStore(file);
         } catch (final MetadataStoreNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -283,7 +283,7 @@ public class DefaultMetadataStoreTest {
         store1.addConstraint(dummyContraint);
 
         try {
-            MetadataStoreFactory.saveMetadataStore(file, store1);
+            store1.save(file.getAbsolutePath());
         } catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -293,7 +293,7 @@ public class DefaultMetadataStoreTest {
         MetadataStore store2 = null;
 
         try {
-            store2 = MetadataStoreFactory.getMetadataStore(file);
+            store2 = MetadataStoreFactory.loadDefaultMetadataStore(file);
         } catch (final MetadataStoreNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -320,7 +320,7 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema);
 
         try {
-            MetadataStoreFactory.saveMetadataStore(file, store1);
+            store1.save(file.getAbsolutePath());
         } catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -330,7 +330,7 @@ public class DefaultMetadataStoreTest {
         MetadataStore store2 = null;
 
         try {
-            store2 = MetadataStoreFactory.getMetadataStore(file);
+            store2 = MetadataStoreFactory.loadDefaultMetadataStore(file);
         } catch (final MetadataStoreNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -354,7 +354,7 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
 
         try {
-            MetadataStoreFactory.saveMetadataStore(file, store1);
+            store1.save(file.getAbsolutePath());
         } catch (final IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -364,7 +364,7 @@ public class DefaultMetadataStoreTest {
         MetadataStore store2 = null;
 
         try {
-            store2 = MetadataStoreFactory.getMetadataStore(file);
+            store2 = MetadataStoreFactory.loadDefaultMetadataStore(file);
         } catch (final MetadataStoreNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

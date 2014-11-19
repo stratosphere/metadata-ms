@@ -3,6 +3,10 @@ package de.hpi.isg.metadata_store.domain.impl;
 import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -215,4 +219,16 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     public IdUtils getIdUtils() {
         return this.idUtils;
     }
+    
+    @Override
+    public void save(String path) throws IOException {
+        File file = new File(path);
+        file.getParentFile().mkdirs();
+        final FileOutputStream fout = new FileOutputStream(file);
+        final ObjectOutputStream oos = new ObjectOutputStream(fout);
+        oos.writeObject(this);
+        oos.close();
+
+    }
+    
 }

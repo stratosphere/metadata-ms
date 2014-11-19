@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
 import java.util.Collection;
+import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
@@ -72,4 +73,8 @@ public interface SQLInterface {
     ConstraintCollection getConstraintCollectionById(int id);
 
     Reference getInclusionDependencyReferences(int int1);
+    
+    void saveConfiguration();
+
+    Map<String, String> loadConfiguration();
 }
