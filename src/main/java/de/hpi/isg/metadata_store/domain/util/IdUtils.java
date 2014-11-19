@@ -12,6 +12,8 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.util;
 
+import java.io.Serializable;
+
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 
 /**
@@ -19,34 +21,35 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  * following conventions:
  * <ol>
  * <li>The 32 bit of each ID are assigned to different elements: <tt>xxx... yyy... zzz....</tt></li>
- * <li>the high {@value #NUM_SCHEMA_BITS} bits are used to encode the schema (<tt>x</tt>)</li>
- * <li>the mid {@value #NUM_TABLE_BITS} bits are used to encode the table (<tt>y</tt>)</li>
- * <li>the low {@value #NUM_COLUMN_BITS} bits are used to encode the column (<tt>y</tt>)</li>
+ * <li>the high {@value #numSchemaBits} bits are used to encode the schema (<tt>x</tt>)</li>
+ * <li>the mid {@value #numTableBits} bits are used to encode the table (<tt>y</tt>)</li>
+ * <li>the low {@value #numColumnBits} bits are used to encode the column (<tt>y</tt>)</li>
  * <li>for schema IDs and table IDs the column (and the table bits) are all set to 1</li>
  * </ol>
  */
-public class IdUtils {
+@SuppressWarnings("serial")
+public class IdUtils implements Serializable {
 
-    private static final int NUM_TABLE_BITS = 12;
-    private static final int NUM_COLUMN_BITS = 12;
-    private static final int NUM_SCHEMA_BITS = 32 - NUM_TABLE_BITS - NUM_COLUMN_BITS;
+    private final int numTableBits;
+    private final int numColumnBits;
+    private final int numSchemaBits;
 
-    private static final int SCHEMA_ID_BITMASK = toBitMask(NUM_SCHEMA_BITS);
-    private static final int SCHEMA_ID_OFFSET = NUM_TABLE_BITS + NUM_COLUMN_BITS;
+    private final int schemaIdBitmask;
+    private final int schemaIdOffset;
 
-    private static final int TABLE_ID_BITMASK = toBitMask(NUM_TABLE_BITS);
-    private static final int TABLE_ID_OFFSET = NUM_COLUMN_BITS;
+    private final int tableIdBitmask;
+    private final int tableIdOffset;
 
-    private static final int COLUMN_ID_BITMASK = toBitMask(NUM_COLUMN_BITS);
+    private final int columnIdBitmask;
 
-    public static final int MIN_SCHEMA_NUMBER = 0;
-    public static final int MAX_SCHEMA_NUMBER = twoToThePowerOf(NUM_SCHEMA_BITS) - 1; // 2 ^ 4
+    public final int minSchemaNumber;
+    public final int maxSchemaNumber; // 2 ^ 4
 
-    public static final int MIN_TABLE_NUMBER = 0;
-    public static final int MAX_TABLE_NUMBER = twoToThePowerOf(NUM_TABLE_BITS) - 2; // 2^20 - 2
+    public final int minTableNumber;
+    public final int maxTableNumber; // 2^20 - 2
 
-    public static final int MIN_COLUMN_NUMBER = 0;
-    public static final int MAX_COLUMN_NUMBER = twoToThePowerOf(NUM_COLUMN_BITS) - 2; // 2^8 - 2
+    public final int minColumnNumber;
+    public final int maxColumnNumber; // 2^8 - 2
 
     private static int toBitMask(int numBits) {
         return twoToThePowerOf(numBits) - 1;
@@ -56,51 +59,71 @@ public class IdUtils {
         return 1 << x;
     }
 
-    private IdUtils() {
+    public IdUtils(int numTableBits, int numColumnBits) {
+        this.numSchemaBits = 32 - numTableBits - numColumnBits;
+        this.numTableBits = numTableBits;
+        this.numColumnBits = numColumnBits;
+        
+        schemaIdBitmask = toBitMask(numSchemaBits);
+        schemaIdOffset = numTableBits + numColumnBits;
+
+        tableIdBitmask = toBitMask(numTableBits);
+        tableIdOffset = numColumnBits;
+
+        columnIdBitmask = toBitMask(numColumnBits);
+
+        minSchemaNumber = 0;
+        maxSchemaNumber = twoToThePowerOf(numSchemaBits) - 1; // 2 ^ 4
+
+        minTableNumber = 0;
+        maxTableNumber = twoToThePowerOf(numTableBits) - 2; // 2^20 - 2
+
+        minColumnNumber = 0;
+        maxColumnNumber = twoToThePowerOf(numColumnBits) - 2; // 2^8 - 2
     }
 
     /**
      * Creates a global ID for the specified target.
      * 
      * @param localSchemaId
-     *        is a unique number for the schema between {@value #MIN_SCHEMA_NUMBER} and {@value #MAX_SCHEMA_NUMBER}
+     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
      * @param localTableId
-     *        is a unique number for the table within its schema between {@value #MIN_TABLE_NUMBER} and
-     *        {@value #MAX_TABLE_NUMBER}
+     *        is a unique number for the table within its schema between {@value #minTableNumber} and
+     *        {@value #maxTableNumber}
      * @param localColumnId
-     *        is the offset of the column within its table between {@value #MIN_COLUMN_NUMBER} and
-     *        {@value #MAX_COLUMN_NUMBER}
+     *        is the offset of the column within its table between {@value #minColumnNumber} and
+     *        {@value #maxColumnNumber}
      * @return the global ID
      */
-    public static int createGlobalId(final int localSchemaId, final int localTableId, final int localColumnId) {
-        return ((localSchemaId & SCHEMA_ID_BITMASK) << SCHEMA_ID_OFFSET)
-                | ((localTableId & TABLE_ID_BITMASK) << TABLE_ID_OFFSET)
-                | ((localColumnId) & COLUMN_ID_BITMASK);
+    public int createGlobalId(final int localSchemaId, final int localTableId, final int localColumnId) {
+        return ((localSchemaId & schemaIdBitmask) << schemaIdOffset)
+                | ((localTableId & tableIdBitmask) << tableIdOffset)
+                | ((localColumnId) & columnIdBitmask);
     }
 
     /**
      * Creates a global ID for the specified target.
      * 
      * @param localSchemaId
-     *        is a unique number for the schema between {@value #MIN_SCHEMA_NUMBER} and {@value #MAX_SCHEMA_NUMBER}
+     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
      * @param localTableId
-     *        is a unique number for the table within its schema between {@value #MIN_TABLE_NUMBER} and
-     *        {@value #MAX_TABLE_NUMBER}
+     *        is a unique number for the table within its schema between {@value #minTableNumber} and
+     *        {@value #maxTableNumber}
      * @return the global ID
      */
-    public static int createGlobalId(final int localSchemaId, final int localTableId) {
-        return createGlobalId(localSchemaId, localTableId, MAX_COLUMN_NUMBER + 1);
+    public int createGlobalId(final int localSchemaId, final int localTableId) {
+        return createGlobalId(localSchemaId, localTableId, maxColumnNumber + 1);
     }
 
     /**
      * Creates a global ID for the specified target.
      * 
      * @param localSchemaId
-     *        is a unique number for the schema between {@value #MIN_SCHEMA_NUMBER} and {@value #MAX_SCHEMA_NUMBER}
+     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
      * @return the global ID
      */
-    public static int createGlobalId(final int localSchemaId) {
-        return createGlobalId(localSchemaId, MAX_TABLE_NUMBER + 1, MAX_COLUMN_NUMBER + 1);
+    public int createGlobalId(final int localSchemaId) {
+        return createGlobalId(localSchemaId, maxTableNumber + 1, maxColumnNumber + 1);
     }
 
     /**
@@ -110,8 +133,8 @@ public class IdUtils {
      *        is the ID from which the local schema ID shall be extracted
      * @return the local schema ID
      */
-    public static int getLocalSchemaId(final int globalId) {
-        return (globalId >> SCHEMA_ID_OFFSET) & SCHEMA_ID_BITMASK;
+    public int getLocalSchemaId(final int globalId) {
+        return (globalId >> schemaIdOffset) & schemaIdBitmask;
     }
 
     /**
@@ -121,8 +144,8 @@ public class IdUtils {
      *        is the ID from which the local table ID shall be extracted
      * @return the local table ID
      */
-    public static int getLocalTableId(final int globalId) {
-        return (globalId >> TABLE_ID_OFFSET) & TABLE_ID_BITMASK;
+    public int getLocalTableId(final int globalId) {
+        return (globalId >> tableIdOffset) & tableIdBitmask;
     }
 
     /**
@@ -132,16 +155,57 @@ public class IdUtils {
      *        is the ID from which the local column ID shall be extracted
      * @return the local column ID
      */
-    public static int getLocalColumnId(final int globalId) {
-        return globalId & COLUMN_ID_BITMASK;
+    public int getLocalColumnId(final int globalId) {
+        return globalId & columnIdBitmask;
     }
 
-    public static boolean isSchemaId(final int id) {
-        return (getLocalTableId(id) > MAX_TABLE_NUMBER && getLocalColumnId(id) > MAX_COLUMN_NUMBER);
+    public boolean isSchemaId(final int id) {
+        return (getLocalTableId(id) > maxTableNumber && getLocalColumnId(id) > maxColumnNumber);
     }
 
-    public static boolean isTableId(final int id) {
-        return (getLocalColumnId(id) > MAX_TABLE_NUMBER && !(getLocalTableId(id) > MAX_COLUMN_NUMBER));
+    public boolean isTableId(final int id) {
+        return (getLocalColumnId(id) > maxTableNumber && !(getLocalTableId(id) > maxColumnNumber));
     }
 
+    public int getNumTableBits() {
+        return numTableBits;
+    }
+
+    public int getNumColumnBits() {
+        return numColumnBits;
+    }
+
+    public int getNumSchemaBits() {
+        return numSchemaBits;
+    }
+
+    public int getMinSchemaNumber() {
+        return minSchemaNumber;
+    }
+
+    public int getMaxSchemaNumber() {
+        return maxSchemaNumber;
+    }
+
+    public int getMinTableNumber() {
+        return minTableNumber;
+    }
+
+    public int getMaxTableNumber() {
+        return maxTableNumber;
+    }
+
+    public int getMinColumnNumber() {
+        return minColumnNumber;
+    }
+
+    public int getMaxColumnNumber() {
+        return maxColumnNumber;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("IdUtils [%d/%d/%d]", this.numSchemaBits, this.numColumnBits, this.numTableBits);
+    }
+    
 }

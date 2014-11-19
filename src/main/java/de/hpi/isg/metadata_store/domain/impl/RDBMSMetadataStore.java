@@ -39,10 +39,18 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @ExcludeHashCodeEquals
     transient final Random randomGenerator = new Random();
+    
+    @ExcludeHashCodeEquals
+    transient final IdUtils idUtils;
 
     public RDBMSMetadataStore(SQLiteInterface sqliteInterface) {
+        this(sqliteInterface, 12, 12);
+    }
+    
+    public RDBMSMetadataStore(SQLiteInterface sqliteInterface, int numTableBitsInIds, int numColumnBitsInIds) {
         this.sqlInterface = sqliteInterface;
         this.sqlInterface.setMetadataStore(this);
+        this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
     }
 
     @Override
@@ -112,11 +120,11 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public int getUnusedSchemaId() {
         final int searchOffset = this.getSchemas().size();
-        for (int baseSchemaNumber = IdUtils.MIN_SCHEMA_NUMBER; baseSchemaNumber <= IdUtils.MAX_SCHEMA_NUMBER; baseSchemaNumber++) {
+        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils.getMaxSchemaNumber(); baseSchemaNumber++) {
             int schemaNumber = baseSchemaNumber + searchOffset;
-            schemaNumber = schemaNumber > IdUtils.MAX_SCHEMA_NUMBER ? schemaNumber
-                    - (IdUtils.MAX_SCHEMA_NUMBER - IdUtils.MIN_SCHEMA_NUMBER) : schemaNumber;
-            final int id = IdUtils.createGlobalId(schemaNumber);
+            schemaNumber = schemaNumber > this.idUtils.getMaxSchemaNumber() ? schemaNumber
+                    - (this.idUtils.getMaxSchemaNumber() - this.idUtils.getMinSchemaNumber()) : schemaNumber;
+            final int id = this.idUtils.createGlobalId(schemaNumber);
             if (!this.idIsInUse(id)) {
                 return id;
             }
@@ -127,13 +135,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
-        final int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
+        final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = schema.getTables().size();
-        for (int baseTableNumber = IdUtils.MIN_TABLE_NUMBER; baseTableNumber <= IdUtils.MAX_TABLE_NUMBER; baseTableNumber++) {
+        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils.getMaxTableNumber(); baseTableNumber++) {
             int tableNumber = baseTableNumber + searchOffset;
-            tableNumber = tableNumber > IdUtils.MAX_TABLE_NUMBER ? tableNumber
-                    - (IdUtils.MAX_TABLE_NUMBER - IdUtils.MIN_TABLE_NUMBER) : tableNumber;
-            final int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
+            tableNumber = tableNumber > this.idUtils.getMaxTableNumber() ? tableNumber
+                    - (this.idUtils.getMaxTableNumber() - this.idUtils.getMinTableNumber()) : tableNumber;
+            final int id = this.idUtils.createGlobalId(schemaNumber, tableNumber);
             if (!this.idIsInUse(id)) {
                 return id;
             }
@@ -202,5 +210,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
                 new HashSet<Constraint>(), new HashSet<Target>(), getSQLInterface());
         return constraintCollection;
+    }
+    
+    /**
+     * @return the idUtils
+     */
+    @Override
+    public IdUtils getIdUtils() {
+        return idUtils;
     }
 }

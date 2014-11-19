@@ -69,9 +69,10 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     public Column addColumn(final MetadataStore metadataStore, final String name, final int index) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
         Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
-        final int localSchemaId = IdUtils.getLocalSchemaId(getId());
-        final int localTableId = IdUtils.getLocalTableId(getId());
-        final int columnId = IdUtils.createGlobalId(localSchemaId, localTableId, IdUtils.MIN_COLUMN_NUMBER + index);
+        IdUtils idUtils = metadataStore.getIdUtils();
+        final int localSchemaId = idUtils.getLocalSchemaId(getId());
+        final int localTableId = idUtils.getLocalTableId(getId());
+        final int columnId = idUtils.createGlobalId(localSchemaId, localTableId, idUtils.getMinColumnNumber() + index);
         final IndexedLocation location = new IndexedLocation(index, getLocation());
         final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
                 name,

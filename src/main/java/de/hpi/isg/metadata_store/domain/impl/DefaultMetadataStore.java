@@ -44,15 +44,23 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private final Collection<Target> allTargets;
 
     private final IntSet idsInUse = new IntOpenHashBigSet();
+    
+    @ExcludeHashCodeEquals
+    private final IdUtils idUtils;
 
     @ExcludeHashCodeEquals
     private final Random randomGenerator = new Random();
 
     public DefaultMetadataStore() {
+        this(12, 12);
+    }
+    
+    public DefaultMetadataStore(int numTableBitsInIds, int numColumnBitsInIds) {
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
         this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
         this.constraintCollections = Collections.synchronizedSet(new HashSet<ConstraintCollection>());
         this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
+        this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
     }
 
     @Override
@@ -123,11 +131,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public int getUnusedSchemaId() {
         final int searchOffset = this.getSchemas().size();
-        for (int baseSchemaNumber = IdUtils.MIN_SCHEMA_NUMBER; baseSchemaNumber <= IdUtils.MAX_SCHEMA_NUMBER; baseSchemaNumber++) {
+        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils.getMaxSchemaNumber(); baseSchemaNumber++) {
             int schemaNumber = baseSchemaNumber + searchOffset;
-            schemaNumber = schemaNumber > IdUtils.MAX_SCHEMA_NUMBER ? schemaNumber
-                    - (IdUtils.MAX_SCHEMA_NUMBER - IdUtils.MIN_SCHEMA_NUMBER) : schemaNumber;
-            final int id = IdUtils.createGlobalId(schemaNumber);
+            schemaNumber = schemaNumber > this.idUtils.getMaxSchemaNumber() ? schemaNumber
+                    - (this.idUtils.getMaxSchemaNumber() - this.idUtils.getMinSchemaNumber()) : schemaNumber;
+            final int id = this.idUtils.createGlobalId(schemaNumber);
             if (!this.idIsInUse(id)) {
                 return id;
             }
@@ -143,13 +151,13 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.schemas.contains(schema));
-        final int schemaNumber = IdUtils.getLocalSchemaId(schema.getId());
+        final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = schema.getTables().size();
-        for (int baseTableNumber = IdUtils.MIN_TABLE_NUMBER; baseTableNumber <= IdUtils.MAX_TABLE_NUMBER; baseTableNumber++) {
+        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils.getMaxTableNumber(); baseTableNumber++) {
             int tableNumber = baseTableNumber + searchOffset;
-            tableNumber = tableNumber > IdUtils.MAX_TABLE_NUMBER ? tableNumber
-                    - (IdUtils.MAX_TABLE_NUMBER - IdUtils.MIN_TABLE_NUMBER) : tableNumber;
-            final int id = IdUtils.createGlobalId(schemaNumber, tableNumber);
+            tableNumber = tableNumber > this.idUtils.getMaxTableNumber() ? tableNumber
+                    - (this.idUtils.getMaxTableNumber() - this.idUtils.getMinTableNumber()) : tableNumber;
+            final int id = this.idUtils.createGlobalId(schemaNumber, tableNumber);
             if (!this.idIsInUse(id)) {
                 return id;
             }
@@ -201,5 +209,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
                 new HashSet<Constraint>(), new HashSet<Target>());
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
+    }
+    
+    @Override
+    public IdUtils getIdUtils() {
+        return this.idUtils;
     }
 }

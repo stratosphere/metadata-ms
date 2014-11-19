@@ -235,9 +235,10 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     private Target buildTarget(int id) {
-        if (IdUtils.isSchemaId(id)) {
+        IdUtils idUtils = this.store.getIdUtils();
+        if (idUtils.isSchemaId(id)) {
             return getSchemaById(id);
-        } else if (IdUtils.isTableId(id)) {
+        } else if (idUtils.isTableId(id)) {
             return getTableById(id);
         } else {
             return getColumnById(id);

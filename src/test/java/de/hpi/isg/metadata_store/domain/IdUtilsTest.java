@@ -27,28 +27,30 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
 public class IdUtilsTest {
 
     private static final boolean VERBOSE = true;
+    
+    private IdUtils idUtils = new IdUtils(12, 12);
 
     @Test
     public void testIdAssembling() {
-        final List<Integer> schemaIds = Arrays.asList(IdUtils.MIN_SCHEMA_NUMBER, IdUtils.MIN_SCHEMA_NUMBER + 1,
-                IdUtils.MAX_SCHEMA_NUMBER - 1, IdUtils.MAX_SCHEMA_NUMBER);
-        final List<Integer> tableIds = Arrays.asList(IdUtils.MIN_TABLE_NUMBER, IdUtils.MIN_TABLE_NUMBER + 1,
-                IdUtils.MAX_TABLE_NUMBER - 1, IdUtils.MAX_TABLE_NUMBER);
-        final List<Integer> columnIds = Arrays.asList(IdUtils.MIN_COLUMN_NUMBER, IdUtils.MIN_COLUMN_NUMBER + 1,
-                IdUtils.MAX_COLUMN_NUMBER - 1, IdUtils.MAX_COLUMN_NUMBER);
+        final List<Integer> schemaIds = Arrays.asList(idUtils.getMinSchemaNumber(), idUtils.getMinSchemaNumber() + 1,
+                idUtils.getMaxSchemaNumber() - 1, idUtils.getMaxSchemaNumber());
+        final List<Integer> tableIds = Arrays.asList(idUtils.getMinTableNumber(), idUtils.getMinTableNumber() + 1,
+                idUtils.getMaxTableNumber() - 1, idUtils.getMaxTableNumber());
+        final List<Integer> columnIds = Arrays.asList(idUtils.getMinColumnNumber(), idUtils.getMinColumnNumber() + 1,
+                idUtils.getMaxColumnNumber() - 1, idUtils.getMaxColumnNumber());
         for (final int schemaId : schemaIds) {
             for (final int tableId : tableIds) {
                 for (final int columnId : columnIds) {
-                    final int globalId = IdUtils.createGlobalId(schemaId, tableId, columnId);
+                    final int globalId = idUtils.createGlobalId(schemaId, tableId, columnId);
 
                     if (VERBOSE) {
                         System.out.format("[%s] (%3d, %4d, %4d) -> %9x\n", getClass().getSimpleName(), schemaId,
                                 tableId, columnId, globalId);
                     }
 
-                    Assert.assertEquals(schemaId, IdUtils.getLocalSchemaId(globalId));
-                    Assert.assertEquals(tableId, IdUtils.getLocalTableId(globalId));
-                    Assert.assertEquals(columnId, IdUtils.getLocalColumnId(globalId));
+                    Assert.assertEquals(schemaId, idUtils.getLocalSchemaId(globalId));
+                    Assert.assertEquals(tableId, idUtils.getLocalTableId(globalId));
+                    Assert.assertEquals(columnId, idUtils.getLocalColumnId(globalId));
                 }
             }
         }
@@ -56,46 +58,46 @@ public class IdUtilsTest {
 
     @Test
     public void testTableIdsHaveNoValidColumn() {
-        final List<Integer> schemaIds = Arrays.asList(IdUtils.MIN_SCHEMA_NUMBER, IdUtils.MIN_SCHEMA_NUMBER + 1,
-                IdUtils.MAX_SCHEMA_NUMBER - 1, IdUtils.MAX_SCHEMA_NUMBER);
-        final List<Integer> tableIds = Arrays.asList(IdUtils.MIN_TABLE_NUMBER, IdUtils.MIN_TABLE_NUMBER + 1,
-                IdUtils.MAX_TABLE_NUMBER - 1, IdUtils.MAX_TABLE_NUMBER);
+        final List<Integer> schemaIds = Arrays.asList(idUtils.getMinSchemaNumber(), idUtils.getMinSchemaNumber() + 1,
+                idUtils.getMaxSchemaNumber() - 1, idUtils.getMaxSchemaNumber());
+        final List<Integer> tableIds = Arrays.asList(idUtils.getMinTableNumber(), idUtils.getMinTableNumber() + 1,
+                idUtils.getMaxTableNumber() - 1, idUtils.getMaxTableNumber());
         for (final int schemaId : schemaIds) {
             for (final int tableId : tableIds) {
-                final int globalId = IdUtils.createGlobalId(schemaId, tableId);
+                final int globalId = idUtils.createGlobalId(schemaId, tableId);
 
                 if (VERBOSE) {
                     System.out.format("[%s] (%2d, %7d, ----) -> %9x\n", getClass().getSimpleName(), schemaId,
                             tableId, globalId);
                 }
 
-                Assert.assertEquals(schemaId, IdUtils.getLocalSchemaId(globalId));
-                Assert.assertEquals(tableId, IdUtils.getLocalTableId(globalId));
-                final int localColumnId = IdUtils.getLocalColumnId(globalId);
-                Assert.assertFalse(localColumnId >= IdUtils.MIN_COLUMN_NUMBER
-                        && localColumnId <= IdUtils.MAX_COLUMN_NUMBER);
+                Assert.assertEquals(schemaId, idUtils.getLocalSchemaId(globalId));
+                Assert.assertEquals(tableId, idUtils.getLocalTableId(globalId));
+                final int localColumnId = idUtils.getLocalColumnId(globalId);
+                Assert.assertFalse(localColumnId >= idUtils.getMinColumnNumber()
+                        && localColumnId <= idUtils.getMaxColumnNumber());
             }
         }
     }
 
     @Test
     public void testSchemaIdsHaveNoValidTableAndColumn() {
-        final List<Integer> schemaIds = Arrays.asList(IdUtils.MIN_SCHEMA_NUMBER, IdUtils.MIN_SCHEMA_NUMBER + 1,
-                IdUtils.MAX_SCHEMA_NUMBER - 1, IdUtils.MAX_SCHEMA_NUMBER);
+        final List<Integer> schemaIds = Arrays.asList(idUtils.getMinSchemaNumber(), idUtils.getMinSchemaNumber() + 1,
+                idUtils.getMaxSchemaNumber() - 1, idUtils.getMaxSchemaNumber());
         for (final int schemaId : schemaIds) {
-            final int globalId = IdUtils.createGlobalId(schemaId);
+            final int globalId = idUtils.createGlobalId(schemaId);
 
             if (VERBOSE) {
                 System.out.format("[%s] (%3d, ----, ----) -> %9x\n", getClass().getSimpleName(), schemaId, globalId);
             }
 
-            Assert.assertEquals(schemaId, IdUtils.getLocalSchemaId(globalId));
-            final int localTableId = IdUtils.getLocalTableId(globalId);
-            Assert.assertFalse(localTableId >= IdUtils.MIN_TABLE_NUMBER
-                    && localTableId <= IdUtils.MAX_TABLE_NUMBER);
-            final int localColumnId = IdUtils.getLocalColumnId(globalId);
-            Assert.assertFalse(localColumnId >= IdUtils.MIN_COLUMN_NUMBER
-                    && localColumnId <= IdUtils.MAX_COLUMN_NUMBER);
+            Assert.assertEquals(schemaId, idUtils.getLocalSchemaId(globalId));
+            final int localTableId = idUtils.getLocalTableId(globalId);
+            Assert.assertFalse(localTableId >= idUtils.getMinTableNumber()
+                    && localTableId <= idUtils.getMaxTableNumber());
+            final int localColumnId = idUtils.getLocalColumnId(globalId);
+            Assert.assertFalse(localColumnId >= idUtils.getMinColumnNumber()
+                    && localColumnId <= idUtils.getMaxColumnNumber());
         }
     }
 
@@ -119,13 +121,13 @@ public class IdUtilsTest {
 
     @Test
     public void testIdTypeTest() {
-        Assert.assertTrue(IdUtils.isSchemaId(0b111111111111111111111111));
-        Assert.assertFalse(IdUtils.isTableId(0b1111111111111111111111111));
+        Assert.assertTrue(idUtils.isSchemaId(0b111111111111111111111111));
+        Assert.assertFalse(idUtils.isTableId(0b1111111111111111111111111));
 
-        Assert.assertFalse(IdUtils.isSchemaId(0b000000000000111111111111));
-        Assert.assertTrue(IdUtils.isTableId(0b1000000000000111111111111));
+        Assert.assertFalse(idUtils.isSchemaId(0b000000000000111111111111));
+        Assert.assertTrue(idUtils.isTableId(0b1000000000000111111111111));
 
-        Assert.assertFalse(IdUtils.isSchemaId(0b000000000000000000000000));
-        Assert.assertFalse(IdUtils.isTableId(0b1000000000000000000000000));
+        Assert.assertFalse(idUtils.isSchemaId(0b000000000000000000000000));
+        Assert.assertFalse(idUtils.isTableId(0b1000000000000000000000000));
     }
 }

@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
@@ -69,4 +70,6 @@ public interface MetadataStore extends Serializable, Observer {
     int getUnusedConstraintCollectonId();
 
     ConstraintCollection createConstraintCollection();
+    
+    IdUtils getIdUtils();
 }
