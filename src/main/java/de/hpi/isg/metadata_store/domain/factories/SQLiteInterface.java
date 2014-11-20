@@ -883,7 +883,7 @@ public class SQLiteInterface implements SQLInterface {
     public boolean tablesExist() {
         DatabaseMetaData meta;
         String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection", "Constraintt", "IND",
-                "INDpart", "Scope", "Typee, Location, LocationProperty", "Config" };
+                "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
         Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
 
         try {
