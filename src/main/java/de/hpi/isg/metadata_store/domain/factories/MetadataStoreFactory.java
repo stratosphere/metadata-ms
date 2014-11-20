@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
 
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.MetadataStoreNotFoundException;
 
 public class MetadataStoreFactory {
-    
+
     public static DefaultMetadataStore loadDefaultMetadataStore(final File file) throws MetadataStoreNotFoundException {
 
         FileInputStream fin;
@@ -32,47 +35,68 @@ public class MetadataStoreFactory {
         try {
             return MetadataStoreFactory.loadDefaultMetadataStore(file);
         } catch (final MetadataStoreNotFoundException e) {
-            final DefaultMetadataStore metadataStore = new DefaultMetadataStore();
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-            metadataStore.save(file.getAbsolutePath());
-            return metadataStore;
+            return createAndSaveDefaultMetadataStore(file);
         }
     }
 
-//    public static RDBMSMetadataStore getMetadataStoreFromSQLite(Connection connection) {
-//        SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
-//        RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
-//        return metadataStore;
-//    }
-//
-//    public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(File file) {
-//        Connection connection = null;
-//
-//        try {
-//            Class.forName("org.sqlite.JDBC");
-//            String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
-//            connection = DriverManager.getConnection(connString);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//        return getOrCreateMetadataStoreInSQLite(connection);
-//    }
-//
-//    public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(Connection connection) {
-//        SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
-//        if (!sqliteInterface.tablesExist()) {
-//            sqliteInterface.initializeMetadataStore();
-//        }
-//        RDBMSMetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(sqlInterface, configuration)(sqliteInterface);
-//        return metadataStore;
-//    }
-//
-//    public static RDBMSMetadataStore createEmptyMetadataStoreInSQLite(Connection connection) {
-//        SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
-//        sqliteInterface.initializeMetadataStore();
-//        RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
-//        return metadataStore;
-//    }
+    public static DefaultMetadataStore createAndSaveDefaultMetadataStore(final File file) throws IOException {
+        return createAndSaveDefaultMetadataStore(file, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
+    }
+
+    public static DefaultMetadataStore createAndSaveDefaultMetadataStore(final File file, int numTableBitsInIds,
+            int numColumnBitsInIds) throws IOException {
+        
+        final DefaultMetadataStore metadataStore = new DefaultMetadataStore(numTableBitsInIds, numColumnBitsInIds);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        metadataStore.save(file.getAbsolutePath());
+        return metadataStore;
+    }
+
+    public static Connection createSQLiteConnection(File file) {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
+            return DriverManager.getConnection(connString);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // public static RDBMSMetadataStore getMetadataStoreFromSQLite(Connection connection) {
+    // SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
+    // RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
+    // return metadataStore;
+    // }
+    //
+    // public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(File file) {
+    // Connection connection = null;
+    //
+    // try {
+    // Class.forName("org.sqlite.JDBC");
+    // String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
+    // connection = DriverManager.getConnection(connString);
+    // } catch (Exception e) {
+    // throw new RuntimeException(e);
+    // }
+    // return getOrCreateMetadataStoreInSQLite(connection);
+    // }
+    //
+    // public static RDBMSMetadataStore getOrCreateMetadataStoreInSQLite(Connection connection) {
+    // SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
+    // if (!sqliteInterface.tablesExist()) {
+    // sqliteInterface.initializeMetadataStore();
+    // }
+    // RDBMSMetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(sqlInterface,
+    // configuration)(sqliteInterface);
+    // return metadataStore;
+    // }
+    //
+    // public static RDBMSMetadataStore createEmptyMetadataStoreInSQLite(Connection connection) {
+    // SQLiteInterface sqliteInterface = new SQLiteInterface(connection);
+    // sqliteInterface.initializeMetadataStore();
+    // RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface);
+    // return metadataStore;
+    // }
 }
