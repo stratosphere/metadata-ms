@@ -26,8 +26,7 @@ import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
 import de.hpi.isg.metadata_store.domain.impl.DefaultConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.DefaultMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
-import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
-import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -63,7 +62,7 @@ public class DefaultMetadataStoreTest {
     @Test
     public void testAddingOfSchema() {
         final MetadataStore store1 = new DefaultMetadataStore();
-        final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", new HDFSLocation("hdfs://..."));
+        final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", mock(Location.class));
         store1.addSchema(schema1);
         assertTrue(store1.getSchemas().contains(schema1));
         assertTrue(store1.getAllTargets().contains(schema1));
@@ -128,14 +127,14 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
 
-        final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
+        final DefaultLocation dummyTableLocation = new DefaultLocation();
 
         final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
-                new IndexedLocation(0, dummyTableLocation));
+                new DefaultLocation());
 
         final ConstraintCollection cC = new DefaultConstraintCollection(1, new HashSet<Constraint>(),
                 new HashSet<Target>());
@@ -184,7 +183,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema1);
 
         assertEquals(store1.getSchema("PDB"), dummySchema1);
@@ -195,7 +194,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema1);
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
@@ -217,10 +216,10 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema1);
 
-        final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema2);
 
         store1.getSchema("PDB");
@@ -261,14 +260,14 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
 
-        final HDFSLocation dummyTableLocation = new HDFSLocation("hdfs://foobar/dummyTable.csv");
+        final DefaultLocation dummyTableLocation = new DefaultLocation();
 
         final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
-                new IndexedLocation(0, dummyTableLocation));
+                new DefaultLocation());
 
         final ConstraintCollection dummyConstraintCollection = new DefaultConstraintCollection(0,
                 new HashSet<Constraint>(), new HashSet<Target>());
@@ -316,7 +315,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"));
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
         store1.getSchemas().add(dummySchema);
 
         try {
@@ -349,7 +348,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new HDFSLocation("hdfs://foobar"))
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation())
                 .addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null));
         store1.getSchemas().add(dummySchema1);
 

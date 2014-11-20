@@ -5,6 +5,7 @@ import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
@@ -77,4 +78,6 @@ public interface SQLInterface {
     void saveConfiguration();
 
     Map<String, String> loadConfiguration();
+
+    Location getLocationFor(int id);
 }

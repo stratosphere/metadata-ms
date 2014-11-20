@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * A {@link Location} represents the physical location of {@link Target}s.
@@ -8,6 +9,9 @@ import java.io.Serializable;
  */
 public interface Location extends Serializable {
 
-    public String getPath();
+    String INDEX = "INDEX";
+    String PATH = "PATH";
+
+    public Map<String, String> getProperties();
 
 }

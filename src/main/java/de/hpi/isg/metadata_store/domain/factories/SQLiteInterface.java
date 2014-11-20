@@ -13,10 +13,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
@@ -25,8 +27,7 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
-import de.hpi.isg.metadata_store.domain.location.impl.HDFSLocation;
-import de.hpi.isg.metadata_store.domain.location.impl.IndexedLocation;
+import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -52,6 +53,7 @@ public class SQLiteInterface implements SQLInterface {
     LRUCache<Integer, Column> columnCache = new LRUCache<>(CACHE_SIZE);
     LRUCache<Integer, Table> tableCache = new LRUCache<>(CACHE_SIZE);
     LRUCache<Integer, Schema> schemaCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, Location> locationCache = new LRUCache<>(CACHE_SIZE);
     LRUCache<Table, Collection<Column>> allColumnsForTableCache = new LRUCache<>(CACHE_SIZE);
     Collection<Target> allTargets = null;
     Collection<Schema> allSchemas = null;
@@ -65,31 +67,38 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlCreateTables = "\n" +
-                    "/* Drop Tables */\n" +
+                    "/* DROP TABLE IF EXISTSs */\n" +
                     "\n" +
                     "DROP TABLE IF EXISTS [INDpart];\n" +
-                    "DROP TABLE IF EXISTS [TYPEE];\n" +
+                    "DROP TABLE IF EXISTS [Typee];\n" +
                     "DROP TABLE IF EXISTS [Columnn];\n" +
+                    "DROP TABLE IF EXISTS [Scope];\n" +
                     "DROP TABLE IF EXISTS [IND];\n" +
                     "DROP TABLE IF EXISTS [Constraintt];\n" +
-                    "DROP TABLE IF EXISTS [Scope];\n" +
                     "DROP TABLE IF EXISTS [ConstraintCollection];\n" +
+                    "DROP TABLE IF EXISTS [LocationProperty];\n" +
                     "DROP TABLE IF EXISTS [Tablee];\n" +
                     "DROP TABLE IF EXISTS [Schemaa];\n" +
                     "DROP TABLE IF EXISTS [Target];\n" +
                     "DROP TABLE IF EXISTS [Config];\n" +
-                    "\n" +
-                    "\n" +
-                    "\n" +
-                    "\n" +
+                    "DROP TABLE IF EXISTS [Location];\n" +
                     "/* Create Tables */\n" +
+                    "\n" +
+                    "CREATE TABLE [Location]\n" +
+                    "(\n" +
+                    "    [id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
+                    "    [typee] text\n" +
+                    ");\n" +
+                    "\n" +
                     "\n" +
                     "CREATE TABLE [Target]\n" +
                     "(\n" +
                     "    [id] integer NOT NULL,\n" +
                     "    [name] text,\n" +
-                    "    [location] text,\n" +
-                    "    PRIMARY KEY ([id])\n" +
+                    "    [locationId] integer,\n" +
+                    "    PRIMARY KEY ([id]),\n" +
+                    "    FOREIGN KEY ([locationId])\n" +
+                    "    REFERENCES [Location] ([id])\n" +
                     ");\n" +
                     "\n" +
                     "\n" +
@@ -118,7 +127,6 @@ public class SQLiteInterface implements SQLInterface {
                     "(\n" +
                     "    [id] integer NOT NULL,\n" +
                     "    [tableId] integer NOT NULL,\n" +
-                    "    [locationIndex] integer,\n" +
                     "    PRIMARY KEY ([id]),\n" +
                     "    FOREIGN KEY ([tableId])\n" +
                     "    REFERENCES [Tablee] ([id]),\n" +
@@ -166,6 +174,16 @@ public class SQLiteInterface implements SQLInterface {
                     ");\n" +
                     "\n" +
                     "\n" +
+                    "CREATE TABLE [LocationProperty]\n" +
+                    "(\n" +
+                    "    [locationId] integer NOT NULL,\n" +
+                    "    [keyy] text,\n" +
+                    "    [value] text,\n" +
+                    "    FOREIGN KEY ([locationId])\n" +
+                    "    REFERENCES [Location] ([id])\n" +
+                    ");\n" +
+                    "\n" +
+                    "\n" +
                     "CREATE TABLE [Scope]\n" +
                     "(\n" +
                     "    [targetId] integer NOT NULL,\n" +
@@ -177,15 +195,15 @@ public class SQLiteInterface implements SQLInterface {
                     ");\n" +
                     "\n" +
                     "\n" +
-                    "CREATE TABLE [TYPEE]\n" +
+                    "CREATE TABLE [Typee]\n" +
                     "(\n" +
-                    "    [typee] text,\n" +
-                    "    [columnId] integer NOT NULL,\n" +
                     "    [constraintId] integer NOT NULL,\n" +
-                    "    FOREIGN KEY ([constraintId])\n" +
-                    "    REFERENCES [Constraintt] ([id]),\n" +
+                    "    [columnId] integer NOT NULL,\n" +
+                    "    [typee] text,\n" +
                     "    FOREIGN KEY ([columnId])\n" +
-                    "    REFERENCES [Columnn] ([id])\n" +
+                    "    REFERENCES [Columnn] ([id]),\n" +
+                    "    FOREIGN KEY ([constraintId])\n" +
+                    "    REFERENCES [Constraintt] ([id])\n" +
                     ");\n" +
                     "\n" +
                     "\n" +
@@ -231,7 +249,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Collection<Target> targets = new HashSet<>();
             Statement stmt = this.connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT id from target");
+            ResultSet rs = stmt.executeQuery("SELECT id from Target");
             while (rs.next()) {
                 targets.add(buildTarget(rs.getInt("id")));
             }
@@ -264,10 +282,10 @@ public class SQLiteInterface implements SQLInterface {
             Collection<Schema> schemas = new HashSet<>();
             Statement stmt = this.connection.createStatement();
             ResultSet rs = stmt
-                    .executeQuery("SELECT schemaa.id as id, target.name as name, target.location as location from schemaa, target where target.id = schemaa.id;");
+                    .executeQuery("SELECT Schemaa.id as id, Target.name as name from Schemaa, Target where Target.id = Schemaa.id;");
             while (rs.next()) {
                 schemas.add(RDBMSSchema.build(this.store, rs.getInt("id"), rs.getString("name"),
-                        new HDFSLocation(rs.getString("location"))));
+                        getLocationFor(rs.getInt("id"))));
             }
             rs.close();
             stmt.close();
@@ -279,11 +297,54 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
+    public Location getLocationFor(int id) {
+        Location cached = locationCache.get(id);
+        if (cached != null) {
+            return cached;
+        }
+
+        try {
+            Location location = null;
+            Statement stmt = this.connection.createStatement();
+            String locationQuery = String
+                    .format("SELECT Location.id as id, Location.typee as typee from Location, Target where Location.id = Target.locationId and Target.id = %d;",
+                            id);
+            ResultSet rs = stmt
+                    .executeQuery(locationQuery);
+            while (rs.next()) {
+                Class<?> locationClass = Class.forName(rs.getString("typee"));
+                if (locationClass.equals(DefaultLocation.class)) {
+                    location = new DefaultLocation();
+
+                    Statement stmtProperties = this.connection.createStatement();
+                    String locationPropertyQuery = String
+                            .format("SELECT LocationProperty.keyy as keyy, LocationProperty.value as value from Location, LocationProperty where LocationProperty.locationId = %s;",
+                                    rs.getInt("id"));
+                    ResultSet rsProperties = stmtProperties
+                            .executeQuery(locationPropertyQuery);
+                    while (rsProperties.next()) {
+                        location.getProperties().put(rsProperties.getString("keyy"), rsProperties.getString("value"));
+                    }
+                    rsProperties.close();
+
+                }
+            }
+            rs.close();
+            stmt.close();
+
+            locationCache.put(id, location);
+            return locationCache.get(id);
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public Collection<Integer> getIdsInUse() {
         try {
             Collection<Integer> idsInUse = new HashSet<>();
             Statement stmt = this.connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT id from target");
+            ResultSet rs = stmt.executeQuery("SELECT id from Target");
             while (rs.next()) {
                 idsInUse.add(rs.getInt("id"));
             }
@@ -299,7 +360,7 @@ public class SQLiteInterface implements SQLInterface {
     public boolean addToIdsInUse(int id) {
         try {
             Statement stmt = this.connection.createStatement();
-            String sql = "INSERT INTO target (ID) " +
+            String sql = "INSERT INTO Target (ID) " +
                     "VALUES (" + id + ");";
             stmt.executeUpdate(sql);
 
@@ -317,14 +378,14 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public void addTarget(Target target) {
         try {
-            PreparedStatement stmt = this.connection.prepareStatement("UPDATE target set name = ? where id=?;");
+            PreparedStatement stmt = this.connection.prepareStatement("UPDATE Target set name = ? where id=?;");
             // TODO generic escapeing
             stmt.setString(1, target.getName().replace("'", "''"));
             stmt.setInt(2, target.getId());
             stmt.executeUpdate();
 
-            String sqlUpdateLocation = String.format("UPDATE target set location = '%s' where id=%d;", target
-                    .getLocation().getPath(), target.getId());
+            String sqlUpdateLocation = String.format("UPDATE Target set locationId = '%d' where id=%d;",
+                    addLocation(target.getLocation()), target.getId());
             Statement stmt2 = this.connection.createStatement();
             stmt2.executeUpdate(sqlUpdateLocation);
 
@@ -338,8 +399,42 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
+    private synchronized Integer addLocation(Location location) {
+        // for auto-increment id
+        Integer locationIndex = null;
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlAddLocation = String.format(
+                    "INSERT INTO Location (typee) VALUES ('%s');",
+                    location.getClass().getCanonicalName());
+            stmt.executeUpdate(sqlAddLocation);
+
+            String locationId = "select last_insert_rowid() as locationId;";
+            ResultSet rsLocationId = stmt.executeQuery(locationId);
+            while (rsLocationId.next()) {
+                locationIndex = rsLocationId.getInt("locationId");
+            }
+
+            for (Entry<String, String> entry : location.getProperties().entrySet()) {
+                String sqlAddLocationProperty = String.format(
+                        "INSERT INTO LocationProperty (locationId, keyy, value) VALUES (%d, '%s', '%s');",
+                        locationIndex,
+                        entry.getKey(),
+                        entry.getValue());
+                stmt.executeUpdate(sqlAddLocationProperty);
+            }
+
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return locationIndex;
+    }
+
     @Override
     public void addConstraint(Constraint constraint) {
+        // for auto-increment id
+        Integer constraintId = null;
         try {
             Statement stmt = this.connection.createStatement();
             String sqlAddTypeConstraint1;
@@ -353,6 +448,16 @@ public class SQLiteInterface implements SQLInterface {
             }
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
+            if (constraint.getId() == -1) {
+                String locationId = "select last_insert_rowid() as constraintId";
+                ResultSet rsLocationId = stmt.executeQuery(locationId);
+                while (rsLocationId.next()) {
+                    constraintId = rsLocationId.getInt("constraintId");
+                }
+            } else {
+                constraintId = constraint.getId();
+            }
+
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -364,7 +469,7 @@ public class SQLiteInterface implements SQLInterface {
                 Statement stmt = this.connection.createStatement();
                 String sqlAddTypee = String.format(
                         "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
-                        constraint.getId(), typeConstraint.getType().name(), constraint.getTargetReference()
+                        constraintId, typeConstraint.getType().name(), constraint.getTargetReference()
                                 .getAllTargets().iterator()
                                 .next().getId());
                 stmt.executeUpdate(sqlAddTypee);
@@ -379,13 +484,13 @@ public class SQLiteInterface implements SQLInterface {
                 Statement stmt = this.connection.createStatement();
                 String sqlAddIND = String.format(
                         "INSERT INTO IND (constraintId) VALUES (%d);",
-                        constraint.getId());
+                        constraintId);
                 stmt.executeUpdate(sqlAddIND);
 
                 for (int i = 0; i < inclusionDependency.getArity(); i++) {
                     String sqlAddINDpart = String.format(
                             "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
-                            constraint.getId(),
+                            constraintId,
                             inclusionDependency.getTargetReference().getDependentColumns()[i].getId(),
                             inclusionDependency.getTargetReference().getReferencedColumns()[i].getId());
                     stmt.executeUpdate(sqlAddINDpart);
@@ -504,8 +609,8 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlColumnById = String
-                    .format("SELECT target.id as id, target.name as name, target.location as location,"
-                            + " columnn.tableId as tableId, columnn.locationIndex as locationIndex"
+                    .format("SELECT target.id as id, target.name as name,"
+                            + " columnn.tableId as tableId"
                             + " from target, columnn where target.id = columnn.id and columnn.id=%d",
                             columnId);
             ResultSet rs = stmt.executeQuery(sqlColumnById);
@@ -515,8 +620,7 @@ public class SQLiteInterface implements SQLInterface {
                                 this.getTableById(rs.getInt("tableId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
-                                new IndexedLocation(rs.getInt("locationIndex"), new HDFSLocation(rs
-                                        .getString("location")))));
+                                getLocationFor(rs.getInt("id"))));
                 return columnCache.get(columnId);
             }
             rs.close();
@@ -536,7 +640,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlTableById = String
-                    .format("SELECT target.id as id, target.name as name, target.location as location, tablee.schemaId as schemaId"
+                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
                             + " from target, tablee where target.id = tablee.id and tablee.id=%d",
                             tableId);
             ResultSet rs = stmt.executeQuery(sqlTableById);
@@ -546,7 +650,7 @@ public class SQLiteInterface implements SQLInterface {
                                 this.getSchemaById(rs.getInt("schemaId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
-                                new HDFSLocation(rs.getString("location"))));
+                                getLocationFor(rs.getInt("id"))));
                 return tableCache.get(tableId);
             }
             rs.close();
@@ -566,7 +670,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name, target.location as location"
+                    .format("SELECT target.id as id, target.name as name"
                             + " from target, schemaa where target.id = schemaa.id and schemaa.id=%d",
                             schemaId);
             ResultSet rs = stmt.executeQuery(sqlSchemaeById);
@@ -575,7 +679,7 @@ public class SQLiteInterface implements SQLInterface {
                         .build(store,
                                 rs.getInt("id"),
                                 rs.getString("name"),
-                                new HDFSLocation(rs.getString("location"))));
+                                getLocationFor(rs.getInt("id"))));
                 return schemaCache.get(schemaId);
             }
             rs.close();
@@ -694,14 +798,14 @@ public class SQLiteInterface implements SQLInterface {
             Statement stmt = this.connection.createStatement();
 
             String sqlTablesForSchema = String
-                    .format("SELECT tablee.id as id, target.name as name, target.location as location from tablee, target where target.id = tablee.id and tablee.schemaId=%d;",
+                    .format("SELECT tablee.id as id, target.name as name from tablee, target where target.id = tablee.id and tablee.schemaId=%d;",
                             rdbmsSchema.getId());
 
             ResultSet rs = stmt
                     .executeQuery(sqlTablesForSchema);
             while (rs.next()) {
                 tables.add(RDBMSTable.build(this.store, rdbmsSchema, rs.getInt("id"), rs.getString("name"),
-                        new HDFSLocation(rs.getString("location"))));
+                        getLocationFor(rs.getInt("id"))));
             }
             rs.close();
             stmt.close();
@@ -764,8 +868,8 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlColumnAdd = String.format(
-                    "INSERT INTO Columnn (id, tableId, locationIndex) VALUES (%d, %d, %d);",
-                    newColumn.getId(), table.getId(), newColumn.getLocation().getIndex());
+                    "INSERT INTO Columnn (id, tableId) VALUES (%d, %d);",
+                    newColumn.getId(), table.getId());
             stmt.executeUpdate(sqlColumnAdd);
 
             stmt.close();
@@ -779,7 +883,7 @@ public class SQLiteInterface implements SQLInterface {
     public boolean tablesExist() {
         DatabaseMetaData meta;
         String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection", "Constraintt", "IND",
-                "INDpart", "Scope", "TYPEE", "Config" };
+                "INDpart", "Scope", "Typee, Location, LocationProperty", "Config" };
         Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
 
         try {
