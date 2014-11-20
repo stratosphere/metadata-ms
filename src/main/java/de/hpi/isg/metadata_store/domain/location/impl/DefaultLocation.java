@@ -5,12 +5,11 @@ import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
-import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 
 /**
  * A {@link Location} representing a HDFS location.
- *
- *
+ * 
+ * 
  */
 
 public class DefaultLocation extends AbstractHashCodeAndEquals implements Location {
@@ -19,8 +18,33 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
 
     private Map<String, String> properties;
 
+    public static DefaultLocation createForFile(String path) {
+        DefaultLocation location = new DefaultLocation();
+        location.set(PATH, path);
+        return location;
+    }
+
     public DefaultLocation() {
         this.properties = new HashMap<>();
+    }
+
+    @Override
+    public void set(String propertyKey, String value) {
+        this.properties.put(propertyKey, value);
+    }
+
+    @Override
+    public String getIfExists(String propertyKey) {
+        if (!this.properties.containsKey(propertyKey)) {
+            throw new IllegalArgumentException(
+                    String.format("No property associated with %s in %s.", propertyKey, this));
+        }
+        return get(propertyKey);
+    }
+
+    @Override
+    public String get(String propertyKey) {
+        return this.properties.get(propertyKey);
     }
 
     @Override
