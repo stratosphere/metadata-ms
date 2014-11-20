@@ -71,7 +71,7 @@ public class DefaultMetadataStoreTest {
     @Test
     public void testConstructingAComplexSchema() {
         final MetadataStore metadataStore = new DefaultMetadataStore();
-        for (int schemaNumber = 0; schemaNumber <= Math.min(10, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {
+        for (int schemaNumber = 0; schemaNumber <= Math.min(3, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
             for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);

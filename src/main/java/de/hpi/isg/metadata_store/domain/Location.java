@@ -9,6 +9,7 @@ import java.util.Map;
  */
 public interface Location extends Serializable {
 
+    String TYPE = "TYPE";
     String INDEX = "INDEX";
     String PATH = "PATH";
 

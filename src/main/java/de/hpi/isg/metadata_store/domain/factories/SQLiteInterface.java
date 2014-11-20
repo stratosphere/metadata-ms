@@ -27,7 +27,6 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
-import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -35,6 +34,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.domain.util.LocationUtils;
 
 /**
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
@@ -312,29 +312,31 @@ public class SQLiteInterface implements SQLInterface {
             ResultSet rs = stmt
                     .executeQuery(locationQuery);
             while (rs.next()) {
-                Class<?> locationClass = Class.forName(rs.getString("typee"));
-                if (locationClass.equals(DefaultLocation.class)) {
-                    location = new DefaultLocation();
-
-                    Statement stmtProperties = this.connection.createStatement();
-                    String locationPropertyQuery = String
-                            .format("SELECT LocationProperty.keyy as keyy, LocationProperty.value as value from Location, LocationProperty where LocationProperty.locationId = %s;",
-                                    rs.getInt("id"));
-                    ResultSet rsProperties = stmtProperties
-                            .executeQuery(locationPropertyQuery);
-                    while (rsProperties.next()) {
-                        location.getProperties().put(rsProperties.getString("keyy"), rsProperties.getString("value"));
-                    }
-                    rsProperties.close();
-
+                // Get the class name of the location.
+                String locationClassName = rs.getString("typee");
+                
+                // Load the properties of the location.
+                Map<String, String> locationProperties = new HashMap<>();
+                Statement stmtProperties = this.connection.createStatement();
+                String locationPropertyQuery = String
+                        .format("SELECT LocationProperty.keyy as keyy, LocationProperty.value as value from Location, LocationProperty where LocationProperty.locationId = %s;",
+                                rs.getInt("id"));
+                ResultSet rsProperties = stmtProperties
+                        .executeQuery(locationPropertyQuery);
+                while (rsProperties.next()) {
+                    locationProperties.put(rsProperties.getString("keyy"), rsProperties.getString("value"));
                 }
+                rsProperties.close();
+
+                // Create the location.
+                location = LocationUtils.createLocation(locationClassName, locationProperties);
             }
             rs.close();
             stmt.close();
 
             locationCache.put(id, location);
             return locationCache.get(id);
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
