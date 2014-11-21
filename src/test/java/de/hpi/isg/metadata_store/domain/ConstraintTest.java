@@ -101,10 +101,12 @@ public class ConstraintTest {
                 "dummyTable", new DefaultLocation());
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
-        final Constraint tupleCount1 = TupleCount.buildAndAddToCollection(1,
+        final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(1,
                 new TupleCount.Reference(dummyTable), cC, 1);
-        final Constraint tupleCount2 = TupleCount.build(1,
+        final TupleCount tupleCount2 = TupleCount.build(1,
                 new TupleCount.Reference(dummyTable), cC, 1);
+
+        assertEquals(tupleCount1.getNumTuples(), 1);
 
         assertEquals(tupleCount1, tupleCount2);
     }
@@ -116,10 +118,12 @@ public class ConstraintTest {
                 "dummyColumn1", mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
-        final Constraint distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(1,
+        final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(1,
                 new SingleTargetReference(dummyColumn), cC, 1);
-        final Constraint distinctValueCount = DistinctValueCount.buildAndAddToCollection(1,
+        final DistinctValueCount distinctValueCount = DistinctValueCount.buildAndAddToCollection(1,
                 new SingleTargetReference(dummyColumn), cC, 1);
+
+        assertEquals(distinctValueCount.getNumDistinctValues(), 1);
 
         assertEquals(distinctValueCount1, distinctValueCount);
     }
