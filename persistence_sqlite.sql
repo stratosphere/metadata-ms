@@ -1,22 +1,4 @@
 
-/* Drop Tables */
-
-DROP TABLE [INDpart];
-DROP TABLE [Typee];
-DROP TABLE [Columnn];
-DROP TABLE [Config];
-DROP TABLE [IND];
-DROP TABLE [Constraintt];
-DROP TABLE [Scope];
-DROP TABLE [ConstraintCollection];
-DROP TABLE [LocationProperty];
-DROP TABLE [Tablee];
-DROP TABLE [Schemaa];
-DROP TABLE [Target];
-DROP TABLE [Location];
-
-
-
 
 /* Create Tables */
 

@@ -58,7 +58,7 @@
 					<create_view>true</create_view>
 					<drop_index>false</drop_index>
 					<drop_sequence>false</drop_sequence>
-					<drop_table>true</drop_table>
+					<drop_table>false</drop_table>
 					<drop_tablespace>false</drop_tablespace>
 					<drop_trigger>false</drop_trigger>
 					<drop_view>false</drop_view>
@@ -135,7 +135,7 @@
 			</connections>
 			<display>false</display>
 			<creation_date>2014-10-16 19:14:06</creation_date>
-			<updated_date>2014-11-21 15:31:57</updated_date>
+			<updated_date>2014-11-21 15:38:23</updated_date>
 			<model_property>
 				<name>Project Name</name>
 				<value></value>
