@@ -209,9 +209,10 @@ public class SQLiteInterface implements SQLInterface {
                     "\n" +
                     "CREATE TABLE [Config]\n" +
                     "(\n" +
-                    "    [key] text NOT NULL PRIMARY KEY,\n" +
-                    "    [value] text\n" +
-                    ");\n" +
+                    "    [keyy] text NOT NULL,\n" +
+                    "    [value] text,\n" +
+                    "    PRIMARY KEY ([keyy])\n" +
+                    ");" +
                     "\n" +
                     "\n" +
                     "";
@@ -314,7 +315,7 @@ public class SQLiteInterface implements SQLInterface {
             while (rs.next()) {
                 // Get the class name of the location.
                 String locationClassName = rs.getString("typee");
-                
+
                 // Load the properties of the location.
                 Map<String, String> locationProperties = new HashMap<>();
                 Statement stmtProperties = this.connection.createStatement();
@@ -914,15 +915,17 @@ public class SQLiteInterface implements SQLInterface {
             for (Map.Entry<String, String> configEntry : configuration.entrySet()) {
                 String configKey = configEntry.getKey();
                 String value = configEntry.getValue();
-                statement.addBatch(String.format("DELETE FROM Config WHERE key=\"%s\";", configKey));
-                statement.addBatch(String.format("INSERT INTO Config (key, value) VALUES (\"%s\", \"%s\");", configKey, value));
+                statement.addBatch(String.format("DELETE FROM Config WHERE keyy=\"%s\";", configKey));
+                statement.addBatch(String.format("INSERT INTO Config (keyy, value) VALUES (\"%s\", \"%s\");",
+                        configKey,
+                        value));
             }
             statement.executeBatch();
         } catch (SQLException e) {
             throw new RuntimeException("Could not save metadata store configuration.", e);
         }
     }
-    
+
     /**
      * Load configuration of the metadata store.
      */
@@ -930,14 +933,14 @@ public class SQLiteInterface implements SQLInterface {
     public Map<String, String> loadConfiguration() {
         Map<String, String> configuration = new HashMap<String, String>();
         try (Statement statement = this.connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("SELECT key, value FROM Config;");
+            ResultSet resultSet = statement.executeQuery("SELECT keyy, value FROM Config;");
             while (resultSet.next()) {
-                configuration.put(resultSet.getString("key"), resultSet.getString("value"));
+                configuration.put(resultSet.getString("keyy"), resultSet.getString("value"));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Could not load metadata store configuration.", e);
         }
-        
+
         return configuration;
     }
 }
