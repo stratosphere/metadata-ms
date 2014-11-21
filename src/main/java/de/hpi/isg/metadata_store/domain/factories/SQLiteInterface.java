@@ -538,8 +538,8 @@ public class SQLiteInterface implements SQLInterface {
                 typeConstraints
                         .add(TypeConstraint.build(rsTypeConstraints.getInt("id"),
                                 new SingleTargetReference(this.getColumnById(rsTypeConstraints
-                                        .getInt("columnId"))), TYPES.valueOf(rsTypeConstraints.getString("typee")),
-                                rdbmsConstraintCollection));
+                                        .getInt("columnId"))), rdbmsConstraintCollection,
+                                TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 if (retrieveConstraintCollection) {
                     rdbmsConstraintCollection = null;
                 }

@@ -24,21 +24,21 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     private final TargetReference target;
 
-    public static TypeConstraint build(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
-        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+    public static TypeConstraint build(final int id, final SingleTargetReference target, ConstraintCollection constraintCollection,
+            TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(id, target, constraintCollection, type);
         return typeConstraint;
     }
 
-    public static TypeConstraint buildAndAddToCollection(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
-        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+    public static TypeConstraint buildAndAddToCollection(final int id, final SingleTargetReference target, ConstraintCollection constraintCollection,
+            TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(id, target, constraintCollection, type);
         constraintCollection.add(typeConstraint);
         return typeConstraint;
     }
 
-    private TypeConstraint(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
+    private TypeConstraint(final int id, final SingleTargetReference target, ConstraintCollection constraintCollection,
+            TYPES type) {
         super(id, constraintCollection);
         Validate.isTrue(target.getAllTargets().size() == 1);
         for (final Target t : target.getAllTargets()) {

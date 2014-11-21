@@ -139,7 +139,7 @@ public class DefaultMetadataStoreTest {
         final ConstraintCollection cC = new DefaultConstraintCollection(1, new HashSet<Constraint>(),
                 new HashSet<Target>());
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, cC);
+                dummyColumn), cC, TYPES.STRING);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
@@ -199,8 +199,8 @@ public class DefaultMetadataStoreTest {
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(col),
-                TYPES.STRING,
-                mock(ConstraintCollection.class));
+                mock(ConstraintCollection.class),
+                TYPES.STRING);
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
         ConstraintCollection constraintCollection = new DefaultConstraintCollection(1, constraints, (Set<Target>) scope);
@@ -273,7 +273,7 @@ public class DefaultMetadataStoreTest {
                 new HashSet<Constraint>(), new HashSet<Target>());
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, dummyConstraintCollection);
+                dummyColumn), dummyConstraintCollection, TYPES.STRING);
 
         store1.addConstraintCollection(dummyConstraintCollection);
 

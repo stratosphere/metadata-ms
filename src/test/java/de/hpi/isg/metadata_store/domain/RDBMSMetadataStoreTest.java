@@ -187,7 +187,7 @@ public class RDBMSMetadataStoreTest {
                 "dummyColumn", 0);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
+                dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
 
         store1.addConstraint(dummyContraint);
 
@@ -231,8 +231,8 @@ public class RDBMSMetadataStoreTest {
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1,
                 new SingleTargetReference(col1),
-                TYPES.STRING,
-                dummyConstraintCollection);
+                dummyConstraintCollection,
+                TYPES.STRING);
 
         final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(2,
                 new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
@@ -309,7 +309,7 @@ public class RDBMSMetadataStoreTest {
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 1);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, mock(ConstraintCollection.class));
+                dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
 
         store1.addConstraint(dummyContraint);
 
