@@ -12,14 +12,8 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
-import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
-import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
  * Constraint implementation distinct value counts of a single column.
@@ -45,7 +39,8 @@ public class DistinctValueCount extends AbstractConstraint {
         this.numDistinctValues = numDistinctValues;
     }
 
-    public static DistinctValueCount build(final int id, final SingleTargetReference target, ConstraintCollection constraintCollection,
+    public static DistinctValueCount build(final int id, final SingleTargetReference target,
+            ConstraintCollection constraintCollection,
             int numDistinctValues) {
         DistinctValueCount distinctValueCount = new DistinctValueCount(id, target, constraintCollection,
                 numDistinctValues);

@@ -6,7 +6,6 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.Observer;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiableAndNamed;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
-import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 
 /**
  * {@link AbstractTarget} is a convenience class for all {@link Target} implementation already taking car of
