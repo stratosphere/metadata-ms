@@ -36,16 +36,18 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     public static Schema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name,
             Location location) {
-        final RDBMSSchema newSchema = new RDBMSSchema(observer, -1, name, location);
-        newSchema.register();
-        newSchema.getSqlInterface().addSchema(newSchema);
-        return newSchema;
+        return buildAndRegisterAndAdd(observer, -1, name, location);
     }
 
     public static Schema build(RDBMSMetadataStore observer, int id, String name,
             Location location) {
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location);
         return newSchema;
+    }
+
+    public static Schema build(RDBMSMetadataStore observer, String name,
+            Location location) {
+        return build(observer, -1, name, location);
     }
 
     @Override

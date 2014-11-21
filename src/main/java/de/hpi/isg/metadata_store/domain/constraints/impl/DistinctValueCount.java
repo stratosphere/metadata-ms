@@ -31,26 +31,26 @@ public class DistinctValueCount extends AbstractConstraint {
     /**
      * @see AbstractConstraint
      */
-    public DistinctValueCount(final int id, final SingleTargetReference target,
+    public DistinctValueCount(final SingleTargetReference target,
             final ConstraintCollection constraintCollection, int numDistinctValues) {
 
-        super(id, constraintCollection);
+        super(constraintCollection);
         this.target = target;
         this.numDistinctValues = numDistinctValues;
     }
 
-    public static DistinctValueCount build(final int id, final SingleTargetReference target,
+    public static DistinctValueCount build(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(id, target, constraintCollection,
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
                 numDistinctValues);
         return distinctValueCount;
     }
 
-    public static DistinctValueCount buildAndAddToCollection(final int id, final SingleTargetReference target,
+    public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(id, target, constraintCollection,
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
                 numDistinctValues);
         constraintCollection.add(distinctValueCount);
         return distinctValueCount;

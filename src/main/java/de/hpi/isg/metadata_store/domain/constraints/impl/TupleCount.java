@@ -59,24 +59,24 @@ public class TupleCount extends AbstractConstraint {
     /**
      * @see AbstractConstraint
      */
-    private TupleCount(final int id, final Reference target,
+    private TupleCount(final Reference target,
             final ConstraintCollection constraintCollection, int numTuples) {
 
-        super(id, constraintCollection);
+        super(constraintCollection);
         this.target = target;
         this.numTuples = numTuples;
     }
 
-    public static TupleCount build(final int id, final Reference target, ConstraintCollection constraintCollection,
+    public static TupleCount build(final Reference target, ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(id, target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
         return tupleCount;
     }
 
-    public static TupleCount buildAndAddToCollection(final int id, final Reference target,
+    public static TupleCount buildAndAddToCollection(final Reference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(id, target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
         constraintCollection.add(tupleCount);
         return tupleCount;
     }

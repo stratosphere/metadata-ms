@@ -41,10 +41,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
             final String name,
             final Location location) {
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, -1, name, location);
-        newTable.register();
-        newTable.getSqlInterface().addTableToSchema(newTable, schema);
-        return newTable;
+        return buildAndRegisterAndAdd(observer, schema, -1, name, location);
     }
 
     public static Table build(final RDBMSMetadataStore observer, final Schema schema, final int id,
@@ -52,6 +49,12 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
             final Location location) {
         final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location);
         return newTable;
+    }
+
+    public static Table build(final RDBMSMetadataStore observer, final Schema schema,
+            final String name,
+            final Location location) {
+        return build(observer, schema, -1, name, location);
     }
 
     private RDBMSTable(final RDBMSMetadataStore observer, final Schema schema, final int id, final String name,

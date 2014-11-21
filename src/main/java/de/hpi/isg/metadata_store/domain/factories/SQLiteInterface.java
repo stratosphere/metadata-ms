@@ -322,24 +322,14 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlAddTypeConstraint1;
-            if (constraint.getId() == -1) {
-                sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
-                        constraint.getConstraintCollection().getId());
-            } else {
-                sqlAddTypeConstraint1 = String.format(
-                        "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
-                        constraint.getId(), constraint.getConstraintCollection().getId());
-            }
+            sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
+                    constraint.getConstraintCollection().getId());
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
-            if (constraint.getId() == -1) {
-                String locationId = "select last_insert_rowid() as constraintId";
-                ResultSet rsLocationId = stmt.executeQuery(locationId);
-                while (rsLocationId.next()) {
-                    constraintId = rsLocationId.getInt("constraintId");
-                }
-            } else {
-                constraintId = constraint.getId();
+            String locationId = "select last_insert_rowid() as constraintId";
+            ResultSet rsLocationId = stmt.executeQuery(locationId);
+            while (rsLocationId.next()) {
+                constraintId = rsLocationId.getInt("constraintId");
             }
 
             stmt.close();
@@ -418,7 +408,7 @@ public class SQLiteInterface implements SQLInterface {
                                     .getInt("constraintCollectionId"));
                 }
                 typeConstraints
-                        .add(TypeConstraint.build(rsTypeConstraints.getInt("id"),
+                        .add(TypeConstraint.build(
                                 new SingleTargetReference(this.getColumnById(rsTypeConstraints
                                         .getInt("columnId"))), rdbmsConstraintCollection,
                                 TYPES.valueOf(rsTypeConstraints.getString("typee"))));
@@ -444,7 +434,7 @@ public class SQLiteInterface implements SQLInterface {
                                     .getInt("constraintCollectionId"));
                 }
                 inclusionDependencies
-                        .add(InclusionDependency.build(rsInclusionDependencies.getInt("id"),
+                        .add(InclusionDependency.build(
                                 getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
                                 rdbmsConstraintCollection));
                 if (retrieveConstraintCollection) {

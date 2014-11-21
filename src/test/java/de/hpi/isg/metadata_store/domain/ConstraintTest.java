@@ -31,7 +31,7 @@ public class ConstraintTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
                 mock(Location.class));
 
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
@@ -45,7 +45,7 @@ public class ConstraintTest {
 
         final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", mock(Location.class));
 
-        TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(dummySchema),
+        TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummySchema),
                 mock(ConstraintCollection.class),
                 TYPES.STRING);
 
@@ -59,7 +59,7 @@ public class ConstraintTest {
         final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
                 mock(Location.class));
 
-        TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(dummyTable),
+        TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummyTable),
                 mock(ConstraintCollection.class),
                 TYPES.STRING);
 
@@ -73,7 +73,7 @@ public class ConstraintTest {
         final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
                 mock(Location.class));
 
-        TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(dummyTable),
+        TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummyTable),
                 mock(ConstraintCollection.class),
                 TYPES.STRING);
 
@@ -86,9 +86,9 @@ public class ConstraintTest {
                 "dummyColumn1", mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
-        final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(1,
+        final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn), cC, TYPES.STRING);
-        final Constraint dummyTypeContraint2 = TypeConstraint.buildAndAddToCollection(1,
+        final Constraint dummyTypeContraint2 = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn), cC, TYPES.STRING);
 
         assertEquals(dummyTypeContraint1, dummyTypeContraint2);
@@ -101,9 +101,9 @@ public class ConstraintTest {
                 "dummyTable", new DefaultLocation());
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
-        final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(1,
+        final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(
                 new TupleCount.Reference(dummyTable), cC, 1);
-        final TupleCount tupleCount2 = TupleCount.build(1,
+        final TupleCount tupleCount2 = TupleCount.build(
                 new TupleCount.Reference(dummyTable), cC, 1);
 
         assertEquals(tupleCount1.getNumTuples(), 1);
@@ -118,14 +118,14 @@ public class ConstraintTest {
                 "dummyColumn1", mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
-        final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(1,
+        final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn), cC, 1);
-        final DistinctValueCount distinctValueCount = DistinctValueCount.buildAndAddToCollection(1,
+        final DistinctValueCount distinctValueCount2 = DistinctValueCount.build(
                 new SingleTargetReference(dummyColumn), cC, 1);
 
-        assertEquals(distinctValueCount.getNumDistinctValues(), 1);
+        assertEquals(distinctValueCount2.getNumDistinctValues(), 1);
 
-        assertEquals(distinctValueCount1, distinctValueCount);
+        assertEquals(distinctValueCount1, distinctValueCount2);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class ConstraintTest {
                         DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null).addColumn(
                                 dummyColumn)));
 
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
@@ -156,7 +156,7 @@ public class ConstraintTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
                 "dummyColumn2", mock(Location.class));
 
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
