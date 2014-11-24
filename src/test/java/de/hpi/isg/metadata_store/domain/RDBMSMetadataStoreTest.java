@@ -119,13 +119,13 @@ public class RDBMSMetadataStoreTest {
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating schemas");
         final MetadataStore metadataStore = RDBMSMetadataStore.load(new SQLiteInterface(connection));
-        for (int schemaNumber = 0; schemaNumber < 3; schemaNumber++) {
+        for (int schemaNumber = 0; schemaNumber < 5; schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber),
                     new DefaultLocation());
-            for (int tableNumber = 0; tableNumber < 10; tableNumber++) {
+            for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber),
                         new DefaultLocation());
-                for (int columnNumber = 0; columnNumber < 20; columnNumber++) {
+                for (int columnNumber = 0; columnNumber < 100; columnNumber++) {
                     Column column = table.addColumn(metadataStore, String.format("column-%03d", columnNumber),
                             columnNumber);
                 }
