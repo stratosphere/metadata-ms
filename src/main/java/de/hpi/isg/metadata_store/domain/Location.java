@@ -9,42 +9,53 @@ import java.util.Map;
  */
 public interface Location extends Serializable {
 
-    String TYPE = "TYPE";
-    String INDEX = "INDEX";
-    String PATH = "PATH";
+	String TYPE = "TYPE";
 
-    Map<String, String> getProperties();
+	String INDEX = "INDEX";
 
-    /**
-     * Short-cut for setting a property.
-     * 
-     * @param propertyKey
-     *        is the key of the property
-     * @param value
-     *        is the value of the property
-     * @see #getProperties()
-     */
-    void set(String propertyKey, String value);
+	String PATH = "PATH";
 
-    /**
-     * Short-cut for getting a property value.
-     * 
-     * @param propertyKey
-     *        is the key of the property
-     * @return 
-     * @see #getProperties()
-     */
-    String getIfExists(String propertyKey);
+	Map<String, String> getProperties();
 
-    /**
-     * Short-cut for getting a property value. In contrast to {@link #getIfExists(String)}, this method demands that the
-     * property exists.
-     * 
-     * @param propertyKey
-     *        is the key of the property
-     * @throws IllegalArgumentException if there is no property associated with the given key
-     * @see #getProperties()
-     */
-    String get(String propertyKey);
+	/**
+	 * Short-cut for setting a property.
+	 * 
+	 * @param propertyKey
+	 *            is the key of the property
+	 * @param value
+	 *            is the value of the property
+	 * @see #getProperties()
+	 */
+	void set(String propertyKey, String value);
+
+	/**
+	 * Short-cut for getting a property value.
+	 * 
+	 * @param propertyKey
+	 *            is the key of the property
+	 * @return
+	 * @see #getProperties()
+	 */
+	String getIfExists(String propertyKey);
+
+	/**
+	 * Short-cut for getting a property value. In contrast to {@link #getIfExists(String)}, this method demands that the
+	 * property exists.
+	 * 
+	 * @param propertyKey
+	 *            is the key of the property
+	 * @throws IllegalArgumentException
+	 *             if there is no property associated with the given key
+	 * @see #getProperties()
+	 */
+	String get(String propertyKey);
+
+	/**
+	 * Deletes the property with the given key if it exists.
+	 * 
+	 * @param propertyKey
+	 *            is the key of the property to be removed
+	 */
+	void delete(String propertyKey);
 
 }

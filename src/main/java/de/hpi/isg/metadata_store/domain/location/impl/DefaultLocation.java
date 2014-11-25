@@ -32,6 +32,11 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
     public void set(String propertyKey, String value) {
         this.properties.put(propertyKey, value);
     }
+    
+    @Override
+    public void delete(String propertyKey) {
+    	this.properties.remove(propertyKey);
+    }
 
     @Override
     public String getIfExists(String propertyKey) {
