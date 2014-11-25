@@ -324,8 +324,18 @@ public class SQLiteInterface implements SQLInterface {
             stmt.close();
             stmt2.close();
 
-            // invalidate cache
-            allTargets = null;
+            // update caches
+            if (allTargets != null) {
+            	this.allTargets.add(target);
+            }
+            if (target instanceof RDBMSSchema) {
+            	this.allSchemas.add((Schema) target);
+            	this.schemaCache.put(target.getId(), (RDBMSSchema) target);
+            } else if (target instanceof RDBMSTable) {
+            	this.tableCache.put(target.getId(), (RDBMSTable) target);
+            } else if (target instanceof RDBMSColumn) {
+            	this.columnCache.put(target.getId(), (RDBMSColumn) target);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
