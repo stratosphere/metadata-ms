@@ -1,8 +1,11 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -49,6 +52,11 @@ import de.hpi.isg.metadata_store.domain.util.LocationUtils;
 
 public class SQLiteInterface implements SQLInterface {
 
+    /**
+     * Resource path of the SQL script to set up the metadata store schema.
+     */
+    private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
+
     private static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
             "Constraintt", "IND",
             "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
@@ -89,7 +97,7 @@ public class SQLiteInterface implements SQLInterface {
         dropTablesIfExist();
         try {
             Statement stmt = this.connection.createStatement();
-            String sqlCreateTables = readFile("persistence_sqlite.sql");
+            String sqlCreateTables = loadResource(SETUP_SCRIPT_RESOURCE_PATH);
 
             stmt.executeUpdate(sqlCreateTables);
             stmt.close();
@@ -98,11 +106,17 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
-    static String readFile(String path)
+    static String loadResource(String resourcePath)
             throws IOException
     {
-        byte[] encoded = Files.readAllBytes(Paths.get(path));
-        return new String(encoded, StandardCharsets.UTF_8);
+        URL pathUrl = SQLiteInterface.class.getResource(resourcePath);
+        try {
+            Path path = Paths.get(pathUrl.toURI());
+            byte[] encoded = Files.readAllBytes(path);
+            return new String(encoded, StandardCharsets.UTF_8);
+        } catch (URISyntaxException e) {
+            throw new IOException(String.format("Could not parse resource path correctly: %s", resourcePath), e);
+        }
     }
 
     @Override
