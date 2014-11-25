@@ -262,7 +262,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public Map<String, String> getConfiguration() {
         Map<String, String> configuration = new HashMap<String, String>();
         configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumTableBits()));
-        configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumTableBits()));
+        configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumColumnBits()));
         return configuration;
     }
 
