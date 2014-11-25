@@ -29,37 +29,37 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     @ExcludeHashCodeEquals
     private final Schema schema;
 
-    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema, final int id,
-            final String name,
-            final Location location) {
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location);
+    public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema, final int id,
+            final String name, final Location location) {
+        
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         newTable.register();
         newTable.getSqlInterface().addTableToSchema(newTable, schema);
         return newTable;
     }
 
-    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
-            final String name,
-            final Location location) {
-        return buildAndRegisterAndAdd(observer, schema, -1, name, location);
-    }
+//    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
+//            final String name,
+//            final Location location) {
+//        return buildAndRegisterAndAdd(observer, schema, -1, name, location);
+//    }
 
-    public static Table build(final RDBMSMetadataStore observer, final Schema schema, final int id,
-            final String name,
-            final Location location) {
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location);
+    public static RDBMSTable restore(final RDBMSMetadataStore observer, final Schema schema, final int id,
+            final String name, final Location location) {
+        
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         return newTable;
     }
 
-    public static Table build(final RDBMSMetadataStore observer, final Schema schema,
-            final String name,
-            final Location location) {
-        return build(observer, schema, -1, name, location);
-    }
+//    public static Table build(final RDBMSMetadataStore observer, final Schema schema,
+//            final String name,
+//            final Location location) {
+//        return build(observer, schema, -1, name, location);
+//    }
 
     private RDBMSTable(final RDBMSMetadataStore observer, final Schema schema, final int id, final String name,
-            final Location location) {
-        super(observer, id, name, location);
+            final Location location, boolean isFreshlyCreated) {
+        super(observer, id, name, location, isFreshlyCreated);
         this.schema = schema;
     }
 
@@ -81,6 +81,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
                 name,
                 location);
+        addToChildIdCache(columnId);
         return column;
     }
 

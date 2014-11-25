@@ -22,33 +22,35 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
 
-    private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, Location location) {
-        super(observer, id, name, location);
+    private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, Location location, boolean isFreshlyCreated) {
+        super(observer, id, name, location, isFreshlyCreated);
     }
 
-    public static Schema buildAndRegisterAndAdd(RDBMSMetadataStore observer, int id, String name,
+    public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, int id, String name,
             Location location) {
-        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location);
+        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, true);
         newSchema.register();
         newSchema.getSqlInterface().addSchema(newSchema);
         return newSchema;
     }
 
-    public static Schema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name,
+    public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name,
             Location location) {
+        
         return buildAndRegisterAndAdd(observer, -1, name, location);
     }
 
-    public static Schema build(RDBMSMetadataStore observer, int id, String name,
+    public static RDBMSSchema restore(RDBMSMetadataStore observer, int id, String name,
             Location location) {
-        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location);
+        
+        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, false);
         return newSchema;
     }
 
-    public static Schema build(RDBMSMetadataStore observer, String name,
-            Location location) {
-        return build(observer, -1, name, location);
-    }
+//    public static Schema build(RDBMSMetadataStore observer, String name,
+//            Location location) {
+//        return restore(observer, -1, name, location);
+//    }
 
     @Override
     public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
@@ -57,6 +59,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         final int tableId = metadataStore.getUnusedTableId(this);
         final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
                 location);
+        addToChildIdCache(tableId);
         return table;
     }
 

@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -186,19 +187,24 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     private boolean idIsInUse(final int id) {
-        synchronized (this.sqlInterface.getIdsInUse()) {
-
-            return this.sqlInterface.getIdsInUse().contains(id);
+        try {
+            return this.sqlInterface.isTargetIdInUse(id);
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Could not determin if ID %s is in use.", id), e);
         }
+//        synchronized (this.sqlInterface.getIdsInUse()) {
+//
+//            return this.sqlInterface.getIdsInUse().contains(id);
+//        }
     }
 
     @Override
     public void registerId(final int id) {
-        synchronized (this.sqlInterface.getIdsInUse()) {
+//        synchronized (this.sqlInterface.getIdsInUse()) {
             if (!this.sqlInterface.addToIdsInUse(id)) {
                 throw new IdAlreadyInUseException("id is already in use: " + id);
             }
-        }
+//        }
     }
 
     @Override

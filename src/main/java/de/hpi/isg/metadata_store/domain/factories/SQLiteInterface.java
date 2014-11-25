@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
+import it.unimi.dsi.fastutil.ints.IntCollection;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -66,9 +68,9 @@ public class SQLiteInterface implements SQLInterface {
     Connection connection;
     RDBMSMetadataStore store;
 
-    LRUCache<Integer, Column> columnCache = new LRUCache<>(CACHE_SIZE);
-    LRUCache<Integer, Table> tableCache = new LRUCache<>(CACHE_SIZE);
-    LRUCache<Integer, Schema> schemaCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, RDBMSColumn> columnCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, RDBMSTable> tableCache = new LRUCache<>(CACHE_SIZE);
+    LRUCache<Integer, RDBMSSchema> schemaCache = new LRUCache<>(CACHE_SIZE);
     LRUCache<Integer, Location> locationCache = new LRUCache<>(CACHE_SIZE);
     LRUCache<Table, Collection<Column>> allColumnsForTableCache = new LRUCache<>(CACHE_SIZE);
     Collection<Target> allTargets = null;
@@ -180,7 +182,7 @@ public class SQLiteInterface implements SQLInterface {
             ResultSet rs = stmt
                     .executeQuery("SELECT Schemaa.id as id, Target.name as name from Schemaa, Target where Target.id = Schemaa.id;");
             while (rs.next()) {
-                schemas.add(RDBMSSchema.build(this.store, rs.getInt("id"), rs.getString("name"),
+                schemas.add(RDBMSSchema.restore(this.store, rs.getInt("id"), rs.getString("name"),
                         getLocationFor(rs.getInt("id"))));
             }
             rs.close();
@@ -238,20 +240,52 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Integer> getIdsInUse() {
-        try {
-            Collection<Integer> idsInUse = new HashSet<>();
-            Statement stmt = this.connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT id from Target");
-            while (rs.next()) {
-                idsInUse.add(rs.getInt("id"));
+    public boolean isTargetIdInUse(int id) throws SQLException {
+        // Check if the ID is in any of the caches or any of the child caches.
+        IdUtils idUtils = this.store.getIdUtils();
+        Integer wrappedId = new Integer(id);
+        switch (idUtils.getIdType(id)) {
+        case SCHEMA_ID:
+            if (this.schemaCache.containsKey(wrappedId)) {
+                return true;
             }
-            rs.close();
-            stmt.close();
-            return idsInUse;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            break;
+        case TABLE_ID:
+            if (this.tableCache.containsKey(wrappedId)) {
+                return true;
+            } else {
+                int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id));
+                RDBMSSchema parentSchema = this.schemaCache.get(schemaId);
+                if (parentSchema != null) {
+                    IntCollection childIdCache = parentSchema.getChildIdCache();
+                    if (childIdCache != null) {
+                        return childIdCache.contains(id);
+                    }
+                }
+            }
+            break;
+        case COLUMN_ID:
+            if (this.columnCache.containsKey(wrappedId)) {
+                return true;
+            } else {
+                int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id), idUtils.getLocalTableId(id));
+                RDBMSTable parentTable = this.tableCache.get(tableId);
+                if (parentTable != null) {
+                    IntCollection childIdCache = parentTable.getChildIdCache();
+                    if (childIdCache != null) {
+                        return childIdCache.contains(id);
+                    }
+                }
+            }
         }
+        
+        // Issue a query, to find out if the ID is in use.
+        Statement stmt = this.connection.createStatement();
+        ResultSet rs = stmt.executeQuery(String.format("SELECT id FROM Target WHERE id=%d LIMIT 1", id));
+        boolean isIdInUse = rs.next();
+        rs.close();
+        stmt.close();
+        return isIdInUse;
     }
 
     @Override
@@ -503,8 +537,8 @@ public class SQLiteInterface implements SQLInterface {
                             columnId);
             ResultSet rs = stmt.executeQuery(sqlColumnById);
             while (rs.next()) {
-                columnCache.put(columnId, RDBMSColumn
-                        .build(store,
+                columnCache.put(columnId, 
+                        RDBMSColumn.restore(store,
                                 this.getTableById(rs.getInt("tableId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
@@ -534,7 +568,7 @@ public class SQLiteInterface implements SQLInterface {
             ResultSet rs = stmt.executeQuery(sqlTableById);
             while (rs.next()) {
                 tableCache.put(tableId, RDBMSTable
-                        .build(store,
+                        .restore(store,
                                 this.getSchemaById(rs.getInt("schemaId")),
                                 rs.getInt("id"),
                                 rs.getString("name"),
@@ -563,8 +597,8 @@ public class SQLiteInterface implements SQLInterface {
                             schemaId);
             ResultSet rs = stmt.executeQuery(sqlSchemaeById);
             while (rs.next()) {
-                schemaCache.put(schemaId, RDBMSSchema
-                        .build(store,
+                schemaCache.put(schemaId,
+                        RDBMSSchema.restore(store,
                                 rs.getInt("id"),
                                 rs.getString("name"),
                                 getLocationFor(rs.getInt("id"))));
@@ -692,7 +726,7 @@ public class SQLiteInterface implements SQLInterface {
             ResultSet rs = stmt
                     .executeQuery(sqlTablesForSchema);
             while (rs.next()) {
-                tables.add(RDBMSTable.build(this.store, rdbmsSchema, rs.getInt("id"), rs.getString("name"),
+                tables.add(RDBMSTable.restore(this.store, rdbmsSchema, rs.getInt("id"), rs.getString("name"),
                         getLocationFor(rs.getInt("id"))));
             }
             rs.close();

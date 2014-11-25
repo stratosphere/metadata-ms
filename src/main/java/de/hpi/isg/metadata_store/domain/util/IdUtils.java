@@ -29,6 +29,8 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  */
 @SuppressWarnings("serial")
 public class IdUtils implements Serializable {
+    
+    public static enum IdTypes { SCHEMA_ID, TABLE_ID, COLUMN_ID };
 
     public static final int DEFAULT_NUM_COLUMN_BITS = 12;
     public static final int DEFAULT_NUM_TABLE_BITS = 12;
@@ -206,6 +208,15 @@ public class IdUtils implements Serializable {
         return maxColumnNumber;
     }
 
+    public IdTypes getIdType(int id) {
+        if (isSchemaId(id)) {
+            return IdTypes.SCHEMA_ID;
+        } else if (isTableId(id)) {
+            return IdTypes.TABLE_ID;
+        }
+        return IdTypes.COLUMN_ID;
+    }
+    
     @Override
     public String toString() {
         return String.format("IdUtils [%d/%d/%d]", this.numSchemaBits, this.numColumnBits, this.numTableBits);

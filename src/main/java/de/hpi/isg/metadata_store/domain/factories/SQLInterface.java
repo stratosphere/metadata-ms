@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ public interface SQLInterface {
 
     public Collection<? extends Target> getAllTargets();
 
-    public Collection<Integer> getIdsInUse();
+    public boolean isTargetIdInUse(int id) throws SQLException;
 
     public void addTarget(Target target);
 
