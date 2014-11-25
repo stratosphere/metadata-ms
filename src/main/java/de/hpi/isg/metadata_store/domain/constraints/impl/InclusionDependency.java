@@ -75,15 +75,15 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
     private static final long serialVersionUID = -932394088609862495L;
     private InclusionDependency.Reference target;
 
-    public static InclusionDependency build(final int id, final InclusionDependency.Reference target,
+    public static InclusionDependency build(final InclusionDependency.Reference target,
             ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(id, target, constraintCollection);
+        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
         return inclusionDependency;
     }
 
-    public static InclusionDependency buildAndAddToCollection(final int id, final InclusionDependency.Reference target,
+    public static InclusionDependency buildAndAddToCollection(final InclusionDependency.Reference target,
             ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(id, target, constraintCollection);
+        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
         constraintCollection.add(inclusionDependency);
         return inclusionDependency;
     }
@@ -91,9 +91,9 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
     /**
      * @see AbstractConstraint
      */
-    private InclusionDependency(final int id, final InclusionDependency.Reference target,
+    private InclusionDependency(final InclusionDependency.Reference target,
             ConstraintCollection constraintCollection) {
-        super(id, constraintCollection);
+        super(constraintCollection);
         this.target = target;
     }
 

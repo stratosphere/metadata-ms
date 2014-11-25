@@ -40,27 +40,27 @@ public class TargetTest {
     @Test
     public void testSchemaEquals() {
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(mock(MetadataStore.class), 2, "PDB",
+        final Schema dummySchema = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "PDB",
                 new DefaultLocation());
 
         final DefaultLocation dummyTableLocation = new DefaultLocation();
 
-        DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable",
+        DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "dummyTable",
                 dummyTableLocation);
 
-        DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn",
+        DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "dummyColumn",
                 new DefaultLocation());
 
         // setup schema
-        final Schema dummySchema2 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), 2, "PDB",
+        final Schema dummySchema2 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "PDB",
                 new DefaultLocation());
 
         final DefaultLocation dummyTableLocation2 = new DefaultLocation();
 
-        DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "dummyTable",
+        DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "dummyTable",
                 dummyTableLocation2);
 
-        DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 4, "dummyColumn",
+        DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "dummyColumn",
                 new DefaultLocation());
 
         assertEquals(dummySchema, dummySchema2);

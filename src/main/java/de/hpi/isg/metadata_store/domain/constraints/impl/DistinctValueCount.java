@@ -12,13 +12,8 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
-import de.hpi.isg.metadata_store.domain.TargetReference;
-import de.hpi.isg.metadata_store.domain.targets.Column;
+import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
  * Constraint implementation distinct value counts of a single column.
@@ -27,47 +22,42 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  */
 public class DistinctValueCount extends AbstractConstraint {
 
-    public static class Reference implements TargetReference {
-
-        private static final long serialVersionUID = -861294530676768362L;
-
-        Column column;
-
-        public Reference(final Column column) {
-            this.column = column;
-        }
-
-        @Override
-        public Collection<Target> getAllTargets() {
-            return Collections.<Target> singleton(this.column);
-        }
-
-        @Override
-        public String toString() {
-            return "Reference [column=" + column + "]";
-        }
-
-    }
-
     private static final long serialVersionUID = -932394088609862495L;
 
     private int numDistinctValues;
-    
-    private Reference target;
+
+    private SingleTargetReference target;
 
     /**
      * @see AbstractConstraint
      */
-    public DistinctValueCount(final int id, final ConstraintCollection constraintCollection, final String name,
-            final Reference target, int numDistinctValues) {
-        
-        super(id, constraintCollection);
+    public DistinctValueCount(final SingleTargetReference target,
+            final ConstraintCollection constraintCollection, int numDistinctValues) {
+
+        super(constraintCollection);
         this.target = target;
         this.numDistinctValues = numDistinctValues;
     }
 
+    public static DistinctValueCount build(final SingleTargetReference target,
+            ConstraintCollection constraintCollection,
+            int numDistinctValues) {
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
+                numDistinctValues);
+        return distinctValueCount;
+    }
+
+    public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
+            ConstraintCollection constraintCollection,
+            int numDistinctValues) {
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
+                numDistinctValues);
+        constraintCollection.add(distinctValueCount);
+        return distinctValueCount;
+    }
+
     @Override
-    public DistinctValueCount.Reference getTargetReference() {
+    public SingleTargetReference getTargetReference() {
         return this.target;
     }
 

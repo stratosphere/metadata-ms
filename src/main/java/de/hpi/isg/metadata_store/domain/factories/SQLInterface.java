@@ -74,10 +74,12 @@ public interface SQLInterface {
     ConstraintCollection getConstraintCollectionById(int id);
 
     Reference getInclusionDependencyReferences(int int1);
-    
+
     void saveConfiguration();
 
     Map<String, String> loadConfiguration();
 
     Location getLocationFor(int id);
+
+    void dropTablesIfExist();
 }

@@ -26,4 +26,29 @@ public class LocationTest {
         assertFalse(location2.equals(location3));
     }
 
+    @Test
+    public void testDefaultLocationGetIfExists() {
+
+        final DefaultLocation location1 = new DefaultLocation();
+        location1.set(Location.PATH, "hdfs//123");
+
+        assertEquals(location1.getIfExists(Location.PATH), "hdfs//123");
+        assertEquals(location1.get(Location.PATH), "hdfs//123");
+    }
+
+    @Test
+    public void testDefaultLocationCreateForFile() {
+
+        final DefaultLocation location1 = DefaultLocation.createForFile("hdfs//123");
+        assertEquals(location1.getIfExists(Location.PATH), "hdfs//123");
+
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDefaultLocationGetIfExistsFails() {
+        final DefaultLocation location1 = new DefaultLocation();
+
+        location1.getIfExists(Location.PATH);
+    }
+
 }

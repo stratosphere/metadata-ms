@@ -18,6 +18,7 @@ import java.util.Collections;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
+import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
@@ -27,7 +28,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  */
 public class TupleCount extends AbstractConstraint {
 
-    public static class Reference implements TargetReference {
+    public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
 
         private static final long serialVersionUID = -861294530676768362L;
 
@@ -58,12 +59,26 @@ public class TupleCount extends AbstractConstraint {
     /**
      * @see AbstractConstraint
      */
-    public TupleCount(final int id, final ConstraintCollection constraintCollection, final String name,
-            final Reference target, int numTuples) {
-        
-        super(id, constraintCollection);
+    private TupleCount(final Reference target,
+            final ConstraintCollection constraintCollection, int numTuples) {
+
+        super(constraintCollection);
         this.target = target;
         this.numTuples = numTuples;
+    }
+
+    public static TupleCount build(final Reference target, ConstraintCollection constraintCollection,
+            int numTuples) {
+        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        return tupleCount;
+    }
+
+    public static TupleCount buildAndAddToCollection(final Reference target,
+            ConstraintCollection constraintCollection,
+            int numTuples) {
+        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        constraintCollection.add(tupleCount);
+        return tupleCount;
     }
 
     @Override

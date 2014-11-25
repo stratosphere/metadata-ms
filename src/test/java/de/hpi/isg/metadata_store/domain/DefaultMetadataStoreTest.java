@@ -38,6 +38,8 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class DefaultMetadataStoreTest {
 
+    private static final int loadFactorForCreateComplexSchemaTest = 1;
+
     private final File dir = new File("test/");
 
     @Before
@@ -73,9 +75,9 @@ public class DefaultMetadataStoreTest {
         final MetadataStore metadataStore = new DefaultMetadataStore();
         for (int schemaNumber = 0; schemaNumber <= Math.min(3, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {
             final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
-            for (int tableNumber = 0; tableNumber < 1000; tableNumber++) {
+            for (int tableNumber = 0; tableNumber < 100 * loadFactorForCreateComplexSchemaTest; tableNumber++) {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
-                for (int columnNumber = 0; columnNumber < 100; columnNumber++) {
+                for (int columnNumber = 0; columnNumber < 10 * loadFactorForCreateComplexSchemaTest; columnNumber++) {
                     table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
                 }
             }
@@ -89,17 +91,17 @@ public class DefaultMetadataStoreTest {
                         for (final Column column2 : table2.getColumns()) {
                             List<Column> dependentColumns;
                             List<Column> referencedColumns;
-                            if (column1 != column2 && random.nextInt(1000) <= 0) {
+                            if (column1 != column2 && random.nextInt(10 * loadFactorForCreateComplexSchemaTest) <= 0) {
                                 dependentColumns = Collections.singletonList(column1);
                                 referencedColumns = Collections.singletonList(column2);
                                 final InclusionDependency.Reference reference = new InclusionDependency.Reference(
                                         dependentColumns.toArray(new Column[dependentColumns.size()]),
                                         referencedColumns.toArray(new Column[referencedColumns.size()]));
                                 final InclusionDependency inclusionDependency = InclusionDependency
-                                        .buildAndAddToCollection(1,
+                                        .buildAndAddToCollection(
                                                 reference, mock(ConstraintCollection.class));
                                 inclusionDependencies.add(inclusionDependency);
-                                if (inclusionDependencies.size() >= 300000) {
+                                if (inclusionDependencies.size() >= 3000 * loadFactorForCreateComplexSchemaTest) {
                                     break OuterLoop;
                                 }
                             }
@@ -138,8 +140,8 @@ public class DefaultMetadataStoreTest {
 
         final ConstraintCollection cC = new DefaultConstraintCollection(1, new HashSet<Constraint>(),
                 new HashSet<Target>());
-        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, cC);
+        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
+                dummyColumn), cC, TYPES.STRING);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
 
@@ -198,9 +200,9 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
         Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(col),
-                TYPES.STRING,
-                mock(ConstraintCollection.class));
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(col),
+                mock(ConstraintCollection.class),
+                TYPES.STRING);
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
         ConstraintCollection constraintCollection = new DefaultConstraintCollection(1, constraints, (Set<Target>) scope);
@@ -272,8 +274,8 @@ public class DefaultMetadataStoreTest {
         final ConstraintCollection dummyConstraintCollection = new DefaultConstraintCollection(0,
                 new HashSet<Constraint>(), new HashSet<Target>());
 
-        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(1, new SingleTargetReference(
-                dummyColumn), TYPES.STRING, dummyConstraintCollection);
+        final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
+                dummyColumn), dummyConstraintCollection, TYPES.STRING);
 
         store1.addConstraintCollection(dummyConstraintCollection);
 

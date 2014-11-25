@@ -1,5 +1,9 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -45,6 +49,10 @@ import de.hpi.isg.metadata_store.domain.util.LocationUtils;
 
 public class SQLiteInterface implements SQLInterface {
 
+    private static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
+            "Constraintt", "IND",
+            "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
+
     private final int CACHE_SIZE = 1000;
 
     Connection connection;
@@ -63,164 +71,38 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void initializeMetadataStore() {
+    public void dropTablesIfExist() {
         try {
             Statement stmt = this.connection.createStatement();
-            String sqlCreateTables = "\n" +
-                    "/* DROP TABLE IF EXISTSs */\n" +
-                    "\n" +
-                    "DROP TABLE IF EXISTS [INDpart];\n" +
-                    "DROP TABLE IF EXISTS [Typee];\n" +
-                    "DROP TABLE IF EXISTS [Columnn];\n" +
-                    "DROP TABLE IF EXISTS [Scope];\n" +
-                    "DROP TABLE IF EXISTS [IND];\n" +
-                    "DROP TABLE IF EXISTS [Constraintt];\n" +
-                    "DROP TABLE IF EXISTS [ConstraintCollection];\n" +
-                    "DROP TABLE IF EXISTS [LocationProperty];\n" +
-                    "DROP TABLE IF EXISTS [Tablee];\n" +
-                    "DROP TABLE IF EXISTS [Schemaa];\n" +
-                    "DROP TABLE IF EXISTS [Target];\n" +
-                    "DROP TABLE IF EXISTS [Config];\n" +
-                    "DROP TABLE IF EXISTS [Location];\n" +
-                    "/* Create Tables */\n" +
-                    "\n" +
-                    "CREATE TABLE [Location]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
-                    "    [typee] text\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Target]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL,\n" +
-                    "    [name] text,\n" +
-                    "    [locationId] integer,\n" +
-                    "    PRIMARY KEY ([id]),\n" +
-                    "    FOREIGN KEY ([locationId])\n" +
-                    "    REFERENCES [Location] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Schemaa]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL,\n" +
-                    "    PRIMARY KEY ([id]),\n" +
-                    "    FOREIGN KEY ([id])\n" +
-                    "    REFERENCES [Target] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Tablee]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL,\n" +
-                    "    [schemaId] integer NOT NULL,\n" +
-                    "    PRIMARY KEY ([id]),\n" +
-                    "    FOREIGN KEY ([id])\n" +
-                    "    REFERENCES [Target] ([id]),\n" +
-                    "    FOREIGN KEY ([schemaId])\n" +
-                    "    REFERENCES [Schemaa] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Columnn]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL,\n" +
-                    "    [tableId] integer NOT NULL,\n" +
-                    "    PRIMARY KEY ([id]),\n" +
-                    "    FOREIGN KEY ([tableId])\n" +
-                    "    REFERENCES [Tablee] ([id]),\n" +
-                    "    FOREIGN KEY ([id])\n" +
-                    "    REFERENCES [Target] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [ConstraintCollection]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL,\n" +
-                    "    PRIMARY KEY ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Constraintt]\n" +
-                    "(\n" +
-                    "    [id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
-                    "    [constraintCollectionId] integer NOT NULL,\n" +
-                    "    FOREIGN KEY ([constraintCollectionId])\n" +
-                    "    REFERENCES [ConstraintCollection] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [IND]\n" +
-                    "(\n" +
-                    "    [constraintId] integer NOT NULL,\n" +
-                    "    PRIMARY KEY ([constraintId]),\n" +
-                    "    FOREIGN KEY ([constraintId])\n" +
-                    "    REFERENCES [Constraintt] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [INDpart]\n" +
-                    "(\n" +
-                    "    [constraintId] integer NOT NULL,\n" +
-                    "    [lhs] integer NOT NULL,\n" +
-                    "    [rhs] integer NOT NULL,\n" +
-                    "    FOREIGN KEY ([lhs])\n" +
-                    "    REFERENCES [Columnn] ([id]),\n" +
-                    "    FOREIGN KEY ([rhs])\n" +
-                    "    REFERENCES [Columnn] ([id]),\n" +
-                    "    FOREIGN KEY ([constraintId])\n" +
-                    "    REFERENCES [IND] ([constraintId])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [LocationProperty]\n" +
-                    "(\n" +
-                    "    [locationId] integer NOT NULL,\n" +
-                    "    [keyy] text,\n" +
-                    "    [value] text,\n" +
-                    "    FOREIGN KEY ([locationId])\n" +
-                    "    REFERENCES [Location] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Scope]\n" +
-                    "(\n" +
-                    "    [targetId] integer NOT NULL,\n" +
-                    "    [constraintCollectionId] integer NOT NULL,\n" +
-                    "    FOREIGN KEY ([constraintCollectionId])\n" +
-                    "    REFERENCES [ConstraintCollection] ([id]),\n" +
-                    "    FOREIGN KEY ([targetId])\n" +
-                    "    REFERENCES [Target] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Typee]\n" +
-                    "(\n" +
-                    "    [constraintId] integer NOT NULL,\n" +
-                    "    [columnId] integer NOT NULL,\n" +
-                    "    [typee] text,\n" +
-                    "    FOREIGN KEY ([columnId])\n" +
-                    "    REFERENCES [Columnn] ([id]),\n" +
-                    "    FOREIGN KEY ([constraintId])\n" +
-                    "    REFERENCES [Constraintt] ([id])\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "CREATE TABLE [Config]\n" +
-                    "(\n" +
-                    "    [key] text NOT NULL PRIMARY KEY,\n" +
-                    "    [value] text\n" +
-                    ");\n" +
-                    "\n" +
-                    "\n" +
-                    "";
+            for (String table : tableNames) {
+                stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
+            }
 
-            stmt.executeUpdate(sqlCreateTables);
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void initializeMetadataStore() {
+        dropTablesIfExist();
+        try {
+            Statement stmt = this.connection.createStatement();
+            String sqlCreateTables = readFile("persistence_sqlite.sql");
+
+            stmt.executeUpdate(sqlCreateTables);
+            stmt.close();
+        } catch (SQLException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static String readFile(String path)
+            throws IOException
+    {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -314,7 +196,7 @@ public class SQLiteInterface implements SQLInterface {
             while (rs.next()) {
                 // Get the class name of the location.
                 String locationClassName = rs.getString("typee");
-                
+
                 // Load the properties of the location.
                 Map<String, String> locationProperties = new HashMap<>();
                 Statement stmtProperties = this.connection.createStatement();
@@ -440,24 +322,14 @@ public class SQLiteInterface implements SQLInterface {
         try {
             Statement stmt = this.connection.createStatement();
             String sqlAddTypeConstraint1;
-            if (constraint.getId() == -1) {
-                sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
-                        constraint.getConstraintCollection().getId());
-            } else {
-                sqlAddTypeConstraint1 = String.format(
-                        "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
-                        constraint.getId(), constraint.getConstraintCollection().getId());
-            }
+            sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
+                    constraint.getConstraintCollection().getId());
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
-            if (constraint.getId() == -1) {
-                String locationId = "select last_insert_rowid() as constraintId";
-                ResultSet rsLocationId = stmt.executeQuery(locationId);
-                while (rsLocationId.next()) {
-                    constraintId = rsLocationId.getInt("constraintId");
-                }
-            } else {
-                constraintId = constraint.getId();
+            String locationId = "select last_insert_rowid() as constraintId";
+            ResultSet rsLocationId = stmt.executeQuery(locationId);
+            while (rsLocationId.next()) {
+                constraintId = rsLocationId.getInt("constraintId");
             }
 
             stmt.close();
@@ -536,10 +408,10 @@ public class SQLiteInterface implements SQLInterface {
                                     .getInt("constraintCollectionId"));
                 }
                 typeConstraints
-                        .add(TypeConstraint.build(rsTypeConstraints.getInt("id"),
+                        .add(TypeConstraint.build(
                                 new SingleTargetReference(this.getColumnById(rsTypeConstraints
-                                        .getInt("columnId"))), TYPES.valueOf(rsTypeConstraints.getString("typee")),
-                                rdbmsConstraintCollection));
+                                        .getInt("columnId"))), rdbmsConstraintCollection,
+                                TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 if (retrieveConstraintCollection) {
                     rdbmsConstraintCollection = null;
                 }
@@ -562,7 +434,7 @@ public class SQLiteInterface implements SQLInterface {
                                     .getInt("constraintCollectionId"));
                 }
                 inclusionDependencies
-                        .add(InclusionDependency.build(rsInclusionDependencies.getInt("id"),
+                        .add(InclusionDependency.build(
                                 getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
                                 rdbmsConstraintCollection));
                 if (retrieveConstraintCollection) {
@@ -884,8 +756,7 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public boolean tablesExist() {
         DatabaseMetaData meta;
-        String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection", "Constraintt", "IND",
-                "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
+
         Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
 
         try {
@@ -914,15 +785,17 @@ public class SQLiteInterface implements SQLInterface {
             for (Map.Entry<String, String> configEntry : configuration.entrySet()) {
                 String configKey = configEntry.getKey();
                 String value = configEntry.getValue();
-                statement.addBatch(String.format("DELETE FROM Config WHERE key=\"%s\";", configKey));
-                statement.addBatch(String.format("INSERT INTO Config (key, value) VALUES (\"%s\", \"%s\");", configKey, value));
+                statement.addBatch(String.format("DELETE FROM Config WHERE keyy=\"%s\";", configKey));
+                statement.addBatch(String.format("INSERT INTO Config (keyy, value) VALUES (\"%s\", \"%s\");",
+                        configKey,
+                        value));
             }
             statement.executeBatch();
         } catch (SQLException e) {
             throw new RuntimeException("Could not save metadata store configuration.", e);
         }
     }
-    
+
     /**
      * Load configuration of the metadata store.
      */
@@ -930,14 +803,14 @@ public class SQLiteInterface implements SQLInterface {
     public Map<String, String> loadConfiguration() {
         Map<String, String> configuration = new HashMap<String, String>();
         try (Statement statement = this.connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("SELECT key, value FROM Config;");
+            ResultSet resultSet = statement.executeQuery("SELECT keyy, value FROM Config;");
             while (resultSet.next()) {
-                configuration.put(resultSet.getString("key"), resultSet.getString("value"));
+                configuration.put(resultSet.getString("keyy"), resultSet.getString("value"));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Could not load metadata store configuration.", e);
         }
-        
+
         return configuration;
     }
 }

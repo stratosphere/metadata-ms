@@ -24,22 +24,24 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     private final TargetReference target;
 
-    public static TypeConstraint build(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
-        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+    public static TypeConstraint build(final SingleTargetReference target,
+            ConstraintCollection constraintCollection,
+            TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
         return typeConstraint;
     }
 
-    public static TypeConstraint buildAndAddToCollection(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
-        TypeConstraint typeConstraint = new TypeConstraint(id, target, type, constraintCollection);
+    public static TypeConstraint buildAndAddToCollection(final SingleTargetReference target,
+            ConstraintCollection constraintCollection,
+            TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
         constraintCollection.add(typeConstraint);
         return typeConstraint;
     }
 
-    private TypeConstraint(final int id, final SingleTargetReference target, TYPES type,
-            ConstraintCollection constraintCollection) {
-        super(id, constraintCollection);
+    private TypeConstraint(final SingleTargetReference target, ConstraintCollection constraintCollection,
+            TYPES type) {
+        super(constraintCollection);
         Validate.isTrue(target.getAllTargets().size() == 1);
         for (final Target t : target.getAllTargets()) {
             if (!(t instanceof Column)) {
@@ -53,7 +55,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
     @Override
     public String toString() {
-        return "TypeConstraint [type=" + type + ", getId()=" + getId() + "]";
+        return "TypeConstraint [type=" + type + "]";
     }
 
     @Override
