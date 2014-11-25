@@ -373,7 +373,7 @@ public class SQLiteInterface implements SQLInterface {
 
             return true;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(String.format("Could not insert ID %d.", id), e);
         }
     }
 
