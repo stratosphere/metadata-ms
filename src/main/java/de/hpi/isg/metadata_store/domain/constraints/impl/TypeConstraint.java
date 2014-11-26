@@ -37,6 +37,25 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
         public TypeConstraintSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
+
+            if (!allTablesExistChecked) {
+                if (!sqlInterface.tableExists(tableName)) {
+                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                            "(\n" +
+                            "    [constraintId] integer NOT NULL,\n" +
+                            "    [columnId] integer NOT NULL,\n" +
+                            "    [typee] text,\n" +
+                            "    FOREIGN KEY ([constraintId])\n" +
+                            "    REFERENCES [Constraintt] ([id]),\n" +
+                            "    FOREIGN KEY ([columnId])\n" +
+                            "    REFERENCES [Columnn] ([id])\n" +
+                            ");";
+                    this.sqlInterface.executeCreateTableStatement(createTable);
+                }
+                if (sqlInterface.tableExists(tableName)) {
+                    this.allTablesExistChecked = true;
+                }
+            }
         }
 
         @Override
@@ -44,24 +63,6 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
                 Statement stmt = sqlInterface.createStatement();
-                if (!allTablesExistChecked) {
-                    if (!sqlInterface.tableExists(tableName)) {
-                        String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                                "(\n" +
-                                "    [constraintId] integer NOT NULL,\n" +
-                                "    [columnId] integer NOT NULL,\n" +
-                                "    [typee] text,\n" +
-                                "    FOREIGN KEY ([constraintId])\n" +
-                                "    REFERENCES [Constraintt] ([id]),\n" +
-                                "    FOREIGN KEY ([columnId])\n" +
-                                "    REFERENCES [Columnn] ([id])\n" +
-                                ");";
-                        this.sqlInterface.executeCreateTableStatement(createTable);
-                    }
-                    if (sqlInterface.tableExists(tableName)) {
-                        this.allTablesExistChecked = true;
-                    }
-                }
 
                 String sqlAddTypee = String.format(
                         "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (%d, '%s', %d);",

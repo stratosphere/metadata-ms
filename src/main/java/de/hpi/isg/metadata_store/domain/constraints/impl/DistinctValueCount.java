@@ -12,6 +12,7 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -21,8 +22,10 @@ import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
@@ -42,6 +45,25 @@ public class DistinctValueCount extends AbstractConstraint {
 
         public DistinctValueCountSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
+
+            if (!allTablesExistChecked) {
+                if (!sqlInterface.tableExists(tableName)) {
+                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                            "(\n" +
+                            "    [constraintId] integer NOT NULL,\n" +
+                            "    [columnId] integer NOT NULL,\n" +
+                            "    [distinctValueCount] integer,\n" +
+                            "    FOREIGN KEY ([constraintId])\n" +
+                            "    REFERENCES [Constraintt] ([id]),\n" +
+                            "    FOREIGN KEY ([columnId])\n" +
+                            "    REFERENCES [Columnn] ([id])\n" +
+                            ");";
+                    this.sqlInterface.executeCreateTableStatement(createTable);
+                }
+                if (sqlInterface.tableExists(tableName)) {
+                    this.allTablesExistChecked = true;
+                }
+            }
         }
 
         @Override
@@ -49,24 +71,6 @@ public class DistinctValueCount extends AbstractConstraint {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
                 Statement stmt = sqlInterface.createStatement();
-                if (!allTablesExistChecked) {
-                    if (!sqlInterface.tableExists(tableName)) {
-                        String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                                "(\n" +
-                                "    [constraintId] integer NOT NULL,\n" +
-                                "    [columnId] integer NOT NULL,\n" +
-                                "    [distinctValueCount] integer,\n" +
-                                "    FOREIGN KEY ([constraintId])\n" +
-                                "    REFERENCES [Constraintt] ([id]),\n" +
-                                "    FOREIGN KEY ([columnId])\n" +
-                                "    REFERENCES [Columnn] ([id])\n" +
-                                ");";
-                        this.sqlInterface.executeCreateTableStatement(createTable);
-                    }
-                    if (sqlInterface.tableExists(tableName)) {
-                        this.allTablesExistChecked = true;
-                    }
-                }
 
                 String sqlAddTypee = String
                         .format(
@@ -89,7 +93,43 @@ public class DistinctValueCount extends AbstractConstraint {
         @Override
         public Collection<Constraint> deserializeConstraintsForConstraintCollection(
                 ConstraintCollection constraintCollection) {
-            return new HashSet<>();
+            boolean retrieveConstraintCollection = constraintCollection == null;
+            String constraintCollectionClause = "";
+            if (!retrieveConstraintCollection) {
+                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                        constraintCollection.getId());
+            }
+
+            Collection<Constraint> distinctValueCounts = new HashSet<>();
+
+            try {
+                String sqlGetDistinctValueCounts = String
+                        .format("SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
+                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id%s;",
+                                constraintCollectionClause);
+                Statement stmt = this.sqlInterface.createStatement();
+                ResultSet rsDistinctValueCounts = stmt.executeQuery(sqlGetDistinctValueCounts);
+                while (rsDistinctValueCounts.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsDistinctValueCounts
+                                        .getInt("constraintCollectionId"));
+                    }
+                    distinctValueCounts
+                            .add(DistinctValueCount.build(
+                                    new SingleTargetReference(this.sqlInterface.getColumnById(rsDistinctValueCounts
+                                            .getInt("columnId"))), constraintCollection,
+                                    rsDistinctValueCounts.getInt("distinctValueCount")));
+                }
+                rsDistinctValueCounts.close();
+                stmt.close();
+
+                return distinctValueCounts;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
