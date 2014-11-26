@@ -36,10 +36,9 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	 * @param batchSize is the maximum number of statements to execute in a single batch
 	 */
 	public BatchWriter(Statement statement, DatabaseAccess databaseAccess, 
-			Collection<String> referencedTables, Collection<String> manipulatedTables, 
-			int batchSize) {
+			Collection<String> manipulatedTables, int batchSize) {
 		
-		super(statement, databaseAccess, referencedTables, manipulatedTables);
+		super(statement, databaseAccess, manipulatedTables);
 		this.maxBatchSize = batchSize;
 		this.curBatchSize = 0;
 	}

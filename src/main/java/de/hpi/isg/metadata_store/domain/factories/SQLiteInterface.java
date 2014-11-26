@@ -146,7 +146,7 @@ public class SQLiteInterface implements SQLInterface {
 		try {
 			for (String table : tableNames) {
 				String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-				this.databaseAccess.executeSQL(sql, table);
+				this.databaseAccess.executeSQL(sql, table, "bla");
 				// Statement stmt = this.connection.createStatement();
 				// stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
 				//

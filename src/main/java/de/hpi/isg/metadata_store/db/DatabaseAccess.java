@@ -1,14 +1,18 @@
 package de.hpi.isg.metadata_store.db;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
 
@@ -40,6 +44,11 @@ public class DatabaseAccess implements AutoCloseable {
 	 * Executes plain SQL statements.
 	 */
 	private SQLExecutor sqlExecutor;
+	
+	/**
+	 * A mapping from tables to referenced tables (via foreign keys).
+	 */
+	private Map<String, Set<String>> foreignKeyDependencies = new HashMap<>();
 
 	// TODO: Query objects.
 
@@ -58,11 +67,36 @@ public class DatabaseAccess implements AutoCloseable {
 		}
 	}
 
-	public <TWriter extends BatchWriter<?>> TWriter createBatchWriter(DatabaseWriter.Factory<TWriter> factory)
+	/**
+     * Loads the foreign keys from the RDBMS.
+     */
+    public Set<String> getReferencedTables(String table) {
+        Set<String> referencedTables = this.foreignKeyDependencies.get(table);
+        if (referencedTables != null) {
+            return referencedTables;
+        }
+        try {
+            referencedTables = new HashSet<String>();
+            DatabaseMetaData metaData = this.connection.getMetaData();
+            ResultSet resultSet = metaData.getImportedKeys(null, null, table);
+            while (resultSet.next()) {
+                String referencedTable = resultSet.getString("PKTABLE_NAME");
+                referencedTables.add(referencedTable);
+            }
+            resultSet.close();
+            this.foreignKeyDependencies.put(table, referencedTables);
+            return referencedTables;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public <TWriter extends BatchWriter<?>> TWriter createBatchWriter(DatabaseWriter.Factory<TWriter> factory)
 			throws SQLException {
 
 		TWriter writer = factory.createWriter(this);
 		for (String manipulatedTable : writer.getManipulatedTables()) {
+		    getReferencedTables(manipulatedTable);
 			List<DependentWriter<?>> list = this.writers.get(manipulatedTable);
 			if (list == null) {
 				list = new LinkedList<>();
@@ -74,11 +108,35 @@ public class DatabaseAccess implements AutoCloseable {
 		return writer;
 	}
 	
+    /**
+     * Executes a SQL statement on the managed database. Thereby, dependencies to other query batches are respected.
+     * 
+     * @param sqlStmt
+     *        is the SQL statement to execute
+     * @param manipulatedTable
+     *        is the table that is manipulated by this query
+     * @param referencedTables
+     *        are the affecting/affected referenced tables of this query. If no referenced tables are passed, they are
+     *        deduced from the foreign key relationships of the database.
+     * @throws SQLException
+     */
 	public void executeSQL(String sqlStmt, String manipulatedTable, String... referencedTables) 
 			throws SQLException {
 		
+	    referencedTables = updateReferencedTablesIfNotGiven(manipulatedTable, referencedTables);
 		this.sqlExecutor.write(sqlStmt, manipulatedTable, referencedTables);
 	}
+
+    private String[] updateReferencedTablesIfNotGiven(String manipulatedTable, String... referencedTables) {
+        if (referencedTables.length == 0) {
+	        Set<String> fkReferencedTables = getReferencedTables(manipulatedTable);
+	        referencedTables = fkReferencedTables.toArray(new String[fkReferencedTables.size()]);
+	    } else {
+	        Logger.getGlobal().warning(String.format("Manually passed referenced tables detected: %s: %s.", 
+	                manipulatedTable, Arrays.toString(referencedTables)));
+	    }
+        return referencedTables;
+    }
 	
 	public ResultSet query(String sql, String... queriedTables) throws SQLException {
 		flush(Arrays.asList(queriedTables));
