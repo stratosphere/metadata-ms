@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.Map;
 
@@ -25,6 +27,10 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
  *
  */
 public interface SQLInterface {
+
+    public static enum RDBMS {
+        SQLITE
+    };
 
     public void initializeMetadataStore();
 
@@ -56,7 +62,7 @@ public interface SQLInterface {
 
     public void addColumnToTable(RDBMSColumn newColumn, Table table);
 
-    boolean tablesExist();
+    boolean allTablesExist();
 
     public void addScope(Target target, ConstraintCollection constraintCollection);
 
@@ -82,4 +88,16 @@ public interface SQLInterface {
     Location getLocationFor(int id);
 
     void dropTablesIfExist();
+
+    public Statement createStatement() throws SQLException;
+
+    public boolean tableExists(String tablename);
+
+    /**
+     * This helper method must be used for creating tables, instead
+     * 
+     * @param sqlCreateTables
+     */
+
+    void executeCreateTableStatement(String sqlCreateTables);
 }

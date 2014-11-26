@@ -13,6 +13,7 @@
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
@@ -79,6 +80,12 @@ public class DistinctValueCount extends AbstractConstraint {
     @Override
     public String toString() {
         return "DistinctValueCount[" + getTargetReference() + ", numDistinctValues=" + numDistinctValues + "]";
+    }
+
+    @Override
+    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

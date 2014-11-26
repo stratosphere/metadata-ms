@@ -11,7 +11,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,10 +19,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang3.Validate;
+
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
@@ -44,16 +46,20 @@ import de.hpi.isg.metadata_store.domain.util.LocationUtils;
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
  * 
  * @author fabian
+ * @param <RDBMS>
  *
  */
 
 public class SQLiteInterface implements SQLInterface {
 
-    private static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "IND",
-            "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
+    public static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
+            "Constraintt", "IND", "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
+
+    private final Map<Class<? extends Constraint>, ConstraintSQLSerializer> constraintSerializer = new HashMap<>();
 
     private final int CACHE_SIZE = 1000;
+
+    private int currentConstraintIdMax = -1;
 
     Connection connection;
     RDBMSMetadataStore store;
@@ -65,6 +71,8 @@ public class SQLiteInterface implements SQLInterface {
     LRUCache<Table, Collection<Column>> allColumnsForTableCache = new LRUCache<>(CACHE_SIZE);
     Collection<Target> allTargets = null;
     Collection<Schema> allSchemas = null;
+
+    Set<String> existingTables = null;
 
     public SQLiteInterface(Connection connection) {
         this.connection = connection;
@@ -87,13 +95,27 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public void initializeMetadataStore() {
         dropTablesIfExist();
+
+        String sqlCreateTables;
         try {
-            Statement stmt = this.connection.createStatement();
-            String sqlCreateTables = readFile("persistence_sqlite.sql");
+            sqlCreateTables = readFile("persistence_sqlite.sql");
+            this.executeCreateTableStatement(sqlCreateTables);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Override
+    public void executeCreateTableStatement(String sqlCreateTables) {
+        try {
+            Statement stmt = this.createStatement();
 
             stmt.executeUpdate(sqlCreateTables);
             stmt.close();
-        } catch (SQLException | IOException e) {
+            // reload tables
+            this.loadTableNames();
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -317,13 +339,18 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public void addConstraint(Constraint constraint) {
+        if (currentConstraintIdMax == -1) {
+            this.currentConstraintIdMax = getCurrentConstraintIdMaxFromDB();
+        }
+
         // for auto-increment id
-        Integer constraintId = null;
+        Integer constraintId = ++currentConstraintIdMax;
         try {
             Statement stmt = this.connection.createStatement();
             String sqlAddTypeConstraint1;
-            sqlAddTypeConstraint1 = String.format("INSERT INTO Constraintt (constraintCollectionId) VALUES (%d);",
-                    constraint.getConstraintCollection().getId());
+            sqlAddTypeConstraint1 = String.format(
+                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (%d, %d);",
+                    constraintId, constraint.getConstraintCollection().getId());
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
             String locationId = "select last_insert_rowid() as constraintId";
@@ -337,46 +364,34 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
-        if (constraint instanceof TypeConstraint) {
-            TypeConstraint typeConstraint = (TypeConstraint) constraint;
-            try {
-                Statement stmt = this.connection.createStatement();
-                String sqlAddTypee = String.format(
-                        "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
-                        constraintId, typeConstraint.getType().name(), constraint.getTargetReference()
-                                .getAllTargets().iterator()
-                                .next().getId());
-                stmt.executeUpdate(sqlAddTypee);
-
-                stmt.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } else if (constraint instanceof InclusionDependency) {
-            InclusionDependency inclusionDependency = (InclusionDependency) constraint;
-            try {
-                Statement stmt = this.connection.createStatement();
-                String sqlAddIND = String.format(
-                        "INSERT INTO IND (constraintId) VALUES (%d);",
-                        constraintId);
-                stmt.executeUpdate(sqlAddIND);
-
-                for (int i = 0; i < inclusionDependency.getArity(); i++) {
-                    String sqlAddINDpart = String.format(
-                            "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
-                            constraintId,
-                            inclusionDependency.getTargetReference().getDependentColumns()[i].getId(),
-                            inclusionDependency.getTargetReference().getReferencedColumns()[i].getId());
-                    stmt.executeUpdate(sqlAddINDpart);
-                }
-
-                stmt.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            throw new IllegalArgumentException("Unknown constraint type!");
+        ConstraintSQLSerializer serializer = constraintSerializer.get(constraint.getClass());
+        if (serializer == null) {
+            constraintSerializer.put(constraint.getClass(), constraint.getConstraintSQLSerializer(this));
         }
+
+        serializer = constraintSerializer.get(constraint.getClass());
+
+        Validate.isTrue(serializer != null);
+
+        serializer.serialize(constraintId, constraint);
+
+        /*
+         * if (constraint instanceof TypeConstraint) { TypeConstraint typeConstraint = (TypeConstraint) constraint; try
+         * { Statement stmt = this.connection.createStatement(); String sqlAddTypee = String.format(
+         * "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);", constraintId,
+         * typeConstraint.getType().name(), constraint.getTargetReference().getAllTargets().iterator() .next().getId());
+         * stmt.executeUpdate(sqlAddTypee); stmt.close(); } catch (SQLException e) { throw new RuntimeException(e); } }
+         * else if (constraint instanceof InclusionDependency) { InclusionDependency inclusionDependency =
+         * (InclusionDependency) constraint; try { Statement stmt = this.connection.createStatement(); String sqlAddIND
+         * = String.format( "INSERT INTO IND (constraintId) VALUES (%d);", constraintId); stmt.executeUpdate(sqlAddIND);
+         * for (int i = 0; i < inclusionDependency.getArity(); i++) { String sqlAddINDpart = String.format(
+         * "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);", constraintId,
+         * inclusionDependency.getTargetReference().getDependentColumns()[i].getId(),
+         * inclusionDependency.getTargetReference().getReferencedColumns()[i].getId());
+         * stmt.executeUpdate(sqlAddINDpart); } stmt.close(); } catch (SQLException e) { throw new RuntimeException(e);
+         * } } else { throw new IllegalArgumentException("Unknown constraint type!"); }
+         */
+
     }
 
     @Override
@@ -754,25 +769,13 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public boolean tablesExist() {
-        DatabaseMetaData meta;
-
-        Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
-
-        try {
-            meta = connection.getMetaData();
-            ResultSet res = meta.getTables(null, null, null,
-                    new String[] { "TABLE" });
-            while (res.next()) {
-                tables.remove(res.getString("TABLE_NAME"));
+    public boolean allTablesExist() {
+        for (String tableName : tableNames) {
+            if (!this.tableExists(tableName)) {
+                return false;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
-        if (tables.isEmpty()) {
-            return true;
-        }
-        return false;
+        return true;
     }
 
     /**
@@ -812,5 +815,49 @@ public class SQLiteInterface implements SQLInterface {
         }
 
         return configuration;
+    }
+
+    @Override
+    public Statement createStatement() throws SQLException {
+        return this.connection.createStatement();
+    }
+
+    @Override
+    public boolean tableExists(String tablename) {
+        if (existingTables == null) {
+            loadTableNames();
+        }
+        return existingTables.contains(tablename);
+    }
+
+    public void loadTableNames() {
+        existingTables = new HashSet<>();
+        DatabaseMetaData meta;
+        try {
+            meta = connection.getMetaData();
+            ResultSet res = meta.getTables(null, null, null,
+                    new String[] { "TABLE" });
+            while (res.next()) {
+                existingTables.add(res.getString("TABLE_NAME"));
+            }
+            res.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private int getCurrentConstraintIdMaxFromDB() {
+        try {
+            Statement stmt = connection.createStatement();
+            ResultSet res = stmt.executeQuery("SELECT MAX(id) from Constraintt;");
+            while (res.next()) {
+                return (res.getInt("max(id)"));
+            }
+            res.close();
+            stmt.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new RuntimeException("No maxConstraintId could be determined.");
     }
 }

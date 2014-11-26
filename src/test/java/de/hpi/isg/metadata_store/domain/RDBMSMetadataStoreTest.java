@@ -81,9 +81,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testExistenceOfTables() {
         DatabaseMetaData meta;
-        String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection", "Constraintt", "IND",
-                "INDpart", "Scope", "Typee", "Location", "LocationProperty" };
-        Set<String> tables = new HashSet<String>(Arrays.asList(tableNames));
+        Set<String> tables = new HashSet<String>(Arrays.asList(SQLiteInterface.tableNames));
 
         try {
             meta = connection.getMetaData();
@@ -92,7 +90,7 @@ public class RDBMSMetadataStoreTest {
             while (res.next()) {
                 // assertTrue(tables.remove(res.getString("TABLE_NAME")));
                 if (!tables.remove(res.getString("TABLE_NAME"))) {
-                    System.out.println(res.getString("TABLE_NAME"));
+                    System.out.println("Unexpected table: " + res.getString("TABLE_NAME"));
                 }
             }
         } catch (SQLException e) {
@@ -226,9 +224,7 @@ public class RDBMSMetadataStoreTest {
                 "bar", 2);
 
         final ConstraintCollection dummyConstraintCollection = new RDBMSConstraintCollection(1,
-                new HashSet<Constraint>(),
-                new HashSet<Target>(), new SQLiteInterface(
-                        connection));
+                new HashSet<Constraint>(), new HashSet<Target>(), new SQLiteInterface(connection));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1),
@@ -316,8 +312,6 @@ public class RDBMSMetadataStoreTest {
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
-
-        System.out.println(dummySchema.getLocation().equals(store2.getSchemas().iterator().next().getLocation()));
 
         assertEquals(dummySchema, store2.getSchemas().iterator().next());
 
