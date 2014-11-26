@@ -1,7 +1,10 @@
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
 
@@ -11,6 +14,7 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
@@ -23,7 +27,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         STRING, INTEGER, DECIMAL
     };
 
-    private class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer {
 
         private boolean allTablesExistChecked = false;
 
@@ -42,7 +46,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 Statement stmt = sqlInterface.createStatement();
                 if (!allTablesExistChecked) {
                     if (!sqlInterface.tableExists(tableName)) {
-                        String createTypeeTable = "CREATE TABLE [Typee]\n" +
+                        String createTable = "CREATE TABLE [" + tableName + "]\n" +
                                 "(\n" +
                                 "    [constraintId] integer NOT NULL,\n" +
                                 "    [columnId] integer NOT NULL,\n" +
@@ -52,7 +56,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                                 "    FOREIGN KEY ([columnId])\n" +
                                 "    REFERENCES [Columnn] ([id])\n" +
                                 ");";
-                        this.sqlInterface.executeCreateTableStatement(createTypeeTable);
+                        this.sqlInterface.executeCreateTableStatement(createTable);
                     }
                     if (sqlInterface.tableExists(tableName)) {
                         this.allTablesExistChecked = true;
@@ -60,7 +64,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 }
 
                 String sqlAddTypee = String.format(
-                        "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
+                        "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
                         constraintId, ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargets().iterator()
@@ -72,6 +76,47 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 throw new RuntimeException(e);
             }
 
+        }
+
+        @Override
+        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+                ConstraintCollection constraintCollection) {
+            boolean retrieveConstraintCollection = constraintCollection == null;
+            String constraintCollectionClause = "";
+            if (!retrieveConstraintCollection) {
+                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                        constraintCollection.getId());
+            }
+
+            Collection<Constraint> typeConstraints = new HashSet<>();
+
+            try {
+                String sqlGetTypeConstraints = String
+                        .format("SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from typee, constraintt where typee.constraintId = constraintt.id%s;",
+                                constraintCollectionClause);
+                Statement stmt = this.sqlInterface.createStatement();
+                ResultSet rsTypeConstraints = stmt.executeQuery(sqlGetTypeConstraints);
+                while (rsTypeConstraints.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsTypeConstraints
+                                        .getInt("constraintCollectionId"));
+                    }
+                    typeConstraints
+                            .add(TypeConstraint.build(
+                                    new SingleTargetReference(this.sqlInterface.getColumnById(rsTypeConstraints
+                                            .getInt("columnId"))), constraintCollection,
+                                    TYPES.valueOf(rsTypeConstraints.getString("typee"))));
+                }
+                rsTypeConstraints.close();
+                stmt.close();
+
+                return typeConstraints;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

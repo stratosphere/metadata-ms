@@ -12,11 +12,13 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
@@ -28,6 +30,7 @@ import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -37,12 +40,12 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  */
 public class InclusionDependency extends AbstractConstraint implements Constraint {
 
-    private class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
+    public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
 
         private boolean allTablesExistChecked = false;
 
-        private final static String tableName = "Typee";
-        private final static String referenceTableName = "Typee";
+        private final static String tableName = "IND";
+        private final static String referenceTableName = "INDPart";
 
         private final SQLInterface sqlInterface;
 
@@ -58,7 +61,7 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 Statement stmt = sqlInterface.createStatement();
                 if (!allTablesExistChecked) {
                     if (!sqlInterface.tableExists(tableName)) {
-                        String createINDTable = "CREATE TABLE [IND]\n" +
+                        String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
                                 "(\n" +
                                 "    [constraintId] integer NOT NULL,\n" +
                                 "    PRIMARY KEY ([constraintId]),\n" +
@@ -68,7 +71,7 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                         this.sqlInterface.executeCreateTableStatement(createINDTable);
                     }
                     if (!sqlInterface.tableExists(referenceTableName)) {
-                        String createINDpartTable = "CREATE TABLE [INDpart]\n" +
+                        String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
                                 "(\n" +
                                 "    [constraintId] integer NOT NULL,\n" +
                                 "    [lhs] integer NOT NULL,\n" +
@@ -89,12 +92,13 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 }
 
                 String sqlAddIND = String.format(
-                        "INSERT INTO IND (constraintId) VALUES (%d);", constraintId);
+                        "INSERT INTO " + tableName + " (constraintId) VALUES (%d);", constraintId);
                 stmt.executeUpdate(sqlAddIND);
                 for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
                     String sqlAddINDpart = String
                             .format(
-                                    "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
+                                    "INSERT INTO " + referenceTableName
+                                            + " (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
                                     constraintId,
                                     ((InclusionDependency) inclusionDependency).getTargetReference()
                                             .getDependentColumns()[i].getId(),
@@ -107,6 +111,47 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 throw new RuntimeException(e);
             }
 
+        }
+
+        @Override
+        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+                ConstraintCollection constraintCollection) {
+            boolean retrieveConstraintCollection = constraintCollection == null;
+            String constraintCollectionClause = "";
+            if (!retrieveConstraintCollection) {
+                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                        constraintCollection.getId());
+            }
+
+            Collection<Constraint> inclusionDependencies = new HashSet<>();
+
+            try {
+                String sqlGetInclusionDependencies = String
+                        .format("SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from IND, constraintt where IND.constraintId = constraintt.id%s;",
+                                constraintCollectionClause);
+                Statement stmt = this.sqlInterface.createStatement();
+                ResultSet rsInclusionDependencies = stmt.executeQuery(
+                        sqlGetInclusionDependencies);
+                while (rsInclusionDependencies.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsInclusionDependencies
+                                        .getInt("constraintCollectionId"));
+                    }
+                    inclusionDependencies
+                            .add(InclusionDependency.build(this.sqlInterface.
+                                    getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
+                                    constraintCollection));
+
+                }
+                rsInclusionDependencies.close();
+                stmt.close();
+
+                return inclusionDependencies;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

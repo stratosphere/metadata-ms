@@ -12,8 +12,17 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.HashSet;
+
+import org.apache.commons.lang3.Validate;
+
+import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
+import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
@@ -22,6 +31,67 @@ import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
  * @author Sebastian Kruse
  */
 public class DistinctValueCount extends AbstractConstraint {
+
+    public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer {
+
+        private boolean allTablesExistChecked = false;
+
+        private final static String tableName = "DistinctValueCount";
+
+        private final SQLInterface sqlInterface;
+
+        public DistinctValueCountSQLiteSerializer(SQLInterface sqlInterface) {
+            this.sqlInterface = sqlInterface;
+        }
+
+        @Override
+        public void serialize(Integer constraintId, Constraint distinctValueCount) {
+            Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
+            try {
+                Statement stmt = sqlInterface.createStatement();
+                if (!allTablesExistChecked) {
+                    if (!sqlInterface.tableExists(tableName)) {
+                        String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                                "(\n" +
+                                "    [constraintId] integer NOT NULL,\n" +
+                                "    [columnId] integer NOT NULL,\n" +
+                                "    [distinctValueCount] integer,\n" +
+                                "    FOREIGN KEY ([constraintId])\n" +
+                                "    REFERENCES [Constraintt] ([id]),\n" +
+                                "    FOREIGN KEY ([columnId])\n" +
+                                "    REFERENCES [Columnn] ([id])\n" +
+                                ");";
+                        this.sqlInterface.executeCreateTableStatement(createTable);
+                    }
+                    if (sqlInterface.tableExists(tableName)) {
+                        this.allTablesExistChecked = true;
+                    }
+                }
+
+                String sqlAddTypee = String
+                        .format(
+                                "INSERT INTO " + tableName
+                                        + " (constraintId, distinctValueCount, columnId) VALUES (%d, '%d', %d);",
+                                constraintId, ((DistinctValueCount) distinctValueCount).getNumDistinctValues(),
+                                distinctValueCount
+                                        .getTargetReference()
+                                        .getAllTargets().iterator()
+                                        .next().getId());
+                stmt.executeUpdate(sqlAddTypee);
+
+                stmt.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+
+        @Override
+        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+                ConstraintCollection constraintCollection) {
+            return new HashSet<>();
+        }
+    }
 
     private static final long serialVersionUID = -932394088609862495L;
 
@@ -84,8 +154,11 @@ public class DistinctValueCount extends AbstractConstraint {
 
     @Override
     public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
-        // TODO Auto-generated method stub
-        return null;
+        if (sqlInterface instanceof SQLiteInterface) {
+            return new DistinctValueCountSQLiteSerializer(sqlInterface);
+        } else {
+            throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
+        }
     }
 
 }

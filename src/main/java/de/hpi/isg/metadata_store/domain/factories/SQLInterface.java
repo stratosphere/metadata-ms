@@ -9,6 +9,7 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
@@ -100,4 +101,6 @@ public interface SQLInterface {
      */
 
     void executeCreateTableStatement(String sqlCreateTables);
+
+    void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer);
 }
