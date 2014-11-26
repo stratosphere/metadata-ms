@@ -83,4 +83,6 @@ public interface SQLInterface {
     Location getLocationFor(int id);
 
     void dropTablesIfExist();
+    
+    void flush();
 }

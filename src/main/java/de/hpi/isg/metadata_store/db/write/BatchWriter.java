@@ -15,6 +15,8 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public abstract class BatchWriter<T> extends DependentWriter<T> {
 
+	public static final int DEFAULT_BATCH_SIZE = 10000;
+	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
 	 */
@@ -37,13 +39,13 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 			Collection<String> referencedTables, Collection<String> manipulatedTables, 
 			int batchSize) {
 		
-		super(statement, databaseAccess, manipulatedTables, manipulatedTables);
+		super(statement, databaseAccess, referencedTables, manipulatedTables);
 		this.maxBatchSize = batchSize;
 		this.curBatchSize = 0;
 	}
 	
 	@Override
-	void write(T element) throws SQLException {
+	public void write(T element) throws SQLException {
 		addBatch(element);
 		if (++this.curBatchSize >= this.maxBatchSize) {
 			flush();

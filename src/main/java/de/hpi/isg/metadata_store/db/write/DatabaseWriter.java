@@ -1,8 +1,9 @@
 package de.hpi.isg.metadata_store.db.write;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
 /**
  * A batch writer manages inserts into a database. Thereby, it can bundle multiple actions into batches.
@@ -19,7 +20,7 @@ abstract public class DatabaseWriter<T> {
 		this.statement = statement;
 	}
 
-	abstract void write(T element) throws SQLException;
+	abstract public void write(T element) throws SQLException;
 	
 	abstract public void flush() throws SQLException;
 	
@@ -46,7 +47,7 @@ abstract public class DatabaseWriter<T> {
 		 * @return
 		 * @throws SQLException
 		 */
-		TWriter createWriter(Connection connection) throws SQLException;
+		TWriter createWriter(DatabaseAccess databaseAccess) throws SQLException;
 		
 	}
 }

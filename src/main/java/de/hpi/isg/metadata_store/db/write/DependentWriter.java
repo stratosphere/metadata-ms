@@ -42,7 +42,9 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 	}
 	
 	protected void ensureReferencedTablesFlushed() throws SQLException {
-		this.databaseAccess.flush(this.referencedTables);
+		if (!this.referencedTables.isEmpty()) {
+			this.databaseAccess.flush(this.referencedTables);
+		}
 	}
 
 	public Set<String> getManipulatedTables() {
