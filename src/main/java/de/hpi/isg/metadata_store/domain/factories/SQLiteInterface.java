@@ -353,12 +353,6 @@ public class SQLiteInterface implements SQLInterface {
                     constraintId, constraint.getConstraintCollection().getId());
             stmt.executeUpdate(sqlAddTypeConstraint1);
 
-            String locationId = "select last_insert_rowid() as constraintId";
-            ResultSet rsLocationId = stmt.executeQuery(locationId);
-            while (rsLocationId.next()) {
-                constraintId = rsLocationId.getInt("constraintId");
-            }
-
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -374,24 +368,6 @@ public class SQLiteInterface implements SQLInterface {
         Validate.isTrue(serializer != null);
 
         serializer.serialize(constraintId, constraint);
-
-        /*
-         * if (constraint instanceof TypeConstraint) { TypeConstraint typeConstraint = (TypeConstraint) constraint; try
-         * { Statement stmt = this.connection.createStatement(); String sqlAddTypee = String.format(
-         * "INSERT INTO Typee (constraintId, typee, columnId) VALUES (%d, '%s', %d);", constraintId,
-         * typeConstraint.getType().name(), constraint.getTargetReference().getAllTargets().iterator() .next().getId());
-         * stmt.executeUpdate(sqlAddTypee); stmt.close(); } catch (SQLException e) { throw new RuntimeException(e); } }
-         * else if (constraint instanceof InclusionDependency) { InclusionDependency inclusionDependency =
-         * (InclusionDependency) constraint; try { Statement stmt = this.connection.createStatement(); String sqlAddIND
-         * = String.format( "INSERT INTO IND (constraintId) VALUES (%d);", constraintId); stmt.executeUpdate(sqlAddIND);
-         * for (int i = 0; i < inclusionDependency.getArity(); i++) { String sqlAddINDpart = String.format(
-         * "INSERT INTO INDpart (constraintId, lhs, rhs) VALUES ('%d', %d, %d);", constraintId,
-         * inclusionDependency.getTargetReference().getDependentColumns()[i].getId(),
-         * inclusionDependency.getTargetReference().getReferencedColumns()[i].getId());
-         * stmt.executeUpdate(sqlAddINDpart); } stmt.close(); } catch (SQLException e) { throw new RuntimeException(e);
-         * } } else { throw new IllegalArgumentException("Unknown constraint type!"); }
-         */
-
     }
 
     @Override
