@@ -48,10 +48,12 @@
 			<artifactId>sqlite-jdbc</artifactId>
 			<version>3.7.2</version>
 		</dependency>
+		<!-- TODO remove cyclic dependency so as to use this dependency. 
 		<dependency>
 			<groupId>de.hpi.isg</groupId>
 			<artifactId>sodap-util</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		 -->
 	</dependencies>
 </project>
