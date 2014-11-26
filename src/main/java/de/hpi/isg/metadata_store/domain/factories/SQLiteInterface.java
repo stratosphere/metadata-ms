@@ -169,6 +169,7 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
+        flush();
     }
 
     @Override
@@ -421,7 +422,9 @@ public class SQLiteInterface implements SQLInterface {
             	this.allTargets.add(target);
             }
             if (target instanceof RDBMSSchema) {
-            	this.allSchemas.add((Schema) target);
+                if (this.allSchemas != null) {
+                    this.allSchemas.add((Schema) target);
+                }
             	this.schemaCache.put(target.getId(), (RDBMSSchema) target);
             } else if (target instanceof RDBMSTable) {
             	this.tableCache.put(target.getId(), (RDBMSTable) target);

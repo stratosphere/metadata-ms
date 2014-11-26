@@ -79,5 +79,11 @@ public interface MetadataStore extends Serializable, Observer {
      * @throws IOException 
      */
     public void save(String path) throws IOException;
+    
+    /**
+     * Saves any pending changes in the metadata store.
+     * @throws Exception if the saving fails
+     */
+    public void flush() throws Exception;
 
 }

@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
 
@@ -46,6 +48,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private final Collection<Constraint> constraints;
 
     private final Collection<Target> allTargets;
+    
+    transient private File storeLocation;
 
     private final IntSet idsInUse = new IntOpenHashBigSet();
     
@@ -56,10 +60,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private final Random randomGenerator = new Random();
 
     public DefaultMetadataStore() {
-        this(12, 12);
+        this(null, 12, 12);
     }
     
-    public DefaultMetadataStore(int numTableBitsInIds, int numColumnBitsInIds) {
+    public DefaultMetadataStore(File location, int numTableBitsInIds, int numColumnBitsInIds) {
+        this.storeLocation = location;
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
         this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
         this.constraintCollections = Collections.synchronizedSet(new HashSet<ConstraintCollection>());
@@ -223,12 +228,25 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public void save(String path) throws IOException {
         File file = new File(path);
-        file.getParentFile().mkdirs();
-        final FileOutputStream fout = new FileOutputStream(file);
+        this.storeLocation = file;
+        saveToDefaultLocation();
+    }
+
+    private void saveToDefaultLocation() throws FileNotFoundException, IOException {
+        this.storeLocation.getParentFile().mkdirs();
+        final FileOutputStream fout = new FileOutputStream(this.storeLocation);
         final ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(this);
         oos.close();
-
+    }
+    
+    @Override
+    public void flush() throws Exception {
+        if (this.storeLocation == null) {
+            Logger.getAnonymousLogger().warning("Cannot flush metadata store because it has no default saving location.");
+        } else {
+            saveToDefaultLocation();
+        }
     }
     
 }

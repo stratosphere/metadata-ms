@@ -456,12 +456,13 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringOfFilledMetadataStore2() {
+    public void testStoringOfFilledMetadataStore2() throws Exception {
         // setup store
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
         // setup schema
         final Schema dummySchema = store1.addSchema("PDB", new DefaultLocation());
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));

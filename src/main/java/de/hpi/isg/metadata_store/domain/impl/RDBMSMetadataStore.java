@@ -271,10 +271,16 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumColumnBits()));
         return configuration;
     }
-
+    
+    
     @Override
     public void save(String path) {
         LOGGER.warning("save(path) is not fully supported for this metadata store.");
+    }
+
+    @Override
+    public void flush() throws Exception {
         this.sqlInterface.saveConfiguration();
+        this.sqlInterface.flush();
     }
 }

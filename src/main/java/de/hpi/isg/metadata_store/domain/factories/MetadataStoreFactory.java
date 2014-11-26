@@ -46,11 +46,15 @@ public class MetadataStoreFactory {
     public static DefaultMetadataStore createAndSaveDefaultMetadataStore(final File file, int numTableBitsInIds,
             int numColumnBitsInIds) throws IOException {
         
-        final DefaultMetadataStore metadataStore = new DefaultMetadataStore(numTableBitsInIds, numColumnBitsInIds);
+        final DefaultMetadataStore metadataStore = new DefaultMetadataStore(file, numTableBitsInIds, numColumnBitsInIds);
         if (!file.exists()) {
             file.createNewFile();
         }
-        metadataStore.save(file.getAbsolutePath());
+        try {
+            metadataStore.flush();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return metadataStore;
     }
 
