@@ -12,16 +12,25 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+
+import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
+import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
@@ -30,6 +39,122 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * @author Sebastian Kruse
  */
 public class InclusionDependency extends AbstractConstraint implements Constraint {
+
+    public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
+
+        private boolean allTablesExistChecked = false;
+
+        private final static String tableName = "IND";
+        private final static String referenceTableName = "INDPart";
+
+        private final SQLInterface sqlInterface;
+
+        public InclusionDependencySQLiteSerializer(SQLInterface sqlInterface) {
+            this.sqlInterface = sqlInterface;
+
+            if (!allTablesExistChecked) {
+                if (!sqlInterface.tableExists(tableName)) {
+                    String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
+                            "(\n" +
+                            "    [constraintId] integer NOT NULL,\n" +
+                            "    PRIMARY KEY ([constraintId]),\n" +
+                            "    FOREIGN KEY ([constraintId])\n" +
+                            "    REFERENCES [Constraintt] ([id])\n" +
+                            ");";
+                    this.sqlInterface.executeCreateTableStatement(createINDTable);
+                }
+                if (!sqlInterface.tableExists(referenceTableName)) {
+                    String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
+                            "(\n" +
+                            "    [constraintId] integer NOT NULL,\n" +
+                            "    [lhs] integer NOT NULL,\n" +
+                            "    [rhs] integer NOT NULL,\n" +
+                            "    FOREIGN KEY ([lhs])\n" +
+                            "    REFERENCES [Columnn] ([id]),\n" +
+                            "    FOREIGN KEY ([constraintId])\n" +
+                            "    REFERENCES [IND] ([constraintId]),\n" +
+                            "    FOREIGN KEY ([rhs])\n" +
+                            "    REFERENCES [Columnn] ([id])\n" +
+                            ");";
+                    this.sqlInterface.executeCreateTableStatement(createINDpartTable);
+                }
+                // check again and set allTablesExistChecked to true
+                if (sqlInterface.tableExists(tableName) && sqlInterface.tableExists(referenceTableName)) {
+                    this.allTablesExistChecked = true;
+                }
+            }
+        }
+
+        @Override
+        public void serialize(Integer constraintId, Constraint inclusionDependency) {
+
+            Validate.isTrue(inclusionDependency instanceof InclusionDependency);
+            try {
+                Statement stmt = sqlInterface.createStatement();
+
+                String sqlAddIND = String.format(
+                        "INSERT INTO " + tableName + " (constraintId) VALUES (%d);", constraintId);
+                stmt.executeUpdate(sqlAddIND);
+                for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
+                    String sqlAddINDpart = String
+                            .format(
+                                    "INSERT INTO " + referenceTableName
+                                            + " (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
+                                    constraintId,
+                                    ((InclusionDependency) inclusionDependency).getTargetReference()
+                                            .getDependentColumns()[i].getId(),
+                                    ((InclusionDependency) inclusionDependency).getTargetReference()
+                                            .getReferencedColumns()[i].getId());
+                    stmt.executeUpdate(sqlAddINDpart);
+                }
+                stmt.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+
+        @Override
+        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+                ConstraintCollection constraintCollection) {
+            boolean retrieveConstraintCollection = constraintCollection == null;
+            String constraintCollectionClause = "";
+            if (!retrieveConstraintCollection) {
+                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                        constraintCollection.getId());
+            }
+
+            Collection<Constraint> inclusionDependencies = new HashSet<>();
+
+            try {
+                String sqlGetInclusionDependencies = String
+                        .format("SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from IND, constraintt where IND.constraintId = constraintt.id%s;",
+                                constraintCollectionClause);
+                Statement stmt = this.sqlInterface.createStatement();
+                ResultSet rsInclusionDependencies = stmt.executeQuery(
+                        sqlGetInclusionDependencies);
+                while (rsInclusionDependencies.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsInclusionDependencies
+                                        .getInt("constraintCollectionId"));
+                    }
+                    inclusionDependencies
+                            .add(InclusionDependency.build(this.sqlInterface.
+                                    getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
+                                    constraintCollection));
+
+                }
+                rsInclusionDependencies.close();
+                stmt.close();
+
+                return inclusionDependencies;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
 
@@ -109,6 +234,15 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
     public int getArity() {
         return this.getTargetReference().getDependentColumns().length;
+    }
+
+    @Override
+    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+        if (sqlInterface instanceof SQLiteInterface) {
+            return new InclusionDependencySQLiteSerializer(sqlInterface);
+        } else {
+            throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
+        }
     }
 
 }

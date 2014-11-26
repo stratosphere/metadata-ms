@@ -12,13 +12,25 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 
+import org.apache.commons.lang3.Validate;
+
+import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
+import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
+import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
+import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
@@ -27,6 +39,100 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  * @author Sebastian Kruse
  */
 public class TupleCount extends AbstractConstraint {
+
+    public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer {
+
+        private boolean allTablesExistChecked = false;
+
+        private final static String tableName = "TupleCount";
+
+        private final SQLInterface sqlInterface;
+
+        public TupleCountSQLiteSerializer(SQLInterface sqlInterface) {
+            this.sqlInterface = sqlInterface;
+
+            if (!allTablesExistChecked) {
+                if (!sqlInterface.tableExists(tableName)) {
+                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                            "(\n" +
+                            "    [constraintId] integer NOT NULL,\n" +
+                            "    [tableId] integer NOT NULL,\n" +
+                            "    [tupleCount] integer,\n" +
+                            "    FOREIGN KEY ([constraintId])\n" +
+                            "    REFERENCES [Constraintt] ([id]),\n" +
+                            "    FOREIGN KEY ([tableId])\n" +
+                            "    REFERENCES [Tablee] ([id])\n" +
+                            ");";
+                    this.sqlInterface.executeCreateTableStatement(createTable);
+                }
+                if (sqlInterface.tableExists(tableName)) {
+                    this.allTablesExistChecked = true;
+                }
+            }
+        }
+
+        @Override
+        public void serialize(Integer constraintId, Constraint tupleCount) {
+            Validate.isTrue(tupleCount instanceof TupleCount);
+            try {
+                Statement stmt = sqlInterface.createStatement();
+
+                String sqlAddTypee = String.format(
+                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (%d, '%s', %d);",
+                        constraintId, ((TupleCount) tupleCount).getNumTuples(), tupleCount
+                                .getTargetReference()
+                                .getAllTargets().iterator()
+                                .next().getId());
+                stmt.executeUpdate(sqlAddTypee);
+
+                stmt.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+
+        @Override
+        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+                ConstraintCollection constraintCollection) {
+            boolean retrieveConstraintCollection = constraintCollection == null;
+            String constraintCollectionClause = "";
+            if (!retrieveConstraintCollection) {
+                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
+                        constraintCollection.getId());
+            }
+
+            Collection<Constraint> tupleCounts = new HashSet<>();
+
+            try {
+                String sqlGetTupleCounts = String
+                        .format("SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id%s;",
+                                constraintCollectionClause);
+                Statement stmt = this.sqlInterface.createStatement();
+                ResultSet rsTupleCounts = stmt.executeQuery(sqlGetTupleCounts);
+                while (rsTupleCounts.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsTupleCounts
+                                        .getInt("constraintCollectionId"));
+                    }
+                    tupleCounts
+                            .add(TupleCount.build(
+                                    new TupleCount.Reference(this.sqlInterface.getTableById(rsTupleCounts
+                                            .getInt("tableId"))), constraintCollection,
+                                    rsTupleCounts.getInt("tupleCount")));
+                }
+                rsTupleCounts.close();
+                stmt.close();
+
+                return tupleCounts;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
 
@@ -104,6 +210,15 @@ public class TupleCount extends AbstractConstraint {
     @Override
     public String toString() {
         return "TupleCount[" + getTargetReference() + ", numTuples=" + numTuples + "]";
+    }
+
+    @Override
+    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+        if (sqlInterface instanceof SQLiteInterface) {
+            return new TupleCountSQLiteSerializer(sqlInterface);
+        } else {
+            throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
+        }
     }
 
 }

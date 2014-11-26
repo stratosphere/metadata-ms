@@ -64,7 +64,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
     
     public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
-        if (sqliteInterface.tablesExist()) {
+        if (sqliteInterface.allTablesExist()) {
             Logger.getAnonymousLogger().warning("The metadata store will be overwritten.");;
         }
         sqliteInterface.initializeMetadataStore();
@@ -74,7 +74,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
     
     public static RDBMSMetadataStore load(SQLiteInterface sqliteInterface) {
-        if (!sqliteInterface.tablesExist()) {
+        if (!sqliteInterface.allTablesExist()) {
             throw new IllegalStateException("The metadata store does not seem to be initialized.");
         }
         Map<String, String> configuration = sqliteInterface.loadConfiguration();
