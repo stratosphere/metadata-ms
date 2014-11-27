@@ -110,6 +110,13 @@ public class SQLiteInterface implements SQLInterface {
     public SQLiteInterface(Connection connection) {
     	this.connection = connection;
         this.databaseAccess = new DatabaseAccess(connection);
+        
+        // Initialize writers.
+		try {
+			this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
+		} catch (SQLException e) {
+			throw new RuntimeException("Could not initialze writers.", e);
+		}
     }
 
     public static SQLiteInterface buildAndRegisterStandardConstraints(Connection connection) {
@@ -125,22 +132,6 @@ public class SQLiteInterface implements SQLInterface {
 
         return sqlInterface;
     }
-
-    /**
-     * Returns the initialized writer.
-     * Writers are initialized lazily to save database resources and allow the interface to set up the database.
-     * @return the writer
-     */
-	public DatabaseWriter<Integer> getTargetIdWriter() {
-		if (this.targetIdWriter == null) {
-			try {
-				this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
-			} catch (SQLException e) {
-				throw new RuntimeException("Could not initialze writers.", e);
-			}
-		}
-		return this.targetIdWriter;
-	}
 
 	@Override
 	public void dropTablesIfExist() {
@@ -170,7 +161,11 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
-        flush();
+        try {
+			flush();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     @Override
@@ -384,7 +379,7 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public boolean addToIdsInUse(int id) {
         try {
-        	getTargetIdWriter().write(id);
+        	this.targetIdWriter.write(id);
 //            Statement stmt = this.connection.createStatement();
 //            String sql = "INSERT INTO Target (ID) " +
 //                    "VALUES (" + id + ");";
@@ -869,10 +864,12 @@ public class SQLiteInterface implements SQLInterface {
     
     /**
      * Flushes any pending inserts/updates to the DB.
+     * @throws SQLException 
      */
     @Override
-    public void flush() {
+    public void flush() throws SQLException {
         // TODO Auto-generated method stub
+    	this.databaseAccess.flush();
     }
     	
 
