@@ -25,8 +25,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
 import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
+
 import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -75,8 +77,8 @@ public class SQLiteInterface implements SQLInterface {
     private static final PreparedStatementBatchWriter.Factory<Integer> ID_WRITER_FACTORY =
     		new PreparedStatementBatchWriter.Factory<>(
     				"INSERT INTO Target (ID) VALUES (?);",
-    				new PreparedStatementBatchWriter.PreparedStatementAdapter<Integer>() {
-    					public void addBatch(Integer integer, PreparedStatement preparedStatement) throws SQLException {
+    				new PreparedStatementAdapter<Integer>() {
+    					public void translateParameter(Integer integer, PreparedStatement preparedStatement) throws SQLException {
     						preparedStatement.setInt(1, integer);
     						preparedStatement.addBatch();
     					}
@@ -146,7 +148,7 @@ public class SQLiteInterface implements SQLInterface {
 		try {
 			for (String table : tableNames) {
 				String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-				this.databaseAccess.executeSQL(sql, table, "bla");
+				this.databaseAccess.executeSQL(sql, table);
 				// Statement stmt = this.connection.createStatement();
 				// stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
 				//

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
 
 public class PreparedStatementBatchWriter<T> extends BatchWriter<T> {
 
@@ -25,13 +26,8 @@ public class PreparedStatementBatchWriter<T> extends BatchWriter<T> {
 
     @Override
     protected void addBatch(T element) throws SQLException {
-        this.adapter.addBatch(element, (PreparedStatement) this.statement);
-    }
-
-    public interface PreparedStatementAdapter<T> {
-
-        void addBatch(T object, PreparedStatement preparedStatement) throws SQLException;
-
+        this.adapter.translateParameter(element, (PreparedStatement) this.statement);
+        ((PreparedStatement) this.statement).addBatch();
     }
 
     public static class Factory<TElement> implements DatabaseWriter.Factory<PreparedStatementBatchWriter<TElement>> {
