@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
 import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 
@@ -77,10 +78,10 @@ public class SQLiteInterface implements SQLInterface {
     private static final PreparedStatementBatchWriter.Factory<Integer> ID_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Target (ID) VALUES (?);",
-                    new PreparedStatementBatchWriter.PreparedStatementAdapter<Integer>() {
-                        public void addBatch(Integer integer, PreparedStatement preparedStatement) throws SQLException {
+                    new PreparedStatementAdapter<Integer>() {
+                        public void translateParameter(Integer integer, PreparedStatement preparedStatement)
+                                throws SQLException {
                             preparedStatement.setInt(1, integer);
-                            preparedStatement.addBatch();
                         }
                     },
                     "Target");
@@ -111,6 +112,13 @@ public class SQLiteInterface implements SQLInterface {
     public SQLiteInterface(Connection connection) {
         this.connection = connection;
         this.databaseAccess = new DatabaseAccess(connection);
+
+        // Initialize writers.
+        try {
+            this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not initialze writers.", e);
+        }
     }
 
     public static SQLiteInterface buildAndRegisterStandardConstraints(Connection connection) {
@@ -127,29 +135,12 @@ public class SQLiteInterface implements SQLInterface {
         return sqlInterface;
     }
 
-    /**
-     * Returns the initialized writer. Writers are initialized lazily to save database resources and allow the interface
-     * to set up the database.
-     * 
-     * @return the writer
-     */
-    public DatabaseWriter<Integer> getTargetIdWriter() {
-        if (this.targetIdWriter == null) {
-            try {
-                this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
-            } catch (SQLException e) {
-                throw new RuntimeException("Could not initialze writers.", e);
-            }
-        }
-        return this.targetIdWriter;
-    }
-
     @Override
     public void dropTablesIfExist() {
         try {
             for (String table : tableNames) {
                 String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-                this.databaseAccess.executeSQL(sql, table, "bla");
+                this.databaseAccess.executeSQL(sql, table);
                 // Statement stmt = this.connection.createStatement();
                 // stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
                 //
@@ -172,7 +163,11 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
-        flush();
+        try {
+            flush();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -388,7 +383,7 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public boolean addToIdsInUse(int id) {
         try {
-            getTargetIdWriter().write(id);
+            this.targetIdWriter.write(id);
             // Statement stmt = this.connection.createStatement();
             // String sql = "INSERT INTO Target (ID) " +
             // "VALUES (" + id + ");";
@@ -874,10 +869,13 @@ public class SQLiteInterface implements SQLInterface {
 
     /**
      * Flushes any pending inserts/updates to the DB.
+     * 
+     * @throws SQLException
      */
     @Override
-    public void flush() {
+    public void flush() throws SQLException {
         // TODO Auto-generated method stub
+        this.databaseAccess.flush();
     }
 
     @Deprecated
@@ -989,5 +987,33 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
         throw new RuntimeException("No maxConstraintId could be determined.");
+    }
+
+    @Override
+    public Collection<Column> getColumnsByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Column getColumnByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Table getTableByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Collection<Table> getTablesByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
     }
 }

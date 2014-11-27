@@ -61,7 +61,7 @@ public class DatabaseAccess implements AutoCloseable {
 		}
 		this.connection = connection;
 		try {
-			this.sqlExecutor = new SQLExecutor(connection, this, BatchWriter.DEFAULT_BATCH_SIZE);
+			this.sqlExecutor = new SQLExecutor(this, BatchWriter.DEFAULT_BATCH_SIZE);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

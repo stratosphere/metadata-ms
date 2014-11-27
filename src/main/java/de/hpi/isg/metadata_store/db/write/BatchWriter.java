@@ -29,22 +29,21 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 
 	/**
 	 * Creates a new {@link BatchWriter}.
-	 * @param statement see {@link DependentWriter#DependentWriter(Statement, DatabaseAccess, Collection, Collection)}
 	 * @param databaseAccess see {@link DependentWriter#DependentWriter(Statement, DatabaseAccess, Collection, Collection)}
 	 * @param referencedTables see {@link DependentWriter#DependentWriter(Statement, DatabaseAccess, Collection, Collection)}
 	 * @param manipulatedTables see {@link DependentWriter#DependentWriter(Statement, DatabaseAccess, Collection, Collection)}
 	 * @param batchSize is the maximum number of statements to execute in a single batch
 	 */
-	public BatchWriter(Statement statement, DatabaseAccess databaseAccess, 
+	public BatchWriter(DatabaseAccess databaseAccess, 
 			Collection<String> manipulatedTables, int batchSize) {
 		
-		super(statement, databaseAccess, manipulatedTables);
+		super(databaseAccess, manipulatedTables);
 		this.maxBatchSize = batchSize;
 		this.curBatchSize = 0;
 	}
 	
 	@Override
-	public void write(T element) throws SQLException {
+	public void doWrite(T element) throws SQLException {
 		addBatch(element);
 		if (++this.curBatchSize >= this.maxBatchSize) {
 			flush();
@@ -54,7 +53,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	abstract protected void addBatch(T element) throws SQLException;
 	
 	@Override
-	public void flush() throws SQLException {
+	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
 			ensureReferencedTablesFlushed();
 			int[] batchResults = this.statement.executeBatch();

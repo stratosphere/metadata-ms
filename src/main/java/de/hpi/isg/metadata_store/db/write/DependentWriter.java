@@ -1,7 +1,6 @@
 package de.hpi.isg.metadata_store.db.write;
 
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,14 +43,14 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 	}
 	
 
-	public DependentWriter(Statement statement, DatabaseAccess databaseAccess, Collection<String> manipulatedTables) {
-	    this(statement, databaseAccess, findAllReferencedTables(manipulatedTables, databaseAccess), manipulatedTables);
+	public DependentWriter(DatabaseAccess databaseAccess, Collection<String> manipulatedTables) {
+	    this(databaseAccess, findAllReferencedTables(manipulatedTables, databaseAccess), manipulatedTables);
 	    
 	}
 	
 	@Deprecated
-	public DependentWriter(Statement statement, DatabaseAccess databaseAccess, Collection<String> referencedTables, Collection<String> manipulatedTables) {
-		super(statement);
+	public DependentWriter(DatabaseAccess databaseAccess, Collection<String> referencedTables, Collection<String> manipulatedTables) {
+		super(databaseAccess.getConnection());
 
 		this.databaseAccess = databaseAccess;
 		this.referencedTables = new HashSet<>(referencedTables);

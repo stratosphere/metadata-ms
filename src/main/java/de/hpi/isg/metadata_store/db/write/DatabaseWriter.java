@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.db.write;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -13,22 +14,46 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 abstract public class DatabaseWriter<T> {
 	
-	protected final Statement statement;
+	protected final Connection connection;
 	
-	protected DatabaseWriter(Statement statement) {
+	/**
+	 * The statement over which SQL queries are issued; lazy-initialized.
+	 */
+	protected Statement statement;
+	
+	protected DatabaseWriter(Connection connection) {
 		super();
-		this.statement = statement;
+		this.connection = connection;
 	}
 
-	abstract public void write(T element) throws SQLException;
+	public void write(T element) throws SQLException {
+		ensureStatementInitialized();
+		doWrite(element);
+	}
+
+	/**
+	 * Ensures that {@link #statement} is properly set up for write operation.
+	 * 
+	 * @throws SQLException
+	 */
+	protected abstract void ensureStatementInitialized() throws SQLException;
+
+	abstract protected void doWrite(T element) throws SQLException;
 	
-	abstract public void flush() throws SQLException;
+	public void flush() throws SQLException {
+		if (this.statement != null) {
+			doFlush();
+		}
+	}
+
+	abstract protected void doFlush() throws SQLException;
 	
 	public void close() throws SQLException {
 		try {
 			flush();
 		} finally {
 			this.statement.close();
+			this.statement = null;
 		}
 	}
 

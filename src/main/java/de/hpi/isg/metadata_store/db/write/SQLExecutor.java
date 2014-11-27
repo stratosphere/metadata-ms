@@ -1,6 +1,5 @@
 package de.hpi.isg.metadata_store.db.write;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 
@@ -14,10 +13,10 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public class SQLExecutor extends BatchWriter<String> {
 
-	public SQLExecutor(Connection connection, DatabaseAccess databaseAccess,
+	public SQLExecutor(DatabaseAccess databaseAccess,
 			int batchSize) throws SQLException {
 
-		super(connection.createStatement(), databaseAccess, 
+		super(databaseAccess, 
 				Collections.<String>emptySet(), 
 				batchSize);
 	}
@@ -36,13 +35,20 @@ public class SQLExecutor extends BatchWriter<String> {
 	}
 	
 	@Override
+	protected void ensureStatementInitialized() throws SQLException {
+		if (this.statement == null) {
+			this.statement = this.connection.createStatement();
+		}
+	}
+
+	@Override
 	protected void addBatch(String sql) throws SQLException {
 		this.statement.addBatch(sql);
 	}
 	
 	@Override
-	public void flush() throws SQLException {
-		super.flush();
+	protected void doFlush() throws SQLException {
+		super.doFlush();
 		this.manipulatedTables.clear();
 		this.referencedTables.clear();
 	}

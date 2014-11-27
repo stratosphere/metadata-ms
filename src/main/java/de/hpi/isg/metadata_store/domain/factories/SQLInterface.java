@@ -90,7 +90,7 @@ public interface SQLInterface {
 
     void dropTablesIfExist();
 
-    void flush();
+    void flush() throws SQLException;
 
     public Statement createStatement() throws SQLException;
 
