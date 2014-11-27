@@ -19,6 +19,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * This interface describes common functionalities that a RDBMS-specifc interface for a {@link RDBMSMetadataStore} must
@@ -106,15 +107,15 @@ public interface SQLInterface {
 
     void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer);
 
-    public Schema getSchemaByName(String schemaName);
+    public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
     public Collection<Schema> getSchemasByName(String schemaName);
 
     public Collection<Column> getColumnsByName(String name);
 
-    public Column getColumnByName(String name);
+    public Column getColumnByName(String name) throws NameAmbigousException;
 
-    public Table getTableByName(String name);
+    public Table getTableByName(String name) throws NameAmbigousException;
 
     public Collection<Table> getTablesByName(String name);
 }

@@ -990,30 +990,124 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Column> getColumnsByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+    public Collection<Column> getColumnsByName(String columnName) {
+        Collection<Column> columns = new HashSet<>();
+        try {
+
+            String sqlColumnsByName = String
+                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                            + " from target, columnn where target.id = columnn.id and target.name='%s'",
+                            columnName);
+            ResultSet rs = databaseAccess.query(sqlColumnsByName, "columnn", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSColumn column = RDBMSColumn.restore(store,
+                        this.getTableById(rs.getInt("tableId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                columnCache.put(column.getId(), column);
+                columns.add(column);
+            }
+            rs.close();
+            return columns;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public Column getColumnByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+    public Column getColumnByName(String columnName) throws NameAmbigousException {
+        try {
+            String sqlColumnByName = String
+                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                            + " from target, columnn where target.id = columnn.id and target.name='%s'", columnName
+                    );
+            ResultSet rs = databaseAccess.query(sqlColumnByName, "columnn", "target");
+            RDBMSColumn found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(columnName);
+                }
+                found = RDBMSColumn.restore(store,
+                        this.getTableById(rs.getInt("tableId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                columnCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public Table getTableByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+    public Table getTableByName(String tableName) throws NameAmbigousException {
+        try {
+            String sqlTableByname = String
+                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                            tableName);
+            ResultSet rs = databaseAccess.query(sqlTableByname, "tablee", "target");
+            RDBMSTable found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(tableName);
+                }
+                found = RDBMSTable.restore(store,
+                        this.getSchemaById(rs.getInt("schemaId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                tableCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public Collection<Table> getTablesByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+    public Collection<Table> getTablesByName(String tableName) {
+        Collection<Table> tables = new HashSet<>();
+        try {
+
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                            tableName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "tablee", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSTable schema = RDBMSTable.restore(store,
+                        this.getSchemaById(rs.getInt("schemaId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                tableCache.put(schema.getId(), schema);
+                tables.add(schema);
+            }
+            rs.close();
+            return tables;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -507,6 +507,8 @@ public class RDBMSMetadataStoreTest {
         final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
         final Table table2 = schema1.addTable(store1, "foo", new DefaultLocation());
         HashSet<Table> tables = new HashSet<>();
+        tables.add(table1);
+        tables.add(table2);
 
         assertEquals(tables, schema1.getTablesByName("foo"));
     }
@@ -530,7 +532,7 @@ public class RDBMSMetadataStoreTest {
         final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
         final Column column1 = table1.addColumn(store1, "bar", 0);
 
-        assertEquals(column1, table1.getColumnByName("foo"));
+        assertEquals(column1, table1.getColumnByName("bar"));
         assertEquals(column1, table1.getColumnById(column1.getId()));
     }
 
@@ -544,7 +546,7 @@ public class RDBMSMetadataStoreTest {
         final Collection<Column> columns = new HashSet<>();
         columns.add(column1);
 
-        assertEquals(columns, table1.getColumnsByName("foo"));
+        assertEquals(columns, table1.getColumnsByName("bar"));
     }
 
     @Test(expected = NameAmbigousException.class)
@@ -554,8 +556,8 @@ public class RDBMSMetadataStoreTest {
         final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
         final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
         final Column column1 = table1.addColumn(store1, "bar", 0);
-        final Column column2 = table1.addColumn(store1, "bar", 0);
+        final Column column2 = table1.addColumn(store1, "bar", 1);
 
-        assertEquals(column1, table1.getColumnByName("foo"));
+        table1.getColumnByName("bar");
     }
 }
