@@ -16,6 +16,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * The default implementation of the {@link Table}.
@@ -88,5 +89,26 @@ public class DefaultTable extends AbstractTarget implements Table {
     @Override
     public String toString() {
         return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
+    }
+
+    @Override
+    public Column getColumnByName(String name) throws NameAmbigousException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Collection<Column> getColumnsByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Column getColumnById(int id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
     }
 }

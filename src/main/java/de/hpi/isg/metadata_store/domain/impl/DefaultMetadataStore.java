@@ -48,11 +48,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private final Collection<Constraint> constraints;
 
     private final Collection<Target> allTargets;
-    
+
     transient private File storeLocation;
 
     private final IntSet idsInUse = new IntOpenHashBigSet();
-    
+
     @ExcludeHashCodeEquals
     private final IdUtils idUtils;
 
@@ -62,9 +62,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     public DefaultMetadataStore() {
         this(null, 12, 12);
     }
-    
+
     public DefaultMetadataStore(File location, int numTableBitsInIds, int numColumnBitsInIds) {
         this.storeLocation = location;
+
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
         this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
         this.constraintCollections = Collections.synchronizedSet(new HashSet<ConstraintCollection>());
@@ -116,7 +117,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public Schema getSchema(final String schemaName) throws NameAmbigousException {
+    public Schema getSchemaByName(final String schemaName) throws NameAmbigousException {
         final List<Schema> results = new ArrayList<>();
         for (final Schema schema : this.schemas) {
             if (schema.getName().equals(schemaName)) {
@@ -140,7 +141,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public int getUnusedSchemaId() {
         final int searchOffset = this.getSchemas().size();
-        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils.getMaxSchemaNumber(); baseSchemaNumber++) {
+        for (int baseSchemaNumber = this.idUtils.getMinSchemaNumber(); baseSchemaNumber <= this.idUtils
+                .getMaxSchemaNumber(); baseSchemaNumber++) {
             int schemaNumber = baseSchemaNumber + searchOffset;
             schemaNumber = schemaNumber > this.idUtils.getMaxSchemaNumber() ? schemaNumber
                     - (this.idUtils.getMaxSchemaNumber() - this.idUtils.getMinSchemaNumber()) : schemaNumber;
@@ -162,7 +164,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         Validate.isTrue(this.schemas.contains(schema));
         final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = schema.getTables().size();
-        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils.getMaxTableNumber(); baseTableNumber++) {
+        for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils
+                .getMaxTableNumber(); baseTableNumber++) {
             int tableNumber = baseTableNumber + searchOffset;
             tableNumber = tableNumber > this.idUtils.getMaxTableNumber() ? tableNumber
                     - (this.idUtils.getMaxTableNumber() - this.idUtils.getMinTableNumber()) : tableNumber;
@@ -219,12 +222,12 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
     }
-    
+
     @Override
     public IdUtils getIdUtils() {
         return this.idUtils;
     }
-    
+
     @Override
     public void save(String path) throws IOException {
         File file = new File(path);
@@ -239,14 +242,29 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         oos.writeObject(this);
         oos.close();
     }
-    
+
     @Override
     public void flush() throws Exception {
         if (this.storeLocation == null) {
-            Logger.getAnonymousLogger().warning("Cannot flush metadata store because it has no default saving location.");
+            Logger.getAnonymousLogger().warning(
+                    "Cannot flush metadata store because it has no default saving location.");
         } else {
             saveToDefaultLocation();
         }
     }
-    
+
+    @Override
+    public Collection<Schema> getSchemasByName(String schemaName) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Schema getSchemaById(int schemaId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
 }

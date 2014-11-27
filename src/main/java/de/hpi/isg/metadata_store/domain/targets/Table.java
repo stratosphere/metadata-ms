@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * A {@link Table} represents a table inside of a {@link Schema} and consists of one or more {@link Column}s.
@@ -33,6 +34,12 @@ public interface Table extends Target {
     public Column addColumn(MetadataStore metadataStore, String name, int index);
 
     public Collection<Column> getColumns();
+
+    public Column getColumnByName(String name) throws NameAmbigousException;
+
+    public Collection<Column> getColumnsByName(String name);
+
+    public Column getColumnById(int id);
 
     /**
      * @return the parent schema of this table

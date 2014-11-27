@@ -27,6 +27,7 @@ import java.util.Set;
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
+
 import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -49,6 +50,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.domain.util.LocationUtils;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
@@ -71,27 +73,27 @@ public class SQLiteInterface implements SQLInterface {
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer> constraintSerializers = new HashMap<>();
 
     private final int CACHE_SIZE = 1000;
-    
+
     private static final PreparedStatementBatchWriter.Factory<Integer> ID_WRITER_FACTORY =
-    		new PreparedStatementBatchWriter.Factory<>(
-    				"INSERT INTO Target (ID) VALUES (?);",
-    				new PreparedStatementBatchWriter.PreparedStatementAdapter<Integer>() {
-    					public void addBatch(Integer integer, PreparedStatement preparedStatement) throws SQLException {
-    						preparedStatement.setInt(1, integer);
-    						preparedStatement.addBatch();
-    					}
-    				},
-    				"Target");
+            new PreparedStatementBatchWriter.Factory<>(
+                    "INSERT INTO Target (ID) VALUES (?);",
+                    new PreparedStatementBatchWriter.PreparedStatementAdapter<Integer>() {
+                        public void addBatch(Integer integer, PreparedStatement preparedStatement) throws SQLException {
+                            preparedStatement.setInt(1, integer);
+                            preparedStatement.addBatch();
+                        }
+                    },
+                    "Target");
 
     /**
      * @deprecated Use {@link #databaseAccess} instead.
      */
     private final Connection connection;
-    
+
     private final DatabaseAccess databaseAccess;
-    
+
     private DatabaseWriter<Integer> targetIdWriter;
-    
+
     private int currentConstraintIdMax = -1;
 
     RDBMSMetadataStore store;
@@ -107,7 +109,7 @@ public class SQLiteInterface implements SQLInterface {
     Set<String> existingTables = null;
 
     public SQLiteInterface(Connection connection) {
-    	this.connection = connection;
+        this.connection = connection;
         this.databaseAccess = new DatabaseAccess(connection);
     }
 
@@ -126,37 +128,38 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     /**
-     * Returns the initialized writer.
-     * Writers are initialized lazily to save database resources and allow the interface to set up the database.
+     * Returns the initialized writer. Writers are initialized lazily to save database resources and allow the interface
+     * to set up the database.
+     * 
      * @return the writer
      */
-	public DatabaseWriter<Integer> getTargetIdWriter() {
-		if (this.targetIdWriter == null) {
-			try {
-				this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
-			} catch (SQLException e) {
-				throw new RuntimeException("Could not initialze writers.", e);
-			}
-		}
-		return this.targetIdWriter;
-	}
+    public DatabaseWriter<Integer> getTargetIdWriter() {
+        if (this.targetIdWriter == null) {
+            try {
+                this.targetIdWriter = this.databaseAccess.createBatchWriter(ID_WRITER_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not initialze writers.", e);
+            }
+        }
+        return this.targetIdWriter;
+    }
 
-	@Override
-	public void dropTablesIfExist() {
-		try {
-			for (String table : tableNames) {
-				String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-				this.databaseAccess.executeSQL(sql, table, "bla");
-				// Statement stmt = this.connection.createStatement();
-				// stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
-				//
-				// stmt.close();
-			}
-			this.databaseAccess.flush();
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    @Override
+    public void dropTablesIfExist() {
+        try {
+            for (String table : tableNames) {
+                String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
+                this.databaseAccess.executeSQL(sql, table, "bla");
+                // Statement stmt = this.connection.createStatement();
+                // stmt.executeUpdate(String.format("DROP TABLE IF EXISTS [%s];", table));
+                //
+                // stmt.close();
+            }
+            this.databaseAccess.flush();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void initializeMetadataStore() {
@@ -265,15 +268,17 @@ public class SQLiteInterface implements SQLInterface {
             }
             rs.close();
             stmt.close();
-            // FIXME: The code below is probably not running, because the created batch has interdependencies with queries.
+            // FIXME: The code below is probably not running, because the created batch has interdependencies with
+            // queries.
             // A check of the result of #executeUpdate could reveal this.
-//			String sql = "SELECT Schemaa.id as id, Target.name as name from Schemaa, Target where Target.id = Schemaa.id";
-//			ResultSet resultSet = this.databaseAccess.query(sql, "Target", "Schemaa");
-//			while (resultSet.next()) {
-//				schemas.add(RDBMSSchema.restore(this.store, resultSet.getInt("id"), resultSet.getString("name"),
-//						getLocationFor(resultSet.getInt("id"))));
-//			}
-//			resultSet.close();
+            // String sql =
+            // "SELECT Schemaa.id as id, Target.name as name from Schemaa, Target where Target.id = Schemaa.id";
+            // ResultSet resultSet = this.databaseAccess.query(sql, "Target", "Schemaa");
+            // while (resultSet.next()) {
+            // schemas.add(RDBMSSchema.restore(this.store, resultSet.getInt("id"), resultSet.getString("name"),
+            // getLocationFor(resultSet.getInt("id"))));
+            // }
+            // resultSet.close();
 
             allSchemas = schemas;
             return allSchemas;
@@ -366,13 +371,13 @@ public class SQLiteInterface implements SQLInterface {
                 }
             }
         }
-        
+
         // Issue a query, to find out if the ID is in use.
-//        Statement stmt = this.connection.createStatement();
-//        ResultSet rs = stmt.executeQuery(String.format("SELECT id FROM Target WHERE id=%d LIMIT 1", id));
-//        boolean isIdInUse = rs.next();
-//        rs.close();
-//        stmt.close();
+        // Statement stmt = this.connection.createStatement();
+        // ResultSet rs = stmt.executeQuery(String.format("SELECT id FROM Target WHERE id=%d LIMIT 1", id));
+        // boolean isIdInUse = rs.next();
+        // rs.close();
+        // stmt.close();
         String sql = String.format("SELECT id FROM Target WHERE id=%d LIMIT 1", id);
         ResultSet resultSet = this.databaseAccess.query(sql, "Target");
         boolean isIdInUse = resultSet.next();
@@ -383,13 +388,13 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public boolean addToIdsInUse(int id) {
         try {
-        	getTargetIdWriter().write(id);
-//            Statement stmt = this.connection.createStatement();
-//            String sql = "INSERT INTO Target (ID) " +
-//                    "VALUES (" + id + ");";
-//            stmt.executeUpdate(sql);
-//
-//            stmt.close();
+            getTargetIdWriter().write(id);
+            // Statement stmt = this.connection.createStatement();
+            // String sql = "INSERT INTO Target (ID) " +
+            // "VALUES (" + id + ");";
+            // stmt.executeUpdate(sql);
+            //
+            // stmt.close();
 
             // invalidate cache
             allTargets = null;
@@ -419,17 +424,18 @@ public class SQLiteInterface implements SQLInterface {
 
             // update caches
             if (allTargets != null) {
-            	this.allTargets.add(target);
+                this.allTargets.add(target);
             }
             if (target instanceof RDBMSSchema) {
                 if (this.allSchemas != null) {
                     this.allSchemas.add((Schema) target);
                 }
-            	this.schemaCache.put(target.getId(), (RDBMSSchema) target);
+                this.schemaCache.put(target.getId(), (RDBMSSchema) target);
+
             } else if (target instanceof RDBMSTable) {
-            	this.tableCache.put(target.getId(), (RDBMSTable) target);
+                this.tableCache.put(target.getId(), (RDBMSTable) target);
             } else if (target instanceof RDBMSColumn) {
-            	this.columnCache.put(target.getId(), (RDBMSColumn) target);
+                this.columnCache.put(target.getId(), (RDBMSColumn) target);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -552,7 +558,7 @@ public class SQLiteInterface implements SQLInterface {
                             columnId);
             ResultSet rs = stmt.executeQuery(sqlColumnById);
             while (rs.next()) {
-                columnCache.put(columnId, 
+                columnCache.put(columnId,
                         RDBMSColumn.restore(store,
                                 this.getTableById(rs.getInt("tableId")),
                                 rs.getInt("id"),
@@ -865,7 +871,7 @@ public class SQLiteInterface implements SQLInterface {
 
         return configuration;
     }
-    
+
     /**
      * Flushes any pending inserts/updates to the DB.
      */
@@ -873,8 +879,8 @@ public class SQLiteInterface implements SQLInterface {
     public void flush() {
         // TODO Auto-generated method stub
     }
-    	
 
+    @Deprecated
     @Override
     public Statement createStatement() throws SQLException {
         return this.connection.createStatement();
@@ -892,6 +898,65 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer) {
         constraintSerializers.put(clazz, serializer);
+    }
+
+    @Override
+    public Schema getSchemaByName(String schemaName) throws NameAmbigousException {
+        try {
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name"
+                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                            schemaName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
+            RDBMSSchema found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(schemaName);
+                }
+                found = RDBMSSchema.restore(store,
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                schemaCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Collection<Schema> getSchemasByName(String schemaName) {
+        Collection<Schema> schemas = new HashSet<>();
+        try {
+
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name"
+                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                            schemaName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSSchema schema = RDBMSSchema.restore(store,
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                schemaCache.put(schema.getId(), schema);
+                schemas.add(schema);
+            }
+            rs.close();
+            return schemas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void loadTableNames() {

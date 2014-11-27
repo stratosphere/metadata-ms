@@ -89,7 +89,7 @@ public interface SQLInterface {
     Location getLocationFor(int id);
 
     void dropTablesIfExist();
-    
+
     void flush();
 
     public Statement createStatement() throws SQLException;
@@ -105,4 +105,16 @@ public interface SQLInterface {
     void executeCreateTableStatement(String sqlCreateTables);
 
     void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer);
+
+    public Schema getSchemaByName(String schemaName);
+
+    public Collection<Schema> getSchemasByName(String schemaName);
+
+    public Collection<Column> getColumnsByName(String name);
+
+    public Column getColumnByName(String name);
+
+    public Table getTableByName(String name);
+
+    public Collection<Table> getTablesByName(String name);
 }
