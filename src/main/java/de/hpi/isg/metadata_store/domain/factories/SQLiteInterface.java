@@ -80,7 +80,6 @@ public class SQLiteInterface implements SQLInterface {
     				new PreparedStatementAdapter<Integer>() {
     					public void translateParameter(Integer integer, PreparedStatement preparedStatement) throws SQLException {
     						preparedStatement.setInt(1, integer);
-    						preparedStatement.addBatch();
     					}
     				},
     				"Target");
