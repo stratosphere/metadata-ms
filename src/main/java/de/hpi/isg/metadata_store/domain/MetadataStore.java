@@ -43,13 +43,35 @@ public interface MetadataStore extends Serializable, Observer {
     public Collection<Constraint> getConstraints();
 
     /**
-     * Retrieve a schema from the store if it exists
+     * Retrieve a schema from the store if it exists, throws {@link NameAmbigousException} if there are more than one
+     * with that name
      *
      * @param schemaName
      * @return
      */
-    public Schema getSchema(String schemaName) throws NameAmbigousException;
+    public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
+    /**
+     * Retrieve a {@link Collection} of schemas from the store for the given name
+     *
+     * @param schemaName
+     * @return
+     */
+    public Collection<Schema> getSchemasByName(String schemaName);
+
+    /**
+     * Retrieve a schema from the store if it exists for the given id
+     *
+     * @param schemaId
+     * @return
+     */
+    public Schema getSchemaById(int schemaId);
+
+    /**
+     * Get all knwon {@link Schema}s.
+     * 
+     * @return
+     */
     public Collection<Schema> getSchemas();
 
     /**
@@ -71,12 +93,13 @@ public interface MetadataStore extends Serializable, Observer {
     int getUnusedConstraintCollectonId();
 
     ConstraintCollection createConstraintCollection();
-    
+
     IdUtils getIdUtils();
 
     /**
      * Saves this store to the given path, if manual saving is supported.
-     * @throws IOException 
+     * 
+     * @throws IOException
      */
     public void save(String path) throws IOException;
     

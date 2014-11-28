@@ -63,7 +63,7 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     }
 
     @Override
-    public Table getTable(final String name) throws NameAmbigousException {
+    public Table getTableByName(final String name) throws NameAmbigousException {
         final List<Table> results = new ArrayList<>();
         for (final Table table : this.tables) {
             if (table.getName().equals(name)) {
@@ -99,5 +99,19 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     @Override
     public String toString() {
         return String.format("Schema[%s, %d tables, %08x]", this.getName(), this.getTables().size(), this.getId());
+    }
+
+    @Override
+    public Collection<Table> getTablesByName(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
+    }
+
+    @Override
+    public Table getTableById(int id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        // return null;
     }
 }

@@ -21,33 +21,22 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
     private final Location location;
 
-    public static RDBMSColumn buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Table table, final int id,
+    public static RDBMSColumn buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Table table,
+            final int id,
             final String name, final Location location) {
-        
+
         final RDBMSColumn newColumn = new RDBMSColumn(observer, table, id, name, location, true);
         newColumn.register();
         newColumn.getSqlInterface().addColumnToTable(newColumn, table);
         return newColumn;
     }
 
-//    public static Column buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Table table,
-//            final String name,
-//            final Location location) {
-//        return buildAndRegisterAndAdd(observer, table, -1, name, location);
-//    }
-
     public static RDBMSColumn restore(final RDBMSMetadataStore observer, final Table table, final int id,
             final String name, final Location location) {
-        
+
         final RDBMSColumn newColumn = new RDBMSColumn(observer, table, id, name, location, false);
         return newColumn;
     }
-
-//    public static Column build(final RDBMSMetadataStore observer, final Table table,
-//            final String name,
-//            final Location location) {
-//        return restore(observer, table, -1, name, location);
-//    }
 
     private RDBMSColumn(final RDBMSMetadataStore observer, final Table table, final int id, final String name,
             final Location location, boolean isFreshlyCreated) {

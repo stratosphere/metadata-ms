@@ -36,21 +36,16 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name,
             Location location) {
-        
+
         return buildAndRegisterAndAdd(observer, -1, name, location);
     }
 
     public static RDBMSSchema restore(RDBMSMetadataStore observer, int id, String name,
             Location location) {
-        
+
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, false);
         return newSchema;
     }
-
-//    public static Schema build(RDBMSMetadataStore observer, String name,
-//            Location location) {
-//        return restore(observer, -1, name, location);
-//    }
 
     @Override
     public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
@@ -69,20 +64,18 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     }
 
     @Override
-    public Table getTable(final String name) throws NameAmbigousException {
-        final List<Table> results = new ArrayList<>();
-        for (final Table table : this.getSqlInterface().getAllTablesForSchema(this)) {
-            if (table.getName().equals(name)) {
-                results.add(table);
-            }
-        }
-        if (results.size() > 1) {
-            throw new NameAmbigousException(name);
-        }
-        if (results.isEmpty()) {
-            return null;
-        }
-        return results.get(0);
+    public Table getTableByName(final String name) throws NameAmbigousException {
+        return this.getSqlInterface().getTableByName(name);
+    }
+
+    @Override
+    public Collection<Table> getTablesByName(String name) {
+        return this.getSqlInterface().getTablesByName(name);
+    }
+
+    @Override
+    public Table getTableById(int tableId) {
+        return this.getSqlInterface().getTableById(tableId);
     }
 
     @Override
@@ -106,5 +99,4 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     public String toString() {
         return String.format("Schema[%s, %d tables, %08x]", this.getName(), this.getTables().size(), this.getId());
     }
-
 }

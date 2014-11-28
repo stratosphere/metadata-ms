@@ -32,7 +32,11 @@ public interface Schema extends Target {
     @Deprecated
     public Schema addTable(Table table);
 
-    public Table getTable(String name) throws NameAmbigousException;
+    public Table getTableByName(String name) throws NameAmbigousException;
+
+    public Collection<Table> getTablesByName(String name);
+
+    public Table getTableById(int id);
 
     public Collection<Table> getTables();
 

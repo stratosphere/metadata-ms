@@ -41,7 +41,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     private static final String NUM_TABLE_BITS_IN_IDS_KEY = "numTableBitsInIds";
 
     private static final long serialVersionUID = 400271996998552017L;
-    
+
     private static final Logger LOGGER = Logger.getLogger(RDBMSMetadataStore.class.getCanonicalName());
 
     @ExcludeHashCodeEquals
@@ -56,23 +56,27 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface) {
         return createNewInstance(sqliteInterface, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
     }
-    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqlInterface, int numTableBitsInIds, int numColumnBitsInIds) {
+
+    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqlInterface, int numTableBitsInIds,
+            int numColumnBitsInIds) {
         Map<String, String> configuration = new HashMap<>();
         configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(numTableBitsInIds));
         configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(numColumnBitsInIds));
         return RDBMSMetadataStore.createNewInstance(sqlInterface, configuration);
     }
-    
-    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
+
+    public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface,
+            Map<String, String> configuration) {
         if (sqliteInterface.allTablesExist()) {
-            Logger.getAnonymousLogger().warning("The metadata store will be overwritten.");;
+            Logger.getAnonymousLogger().warning("The metadata store will be overwritten.");
+            ;
         }
         sqliteInterface.initializeMetadataStore();
         RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface, configuration);
         sqliteInterface.saveConfiguration();
         return metadataStore;
     }
-    
+
     public static RDBMSMetadataStore load(SQLiteInterface sqliteInterface) {
         if (!sqliteInterface.allTablesExist()) {
             throw new IllegalStateException("The metadata store does not seem to be initialized.");
@@ -80,6 +84,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         Map<String, String> configuration = sqliteInterface.loadConfiguration();
         return new RDBMSMetadataStore(sqliteInterface, configuration);
     }
+
     private RDBMSMetadataStore(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
         this.sqlInterface = sqliteInterface;
         this.sqlInterface.setMetadataStore(this);
@@ -131,20 +136,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public Schema getSchema(final String schemaName) throws NameAmbigousException {
-        final List<Schema> results = new ArrayList<>();
-        for (final Schema schema : this.sqlInterface.getAllSchemas()) {
-            if (schema.getName().equals(schemaName)) {
-                results.add(schema);
-            }
-        }
-        if (results.size() > 1) {
-            throw new NameAmbigousException(schemaName);
-        }
-        if (results.isEmpty()) {
-            return null;
-        }
-        return results.get(0);
+    public Schema getSchemaByName(final String schemaName) throws NameAmbigousException {
+        return this.sqlInterface.getSchemaByName(schemaName);
     }
 
     @Override
@@ -192,19 +185,19 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Could not determin if ID %s is in use.", id), e);
         }
-//        synchronized (this.sqlInterface.getIdsInUse()) {
-//
-//            return this.sqlInterface.getIdsInUse().contains(id);
-//        }
+        // synchronized (this.sqlInterface.getIdsInUse()) {
+        //
+        // return this.sqlInterface.getIdsInUse().contains(id);
+        // }
     }
 
     @Override
     public void registerId(final int id) {
-//        synchronized (this.sqlInterface.getIdsInUse()) {
-            if (!this.sqlInterface.addToIdsInUse(id)) {
-                throw new IdAlreadyInUseException("id is already in use: " + id);
-            }
-//        }
+        // synchronized (this.sqlInterface.getIdsInUse()) {
+        if (!this.sqlInterface.addToIdsInUse(id)) {
+            throw new IdAlreadyInUseException("id is already in use: " + id);
+        }
+        // }
     }
 
     @Override
@@ -282,5 +275,15 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public void flush() throws Exception {
         this.sqlInterface.saveConfiguration();
         this.sqlInterface.flush();
+    }
+
+    @Override
+    public Collection<Schema> getSchemasByName(String schemaName) {
+        return this.sqlInterface.getSchemasByName(schemaName);
+    }
+
+    @Override
+    public Schema getSchemaById(int schemaId) {
+        return this.sqlInterface.getSchemaById(schemaId);
     }
 }

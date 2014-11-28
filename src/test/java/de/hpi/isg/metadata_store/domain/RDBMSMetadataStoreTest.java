@@ -105,9 +105,6 @@ public class RDBMSMetadataStoreTest {
         assertTrue(tables.isEmpty());
     }
 
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // start copied tests
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Test
     public void testAddingOfSchema() {
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
@@ -219,7 +216,7 @@ public class RDBMSMetadataStoreTest {
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", new DefaultLocation());
 
-        assertEquals(store1.getSchema("PDB"), dummySchema1);
+        assertEquals(store1.getSchemaByName("PDB"), dummySchema1);
     }
 
     @Test
@@ -285,20 +282,6 @@ public class RDBMSMetadataStoreTest {
                 .add(mock(Column.class));
     }
 
-    @SuppressWarnings("unused")
-    @Test(expected = NameAmbigousException.class)
-    public void testRetrievingOfSchemaByNameWithAmbigousNameFails() {
-        // setup store
-        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
-                .buildAndRegisterStandardConstraints(connection));
-        // setup schema
-        final Schema dummySchema1 = store1.addSchema("PDB", new DefaultLocation());
-
-        final Schema dummySchema2 = store1.addSchema("PDB", new DefaultLocation());
-
-        store1.getSchema("PDB");
-    }
-
     @Test
     public void testRetrievingOfSchemaByNameWithUnknownNameReturnsNull() {
         // setup store
@@ -306,7 +289,7 @@ public class RDBMSMetadataStoreTest {
                 .buildAndRegisterStandardConstraints(connection));
         // setup schema
 
-        assertEquals(store1.getSchema("PDB"), null);
+        assertEquals(store1.getSchemaByName("PDB"), null);
     }
 
     @Test
@@ -474,7 +457,107 @@ public class RDBMSMetadataStoreTest {
         assertEquals(dummySchema, schema);
     }
 
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // end copied tests
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Test
+    public void testGettingOfSchemaByNameAndId() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+
+        assertEquals(schema1, store1.getSchemaByName("pdb"));
+        assertEquals(schema1, store1.getSchemaById(schema1.getId()));
+    }
+
+    @Test
+    public void testGettingOfSchemasByName() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Schema schema2 = store1.addSchema("pdb", new DefaultLocation());
+        HashSet<Schema> schemas = new HashSet<>();
+        schemas.add(schema1);
+        schemas.add(schema2);
+        assertEquals(schemas, store1.getSchemasByName("pdb"));
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testGettingOfSchemaByNameFails() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Schema schema2 = store1.addSchema("pdb", new DefaultLocation());
+        store1.getSchemaByName("pdb");
+    }
+
+    @Test
+    public void testGettingOfTableByNameAndId() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+
+        assertEquals(table1, schema1.getTableByName("foo"));
+        assertEquals(table1, schema1.getTableById(table1.getId()));
+    }
+
+    @Test
+    public void testGettingOfTablesByName() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+        final Table table2 = schema1.addTable(store1, "foo", new DefaultLocation());
+        HashSet<Table> tables = new HashSet<>();
+        tables.add(table1);
+        tables.add(table2);
+
+        assertEquals(tables, schema1.getTablesByName("foo"));
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testGettingOfTableByNameFails() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+        final Table table2 = schema1.addTable(store1, "foo", new DefaultLocation());
+
+        schema1.getTableByName("foo");
+    }
+
+    @Test
+    public void testGettingOfColumnByNameAndId() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+        final Column column1 = table1.addColumn(store1, "bar", 0);
+
+        assertEquals(column1, table1.getColumnByName("bar"));
+        assertEquals(column1, table1.getColumnById(column1.getId()));
+    }
+
+    @Test
+    public void testGettingOfColumnssByName() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+        final Column column1 = table1.addColumn(store1, "bar", 0);
+        final Collection<Column> columns = new HashSet<>();
+        columns.add(column1);
+
+        assertEquals(columns, table1.getColumnsByName("bar"));
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testGettingOfColumnByNameFails() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo", new DefaultLocation());
+        final Column column1 = table1.addColumn(store1, "bar", 0);
+        final Column column2 = table1.addColumn(store1, "bar", 1);
+
+        table1.getColumnByName("bar");
+    }
 }

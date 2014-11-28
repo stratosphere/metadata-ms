@@ -52,6 +52,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.domain.util.LocationUtils;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
@@ -342,10 +343,10 @@ public class SQLiteInterface implements SQLInterface {
 		}
 
 		try {
-			flush();
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
+            flush();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 	}
 
 	@Override
@@ -958,6 +959,65 @@ public class SQLiteInterface implements SQLInterface {
 	public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer) {
 		constraintSerializers.put(clazz, serializer);
 	}
+	
+    @Override
+    public Schema getSchemaByName(String schemaName) throws NameAmbigousException {
+        try {
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name"
+                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                            schemaName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
+            RDBMSSchema found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(schemaName);
+                }
+                found = RDBMSSchema.restore(store,
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                schemaCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+	
+    @Override
+    public Collection<Schema> getSchemasByName(String schemaName) {
+        Collection<Schema> schemas = new HashSet<>();
+        try {
+
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name"
+                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                            schemaName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSSchema schema = RDBMSSchema.restore(store,
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                schemaCache.put(schema.getId(), schema);
+                schemas.add(schema);
+            }
+            rs.close();
+            return schemas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 	public void loadTableNames() {
 		existingTables = new HashSet<>();
@@ -1007,4 +1067,126 @@ public class SQLiteInterface implements SQLInterface {
 			throw new RuntimeException(e);
 		}
 	}
+
+    @Override
+    public Collection<Column> getColumnsByName(String columnName) {
+        Collection<Column> columns = new HashSet<>();
+        try {
+
+            String sqlColumnsByName = String
+                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                            + " from target, columnn where target.id = columnn.id and target.name='%s'",
+                            columnName);
+            ResultSet rs = databaseAccess.query(sqlColumnsByName, "columnn", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSColumn column = RDBMSColumn.restore(store,
+                        this.getTableById(rs.getInt("tableId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                columnCache.put(column.getId(), column);
+                columns.add(column);
+            }
+            rs.close();
+            return columns;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Column getColumnByName(String columnName) throws NameAmbigousException {
+        try {
+            String sqlColumnByName = String
+                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                            + " from target, columnn where target.id = columnn.id and target.name='%s'", columnName
+                    );
+            ResultSet rs = databaseAccess.query(sqlColumnByName, "columnn", "target");
+            RDBMSColumn found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(columnName);
+                }
+                found = RDBMSColumn.restore(store,
+                        this.getTableById(rs.getInt("tableId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                columnCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Table getTableByName(String tableName) throws NameAmbigousException {
+        try {
+            String sqlTableByname = String
+                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                            tableName);
+            ResultSet rs = databaseAccess.query(sqlTableByname, "tablee", "target");
+            RDBMSTable found = null;
+            while (rs.next()) {
+                // second loop
+                if (found != null) {
+                    throw new NameAmbigousException(tableName);
+                }
+                found = RDBMSTable.restore(store,
+                        this.getSchemaById(rs.getInt("schemaId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+
+            }
+            if (found != null) {
+                tableCache.put(found.getId(), found);
+            }
+
+            rs.close();
+            return found;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Collection<Table> getTablesByName(String tableName) {
+        Collection<Table> tables = new HashSet<>();
+        try {
+
+            String sqlSchemaeById = String
+                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                            tableName);
+            ResultSet rs = databaseAccess.query(sqlSchemaeById, "tablee", "target");
+            while (rs.next()) {
+                // second loop
+                RDBMSTable schema = RDBMSTable.restore(store,
+                        this.getSchemaById(rs.getInt("schemaId")),
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        getLocationFor(rs.getInt("id")));
+                tableCache.put(schema.getId(), schema);
+                tables.add(schema);
+            }
+            rs.close();
+            return tables;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

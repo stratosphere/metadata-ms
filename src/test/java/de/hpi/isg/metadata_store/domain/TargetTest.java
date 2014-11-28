@@ -75,7 +75,7 @@ public class TargetTest {
 
         final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc).addTable(table1);
 
-        assertEquals(schema1.getTable("foo"), table1);
+        assertEquals(schema1.getTableByName("foo"), table1);
     }
 
     @Test(expected = NameAmbigousException.class)
@@ -87,7 +87,7 @@ public class TargetTest {
         schema1.addTable(ms, "foo", mock(Location.class));
         schema1.addTable(ms, "foo", mock(Location.class));
 
-        schema1.getTable("foo");
+        schema1.getTableByName("foo");
 
     }
 
@@ -97,7 +97,7 @@ public class TargetTest {
 
         final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", loc);
 
-        assertEquals(schema1.getTable("foo"), null);
+        assertEquals(schema1.getTableByName("foo"), null);
     }
 
     @Test

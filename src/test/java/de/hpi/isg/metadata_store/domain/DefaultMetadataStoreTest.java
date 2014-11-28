@@ -188,7 +188,7 @@ public class DefaultMetadataStoreTest {
         final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema1);
 
-        assertEquals(store1.getSchema("PDB"), dummySchema1);
+        assertEquals(store1.getSchemaByName("PDB"), dummySchema1);
     }
 
     @Test
@@ -224,7 +224,7 @@ public class DefaultMetadataStoreTest {
         final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
         store1.getSchemas().add(dummySchema2);
 
-        store1.getSchema("PDB");
+        store1.getSchemaByName("PDB");
     }
 
     @Test
@@ -233,7 +233,7 @@ public class DefaultMetadataStoreTest {
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
 
-        assertEquals(store1.getSchema("PDB"), null);
+        assertEquals(store1.getSchemaByName("PDB"), null);
     }
 
     @Test

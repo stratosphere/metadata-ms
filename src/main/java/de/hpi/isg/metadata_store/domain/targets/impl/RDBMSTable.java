@@ -17,6 +17,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
  * The default implementation of the {@link Table}.
@@ -29,33 +30,22 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     @ExcludeHashCodeEquals
     private final Schema schema;
 
-    public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema, final int id,
+    public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
+            final int id,
             final String name, final Location location) {
-        
+
         final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         newTable.register();
         newTable.getSqlInterface().addTableToSchema(newTable, schema);
         return newTable;
     }
 
-//    public static Table buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
-//            final String name,
-//            final Location location) {
-//        return buildAndRegisterAndAdd(observer, schema, -1, name, location);
-//    }
-
     public static RDBMSTable restore(final RDBMSMetadataStore observer, final Schema schema, final int id,
             final String name, final Location location) {
-        
+
         final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         return newTable;
     }
-
-//    public static Table build(final RDBMSMetadataStore observer, final Schema schema,
-//            final String name,
-//            final Location location) {
-//        return build(observer, schema, -1, name, location);
-//    }
 
     private RDBMSTable(final RDBMSMetadataStore observer, final Schema schema, final int id, final String name,
             final Location location, boolean isFreshlyCreated) {
@@ -101,5 +91,20 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     @Override
     public String toString() {
         return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
+    }
+
+    @Override
+    public Column getColumnByName(String name) throws NameAmbigousException {
+        return this.getSqlInterface().getColumnByName(name);
+    }
+
+    @Override
+    public Collection<Column> getColumnsByName(String name) {
+        return this.getSqlInterface().getColumnsByName(name);
+    }
+
+    @Override
+    public Column getColumnById(int columnId) {
+        return this.getSqlInterface().getColumnById(columnId);
     }
 }
