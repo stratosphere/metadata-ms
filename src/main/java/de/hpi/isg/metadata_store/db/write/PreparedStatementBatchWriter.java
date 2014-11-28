@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.db.write;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -21,9 +22,10 @@ public class PreparedStatementBatchWriter<T> extends BatchWriter<T> {
     private final String preparedSql;
 
     public PreparedStatementBatchWriter(DatabaseAccess databaseAccess, String preparedSql,
-            Collection<String> manipulatedTables, int batchSize, PreparedStatementAdapter<T> adapter) {
+            Collection<String> accessedTables, Collection<String> manipulatedTables, 
+            int batchSize, PreparedStatementAdapter<T> adapter) {
 
-        super(databaseAccess, manipulatedTables, batchSize);
+        super(databaseAccess, accessedTables, manipulatedTables, batchSize);
         this.preparedSql = preparedSql;
         this.adapter = adapter;
     }
@@ -41,6 +43,15 @@ public class PreparedStatementBatchWriter<T> extends BatchWriter<T> {
         ((PreparedStatement) this.statement).addBatch();
     }
 
+    
+    
+    @Override
+    public String toString() {
+        return "PreparedStatementBatchWriter [" + preparedSql + "]";
+    }
+
+
+
     public static class Factory<TElement> implements DatabaseWriter.Factory<PreparedStatementBatchWriter<TElement>> {
 
         private final String sqlStatement;
@@ -49,17 +60,21 @@ public class PreparedStatementBatchWriter<T> extends BatchWriter<T> {
 
         private Collection<String> manipulatedTables;
 
-        public Factory(String sqlStatement, PreparedStatementAdapter<TElement> adapter, String manipulatedTable) {
+        private Collection<String> accessedTables;
+
+        public Factory(String sqlStatement, PreparedStatementAdapter<TElement> adapter, String manipulatedTable, String... accessedTables) {
             this.sqlStatement = sqlStatement;
             this.adapter = adapter;
             this.manipulatedTables = Collections.singleton(manipulatedTable);
+            this.accessedTables = Arrays.asList(accessedTables);
         }
+        
 
         @Override
         public PreparedStatementBatchWriter<TElement> createWriter(DatabaseAccess databaseAccess) throws SQLException {
 
             return new PreparedStatementBatchWriter<TElement>(databaseAccess,
-                    this.sqlStatement, this.manipulatedTables,
+                    this.sqlStatement, this.accessedTables, this.manipulatedTables,
                     DEFAULT_BATCH_SIZE, this.adapter);
         }
 

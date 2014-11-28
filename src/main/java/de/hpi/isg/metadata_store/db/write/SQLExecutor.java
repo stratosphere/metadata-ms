@@ -2,6 +2,8 @@ package de.hpi.isg.metadata_store.db.write;
 
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
@@ -13,46 +15,75 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public class SQLExecutor extends BatchWriter<String> {
 
-	public SQLExecutor(DatabaseAccess databaseAccess,
-			int batchSize) throws SQLException {
+    /** Helper set to keep track of incoming manipulated tables. */
+    private final Set<String> newManipulatedTables = new HashSet<>();
 
-		super(databaseAccess, 
-				Collections.<String>emptySet(), 
-				batchSize);
-	}
+    /** Helper set to keep track of incoming acessed tables. */
+    private final Set<String> newAccessedTables = new HashSet<>();
 
-	public void write(String element, String[] manipulatedTables, String... referencedTables) throws SQLException {
-		for (String manipulatedTable : manipulatedTables) {
-			this.manipulatedTables.add(manipulatedTable);
-		}
-		for (String referencedTable : referencedTables) {
-			this.referencedTables.add(referencedTable);
-		}
-		super.write(element);
-	}
-	
-	@Override
-	public void write(String element) throws SQLException {
-		throw new UnsupportedOperationException("Used #write(String, String, String...) instead.");
-	}
-	
-	@Override
-	protected void ensureStatementInitialized() throws SQLException {
-		if (this.statement == null) {
-			this.statement = this.connection.createStatement();
-		}
-	}
+    public SQLExecutor(DatabaseAccess databaseAccess,
+            int batchSize) throws SQLException {
 
-	@Override
-	protected void addBatch(String sql) throws SQLException {
-		this.statement.addBatch(sql);
-	}
-	
-	@Override
-	protected void doFlush() throws SQLException {
-		super.doFlush();
-		this.manipulatedTables.clear();
-		this.referencedTables.clear();
-	}
+        super(databaseAccess,
+                Collections.<String> emptySet(),
+                Collections.<String> emptySet(),
+                batchSize);
+    }
+
+    public void write(String element, String[] manipulatedTables, String... referencedTables) throws SQLException {
+        // Keep track of manipulated tables.
+        for (String manipulatedTable : manipulatedTables) {
+            this.manipulatedTables.add(manipulatedTable);
+            this.newManipulatedTables.add(manipulatedTable);
+        }
+        if (!this.newManipulatedTables.isEmpty()) {
+            this.databaseAccess.notifyManipulation(this, this.newManipulatedTables);
+            this.manipulatedTables.clear();
+        }
+        
+        // Keep track of accessed tables.
+        for (String referencedTable : referencedTables) {
+            this.accessedTables.add(referencedTable);
+            this.newAccessedTables.add(referencedTable);
+        }
+        if (!this.newAccessedTables.isEmpty()) {
+            this.databaseAccess.notifyAccess(this, this.newAccessedTables);
+            this.newAccessedTables.clear();
+        }
+        
+        // Do the write.
+        super.write(element);
+    }
+
+    @Override
+    public void write(String element) throws SQLException {
+        throw new UnsupportedOperationException("Used #write(String, String, String...) instead.");
+    }
+
+    @Override
+    protected void ensureStatementInitialized() throws SQLException {
+        if (this.statement == null) {
+            this.statement = this.connection.createStatement();
+        }
+    }
+
+    @Override
+    protected void addBatch(String sql) throws SQLException {
+        this.statement.addBatch(sql);
+    }
+
+    @Override
+    protected void doFlush() throws SQLException {
+        super.doFlush();
+        this.manipulatedTables.clear();
+        this.accessedTables.clear();
+        this.databaseAccess.notifyTablesClear(this);
+    }
+
+    @Override
+    public String toString() {
+        return "SQLExecutor [manipulatedTables=" + getManipulatedTables() + ", accessedTables=" + getAccessedTables()
+                + "]";
+    }
 
 }
