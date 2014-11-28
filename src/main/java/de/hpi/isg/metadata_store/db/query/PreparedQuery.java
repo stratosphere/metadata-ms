@@ -39,6 +39,7 @@ abstract public class PreparedQuery<T> extends DatabaseQuery<T> {
 
 	abstract protected void setStatementParameters(T element) throws SQLException;
 
+	@Override
 	public void close() throws SQLException {
 		if (this.preparedStatement != null) {
 			this.preparedStatement.close();

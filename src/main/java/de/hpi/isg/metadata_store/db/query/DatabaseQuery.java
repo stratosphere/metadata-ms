@@ -17,7 +17,7 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  * 
  * @param <T>
  */
-abstract public class DatabaseQuery<T> {
+abstract public class DatabaseQuery<T> implements AutoCloseable {
 
 	protected final DatabaseAccess databaseAccess;
 
@@ -36,6 +36,13 @@ abstract public class DatabaseQuery<T> {
 	 *             if the query could not be executed properly
 	 */
 	abstract public ResultSet execute(T queryParameter) throws SQLException;
+	
+	/**
+	 * Closes the database resources held by this query.
+	 * 
+	 * @throws SQLException if the closing fails
+	 */
+	abstract public void close() throws SQLException;
 
 	public static interface Factory<TQuery extends DatabaseQuery<?>> {
 

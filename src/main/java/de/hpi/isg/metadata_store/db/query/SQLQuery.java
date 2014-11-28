@@ -44,6 +44,13 @@ public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 		}
 	}
 
+	@Override
+	public void close() throws SQLException {
+		if (this.statement != null) {
+			this.statement.close();
+		}
+	}
+	
 	/**
 	 * Parameters define the necessary input for a {@link SQLQuery}.
 	 * 
@@ -58,8 +65,11 @@ public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 
 		/**
 		 * Create new query parameters for a {@link SQLQuery}.
-		 * @param sql is a SQL query to execute
-		 * @param queriedTables are the tables that are queried by the SQL query
+		 * 
+		 * @param sql
+		 *            is a SQL query to execute
+		 * @param queriedTables
+		 *            are the tables that are queried by the SQL query
 		 */
 		public Parameters(String sql, String... queriedTables) {
 			this(sql, Arrays.asList(queriedTables));
@@ -67,8 +77,11 @@ public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 
 		/**
 		 * Create new query parameters for a {@link SQLQuery}.
-		 * @param sql is a SQL query to execute
-		 * @param queriedTables are the tables that are queried by the SQL query
+		 * 
+		 * @param sql
+		 *            is a SQL query to execute
+		 * @param queriedTables
+		 *            are the tables that are queried by the SQL query
 		 */
 		public Parameters(String sql, Collection<String> queriedTables) {
 			this.sql = sql;

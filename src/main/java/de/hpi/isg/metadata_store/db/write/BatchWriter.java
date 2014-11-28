@@ -15,7 +15,7 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public abstract class BatchWriter<T> extends DependentWriter<T> {
 
-	public static final int DEFAULT_BATCH_SIZE = 0;
+	public static final int DEFAULT_BATCH_SIZE = 1000;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.

@@ -3,6 +3,8 @@ package de.hpi.isg.metadata_store.db.write;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
@@ -12,7 +14,7 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  * @author Sebastian Kruse
  *
  */
-abstract public class DatabaseWriter<T> {
+abstract public class DatabaseWriter<T> implements AutoCloseable {
 	
 	protected final Connection connection;
 	
@@ -42,6 +44,7 @@ abstract public class DatabaseWriter<T> {
 	
 	public void flush() throws SQLException {
 		if (this.statement != null) {
+			Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
 			doFlush();
 		}
 	}

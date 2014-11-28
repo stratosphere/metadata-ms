@@ -21,8 +21,10 @@ public class SQLExecutor extends BatchWriter<String> {
 				batchSize);
 	}
 
-	public void write(String element, String manipulatedTable, String... referencedTables) throws SQLException {
-		this.manipulatedTables.add(manipulatedTable);
+	public void write(String element, String[] manipulatedTables, String... referencedTables) throws SQLException {
+		for (String manipulatedTable : manipulatedTables) {
+			this.manipulatedTables.add(manipulatedTable);
+		}
 		for (String referencedTable : referencedTables) {
 			this.referencedTables.add(referencedTable);
 		}
