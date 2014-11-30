@@ -1,9 +1,7 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
@@ -30,7 +28,8 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
             Location location) {
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, true);
         newSchema.register();
-        newSchema.getSqlInterface().addSchema(newSchema);
+        // TODO: remove
+//        newSchema.getSqlInterface().addSchema(newSchema);
         return newSchema;
     }
 
@@ -57,6 +56,11 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
                 location);
         addToChildIdCache(tableId);
         return table;
+    }
+    
+    @Override
+    protected void store() {
+    	this.sqlInterface.addSchema(this);
     }
 
     @Override

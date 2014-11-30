@@ -19,7 +19,7 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
     private Reference<IntCollection> childIdCache; 
 
     @ExcludeHashCodeEquals
-    private SQLInterface sqlInterface;
+    protected final SQLInterface sqlInterface;
 
     public AbstractRDBMSTarget(RDBMSMetadataStore observer, int id, String name, Location location, boolean isFreshlyCreated) {
         super(observer, id, name, location);
@@ -65,6 +65,11 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
             childIdCache.add(childId);
         }
     }
+    
+    /**
+     * Stores this target.
+     */
+    abstract protected void store();
 
     public SQLInterface getSqlInterface() {
         return sqlInterface;

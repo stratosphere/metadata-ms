@@ -23,7 +23,6 @@ import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
-import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
@@ -189,18 +188,19 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         // }
     }
 
-    @Override
-    public void registerId(final int id) {
-        // synchronized (this.sqlInterface.getIdsInUse()) {
-        if (!this.sqlInterface.addToIdsInUse(id)) {
-            throw new IdAlreadyInUseException("id is already in use: " + id);
-        }
-        // }
-    }
-
+//    @Override
+//    public void registerId(final int id) {
+//        // synchronized (this.sqlInterface.getIdsInUse()) {
+//        if (!this.sqlInterface.addToIdsInUse(id)) {
+//            throw new IdAlreadyInUseException("id is already in use: " + id);
+//        }
+//        // }
+//    }
+//
     @Override
     public void registerTargetObject(final Target target) {
-        this.sqlInterface.addTarget(target);
+    	((AbstractRDBMSTarget) target).store();
+//        this.sqlInterface.addTarget(target);
     }
 
     @Override

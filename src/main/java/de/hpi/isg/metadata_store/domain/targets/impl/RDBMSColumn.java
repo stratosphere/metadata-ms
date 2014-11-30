@@ -27,7 +27,7 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
         final RDBMSColumn newColumn = new RDBMSColumn(observer, table, id, name, location, true);
         newColumn.register();
-        newColumn.getSqlInterface().addColumnToTable(newColumn, table);
+//        newColumn.getSqlInterface().addColumnToTable(newColumn, table);
         return newColumn;
     }
 
@@ -45,6 +45,11 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
         this.table = table;
     }
 
+    @Override
+    protected void store() {
+    	this.sqlInterface.addColumnToTable(this, this.table);
+    }
+    
     /**
      * @return the parent table
      */

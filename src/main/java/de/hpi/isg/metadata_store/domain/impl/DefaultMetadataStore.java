@@ -183,8 +183,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         }
     }
 
-    @Override
-    public void registerId(final int id) {
+//    @Override
+    private void registerId(final int id) {
         synchronized (this.idsInUse) {
             if (!this.idsInUse.add(id)) {
                 throw new IdAlreadyInUseException("id is already in use: " + id);
@@ -194,6 +194,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public void registerTargetObject(final Target message) {
+    	registerId(message.getId());
         this.allTargets.add(message);
     }
 

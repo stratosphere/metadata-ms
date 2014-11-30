@@ -40,7 +40,7 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
 
     @Override
     public void register() {
-        observer.registerId(this.getId());
+//        observer.registerId(this.getId());
         this.observer.registerTargetObject(this);
     }
 

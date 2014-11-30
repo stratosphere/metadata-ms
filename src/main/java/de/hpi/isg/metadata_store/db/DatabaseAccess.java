@@ -94,6 +94,7 @@ public class DatabaseAccess implements AutoCloseable {
 	 * Loads the foreign keys from the RDBMS.
 	 */
 	public Set<String> getReferencedTables(String table) {
+		table = canonicalizeTableName(table);
 		Set<String> referencedTables = this.foreignKeyDependencies.get(table);
 		if (referencedTables != null) {
 			return referencedTables;
@@ -103,7 +104,7 @@ public class DatabaseAccess implements AutoCloseable {
 			DatabaseMetaData metaData = this.connection.getMetaData();
 			ResultSet resultSet = metaData.getImportedKeys(null, null, table);
 			while (resultSet.next()) {
-				String referencedTable = resultSet.getString("PKTABLE_NAME");
+				String referencedTable = canonicalizeTableName(resultSet.getString("PKTABLE_NAME"));
 				referencedTables.add(referencedTable);
 			}
 			resultSet.close();
@@ -139,6 +140,9 @@ public class DatabaseAccess implements AutoCloseable {
 	public void executeSQL(String sqlStmt, String manipulatedTable, String... queriedTables)
 			throws SQLException {
 
+		manipulatedTable = canonicalizeTableName(manipulatedTable);
+		queriedTables = canonicalizeTableNames(queriedTables);
+		
 		List<String> accessedTables = new ArrayList<>();
 		for (String queriedTable : queriedTables) {
 			accessedTables.add(queriedTable);
@@ -149,6 +153,20 @@ public class DatabaseAccess implements AutoCloseable {
 				accessedTables.toArray(new String[accessedTables.size()]));
 	}
 
+	private String canonicalizeTableName(String tableName) {
+		if (tableName == null) {
+			return null;
+		}
+		return tableName.toLowerCase();
+	}
+	
+	private String[] canonicalizeTableNames(String[] tableNames) {
+		for (int i = 0; i < tableNames.length; i++) {
+			tableNames[i] = canonicalizeTableName(tableNames[i]);
+		}
+		return tableNames;
+	}
+	
 	// /**
 	// * Executes a SQL statement on the managed database. Thereby, dependencies to other query batches are respected.
 	// *
@@ -169,19 +187,20 @@ public class DatabaseAccess implements AutoCloseable {
 	// }
 	// this.sqlExecutor.write(sqlStmt, manipulatedTables, referencedTables);
 	// }
-
-	private String[] updateReferencedTablesIfNotGiven(String manipulatedTable, String... referencedTables) {
-		if (referencedTables.length == 0) {
-			Set<String> fkReferencedTables = getReferencedTables(manipulatedTable);
-			referencedTables = fkReferencedTables.toArray(new String[fkReferencedTables.size()]);
-		} else {
-			Logger.getGlobal().warning(String.format("Manually passed referenced tables detected: %s: %s.",
-					manipulatedTable, Arrays.toString(referencedTables)));
-		}
-		return referencedTables;
-	}
+//
+//	private String[] updateReferencedTablesIfNotGiven(String manipulatedTable, String... referencedTables) {
+//		if (referencedTables.length == 0) {
+//			Set<String> fkReferencedTables = getReferencedTables(manipulatedTable);
+//			referencedTables = fkReferencedTables.toArray(new String[fkReferencedTables.size()]);
+//		} else {
+//			Logger.getGlobal().warning(String.format("Manually passed referenced tables detected: %s: %s.",
+//					manipulatedTable, Arrays.toString(referencedTables)));
+//		}
+//		return referencedTables;
+//	}
 
 	public ResultSet query(String sql, String... queriedTables) throws SQLException {
+		queriedTables = canonicalizeTableNames(queriedTables);
 		flush(Arrays.asList(queriedTables));
 		return this.sqlQuery.execute(sql, queriedTables);
 	}
@@ -214,6 +233,7 @@ public class DatabaseAccess implements AutoCloseable {
 			this.preceedingWriters.remove(writerToFlush);
 		}
 		for (String accessedTable : writerToFlush.getAccessedTables()) {
+			accessedTable = canonicalizeTableName(accessedTable);
 			Set<DependentWriter<?>> accessingWriters = this.accessingWriters.get(accessedTable);
 			if (accessingWriters.size() > 1) {
 				accessingWriters.remove(writerToFlush);
@@ -222,6 +242,7 @@ public class DatabaseAccess implements AutoCloseable {
 			}
 		}
 		for (String manipulatedTable : writerToFlush.getManipulatedTables()) {
+			manipulatedTable = canonicalizeTableName(manipulatedTable);
 			Set<DependentWriter<?>> manipulatingWriters = this.manipulatingWriters.get(manipulatedTable);
 			if (manipulatingWriters.size() > 1) {
 				manipulatingWriters.remove(writerToFlush);
@@ -243,6 +264,7 @@ public class DatabaseAccess implements AutoCloseable {
 	public void flush(Collection<String> tables) throws SQLException {
 		// Logger.getGlobal().log(Level.INFO, String.format("Flushing modifications on %s.\n", tables));
 		for (String table : tables) {
+			table = canonicalizeTableName(table);
 			Collection<DependentWriter<?>> writers = this.manipulatingWriters.get(table);
 			if (writers == null) {
 				continue;
@@ -316,6 +338,7 @@ public class DatabaseAccess implements AutoCloseable {
 		Set<DependentWriter<?>> knownPreceedingWriters = this.preceedingWriters.get(writer);
 		for (String accessedTable : accessedTables) {
 			// Find out if this is a new access.
+			accessedTable = canonicalizeTableName(accessedTable);
 			Set<DependentWriter<?>> accessingWriters = this.accessingWriters.get(accessedTable);
 			if (accessingWriters == null || accessingWriters.contains(writer)) {
 				continue;
@@ -374,6 +397,7 @@ public class DatabaseAccess implements AutoCloseable {
 		}
 
 		for (String manipulatedTable : manipulatedTables) {
+			manipulatedTable = canonicalizeTableName(manipulatedTable);
 			// In general, we assume that a manipulation does not effect accesses, which is of course not always true.
 			// Therefore, we still need to consider SQL interdependencies in the code.
 
@@ -408,6 +432,7 @@ public class DatabaseAccess implements AutoCloseable {
 
 		Set<DependentWriter<?>> preceedingWriters = null;
 		for (String accessedTable : accessedTables) {
+			accessedTable = canonicalizeTableName(accessedTable);
 			// Find out if this is a new access.
 			Set<DependentWriter<?>> adjacenceSet = this.accessingWriters.get(accessedTable);
 			if (adjacenceSet == null) {

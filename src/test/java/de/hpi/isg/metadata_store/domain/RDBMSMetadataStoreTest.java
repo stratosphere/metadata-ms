@@ -46,7 +46,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
 
-    private static final int loadFactorForCreateComplexSchemaTest = 1;
+    private static final int loadFactorForCreateComplexSchemaTest = 10;
 
     private File testDb;
     private Connection connection;
@@ -294,7 +294,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringOfFilledMetadataStore() {
+    public void testStoringOfFilledMetadataStore() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -311,6 +311,7 @@ public class RDBMSMetadataStoreTest {
                 dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
 
         store1.addConstraint(dummyContraint);
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
@@ -324,7 +325,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringTupleCountConstraint() {
+    public void testStoringTupleCountConstraint() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -343,6 +344,7 @@ public class RDBMSMetadataStoreTest {
         constraintCollection.add(dummyContraint);
 
         store1.addConstraintCollection(constraintCollection);
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
@@ -351,7 +353,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringTypeConstraint() {
+    public void testStoringTypeConstraint() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -372,6 +374,7 @@ public class RDBMSMetadataStoreTest {
         constraintCollection.add(dummyContraint);
 
         store1.addConstraintCollection(constraintCollection);
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
@@ -380,7 +383,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringDistinctCountConstraint() {
+    public void testStoringDistinctCountConstraint() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -401,6 +404,7 @@ public class RDBMSMetadataStoreTest {
         constraintCollection.add(dummyContraint);
 
         store1.addConstraintCollection(constraintCollection);
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
@@ -409,7 +413,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testStoringInclusionDependency() {
+    public void testStoringInclusionDependency() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -432,6 +436,7 @@ public class RDBMSMetadataStoreTest {
         constraintCollection.add(dummyContraint);
 
         store1.addConstraintCollection(constraintCollection);
+        store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));

@@ -11,7 +11,7 @@ import de.hpi.isg.metadata_store.domain.Target;
 public interface Observer {
     public int generateRandomId();
 
-    public void registerId(int id);
+//    public void registerId(int id);
 
     public void registerTargetObject(Target target);
 }

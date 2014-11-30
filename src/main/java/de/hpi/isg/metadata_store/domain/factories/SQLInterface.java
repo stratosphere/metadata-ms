@@ -44,7 +44,7 @@ public interface SQLInterface {
 
     public boolean isTargetIdInUse(int id) throws SQLException;
 
-    public void addTarget(Target target);
+//    public void addTarget(Target target);
 
     public Collection<ConstraintCollection> getAllConstraintCollections();
 
@@ -54,7 +54,7 @@ public interface SQLInterface {
 
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
 
-    boolean addToIdsInUse(int id);
+//    boolean addToIdsInUse(int id);
 
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
 

@@ -42,6 +42,7 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -76,36 +77,44 @@ public class SQLiteInterface implements SQLInterface {
 
 	private final int CACHE_SIZE = 1000;
 
-	private static final PreparedStatementBatchWriter.Factory<Integer> TARGET_WRITER_FACTORY =
+	private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TARGET_WRITER_FACTORY =
 			new PreparedStatementBatchWriter.Factory<>(
-					"INSERT INTO Target (ID) VALUES (?);",
-					PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+					"INSERT INTO Target (ID, name, locationId) VALUES (?, ?, ?);",
+					new PreparedStatementAdapter<Object[]>() {
+						@Override
+						public void translateParameter(Object[] parameters, PreparedStatement preparedStatement) throws SQLException {
+							Target target = (Target) parameters[0];
+							Integer locationId = (Integer) parameters[1];
+							preparedStatement.setInt(1, target.getId());
+							preparedStatement.setString(2, target.getName());
+							preparedStatement.setInt(3, locationId);
+						}},
 					"Target");
 
-	private static final PreparedStatementBatchWriter.Factory<Target> UPDATE_TARGET_NAME_WRITER_FACTORY =
-			new PreparedStatementBatchWriter.Factory<>(
-					"UPDATE Target set name = ? where id=?;",
-					new PreparedStatementAdapter<Target>() {
-						@Override
-						public void translateParameter(Target target, PreparedStatement preparedStatement) throws SQLException {
-							// TODO generic escapeing
-							preparedStatement.setString(1, target.getName().replace("'", "''"));
-							preparedStatement.setInt(2, target.getId());
-						}
-					},
-					"Target");
-
-	private static final PreparedStatementBatchWriter.Factory<int[]> UPDATE_TARGET_LOCATION_WRITER_FACTORY =
-			new PreparedStatementBatchWriter.Factory<>(
-					"UPDATE Target set locationId = ? where id=?;",
-					new PreparedStatementAdapter<int[]>() {
-						@Override
-						public void translateParameter(int[] parameters, PreparedStatement preparedStatement) throws SQLException {
-							preparedStatement.setInt(1, parameters[0]);
-							preparedStatement.setInt(2, parameters[1]);
-						}
-					},
-					"Target");
+//	private static final PreparedStatementBatchWriter.Factory<Target> UPDATE_TARGET_NAME_WRITER_FACTORY =
+//			new PreparedStatementBatchWriter.Factory<>(
+//					"UPDATE Target set name = ? where id=?;",
+//					new PreparedStatementAdapter<Target>() {
+//						@Override
+//						public void translateParameter(Target target, PreparedStatement preparedStatement) throws SQLException {
+//							// TODO generic escapeing
+//							preparedStatement.setString(1, target.getName().replace("'", "''"));
+//							preparedStatement.setInt(2, target.getId());
+//						}
+//					},
+//					"Target");
+//
+//	private static final PreparedStatementBatchWriter.Factory<int[]> UPDATE_TARGET_LOCATION_WRITER_FACTORY =
+//			new PreparedStatementBatchWriter.Factory<>(
+//					"UPDATE Target set locationId = ? where id=?;",
+//					new PreparedStatementAdapter<int[]>() {
+//						@Override
+//						public void translateParameter(int[] parameters, PreparedStatement preparedStatement) throws SQLException {
+//							preparedStatement.setInt(1, parameters[0]);
+//							preparedStatement.setInt(2, parameters[1]);
+//						}
+//					},
+//					"Target");
 
 	private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_LOCATION_WRITER_FACTORY =
 			new PreparedStatementBatchWriter.Factory<>(
@@ -224,7 +233,7 @@ public class SQLiteInterface implements SQLInterface {
 
 	private final DatabaseAccess databaseAccess;
 
-	private DatabaseWriter<Integer> targetIdWriter;
+	private DatabaseWriter<Object[]> insertTargetWriter;
 
 	private int currentConstraintIdMax = -1;
 
@@ -283,9 +292,9 @@ public class SQLiteInterface implements SQLInterface {
 		// Initialize writers and queries.
 		try {
 			// Writers
-			this.targetIdWriter = this.databaseAccess.createBatchWriter(TARGET_WRITER_FACTORY);
-			this.updateTargetNameWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_NAME_WRITER_FACTORY);
-			this.updateTargetLocationWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_LOCATION_WRITER_FACTORY);
+			this.insertTargetWriter = this.databaseAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
+//			this.updateTargetNameWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_NAME_WRITER_FACTORY);
+//			this.updateTargetLocationWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_LOCATION_WRITER_FACTORY);
 			this.insertLocationWriter = this.databaseAccess.createBatchWriter(INSERT_LOCATION_WRITER_FACTORY);
 			this.insertLocationPropertyWriter = this.databaseAccess.createBatchWriter(INSERT_LOCATION_PROPERTY_WRITER_FACTORY);
 			this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
@@ -380,6 +389,7 @@ public class SQLiteInterface implements SQLInterface {
 	@Override
 	public void addSchema(Schema schema) {
 		try {
+			storeTargetWithLocation(schema);
 			String sqlSchemaAdd = String.format("INSERT INTO Schemaa (id) VALUES (%d);",
 					schema.getId());
 			this.databaseAccess.executeSQL(sqlSchemaAdd, "Schemaa");
@@ -391,6 +401,27 @@ public class SQLiteInterface implements SQLInterface {
 			throw new RuntimeException(e);
 		}
 
+	}
+
+	private void storeTargetWithLocation(Target target) throws SQLException {
+		// write target and location to DB
+		Integer locationId = addLocation(target.getLocation());
+		this.insertTargetWriter.write(new Object[] { target, locationId });
+		
+		// update caches
+		if (allTargets != null) {
+			this.allTargets.add(target);
+		}
+		if (target instanceof RDBMSSchema) {
+			if (this.allSchemas != null) {
+				this.allSchemas.add((Schema) target);
+			}
+			this.schemaCache.put(target.getId(), (RDBMSSchema) target);
+		} else if (target instanceof RDBMSTable) {
+			this.tableCache.put(target.getId(), (RDBMSTable) target);
+		} else if (target instanceof RDBMSColumn) {
+			this.columnCache.put(target.getId(), (RDBMSColumn) target);
+		}
 	}
 
 	@Override
@@ -531,22 +562,20 @@ public class SQLiteInterface implements SQLInterface {
 		return isIdInUse;
 	}
 
-	@Override
-	public boolean addToIdsInUse(int id) {
-		try {
-			this.targetIdWriter.write(id);
+//	private boolean addToIdsInUse(int id) {
+//		try {
+//			this.targetIdWriter.write(id);
+//
+//			// invalidate cache
+//			allTargets = null;
+//
+//			return true;
+//		} catch (SQLException e) {
+//			throw new RuntimeException(String.format("Could not insert ID %d.", id), e);
+//		}
+//	}
 
-			// invalidate cache
-			allTargets = null;
-
-			return true;
-		} catch (SQLException e) {
-			throw new RuntimeException(String.format("Could not insert ID %d.", id), e);
-		}
-	}
-
-	@Override
-	public void addTarget(Target target) {
+	private void saveTargetWithLocation(Target target) {
 		try {
 			// TODO: Merge these two-three queries if possible.
 			this.updateTargetNameWriter.write(target);
@@ -572,17 +601,25 @@ public class SQLiteInterface implements SQLInterface {
 		}
 	}
 
-	private synchronized Integer addLocation(Location location) {
-		ensureCurrentLocationIdMaxInitialized();
+	/**
+	 * Stores the given location.
+	 * 
+	 * @param location
+	 *            is the location to store
+	 * @return the DB ID of the added location tuple
+	 * @throws SQLException 
+	 */
+	private synchronized Integer addLocation(Location location) throws SQLException {
+		if (location == null) {
+			return null;
+		}
+
 		// for auto-increment id
+		ensureCurrentLocationIdMaxInitialized();
 		Integer locationId = ++currentLocationIdMax;
-		try {
-			this.insertLocationWriter.write(new Object[] { locationId, location.getClass().getCanonicalName() });
-			for (Entry<String, String> entry : location.getProperties().entrySet()) {
-				this.insertLocationPropertyWriter.write(new Object[] { locationId, entry.getKey(), entry.getValue() });
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
+		this.insertLocationWriter.write(new Object[] { locationId, location.getClass().getCanonicalName() });
+		for (Entry<String, String> entry : location.getProperties().entrySet()) {
+			this.insertLocationPropertyWriter.write(new Object[] { locationId, entry.getKey(), entry.getValue() });
 		}
 		return locationId;
 	}
@@ -827,6 +864,7 @@ public class SQLiteInterface implements SQLInterface {
 	@Override
 	public void addTableToSchema(RDBMSTable newTable, Schema schema) {
 		try {
+			storeTargetWithLocation(newTable);
 			this.insertTableWriter.write(newTable);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -870,7 +908,9 @@ public class SQLiteInterface implements SQLInterface {
 		if (allColumnsForTable != null) {
 			allColumnsForTable.add(newColumn);
 		}
+		
 		try {
+			storeTargetWithLocation(newColumn);
 			this.insertColumnWriter.write(newColumn);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);

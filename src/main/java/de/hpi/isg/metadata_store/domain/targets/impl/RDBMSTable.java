@@ -36,7 +36,8 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
         final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         newTable.register();
-        newTable.getSqlInterface().addTableToSchema(newTable, schema);
+        // TODO: Remove
+//        newTable.getSqlInterface().addTableToSchema(newTable, schema);
         return newTable;
     }
 
@@ -80,6 +81,11 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         return Collections.unmodifiableCollection(this.getSqlInterface().getAllColumnsForTable(this));
     }
 
+    @Override
+    protected void store() {
+    	this.sqlInterface.addTableToSchema(this, this.schema);
+    }
+    
     /**
      * @return the parent schema
      */
