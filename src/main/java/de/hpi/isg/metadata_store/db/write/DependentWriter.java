@@ -1,6 +1,5 @@
 package de.hpi.isg.metadata_store.db.write;
 
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -28,6 +27,12 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 	 * The names of the tables that are referenced by the manipulated tables.
 	 */
 	protected Set<String> accessedTables;
+	
+	/**
+	 * Tells if the referenced tables of the manipulated tables have already been determined
+	 * and added to the accessed tables.
+	 */
+	private boolean isReferencedTablesDetermined;
 
 	/**
 	 * The names of the tables that are manipulated by this writer or current batch.
@@ -54,15 +59,22 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 
 		this.databaseAccess = databaseAccess;
 		this.accessedTables = new HashSet<>(accessedTables);
-		this.accessedTables.addAll(findAllReferencedTables(manipulatedTables, databaseAccess));
+		this.isReferencedTablesDetermined = false;
 		this.manipulatedTables = new HashSet<>(manipulatedTables);
 	}
 	
-	protected void ensureReferencedTablesFlushed() throws SQLException {
-		if (!this.accessedTables.isEmpty()) {
-			this.databaseAccess.flush(this.accessedTables);
+	protected void ensureReferencedTablesDetermined() {
+		if (!this.isReferencedTablesDetermined) {
+			this.accessedTables.addAll(findAllReferencedTables(manipulatedTables, databaseAccess));
+			this.isReferencedTablesDetermined = true;
 		}
 	}
+	
+//	protected void ensureReferencedTablesFlushed() throws SQLException {
+//		if (!this.accessedTables.isEmpty()) {
+//			this.databaseAccess.flush(this.accessedTables);
+//		}
+//	}
 
 	public Set<String> getManipulatedTables() {
 		return manipulatedTables;

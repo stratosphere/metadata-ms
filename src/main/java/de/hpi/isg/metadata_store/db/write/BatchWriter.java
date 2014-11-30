@@ -17,7 +17,7 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public abstract class BatchWriter<T> extends DependentWriter<T> {
 
-	public static final int DEFAULT_BATCH_SIZE = 0;
+	public static final int DEFAULT_BATCH_SIZE = 10;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
@@ -47,8 +47,8 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	
 	@Override
 	public void doWrite(T element) throws SQLException {
+		fireAboutToAddBatchElement();
 		addBatch(element);
-		fireBatchElementAdded();
 		if (++this.curBatchSize >= this.maxBatchSize) {
 			flush();
 		}
@@ -59,7 +59,6 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	@Override
 	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
-			ensureReferencedTablesFlushed();
 			int[] batchResults = this.statement.executeBatch();
 			for (int result : batchResults) {
 				if (result == Statement.EXECUTE_FAILED) {
@@ -72,18 +71,18 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	}
 	
 	/** Called when the batch was empty but is not anymore. */
-	private void fireBatchElementAdded() {
+	protected void fireAboutToAddBatchElement() {
 	    // With queries in the batch, data dependencies of this writer become relevant.
-	    if (!this.manipulatedTables.isEmpty()) {
-	        this.databaseAccess.notifyManipulation(this, this.manipulatedTables);
-	    }
-	    if (!this.accessedTables.isEmpty()) {
-	        this.databaseAccess.notifyAccess(this, this.accessedTables);
+		ensureReferencedTablesDetermined();
+	    if (!this.manipulatedTables.isEmpty() || !this.accessedTables.isEmpty()) {
+	        this.databaseAccess.notifyWriterAction(this, this.manipulatedTables, this.accessedTables);
 	    }
 	}
 	
 	/** Called when the batch was flushed. */
 	private void fireBatchFlushed() {
+		System.out.format("Flushed %s.\n", this);
+		
 	    // Without queries in the batch, this writer is neutral wrt. accessed and modified tables.
 	    if (!this.manipulatedTables.isEmpty() || !this.accessedTables.isEmpty()) {
 	        this.databaseAccess.notifyTablesClear(this);

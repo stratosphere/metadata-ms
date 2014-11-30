@@ -44,7 +44,7 @@ abstract public class DatabaseWriter<T> implements AutoCloseable {
 	
 	public void flush() throws SQLException {
 		if (this.statement != null) {
-			Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
+//			Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
 			doFlush();
 		}
 	}

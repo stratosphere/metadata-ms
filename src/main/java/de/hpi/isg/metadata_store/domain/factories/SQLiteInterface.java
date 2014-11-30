@@ -321,11 +321,13 @@ public class SQLiteInterface implements SQLInterface {
 	@Override
 	public void dropTablesIfExist() {
 		try {
-			for (String table : tableNames) {
-				String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-				this.databaseAccess.executeSQL(sql, table);
+			// Setting up the schema is not supported by database access. Do it with plain JDBC.
+			try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
+				for (String table : tableNames) {
+					String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
+					statement.execute(sql);
+				}
 			}
-			this.databaseAccess.flush();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -352,8 +354,7 @@ public class SQLiteInterface implements SQLInterface {
 	@Override
 	public void executeCreateTableStatement(String sqlCreateTables) {
 		try {
-			// Setting up databases is not well supported by DatabaseAccess, so we do it directly.
-			this.databaseAccess.flush();
+			// Setting up databases is not supported by DatabaseAccess, so we do it directly.
 			try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
 				statement.executeUpdate(sqlCreateTables);
 			}

@@ -36,19 +36,11 @@ public class SQLExecutor extends BatchWriter<String> {
             this.manipulatedTables.add(manipulatedTable);
             this.newManipulatedTables.add(manipulatedTable);
         }
-        if (!this.newManipulatedTables.isEmpty()) {
-            this.databaseAccess.notifyManipulation(this, this.newManipulatedTables);
-            this.manipulatedTables.clear();
-        }
         
         // Keep track of accessed tables.
         for (String referencedTable : referencedTables) {
             this.accessedTables.add(referencedTable);
             this.newAccessedTables.add(referencedTable);
-        }
-        if (!this.newAccessedTables.isEmpty()) {
-            this.databaseAccess.notifyAccess(this, this.newAccessedTables);
-            this.newAccessedTables.clear();
         }
         
         // Do the write.
@@ -78,6 +70,15 @@ public class SQLExecutor extends BatchWriter<String> {
         this.manipulatedTables.clear();
         this.accessedTables.clear();
         this.databaseAccess.notifyTablesClear(this);
+    }
+    
+    @Override
+    protected void fireAboutToAddBatchElement() {
+        if (!this.newManipulatedTables.isEmpty() || !this.newAccessedTables.isEmpty()) {
+        	this.databaseAccess.notifyWriterAction(this, this.newManipulatedTables, this.newAccessedTables);
+        	this.newManipulatedTables.clear();
+        	this.newAccessedTables.clear();
+        }
     }
 
     @Override

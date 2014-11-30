@@ -201,9 +201,10 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testCreationOfEmptyRDBMSMetadataStore() {
+    public void testCreationOfEmptyRDBMSMetadataStore() throws Exception {
         MetadataStore store2 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
+        store2.flush();
 
         assertEquals(store2, RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection)));
     }

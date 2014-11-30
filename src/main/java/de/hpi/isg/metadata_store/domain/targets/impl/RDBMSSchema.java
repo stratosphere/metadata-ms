@@ -50,7 +50,8 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     @Override
     public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
-        Validate.isTrue(metadataStore.getSchemas().contains(this));
+		Collection<Schema> schemas = metadataStore.getSchemas();
+		Validate.isTrue(schemas.contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
         final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
                 location);
