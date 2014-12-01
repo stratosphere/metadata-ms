@@ -3,12 +3,7 @@ package de.hpi.isg.metadata_store.domain.factories;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -24,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
@@ -42,7 +38,6 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
-import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -373,16 +368,15 @@ public class SQLiteInterface implements SQLInterface {
 		}
 	}
 
-	static String loadResource(String resourcePath)
-			throws IOException
-	{
-		URL pathUrl = SQLiteInterface.class.getResource(resourcePath);
-		try {
-			Path path = Paths.get(pathUrl.toURI());
-			byte[] encoded = Files.readAllBytes(path);
-			return new String(encoded, StandardCharsets.UTF_8);
-		} catch (URISyntaxException e) {
-			throw new IOException(String.format("Could not parse resource path correctly: %s", resourcePath), e);
+	/**
+	 * Loads the given resource as String.
+	 * @param resourcePath is the path of the resource
+	 * @return a {@link String} with the contents of the resource
+	 * @throws IOException
+	 */
+	static String loadResource(String resourcePath) throws IOException {
+		try (InputStream resourceStream = SQLiteInterface.class.getResourceAsStream(resourcePath)) {
+		    return IOUtils.toString(resourceStream, "UTF-8");
 		}
 	}
 
