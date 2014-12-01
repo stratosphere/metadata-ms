@@ -396,7 +396,7 @@ public class SQLiteInterface implements SQLInterface {
 
 			// TODO: Why not update the schemas directly?
 			// invalidate cache
-			allSchemas = null;
+			allSchemas.add(schema);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
