@@ -169,7 +169,7 @@ public class IdUtils implements Serializable {
     }
 
     public boolean isTableId(final int id) {
-        return (getLocalColumnId(id) > maxTableNumber && !(getLocalTableId(id) > maxColumnNumber));
+        return (getLocalColumnId(id) > maxColumnNumber && !(getLocalTableId(id) > maxTableNumber));
     }
 
     public int getNumTableBits() {
