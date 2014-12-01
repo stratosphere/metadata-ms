@@ -9,6 +9,7 @@ import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
+import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -19,6 +20,12 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
+    
+    /**
+     * Stores the number of tables in this schema to quickly find free IDs for new tables.
+     */
+    @ExcludeHashCodeEquals
+    private int numTables = -1;
 
     private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, Location location, boolean isFreshlyCreated) {
         super(observer, id, name, location, isFreshlyCreated);
@@ -30,6 +37,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         newSchema.register();
         // TODO: remove
 //        newSchema.getSqlInterface().addSchema(newSchema);
+        newSchema.numTables = 0;
         return newSchema;
     }
 
@@ -55,6 +63,9 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
                 location);
         addToChildIdCache(tableId);
+        if (this.numTables != -1) {
+            this.numTables++;
+        }
         return table;
     }
     
@@ -98,6 +109,13 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
             }
         }
         return null;
+    }
+    
+    /**
+     * @return the number of tables in this schema or -1 if it is unknown.
+     */
+    public int getNumTables() {
+        return numTables;
     }
 
     @Override

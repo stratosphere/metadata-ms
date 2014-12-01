@@ -162,7 +162,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
         final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
-        final int searchOffset = schema.getTables().size();
+        final int searchOffset = ((RDBMSSchema) schema).getNumTables() != -1 ? 
+                ((RDBMSSchema) schema).getNumTables() + 1 : schema.getTables().size();
         for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils
                 .getMaxTableNumber(); baseTableNumber++) {
             int tableNumber = baseTableNumber + searchOffset;

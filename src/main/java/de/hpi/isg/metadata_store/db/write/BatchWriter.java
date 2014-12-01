@@ -17,7 +17,7 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 public abstract class BatchWriter<T> extends DependentWriter<T> {
 
-	public static final int DEFAULT_BATCH_SIZE = 1000000;
+	public static final int DEFAULT_BATCH_SIZE = 100;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
@@ -59,12 +59,14 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	@Override
 	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
+		    System.out.printf("Flushing %d of %s...", this.curBatchSize, this);
 			int[] batchResults = this.statement.executeBatch();
 			for (int result : batchResults) {
 				if (result == Statement.EXECUTE_FAILED) {
 					throw new SQLException("Batch execution returned error on one or more SQL statements.");
 				}
 			}
+			System.out.println("done!");
 		}
 		this.curBatchSize = 0;
 		fireBatchFlushed();
