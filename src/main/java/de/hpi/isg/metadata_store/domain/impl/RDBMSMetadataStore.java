@@ -7,9 +7,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
@@ -39,7 +40,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     private static final long serialVersionUID = 400271996998552017L;
 
-    private static final Logger LOGGER = Logger.getLogger(RDBMSMetadataStore.class.getCanonicalName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSMetadataStore.class);
 
     @ExcludeHashCodeEquals
     transient final SQLInterface sqlInterface;
@@ -65,8 +66,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface,
             Map<String, String> configuration) {
         if (sqliteInterface.allTablesExist()) {
-            Logger.getAnonymousLogger().warning("The metadata store will be overwritten.");
-            ;
+            LOGGER.warn("The metadata store will be overwritten.");
         }
         sqliteInterface.initializeMetadataStore();
         RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface, configuration);
@@ -267,7 +267,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     
     @Override
     public void save(String path) {
-        LOGGER.warning("save(path) is not fully supported for this metadata store.");
+        LOGGER.warn("save(path) is not fully supported for this metadata store.");
     }
 
     @Override

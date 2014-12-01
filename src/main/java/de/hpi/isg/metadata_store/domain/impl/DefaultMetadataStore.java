@@ -14,9 +14,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
@@ -40,6 +41,8 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
     private static final long serialVersionUID = -1214605256534100452L;
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMetadataStore.class);
 
     private final Collection<Schema> schemas;
 
@@ -247,8 +250,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public void flush() throws Exception {
         if (this.storeLocation == null) {
-            Logger.getAnonymousLogger().warning(
-                    "Cannot flush metadata store because it has no default saving location.");
+            LOGGER.warn("Cannot flush metadata store because it has no default saving location.");
         } else {
             saveToDefaultLocation();
         }

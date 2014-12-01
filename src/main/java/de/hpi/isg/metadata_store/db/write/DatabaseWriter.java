@@ -3,8 +3,6 @@ package de.hpi.isg.metadata_store.db.write;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 

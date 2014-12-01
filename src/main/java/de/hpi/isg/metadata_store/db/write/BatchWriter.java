@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
 /**
@@ -16,8 +19,10 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  * @param <T>
  */
 public abstract class BatchWriter<T> extends DependentWriter<T> {
+    
+    private final static Logger LOGGER = LoggerFactory.getLogger(BatchWriter.class);
 
-	public static final int DEFAULT_BATCH_SIZE = 100;
+	public static final int DEFAULT_BATCH_SIZE = 1000;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
@@ -59,14 +64,16 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	@Override
 	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
-		    System.out.printf("Flushing %d of %s...", this.curBatchSize, this);
+		    int batchSize = this.curBatchSize;
+		    long startTime = System.currentTimeMillis();
 			int[] batchResults = this.statement.executeBatch();
 			for (int result : batchResults) {
 				if (result == Statement.EXECUTE_FAILED) {
 					throw new SQLException("Batch execution returned error on one or more SQL statements.");
 				}
 			}
-			System.out.println("done!");
+			long endTime = System.currentTimeMillis();
+			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
 		}
 		this.curBatchSize = 0;
 		fireBatchFlushed();
@@ -83,8 +90,6 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	
 	/** Called when the batch was flushed. */
 	private void fireBatchFlushed() {
-		System.out.format("Flushed %s.\n", this);
-		
 	    // Without queries in the batch, this writer is neutral wrt. accessed and modified tables.
 	    if (!this.manipulatedTables.isEmpty() || !this.accessedTables.isEmpty()) {
 	        this.databaseAccess.notifyTablesClear(this);

@@ -13,9 +13,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
 import de.hpi.isg.metadata_store.db.query.SQLQuery;
@@ -34,6 +35,8 @@ import de.hpi.isg.metadata_store.db.write.SQLExecutor;
  */
 public class DatabaseAccess implements AutoCloseable {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseAccess.class);
+    
 	/**
 	 * The connection to the database.
 	 */
@@ -262,18 +265,17 @@ public class DatabaseAccess implements AutoCloseable {
 	 *             if the flushing fails for any of the writers.
 	 */
 	public void flush(Collection<String> tables) throws SQLException {
-		// Logger.getGlobal().log(Level.INFO, String.format("Flushing modifications on %s.\n", tables));
 		for (String table : tables) {
 			table = canonicalizeTableName(table);
 			Collection<DependentWriter<?>> writers = this.manipulatingWriters.get(table);
 			if (writers == null) {
 				continue;
 			}
-			System.out.format("Flushing modifications on %s...\n", table);
+			LOGGER.debug("Flushing modifications on {}...", table);
 			for (DependentWriter<?> writer : new ArrayList<>(writers)) {
 				flush(writer);
 			}
-			System.out.format("...done\n");
+			LOGGER.debug("...done flushing! (on {})", table);
 		}
 	}
 
@@ -368,7 +370,7 @@ public class DatabaseAccess implements AutoCloseable {
 			// i.e., the second-to-last writer in any circle.
 			if (!predecessorPaths.isEmpty()) {
 				for (List<DependentWriter<?>> predecessorPath : predecessorPaths) {
-					System.out.format("Cycle detected: %s.\n", predecessorPath);
+					LOGGER.debug("Cycle detected: {}.", predecessorPath);
 					DependentWriter<?> writerToFlush = predecessorPath.get(predecessorPath.size() - 2);
 					try {
 						flush(writerToFlush);
@@ -409,7 +411,7 @@ public class DatabaseAccess implements AutoCloseable {
 			}
 			// Verify that we actually add this writer, i.e., that we have a new manipulated table.
 			if (adjacenceSet.add(writer)) {
-				System.out.format("Manipulation: %s by %s\n", manipulatedTable, writer);
+				LOGGER.trace("Manipulation: {} by {}", manipulatedTable, writer);
 			}
 			// In this case, we have new "edges" in the data-dependency graph and need to check for cycles.
 			// Check for cycles starting with these edges.
@@ -440,7 +442,7 @@ public class DatabaseAccess implements AutoCloseable {
 				this.accessingWriters.put(accessedTable, adjacenceSet);
 			}
 			if (adjacenceSet.add(writer)) {
-				System.out.format("Access: %s by %s\n", accessedTables, writer);
+				LOGGER.trace("Access: {} by {}", accessedTables, writer);
 			}
 			
 			// In this case, we have new "edges" in the data-dependency graph.
@@ -462,7 +464,7 @@ public class DatabaseAccess implements AutoCloseable {
 						}
 					}
 					if (preceedingWriters.add(manipulatingWriter)) {
-						System.out.format("Preceed: %s must preceed %s.\n", manipulatingWriter, writer);
+						LOGGER.debug("Preceed: {} must preceed {}.", manipulatingWriter, writer);
 					}
 				}
 			}
@@ -519,7 +521,7 @@ public class DatabaseAccess implements AutoCloseable {
 	}
 
 	public void notifyTablesClear(DependentWriter<?> writer) {
-		System.out.format("Clear manipuations and accesses %s.\n", writer);
+		LOGGER.debug("Clear manipuations and accesses {}.", writer);
 	}
 
 }

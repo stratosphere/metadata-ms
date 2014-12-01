@@ -13,8 +13,9 @@
 package de.hpi.isg.metadata_store.domain.util;
 
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
@@ -26,7 +27,7 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
  */
 public class LocationUtils {
 
-    private static final Logger LOGGER = Logger.getAnonymousLogger();
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocationUtils.class);
 
     private LocationUtils() {
     }
@@ -45,8 +46,7 @@ public class LocationUtils {
             Class<? extends Location> locationClass = Class.forName(className).asSubclass(Location.class);
             location = locationClass.newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            LOGGER.log(Level.WARNING,
-                    String.format("Could not instantiate location of class %s -- using DefaultLocation.", className), e);
+            LOGGER.warn("Could not instantiate location -- using DefaultLocation.", e);
             location = new DefaultLocation();
         }
         location.getProperties().putAll(properties);
