@@ -6,10 +6,15 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
 
 abstract public class PreparedQuery<T> extends DatabaseQuery<T> {
+    
+    private static final Logger LOGGER =  LoggerFactory.getLogger(PreparedQuery.class);
 
 	private final String sql;
 	
@@ -31,6 +36,7 @@ abstract public class PreparedQuery<T> extends DatabaseQuery<T> {
 	
 	@Override
 	public ResultSet execute(T element) throws SQLException {
+	    LOGGER.trace("Query issued: {} with {}", this.sql, element);
 		this.databaseAccess.flush(this.queriedTables);
 		ensureStatementPrepared();
 		setStatementParameters(element);

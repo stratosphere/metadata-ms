@@ -7,10 +7,15 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
 public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 
+    private static final Logger LOGGER =  LoggerFactory.getLogger(SQLQuery.class);
+    
 	/**
 	 * Statement over which queries can be posed. This is to be lazy-initialized.
 	 */
@@ -32,6 +37,7 @@ public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 	 */
 	@Override
 	public ResultSet execute(SQLQuery.Parameters queryParameter) throws SQLException {
+	    LOGGER.trace("Query issued: {}", queryParameter.sql);
 		this.databaseAccess.flush(queryParameter.queriedTables);
 		ensureStatementCreated();
 		return this.statement.executeQuery(queryParameter.sql);
