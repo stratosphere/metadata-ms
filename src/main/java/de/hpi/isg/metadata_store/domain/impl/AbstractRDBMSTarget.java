@@ -2,10 +2,6 @@ package de.hpi.isg.metadata_store.domain.impl;
 
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
-
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
@@ -16,7 +12,8 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
     private static final long serialVersionUID = -2207050281912169066L;
     
     @ExcludeHashCodeEquals
-    private Reference<IntCollection> childIdCache; 
+//    private Reference<IntCollection> childIdCache; 
+    private IntCollection childIdCache; 
 
     @ExcludeHashCodeEquals
     protected final SQLInterface sqlInterface;
@@ -28,7 +25,8 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
         // If we just created this Target, it cannot have children.
         // Therefore, we can safely build a new child ID cache.
         if (isFreshlyCreated) {
-            this.childIdCache = new SoftReference<IntCollection>(new IntOpenHashSet());
+//            this.childIdCache = new SoftReference<IntCollection>(new IntOpenHashSet());
+            this.childIdCache = new IntOpenHashSet();
         }
     }
     
@@ -36,17 +34,18 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
      * @return the IDs of the children of this {@link Target} or {@code null}.
      */
     public IntCollection getChildIdCache() {
-        if (this.childIdCache == null) {
-            return null;
-        }
-        
-        IntCollection childIdCache = this.childIdCache.get();
-        if (childIdCache == null) {
-            // Clear the reference if it has lost the cache.
-            clearChildIdCache();
-        }
-        
-        return childIdCache;
+//        if (this.childIdCache == null) {
+//            return null;
+//        }
+//        
+//        IntCollection childIdCache = this.childIdCache.get();
+//        if (childIdCache == null) {
+//            // Clear the reference if it has lost the cache.
+//            clearChildIdCache();
+//        }
+//        
+//        return childIdCache;
+        return this.childIdCache;
     }
     
     /**

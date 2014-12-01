@@ -331,7 +331,9 @@ public class SQLiteInterface implements SQLInterface {
 					String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
 					statement.execute(sql);
 				}
-			}
+	            if (!this.databaseAccess.getConnection().getAutoCommit()) {
+	                this.databaseAccess.getConnection().commit();
+	            }			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -359,9 +361,13 @@ public class SQLiteInterface implements SQLInterface {
 	public void executeCreateTableStatement(String sqlCreateTables) {
 		try {
 			// Setting up databases is not supported by DatabaseAccess, so we do it directly.
-			try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
+			Connection connection = this.databaseAccess.getConnection();
+            try (Statement statement = connection.createStatement()) {
 				statement.executeUpdate(sqlCreateTables);
 			}
+            if (!this.databaseAccess.getConnection().getAutoCommit()) {
+                this.databaseAccess.getConnection().commit();
+            }
 			this.loadTableNames();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);

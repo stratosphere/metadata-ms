@@ -46,7 +46,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
 
-    private static final int loadFactorForCreateComplexSchemaTest = 3;
+    private static final int loadFactorForCreateComplexSchemaTest = 7;
 
     private File testDb;
     private Connection connection;

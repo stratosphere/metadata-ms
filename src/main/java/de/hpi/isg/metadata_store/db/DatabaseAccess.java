@@ -81,6 +81,7 @@ public class DatabaseAccess implements AutoCloseable {
 		super();
 		try {
 			Validate.isTrue(!connection.isClosed());
+			connection.setAutoCommit(false);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
