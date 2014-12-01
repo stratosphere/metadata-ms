@@ -46,7 +46,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
 
-    private static final int loadFactorForCreateComplexSchemaTest = 10;
+    private static final int loadFactorForCreateComplexSchemaTest = 2;
 
     private File testDb;
     private Connection connection;
@@ -221,7 +221,7 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    public void testConstraintCollections() {
+    public void testConstraintCollections() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -248,6 +248,7 @@ public class RDBMSMetadataStoreTest {
         store1.addConstraintCollection(dummyConstraintCollection);
 
         ConstraintCollection cc = store1.getConstraintCollections().iterator().next();
+//        store1.flush();
 
         cc.equals(dummyConstraintCollection);
 

@@ -396,7 +396,9 @@ public class SQLiteInterface implements SQLInterface {
 
 			// TODO: Why not update the schemas directly?
 			// invalidate cache
-			allSchemas.add(schema);
+			if (allSchemas != null) {
+			    allSchemas.add(schema);
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -654,6 +656,11 @@ public class SQLiteInterface implements SQLInterface {
 
 		Collection<Constraint> constraintsOfCollection = new HashSet<>();
 
+		try {
+            this.store.flush();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not flush metadata store before loading constraints.", e);
+        }
 		for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
 			constraintsOfCollection.addAll(constraintSerializer
 					.deserializeConstraintsForConstraintCollection(rdbmsConstraintCollection));
