@@ -267,7 +267,12 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     
     @Override
     public void save(String path) {
-        LOGGER.warn("save(path) is not fully supported for this metadata store.");
+        LOGGER.warn("save(path) does not take into account the save path.");
+        try {
+            flush();
+        } catch (Exception e) {
+            LOGGER.error("Flushing the metadata store failed.", e);
+        }
     }
 
     @Override
