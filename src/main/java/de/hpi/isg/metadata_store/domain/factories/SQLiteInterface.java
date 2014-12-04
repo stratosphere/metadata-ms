@@ -414,9 +414,9 @@ public class SQLiteInterface implements SQLInterface {
     public void addSchema(RDBMSSchema schema) {
         try {
             storeTargetWithLocation(schema);
-            String sqlSchemaAdd = String.format("INSERT INTO Schemaa (id) VALUES (%d);",
-                    schema.getId());
-            this.databaseAccess.executeSQL(sqlSchemaAdd, "Schemaa");
+            insertSchemaWriter.write(schema);
+            // TODO investigate why the flush is necessary
+            this.databaseAccess.flush();
 
             // TODO: Why not update the schemas directly?
             // invalidate cache
