@@ -103,7 +103,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void addSchema(final Schema schema) {
-        this.sqlInterface.addSchema(schema);
+        this.sqlInterface.addSchema((RDBMSSchema) schema);
     }
 
     @Override
@@ -162,7 +162,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
         final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
-        final int searchOffset = ((RDBMSSchema) schema).getNumTables() != -1 ? 
+        final int searchOffset = ((RDBMSSchema) schema).getNumTables() != -1 ?
                 ((RDBMSSchema) schema).getNumTables() + 1 : schema.getTables().size();
         for (int baseTableNumber = this.idUtils.getMinTableNumber(); baseTableNumber <= this.idUtils
                 .getMaxTableNumber(); baseTableNumber++) {
@@ -189,19 +189,19 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         // }
     }
 
-//    @Override
-//    public void registerId(final int id) {
-//        // synchronized (this.sqlInterface.getIdsInUse()) {
-//        if (!this.sqlInterface.addToIdsInUse(id)) {
-//            throw new IdAlreadyInUseException("id is already in use: " + id);
-//        }
-//        // }
-//    }
-//
+    // @Override
+    // public void registerId(final int id) {
+    // // synchronized (this.sqlInterface.getIdsInUse()) {
+    // if (!this.sqlInterface.addToIdsInUse(id)) {
+    // throw new IdAlreadyInUseException("id is already in use: " + id);
+    // }
+    // // }
+    // }
+    //
     @Override
     public void registerTargetObject(final Target target) {
-    	((AbstractRDBMSTarget) target).store();
-//        this.sqlInterface.addTarget(target);
+        ((AbstractRDBMSTarget) target).store();
+        // this.sqlInterface.addTarget(target);
     }
 
     @Override
@@ -263,8 +263,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(this.idUtils.getNumColumnBits()));
         return configuration;
     }
-    
-    
+
     @Override
     public void save(String path) {
         LOGGER.warn("save(path) does not take into account the save path.");

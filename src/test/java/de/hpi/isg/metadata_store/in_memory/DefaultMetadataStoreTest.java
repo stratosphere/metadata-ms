@@ -1,4 +1,4 @@
-package de.hpi.isg.metadata_store.domain;
+package de.hpi.isg.metadata_store.in_memory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -19,6 +19,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import de.hpi.isg.metadata_store.domain.Constraint;
+import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Location;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
+import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;

@@ -150,6 +150,18 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Constraintt");
 
+    private static final PreparedStatementBatchWriter.Factory<RDBMSSchema> INSERT_SCHEMA_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "INSERT INTO Schemaa (id) VALUES (?);",
+                    new PreparedStatementAdapter<RDBMSSchema>() {
+                        @Override
+                        public void translateParameter(RDBMSSchema parameters, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameters.getId());
+                        }
+                    },
+                    "Schemaa");
+
     private static final PreparedStatementBatchWriter.Factory<RDBMSTable> INSERT_TABLE_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Tablee (id, schemaId) VALUES (?, ?);",
@@ -280,6 +292,8 @@ public class SQLiteInterface implements SQLInterface {
 
     private DatabaseWriter<int[]> insertConstraintWriter;
 
+    private DatabaseWriter<RDBMSSchema> insertSchemaWriter;
+
     private DatabaseWriter<RDBMSTable> insertTableWriter;
 
     private DatabaseWriter<RDBMSColumn> insertColumnWriter;
@@ -301,6 +315,7 @@ public class SQLiteInterface implements SQLInterface {
             this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
             this.insertColumnWriter = this.databaseAccess.createBatchWriter(INSERT_COLUMN_WRITER_FACTORY);
             this.insertTableWriter = this.databaseAccess.createBatchWriter(INSERT_TABLE_WRITER_FACTORY);
+            this.insertSchemaWriter = this.databaseAccess.createBatchWriter(INSERT_SCHEMA_WRITER_FACTORY);
 
             // Queries
             this.locationQuery = this.databaseAccess.createQuery(LOCATION_QUERY_FACTORY);
@@ -396,7 +411,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addSchema(Schema schema) {
+    public void addSchema(RDBMSSchema schema) {
         try {
             storeTargetWithLocation(schema);
             String sqlSchemaAdd = String.format("INSERT INTO Schemaa (id) VALUES (%d);",
@@ -586,31 +601,16 @@ public class SQLiteInterface implements SQLInterface {
     // }
     // }
 
-    private void saveTargetWithLocation(Target target) {
-        try {
-            // TODO: Merge these two-three queries if possible.
-            this.updateTargetNameWriter.write(target);
-            Integer locationId = addLocation(target.getLocation());
-            this.updateTargetLocationWriter.write(new int[] { locationId, target.getId() });
-
-            // update caches
-            if (allTargets != null) {
-                this.allTargets.add(target);
-            }
-            if (target instanceof RDBMSSchema) {
-                if (this.allSchemas != null) {
-                    this.allSchemas.add((Schema) target);
-                }
-                this.schemaCache.put(target.getId(), (RDBMSSchema) target);
-            } else if (target instanceof RDBMSTable) {
-                this.tableCache.put(target.getId(), (RDBMSTable) target);
-            } else if (target instanceof RDBMSColumn) {
-                this.columnCache.put(target.getId(), (RDBMSColumn) target);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    /*
+     * private void saveTargetWithLocation(Target target) { try { // TODO: Merge these two-three queries if possible.
+     * this.updateTargetNameWriter.write(target); Integer locationId = addLocation(target.getLocation());
+     * this.updateTargetLocationWriter.write(new int[] { locationId, target.getId() }); // update caches if (allTargets
+     * != null) { this.allTargets.add(target); } if (target instanceof RDBMSSchema) { if (this.allSchemas != null) {
+     * this.allSchemas.add((Schema) target); } this.schemaCache.put(target.getId(), (RDBMSSchema) target); } else if
+     * (target instanceof RDBMSTable) { this.tableCache.put(target.getId(), (RDBMSTable) target); } else if (target
+     * instanceof RDBMSColumn) { this.columnCache.put(target.getId(), (RDBMSColumn) target); } } catch (SQLException e)
+     * { throw new RuntimeException(e); } }
+     */
 
     /**
      * Stores the given location.

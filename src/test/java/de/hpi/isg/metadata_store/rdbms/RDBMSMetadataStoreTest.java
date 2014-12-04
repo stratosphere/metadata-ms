@@ -1,4 +1,4 @@
-package de.hpi.isg.metadata_store.domain;
+package de.hpi.isg.metadata_store.rdbms;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +28,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import de.hpi.isg.metadata_store.domain.Constraint;
+import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Location;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
+import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
@@ -56,7 +61,6 @@ public class RDBMSMetadataStoreTest {
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();
-            // this.testDb.deleteOnExit();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -248,7 +252,7 @@ public class RDBMSMetadataStoreTest {
         store1.addConstraintCollection(dummyConstraintCollection);
 
         ConstraintCollection cc = store1.getConstraintCollections().iterator().next();
-//        store1.flush();
+        // store1.flush();
 
         cc.equals(dummyConstraintCollection);
 

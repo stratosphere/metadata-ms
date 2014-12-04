@@ -11,7 +11,6 @@ import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
-import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency.Reference;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -39,7 +38,7 @@ public interface SQLInterface {
 
     public void addConstraint(Constraint constraint);
 
-    public void addSchema(Schema schema);
+    public void addSchema(RDBMSSchema schema);
 
     public Collection<? extends Target> getAllTargets();
 
