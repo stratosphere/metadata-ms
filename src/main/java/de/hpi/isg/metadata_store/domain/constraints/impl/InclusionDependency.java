@@ -12,9 +12,9 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,6 +23,11 @@ import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
+import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
+import de.hpi.isg.metadata_store.db.query.StrategyBasedPreparedQuery;
+import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
+import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
@@ -48,6 +53,66 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         private final static String referenceTableName = "INDPart";
 
         private final SQLInterface sqlInterface;
+
+        DatabaseWriter<Integer> insertInclusionDependencyWriter;
+
+        DatabaseWriter<int[]> insertINDPartWriter;
+
+        DatabaseQuery<Void> queryInclusionDependencies;
+
+        DatabaseQuery<Integer> queryInclusionDependenciesForConstraintCollection;
+
+        DatabaseQuery<Integer> queryINDPart;
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "INSERT INTO " + tableName + " (constraintId) VALUES (?);",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
+                            }
+                        },
+                        tableName);
+
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INDPART_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "INSERT INTO " + referenceTableName
+                                + " (constraintId, lhs, rhs) VALUES (?, ?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
+                            @Override
+                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, (Integer) parameters[0]);
+                                preparedStatement.setInt(2, (Integer) parameters[1]);
+                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                            }
+                        },
+                        referenceTableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Void> INCLUSIONDEPENDENCY_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from IND, constraintt where IND.constraintId = constraintt.id;",
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from IND, constraintt where IND.constraintId = constraintt.id"
+                                + " and constraintt.constraintCollectionId=?;",
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> INDPART_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT lhs, rhs "
+                                + "from INDpart "
+                                + "where INDpart.constraintId = ?;",
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        referenceTableName);
 
         public InclusionDependencySQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
@@ -83,6 +148,26 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                     this.allTablesExistChecked = true;
                 }
             }
+            try {
+                this.insertInclusionDependencyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY);
+
+                this.insertINDPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_INDPART_WRITER_FACTORY);
+
+                this.queryInclusionDependencies = sqlInterface.getDatabaseAccess().createQuery(
+                        INCLUSIONDEPENDENCY_QUERY_FACTORY);
+
+                this.queryInclusionDependenciesForConstraintCollection = sqlInterface.getDatabaseAccess()
+                        .createQuery(
+                                INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+
+                this.queryINDPart = sqlInterface.getDatabaseAccess()
+                        .createQuery(
+                                INDPART_QUERY_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -90,24 +175,15 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
             Validate.isTrue(inclusionDependency instanceof InclusionDependency);
             try {
-                Statement stmt = sqlInterface.createStatement();
+                insertInclusionDependencyWriter.write(constraintId);
 
-                String sqlAddIND = String.format(
-                        "INSERT INTO " + tableName + " (constraintId) VALUES (%d);", constraintId);
-                stmt.executeUpdate(sqlAddIND);
                 for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
-                    String sqlAddINDpart = String
-                            .format(
-                                    "INSERT INTO " + referenceTableName
-                                            + " (constraintId, lhs, rhs) VALUES ('%d', %d, %d);",
-                                    constraintId,
-                                    ((InclusionDependency) inclusionDependency).getTargetReference()
-                                            .getDependentColumns()[i].getId(),
-                                    ((InclusionDependency) inclusionDependency).getTargetReference()
-                                            .getReferencedColumns()[i].getId());
-                    stmt.executeUpdate(sqlAddINDpart);
+                    insertINDPartWriter.write(new int[] { constraintId,
+                            ((InclusionDependency) inclusionDependency).getTargetReference()
+                                    .getDependentColumns()[i].getId(),
+                            ((InclusionDependency) inclusionDependency).getTargetReference()
+                                    .getReferencedColumns()[i].getId() });
                 }
-                stmt.close();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -118,22 +194,13 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         public Collection<Constraint> deserializeConstraintsForConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
-            String constraintCollectionClause = "";
-            if (!retrieveConstraintCollection) {
-                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
-                        constraintCollection.getId());
-            }
 
             Collection<Constraint> inclusionDependencies = new HashSet<>();
 
             try {
-                String sqlGetInclusionDependencies = String
-                        .format("SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from IND, constraintt where IND.constraintId = constraintt.id%s;",
-                                constraintCollectionClause);
-                Statement stmt = this.sqlInterface.createStatement();
-                ResultSet rsInclusionDependencies = stmt.executeQuery(
-                        sqlGetInclusionDependencies);
+                ResultSet rsInclusionDependencies = retrieveConstraintCollection ?
+                        queryInclusionDependencies.execute(null) : queryInclusionDependenciesForConstraintCollection
+                                .execute(constraintCollection.getId());
                 while (rsInclusionDependencies.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
@@ -141,16 +208,32 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                                         .getInt("constraintCollectionId"));
                     }
                     inclusionDependencies
-                            .add(InclusionDependency.build(this.sqlInterface.
+                            .add(InclusionDependency.build(
                                     getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
                                     constraintCollection));
 
                 }
                 rsInclusionDependencies.close();
-                stmt.close();
 
                 return inclusionDependencies;
             } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Reference getInclusionDependencyReferences(int id) {
+            List<Column> lhs = new ArrayList<>();
+            List<Column> rhs = new ArrayList<>();
+            try {
+                try (ResultSet rs = this.queryINDPart.execute(id);) {
+                    while (rs.next()) {
+                        lhs.add(this.sqlInterface.getColumnById(rs.getInt("lhs")));
+                        rhs.add(this.sqlInterface.getColumnById(rs.getInt("rhs")));
+                    }
+                }
+                return new Reference(lhs.toArray(new Column[lhs.size()]), rhs.toArray(new Column[rhs.size()]));
+            } catch (SQLException e)
+            {
                 throw new RuntimeException(e);
             }
         }

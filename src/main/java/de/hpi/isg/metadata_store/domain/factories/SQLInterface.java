@@ -5,6 +5,7 @@ import java.sql.Statement;
 import java.util.Collection;
 import java.util.Map;
 
+import de.hpi.isg.metadata_store.db.DatabaseAccess;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
@@ -44,7 +45,7 @@ public interface SQLInterface {
 
     public boolean isTargetIdInUse(int id) throws SQLException;
 
-//    public void addTarget(Target target);
+    // public void addTarget(Target target);
 
     public Collection<ConstraintCollection> getAllConstraintCollections();
 
@@ -54,7 +55,7 @@ public interface SQLInterface {
 
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
 
-//    boolean addToIdsInUse(int id);
+    // boolean addToIdsInUse(int id);
 
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
 
@@ -81,8 +82,6 @@ public interface SQLInterface {
 
     ConstraintCollection getConstraintCollectionById(int id);
 
-    Reference getInclusionDependencyReferences(int int1);
-
     void saveConfiguration();
 
     Map<String, String> loadConfiguration();
@@ -93,6 +92,7 @@ public interface SQLInterface {
 
     void flush() throws SQLException;
 
+    @Deprecated
     public Statement createStatement() throws SQLException;
 
     public boolean tableExists(String tablename);
@@ -118,4 +118,6 @@ public interface SQLInterface {
     public Table getTableByName(String name) throws NameAmbigousException;
 
     public Collection<Table> getTablesByName(String name);
+
+    public DatabaseAccess getDatabaseAccess();
 }

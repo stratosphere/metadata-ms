@@ -12,6 +12,7 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -20,9 +21,13 @@ import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
 
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
+import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
+import de.hpi.isg.metadata_store.db.query.StrategyBasedPreparedQuery;
+import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
+import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
@@ -43,11 +48,51 @@ public class DistinctValueCount extends AbstractConstraint {
 
         private final SQLInterface sqlInterface;
 
-        public DistinctValueCountSQLiteSerializer(SQLInterface sqlInterface) {
-            this.sqlInterface = sqlInterface;
+        DatabaseWriter<int[]> insertDistinctValueCountWriter;
+
+        DatabaseQuery<Void> queryDistinctValueCount;
+
+        DatabaseQuery<Integer> queryDistinctValueCountForConstraintCollection;
+
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "INSERT INTO " + tableName
+                                + " (constraintId, distinctValueCount, columnId) VALUES (?, ?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
+                            @Override
+                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, (Integer) parameters[0]);
+                                preparedStatement.setString(2, String.valueOf(parameters[1]));
+                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Void> DISTINCTVALUECOUNT_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
+                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id;",
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
+                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id"
+                                + " and constraintt.constraintCollectionId=?;",
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        tableName);
+
+        public DistinctValueCountSQLiteSerializer(SQLInterface sqliteInterface) {
+            this.sqlInterface = sqliteInterface;
 
             if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
+                if (!sqliteInterface.tableExists(tableName)) {
                     String createTable = "CREATE TABLE [" + tableName + "]\n" +
                             "(\n" +
                             "    [constraintId] integer NOT NULL,\n" +
@@ -64,26 +109,28 @@ public class DistinctValueCount extends AbstractConstraint {
                     this.allTablesExistChecked = true;
                 }
             }
+            try {
+                this.insertDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY);
+
+                this.queryDistinctValueCount = sqliteInterface.getDatabaseAccess().createQuery(
+                        DISTINCTVALUECOUNT_QUERY_FACTORY);
+
+                this.queryDistinctValueCountForConstraintCollection = sqliteInterface.getDatabaseAccess().createQuery(
+                        DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
         public void serialize(Integer constraintId, Constraint distinctValueCount) {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
-                Statement stmt = sqlInterface.createStatement();
+                this.insertDistinctValueCountWriter.write(new int[] { constraintId,
+                        ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
+                                .getTargetReference().getAllTargets().iterator().next().getId() });
 
-                String sqlAddTypee = String
-                        .format(
-                                "INSERT INTO " + tableName
-                                        + " (constraintId, distinctValueCount, columnId) VALUES (%d, '%d', %d);",
-                                constraintId, ((DistinctValueCount) distinctValueCount).getNumDistinctValues(),
-                                distinctValueCount
-                                        .getTargetReference()
-                                        .getAllTargets().iterator()
-                                        .next().getId());
-                stmt.executeUpdate(sqlAddTypee);
-
-                stmt.close();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -94,23 +141,14 @@ public class DistinctValueCount extends AbstractConstraint {
         public Collection<Constraint> deserializeConstraintsForConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
-            String constraintCollectionClause = "";
-            if (!retrieveConstraintCollection) {
-                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
-                        constraintCollection.getId());
-            }
 
             Collection<Constraint> distinctValueCounts = new HashSet<>();
 
             try {
-                String sqlGetDistinctValueCounts = String
-                        .format("SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
-                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id%s;",
-                                constraintCollectionClause);
-                Statement stmt = this.sqlInterface.createStatement();
-                ResultSet rsDistinctValueCounts = stmt.executeQuery(sqlGetDistinctValueCounts);
+
+                ResultSet rsDistinctValueCounts = retrieveConstraintCollection ?
+                        queryDistinctValueCount.execute(null) : queryDistinctValueCountForConstraintCollection
+                                .execute(constraintCollection.getId());
                 while (rsDistinctValueCounts.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
@@ -124,8 +162,6 @@ public class DistinctValueCount extends AbstractConstraint {
                                     rsDistinctValueCounts.getInt("distinctValueCount")));
                 }
                 rsDistinctValueCounts.close();
-                stmt.close();
-
                 return distinctValueCounts;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
