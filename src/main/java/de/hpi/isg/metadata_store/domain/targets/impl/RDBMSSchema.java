@@ -20,7 +20,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
-    
+
     /**
      * Stores the number of tables in this schema to quickly find free IDs for new tables.
      */
@@ -36,7 +36,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, true);
         newSchema.register();
         // TODO: remove
-//        newSchema.getSqlInterface().addSchema(newSchema);
+        // newSchema.getSqlInterface().addSchema(newSchema);
         newSchema.numTables = 0;
         return newSchema;
     }
@@ -57,8 +57,8 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     @Override
     public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
-		Collection<Schema> schemas = metadataStore.getSchemas();
-		Validate.isTrue(schemas.contains(this));
+        Collection<Schema> schemas = metadataStore.getSchemas();
+        Validate.isTrue(schemas.contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
         final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
                 location);
@@ -68,10 +68,10 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         }
         return table;
     }
-    
+
     @Override
     protected void store() {
-    	this.sqlInterface.addSchema(this);
+        this.sqlInterface.addSchema(this);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         }
         return null;
     }
-    
+
     /**
      * @return the number of tables in this schema or -1 if it is unknown.
      */
@@ -120,6 +120,6 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     @Override
     public String toString() {
-        return String.format("Schema[%s, %d tables, %08x]", this.getName(), this.getTables().size(), this.getId());
+        return String.format("Schema[%s, %08x]", this.getName(), this.getId());
     }
 }
