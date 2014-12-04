@@ -15,7 +15,6 @@ package de.hpi.isg.metadata_store.domain.constraints.impl;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -62,9 +61,9 @@ public class DistinctValueCount extends AbstractConstraint {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, (Integer) parameters[0]);
+                                preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setString(2, String.valueOf(parameters[1]));
-                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                                preparedStatement.setInt(3, parameters[2]);
                             }
                         },
                         tableName);
@@ -88,11 +87,11 @@ public class DistinctValueCount extends AbstractConstraint {
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
-        public DistinctValueCountSQLiteSerializer(SQLInterface sqliteInterface) {
-            this.sqlInterface = sqliteInterface;
+        public DistinctValueCountSQLiteSerializer(SQLInterface sqlInterface) {
+            this.sqlInterface = sqlInterface;
 
             if (!allTablesExistChecked) {
-                if (!sqliteInterface.tableExists(tableName)) {
+                if (!sqlInterface.tableExists(tableName)) {
                     String createTable = "CREATE TABLE [" + tableName + "]\n" +
                             "(\n" +
                             "    [constraintId] integer NOT NULL,\n" +
@@ -113,10 +112,10 @@ public class DistinctValueCount extends AbstractConstraint {
                 this.insertDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY);
 
-                this.queryDistinctValueCount = sqliteInterface.getDatabaseAccess().createQuery(
+                this.queryDistinctValueCount = sqlInterface.getDatabaseAccess().createQuery(
                         DISTINCTVALUECOUNT_QUERY_FACTORY);
 
-                this.queryDistinctValueCountForConstraintCollection = sqliteInterface.getDatabaseAccess().createQuery(
+                this.queryDistinctValueCountForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
                         DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);

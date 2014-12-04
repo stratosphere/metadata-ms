@@ -4,7 +4,6 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
-import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 
 public abstract class AbstractConstraint extends AbstractHashCodeAndEquals implements Constraint {
 

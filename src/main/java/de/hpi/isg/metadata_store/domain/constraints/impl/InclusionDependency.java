@@ -84,9 +84,9 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, (Integer) parameters[0]);
-                                preparedStatement.setInt(2, (Integer) parameters[1]);
-                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                                preparedStatement.setInt(1, parameters[0]);
+                                preparedStatement.setInt(2, parameters[1]);
+                                preparedStatement.setInt(3, parameters[2]);
                             }
                         },
                         referenceTableName);

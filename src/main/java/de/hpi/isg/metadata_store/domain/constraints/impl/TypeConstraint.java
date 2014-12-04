@@ -1,13 +1,18 @@
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
 
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
+import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
+import de.hpi.isg.metadata_store.db.query.StrategyBasedPreparedQuery;
+import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
+import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
@@ -35,6 +40,43 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
         private final SQLInterface sqlInterface;
 
+        DatabaseWriter<Object[]> insertTypeConstraintWriter;
+
+        DatabaseQuery<Void> queryTypeConstraints;
+
+        DatabaseQuery<Integer> queryTypeConstraintsForConstraintCollection;
+
+        private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TYPECONSTRAINT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (?, ?, ?);",
+                        new PreparedStatementAdapter<Object[]>() {
+                            @Override
+                            public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, (Integer) parameters[0]);
+                                preparedStatement.setString(2, String.valueOf(parameters[1]));
+                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Void> TYPECONSTRAINT_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from typee, constraintt where typee.constraintId = constraintt.id;",
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> TYPECONSTRAINT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from typee, constraintt where typee.constraintId = constraintt.id"
+                                + " and constraintt.constraintCollectionId=?;",
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        tableName);
+
         public TypeConstraintSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
@@ -56,23 +98,31 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                     this.allTablesExistChecked = true;
                 }
             }
+
+            try {
+                this.insertTypeConstraintWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_TYPECONSTRAINT_WRITER_FACTORY);
+
+                this.queryTypeConstraints = sqlInterface.getDatabaseAccess().createQuery(
+                        TYPECONSTRAINT_QUERY_FACTORY);
+
+                this.queryTypeConstraintsForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
+                        TYPECONSTRAINT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
         public void serialize(Integer constraintId, Constraint typeConstraint) {
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
-                Statement stmt = sqlInterface.createStatement();
-
-                String sqlAddTypee = String.format(
-                        "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (%d, '%s', %d);",
+                insertTypeConstraintWriter.write(new Object[] {
                         constraintId, ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargets().iterator()
-                                .next().getId());
-                stmt.executeUpdate(sqlAddTypee);
-
-                stmt.close();
+                                .next().getId()
+                });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -83,22 +133,13 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         public Collection<Constraint> deserializeConstraintsForConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
-            String constraintCollectionClause = "";
-            if (!retrieveConstraintCollection) {
-                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
-                        constraintCollection.getId());
-            }
 
             Collection<Constraint> typeConstraints = new HashSet<>();
 
             try {
-                String sqlGetTypeConstraints = String
-                        .format("SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from typee, constraintt where typee.constraintId = constraintt.id%s;",
-                                constraintCollectionClause);
-                Statement stmt = this.sqlInterface.createStatement();
-                ResultSet rsTypeConstraints = stmt.executeQuery(sqlGetTypeConstraints);
+                ResultSet rsTypeConstraints = retrieveConstraintCollection ?
+                        queryTypeConstraints.execute(null) : queryTypeConstraintsForConstraintCollection
+                                .execute(constraintCollection.getId());
                 while (rsTypeConstraints.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
@@ -112,7 +153,6 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                                     TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 }
                 rsTypeConstraints.close();
-                stmt.close();
 
                 return typeConstraints;
             } catch (SQLException e) {

@@ -12,15 +12,20 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
 
+import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
+import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
+import de.hpi.isg.metadata_store.db.query.StrategyBasedPreparedQuery;
+import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
+import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
@@ -46,6 +51,43 @@ public class TupleCount extends AbstractConstraint {
 
         private final SQLInterface sqlInterface;
 
+        DatabaseWriter<int[]> insertTupleCountWriter;
+
+        DatabaseQuery<Void> queryTupleCounts;
+
+        DatabaseQuery<Integer> queryTupleCountsForConstraintCollection;
+
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_TUPLECOUNT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (?, ?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
+                            @Override
+                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameters[0]);
+                                preparedStatement.setInt(2, parameters[1]);
+                                preparedStatement.setInt(3, parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Void> TUPLECOUNT_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id;",
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " constraintt.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id"
+                                + " and constraintt.constraintCollectionId=?;",
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        tableName);
+
         public TupleCountSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
@@ -67,23 +109,32 @@ public class TupleCount extends AbstractConstraint {
                     this.allTablesExistChecked = true;
                 }
             }
+
+            try {
+                this.insertTupleCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_TUPLECOUNT_WRITER_FACTORY);
+
+                this.queryTupleCounts = sqlInterface.getDatabaseAccess().createQuery(
+                        TUPLECOUNT_QUERY_FACTORY);
+
+                this.queryTupleCountsForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
+                        TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
         public void serialize(Integer constraintId, Constraint tupleCount) {
             Validate.isTrue(tupleCount instanceof TupleCount);
             try {
-                Statement stmt = sqlInterface.createStatement();
-
-                String sqlAddTypee = String.format(
-                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (%d, '%s', %d);",
+                insertTupleCountWriter.write(new int[] {
                         constraintId, ((TupleCount) tupleCount).getNumTuples(), tupleCount
                                 .getTargetReference()
                                 .getAllTargets().iterator()
-                                .next().getId());
-                stmt.executeUpdate(sqlAddTypee);
+                                .next().getId()
+                });
 
-                stmt.close();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -94,22 +145,13 @@ public class TupleCount extends AbstractConstraint {
         public Collection<Constraint> deserializeConstraintsForConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
-            String constraintCollectionClause = "";
-            if (!retrieveConstraintCollection) {
-                constraintCollectionClause = String.format(" and constraintt.constraintCollectionId=%d",
-                        constraintCollection.getId());
-            }
 
             Collection<Constraint> tupleCounts = new HashSet<>();
 
             try {
-                String sqlGetTupleCounts = String
-                        .format("SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id%s;",
-                                constraintCollectionClause);
-                Statement stmt = this.sqlInterface.createStatement();
-                ResultSet rsTupleCounts = stmt.executeQuery(sqlGetTupleCounts);
+                ResultSet rsTupleCounts = retrieveConstraintCollection ?
+                        queryTupleCounts.execute(null) : queryTupleCountsForConstraintCollection
+                                .execute(constraintCollection.getId());
                 while (rsTupleCounts.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
@@ -123,7 +165,6 @@ public class TupleCount extends AbstractConstraint {
                                     rsTupleCounts.getInt("tupleCount")));
                 }
                 rsTupleCounts.close();
-                stmt.close();
 
                 return tupleCounts;
             } catch (SQLException e) {
