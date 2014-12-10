@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -240,9 +241,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection() {
+    public ConstraintCollection createConstraintCollection(Target... scope) {
+        // Make sure that the given targets are actually compatible with this kind of metadata store.
+        for (Target target : scope) {
+            Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
+        }
         ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>(), getSQLInterface());
+                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), getSQLInterface());
         return constraintCollection;
     }
 

@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -220,9 +221,13 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection() {
+    public ConstraintCollection createConstraintCollection(Target... scope) {
+        // Make sure that the given targets are actually compatible with this kind of metadata store.
+        for (Target target : scope) {
+            Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
+        }
         ConstraintCollection constraintCollection = new DefaultConstraintCollection(getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>());
+                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)));
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
     }

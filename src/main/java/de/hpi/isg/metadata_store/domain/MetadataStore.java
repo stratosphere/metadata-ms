@@ -92,7 +92,7 @@ public interface MetadataStore extends Serializable, Observer {
 
     int getUnusedConstraintCollectonId();
 
-    ConstraintCollection createConstraintCollection();
+    ConstraintCollection createConstraintCollection(Target... scope);
 
     IdUtils getIdUtils();
 
