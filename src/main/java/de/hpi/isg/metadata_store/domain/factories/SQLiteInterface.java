@@ -468,8 +468,6 @@ public class SQLiteInterface implements SQLInterface {
             allTargets.addAll(tables.values());
             allTargets.addAll(columns.values());
             
-            System.out.println(columns);
-            
             return this.allTargets = allTargets;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -481,7 +479,7 @@ public class SQLiteInterface implements SQLInterface {
                 + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                 + "FROM schemaa "
                 + "JOIN target ON schemaa.id = target.id "
-                + "LEFT OUTER JOIN location ON target.id = location.id "
+                + "LEFT OUTER JOIN location ON target.locationId = location.id "
                 + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                 + "ORDER BY target.id;";
 
@@ -523,7 +521,7 @@ public class SQLiteInterface implements SQLInterface {
                 + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                 + "FROM tablee "
                 + "JOIN target ON tablee.id = target.id "
-                + "LEFT OUTER JOIN location ON target.id = location.id "
+                + "LEFT OUTER JOIN location ON target.locationId = location.id "
                 + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                 + "ORDER BY target.id;";
 
@@ -573,7 +571,7 @@ public class SQLiteInterface implements SQLInterface {
                 + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                 + "FROM columnn "
                 + "JOIN target ON columnn.id = target.id "
-                + "LEFT OUTER JOIN location ON target.id = location.id "
+                + "LEFT OUTER JOIN location ON target.locationId = location.id "
                 + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                 + "ORDER BY target.id;";
         
