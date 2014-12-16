@@ -466,7 +466,7 @@ public class DatabaseAccess implements AutoCloseable {
 						}
 					}
 					if (preceedingWriters.add(manipulatingWriter)) {
-						LOGGER.debug("Preceed: {} must preceed {}.", manipulatingWriter, writer);
+						LOGGER.trace("Preceed: {} must preceed {}.", manipulatingWriter, writer);
 					}
 				}
 			}
@@ -523,7 +523,7 @@ public class DatabaseAccess implements AutoCloseable {
 	}
 
 	public void notifyTablesClear(DependentWriter<?> writer) {
-		LOGGER.debug("Clear manipuations and accesses {}.", writer);
+		LOGGER.trace("Clear manipuations and accesses {}.", writer);
 	}
 
 }

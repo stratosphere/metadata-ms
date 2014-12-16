@@ -96,7 +96,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     @Override
     public String toString() {
-        return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
+        return String.format("Table[%s, %08x]", getName(), getId());
     }
 
     @Override
