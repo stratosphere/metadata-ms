@@ -16,6 +16,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -988,23 +990,55 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) {
         try {
-            Collection<Table> tables = new HashSet<>();
-            String sqlTablesForSchema = String
-                    .format("SELECT tablee.id as id, target.name as name from tablee, target where target.id = tablee.id and tablee.schemaId=%d;",
-                            rdbmsSchema.getId());
-            try (ResultSet rs = this.databaseAccess.query(sqlTablesForSchema, "Target", "Tablee")) {
-                while (rs.next()) {
-                    RDBMSTable table = RDBMSTable.restore(this.store, rdbmsSchema, rs.getInt("id"),
-                            rs.getString("name"),
-                            getLocationFor(rs.getInt("id")));
-                    this.tableCache.put(table.getId(), table);
-                    tables.add(table);
-                }
-            }
-            return tables;
+            return loadAllTables(rdbmsSchema);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    private Collection<Table> loadAllTables(Schema schema) throws SQLException {
+        String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+                + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
+                + "FROM tablee "
+                + "JOIN target ON tablee.id = target.id "
+                + "LEFT OUTER JOIN location ON target.locationId = location.id "
+                + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
+                + "WHERE tablee.schemaId = " + schema.getId() + " "
+                + "ORDER BY target.id;";
+
+        List<Table> tables = new LinkedList<>();
+        
+        RDBMSTable lastTable = null;
+        // Query tables together with all important related tables.
+        try (ResultSet rs = this.databaseAccess.query(sql, "Tablee", "Target", "Location", "LocationProperty")) {
+            while (rs.next()) {
+                // See if we are dealing with the same target as before.
+                int targetId = rs.getInt("targetId");
+                RDBMSTable table = lastTable;
+                if (table == null || table.getId() != targetId) {
+                    // For a new target, create a new object, potentially with location.
+                    String name = rs.getString("name");
+                    
+                    String locationClassName = rs.getString("locationType");
+                    Location location = null;
+                    if (locationClassName != null) {
+                        location = LocationUtils.createLocation(locationClassName, Collections.<String, String>emptyMap());
+                    }
+                    
+                    table = RDBMSTable.restore(this.store, schema, targetId, name, location);
+                    this.tableCache.put(table.getId(), table);
+                }
+                
+                // Update location properties for the current table.
+                String locationPropKey = rs.getString("locationPropKey");
+                if (locationPropKey != null) {
+                    String locationPropVal = rs.getString("locationPropVal");
+                    table.getLocation().set(locationPropKey, locationPropVal);
+                }
+            }
+        }
+        
+        return tables;
     }
 
     @Override
