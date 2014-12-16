@@ -1027,6 +1027,7 @@ public class SQLiteInterface implements SQLInterface {
                     
                     table = RDBMSTable.restore(this.store, schema, targetId, name, location);
                     this.tableCache.put(table.getId(), table);
+                    tables.add(table);
                 }
                 
                 // Update location properties for the current table.
