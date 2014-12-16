@@ -1,6 +1,7 @@
 package de.hpi.isg.metadata_store.domain.factories;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 
@@ -23,6 +24,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
@@ -461,9 +463,9 @@ public class SQLiteInterface implements SQLInterface {
             return allTargets;
         }
         try {
-            Int2ObjectMap<Schema> schemas = loadAllSchemas();
-            Int2ObjectMap<Table> tables = loadAllTables(schemas);
-            Int2ObjectMap<Column> columns = loadAllColumns(tables);
+            Int2ObjectMap<RDBMSSchema> schemas = loadAllSchemas();
+            Int2ObjectMap<RDBMSTable> tables = loadAllTables(schemas, true);
+            Int2ObjectMap<RDBMSColumn> columns = loadAllColumns(tables, null);
             
             Collection<Target> allTargets = new HashSet<>();
             allTargets.addAll(schemas.values());
@@ -476,7 +478,7 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
     
-    private Int2ObjectMap<Schema> loadAllSchemas() throws SQLException {
+    private Int2ObjectMap<RDBMSSchema> loadAllSchemas() throws SQLException {
         String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
                 + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                 + "FROM schemaa "
@@ -485,14 +487,14 @@ public class SQLiteInterface implements SQLInterface {
                 + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                 + "ORDER BY target.id;";
 
-        Int2ObjectMap<Schema> schemas = new Int2ObjectOpenHashMap<>();
-        Schema lastSchema = null;
+        Int2ObjectMap<RDBMSSchema> schemas = new Int2ObjectOpenHashMap<>();
+        RDBMSSchema lastSchema = null;
         // Query schemas together with all important related tables.
         try (ResultSet rs = this.databaseAccess.query(sql, "Schemaa", "Target", "Location", "LocationProperty")) {
             while (rs.next()) {
                 // See if we are dealing with the same target as before.
                 int targetId = rs.getInt("targetId");
-                Schema schema = lastSchema;
+                RDBMSSchema schema = lastSchema;
                 if (schema == null || schema.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
@@ -518,25 +520,46 @@ public class SQLiteInterface implements SQLInterface {
         return schemas;
     }
     
-    private Int2ObjectMap<Table> loadAllTables(Int2ObjectMap<Schema> schemas) throws SQLException {
-        String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
-                + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                + "FROM tablee "
-                + "JOIN target ON tablee.id = target.id "
-                + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                + "ORDER BY target.id;";
+    /**
+     * Loads all tables (for the given schemas).
+     * @param schemas are the schemas to load the tables for 
+     * @param areAllSchemasGiven tells if the given schemas are all schemas in the metadata store
+     * @return the loaded tables
+     * @throws SQLException
+     */
+    private Int2ObjectMap<RDBMSTable> loadAllTables(Int2ObjectMap<RDBMSSchema> schemas, boolean areAllSchemasGiven) throws SQLException {
+        String sql;
+        if (areAllSchemasGiven) {
+            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
+                    + "FROM tablee "
+                    + "JOIN target ON tablee.id = target.id "
+                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
+                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
+                    + "ORDER BY target.id;";
+        } else {
+            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
+                    + "FROM tablee "
+                    + "JOIN target ON tablee.id = target.id "
+                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
+                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
+                    + "WHERE tablee.schemaId IN (" + StringUtils.join(schemas.keySet(), ",") + ") "
+                    + "ORDER BY target.id;";
+        }
 
-        Int2ObjectMap<Table> tables = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<RDBMSTable> tables = new Int2ObjectOpenHashMap<>();
         IdUtils idUtils = this.store.getIdUtils();
         
-        Table lastTable = null;
+        RDBMSTable lastTable = null;
+        Int2ObjectOpenHashMap<Collection<Table>> tablesBySchema = new Int2ObjectOpenHashMap<>();
+        
         // Query tables together with all important related tables.
         try (ResultSet rs = this.databaseAccess.query(sql, "Tablee", "Target", "Location", "LocationProperty")) {
             while (rs.next()) {
                 // See if we are dealing with the same target as before.
                 int targetId = rs.getInt("targetId");
-                Table table = lastTable;
+                RDBMSTable table = lastTable;
                 if (table == null || table.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
@@ -548,12 +571,19 @@ public class SQLiteInterface implements SQLInterface {
                     }
                     
                     int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId));
-                    Schema schema = schemas.get(schemaId);
+                    RDBMSSchema schema = schemas.get(schemaId);
                     if (schema == null) {
                         throw new IllegalStateException(String.format("No schema found for table with id %d.", schemaId));
                     }
                     table = RDBMSTable.restore(this.store, schema, targetId, name, location);
                     tables.put(targetId, table);
+                    
+                    Collection<Table> tablesForSchema = tablesBySchema.get(schemaId);
+                    if (tablesForSchema == null) {
+                        tablesForSchema = new LinkedList<>();
+                        tablesBySchema.put(schemaId, tablesForSchema);
+                    }
+                    tablesForSchema.add(table);
                 }
                 
                 // Update location properties for the current table.
@@ -563,30 +593,58 @@ public class SQLiteInterface implements SQLInterface {
                     table.getLocation().set(locationPropKey, locationPropVal);
                 }
             }
+            
+            for (Int2ObjectMap.Entry<Collection<Table>> entry : tablesBySchema.int2ObjectEntrySet()) {
+                int schemaId = entry.getIntKey();
+                Collection<Table> tablesForSchema = entry.getValue();
+                RDBMSSchema rdbmsSchema = schemas.get(schemaId);
+                rdbmsSchema.cacheChildTables(tablesForSchema);
+            }
         }
         
         return tables;
     }
     
-    private Int2ObjectMap<Column> loadAllColumns(Int2ObjectMap<Table> tables) throws SQLException {
-        String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
-                + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                + "FROM columnn "
-                + "JOIN target ON columnn.id = target.id "
-                + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                + "ORDER BY target.id;";
+    /**
+     * Loads and caches all columns.
+     * @param tables are the parent tables for the loaded columns 
+     * @param schema can be {@code null} or a concrete schema that restricts the columns to be loaded
+     * @return the loaded columns indexed by their ID
+     * @throws SQLException
+     */
+    private Int2ObjectMap<RDBMSColumn> loadAllColumns(Int2ObjectMap<RDBMSTable> tables, RDBMSSchema schema) throws SQLException {
+        String sql;
+        if (schema == null) {
+            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
+                    + "FROM columnn "
+                    + "JOIN target ON columnn.id = target.id "
+                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
+                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
+                    + "ORDER BY target.id;";
+        } else {
+            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
+                    + "FROM columnn "
+                    + "JOIN tablee ON columnn.tableId = tablee.id " // join also tables
+                    + "JOIN target ON columnn.id = target.id "
+                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
+                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
+                    + "WHERE tablee.schemaId = " + schema.getId() + " " // and check that they belong to the schema
+                    + "ORDER BY target.id;";
+        }
         
-        Int2ObjectMap<Column> columns = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<RDBMSColumn> columns = new Int2ObjectOpenHashMap<>();
         IdUtils idUtils = this.store.getIdUtils();
+        Int2ObjectOpenHashMap<Collection<Column>> columnsByTable = new Int2ObjectOpenHashMap<>();
         
-        Column lastColumn = null;
+        RDBMSColumn lastColumn = null;
         // Query columns together with all important related columns.
         try (ResultSet rs = this.databaseAccess.query(sql, "Columnn", "Target", "Location", "LocationProperty")) {
             while (rs.next()) {
                 // See if we are dealing with the same target as before.
                 int targetId = rs.getInt("targetId");
-                Column column = lastColumn;
+                RDBMSColumn column = lastColumn;
                 if (column == null || column.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
@@ -604,6 +662,13 @@ public class SQLiteInterface implements SQLInterface {
                     }
                     column = RDBMSColumn.restore(this.store, table, targetId, name, location);
                     columns.put(targetId, column);
+                    
+                    Collection<Column> columnsForTable = columnsByTable.get(tableId);
+                    if (columnsForTable == null) {
+                        columnsForTable = new LinkedList<>();
+                        columnsByTable.put(tableId, columnsForTable);
+                    }
+                    columnsForTable.add(column);
                 }
                 
                 // Update location properties for the current table.
@@ -612,6 +677,13 @@ public class SQLiteInterface implements SQLInterface {
                     String locationPropVal = rs.getString("locationPropVal");
                     column.getLocation().set(locationPropKey, locationPropVal);
                 }
+            }
+            
+            for (Int2ObjectMap.Entry<Collection<Column>> entry : columnsByTable.int2ObjectEntrySet()) {
+                int tableId = entry.getIntKey();
+                Collection<Column> columnsForTable = entry.getValue();
+                RDBMSTable rdbmsTable = tables.get(tableId);
+                rdbmsTable.cacheChildColumns(columnsForTable);
             }
         }
         
@@ -987,60 +1059,19 @@ public class SQLiteInterface implements SQLInterface {
 
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) {
         try {
-            return loadAllTables(rdbmsSchema);
+            Int2ObjectMap<RDBMSSchema> parentSchemas = Int2ObjectMaps.singleton(rdbmsSchema.getId(), rdbmsSchema);
+            Int2ObjectMap<RDBMSTable> tables = loadAllTables(parentSchemas, false);
+            loadAllColumns(tables, rdbmsSchema);
+            return (Collection<Table>) (Collection<?>) tables.values();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
     
-    private Collection<Table> loadAllTables(Schema schema) throws SQLException {
-        String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
-                + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                + "FROM tablee "
-                + "JOIN target ON tablee.id = target.id "
-                + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                + "WHERE tablee.schemaId = " + schema.getId() + " "
-                + "ORDER BY target.id;";
-
-        List<Table> tables = new LinkedList<>();
-        
-        RDBMSTable lastTable = null;
-        // Query tables together with all important related tables.
-        try (ResultSet rs = this.databaseAccess.query(sql, "Tablee", "Target", "Location", "LocationProperty")) {
-            while (rs.next()) {
-                // See if we are dealing with the same target as before.
-                int targetId = rs.getInt("targetId");
-                RDBMSTable table = lastTable;
-                if (table == null || table.getId() != targetId) {
-                    // For a new target, create a new object, potentially with location.
-                    String name = rs.getString("name");
-                    
-                    String locationClassName = rs.getString("locationType");
-                    Location location = null;
-                    if (locationClassName != null) {
-                        location = LocationUtils.createLocation(locationClassName, Collections.<String, String>emptyMap());
-                    }
-                    
-                    table = RDBMSTable.restore(this.store, schema, targetId, name, location);
-                    this.tableCache.put(table.getId(), table);
-                    tables.add(table);
-                }
-                
-                // Update location properties for the current table.
-                String locationPropKey = rs.getString("locationPropKey");
-                if (locationPropKey != null) {
-                    String locationPropVal = rs.getString("locationPropVal");
-                    table.getLocation().set(locationPropKey, locationPropVal);
-                }
-            }
-        }
-        
-        return tables;
-    }
 
     @Override
     public void addTableToSchema(RDBMSTable newTable, Schema schema) {
