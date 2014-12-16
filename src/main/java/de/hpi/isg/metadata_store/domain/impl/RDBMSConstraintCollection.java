@@ -71,9 +71,6 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     @Override
     public void add(Constraint constraint) {
         this.constraints.add(constraint);
-        for (Target t : constraint.getTargetReference().getAllTargets()) {
-            this.scope.add((Target) t);
-        }
     }
 
 }
