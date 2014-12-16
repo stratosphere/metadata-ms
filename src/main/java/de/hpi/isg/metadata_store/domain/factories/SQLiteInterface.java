@@ -506,6 +506,7 @@ public class SQLiteInterface implements SQLInterface {
                     }
                     schema = RDBMSSchema.restore(this.store, targetId, name, location);
                     schemas.put(targetId, schema);
+                    lastSchema = schema;
                 }
                 
                 // Update location properties for the current schema.
@@ -584,6 +585,7 @@ public class SQLiteInterface implements SQLInterface {
                         tablesBySchema.put(schemaId, tablesForSchema);
                     }
                     tablesForSchema.add(table);
+                    lastTable = table;
                 }
                 
                 // Update location properties for the current table.
@@ -669,6 +671,7 @@ public class SQLiteInterface implements SQLInterface {
                         columnsByTable.put(tableId, columnsForTable);
                     }
                     columnsForTable.add(column);
+                    lastColumn = column;
                 }
                 
                 // Update location properties for the current table.
@@ -708,15 +711,8 @@ public class SQLiteInterface implements SQLInterface {
         }
         try {
             Collection<Schema> schemas = new HashSet<>();
-            try (ResultSet rs = this.databaseAccess.query(
-                    "SELECT Schemaa.id as id, Target.name as name from Schemaa, Target where Target.id = Schemaa.id;",
-                    "Schemaa", "Target")) {
-                while (rs.next()) {
-                    schemas.add(RDBMSSchema.restore(this.store, rs.getInt("id"), rs.getString("name"),
-                            getLocationFor(rs.getInt("id"))));
-                }
-            }
-
+            Int2ObjectMap<RDBMSSchema> loadedSchemas = loadAllSchemas();
+            schemas.addAll(loadedSchemas.values());
             allSchemas = schemas;
             return allSchemas;
         } catch (SQLException e) {
