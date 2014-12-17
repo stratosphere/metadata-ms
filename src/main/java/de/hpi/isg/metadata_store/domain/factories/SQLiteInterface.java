@@ -574,7 +574,7 @@ public class SQLiteInterface implements SQLInterface {
                     int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId));
                     RDBMSSchema schema = schemas.get(schemaId);
                     if (schema == null) {
-                        throw new IllegalStateException(String.format("No schema found for table with id %d.", schemaId));
+                        throw new IllegalStateException(String.format("No schema found for table with id %08x.", schemaId));
                     }
                     table = RDBMSTable.restore(this.store, schema, targetId, name, location);
                     tables.put(targetId, table);
