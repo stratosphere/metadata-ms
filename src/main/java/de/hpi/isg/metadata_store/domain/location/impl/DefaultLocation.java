@@ -54,7 +54,7 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
 
     @Override
     public String toString() {
-        return "DefaultLocation [properties=" + properties + "]";
+        return getClass().getSimpleName() + " [properties=" + properties + "]";
     }
 
     @Override

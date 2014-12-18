@@ -71,7 +71,7 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
     @Override
     public String toString() {
         return String.format("Column[%s, %08x, %s]", getNameWithTableName(), getId(),
-                getLocation().toString());
+                getLocation());
 
     }
 }

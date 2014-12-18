@@ -187,7 +187,8 @@ public class RDBMSMetadataStoreTest {
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
         // setup schema
-        final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new DefaultLocation());
+//        final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new DefaultLocation());
+        final Schema dummySchema = store1.addSchema("PDB", new DefaultLocation());
 
         final DefaultLocation dummyTableLocation = new DefaultLocation();
 

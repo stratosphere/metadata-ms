@@ -1,5 +1,8 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -29,6 +32,9 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     @ExcludeHashCodeEquals
     private final Schema schema;
+
+    @ExcludeHashCodeEquals
+    private Reference<Collection<Column>> childColumnCache;
 
     public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
             final int id,
@@ -73,12 +79,22 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
                 name,
                 location);
         addToChildIdCache(columnId);
+        Collection<Column> columnCache = getChildColumnCache();
+        if (columnCache != null) {
+            columnCache.add(column);
+        }
         return column;
     }
 
     @Override
     public Collection<Column> getColumns() {
-        return Collections.unmodifiableCollection(this.getSqlInterface().getAllColumnsForTable(this));
+        Collection<Column> columns = getChildColumnCache();
+        if (columns == null) {
+            columns = this.getSqlInterface().getAllColumnsForTable(this);
+            cacheChildColumns(new ArrayList<>(columns));
+        }
+        return Collections.unmodifiableCollection(columns);
+        
     }
 
     @Override
@@ -96,7 +112,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     @Override
     public String toString() {
-        return String.format("Table[%s, %d columns, %08x]", getName(), getColumns().size(), getId());
+        return String.format("Table[%s, %08x]", getName(), getId());
     }
 
     @Override
@@ -112,5 +128,20 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     @Override
     public Column getColumnById(int columnId) {
         return this.getSqlInterface().getColumnById(columnId);
+    }
+
+    public void cacheChildColumns(Collection<Column> columns) {
+        this.childColumnCache = new SoftReference<Collection<Column>>(columns);
+    }
+
+    private Collection<Column> getChildColumnCache() {
+        if (this.childColumnCache == null) {
+            return null;
+        }
+        Collection<Column> childColumns = this.childColumnCache.get();
+        if (childColumns == null) {
+            this.childColumnCache = null;
+        }
+        return childColumns;
     }
 }

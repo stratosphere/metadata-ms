@@ -1,5 +1,8 @@
 package de.hpi.isg.metadata_store.domain.targets.impl;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -26,9 +29,15 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
      */
     @ExcludeHashCodeEquals
     private int numTables = -1;
+    
+    @ExcludeHashCodeEquals
+    private Reference<Collection<Table>> childTableCache;
 
     private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, Location location, boolean isFreshlyCreated) {
         super(observer, id, name, location, isFreshlyCreated);
+        if (isFreshlyCreated) {
+            cacheChildTables(new ArrayList<Table>());
+        }
     }
 
     public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, int id, String name,
@@ -66,6 +75,10 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         if (this.numTables != -1) {
             this.numTables++;
         }
+        Collection<Table> childTableCache = getChildTableCache();
+        if (childTableCache != null) {
+            childTableCache.add(table);
+        }
         return table;
     }
 
@@ -96,9 +109,29 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     @Override
     public Collection<Table> getTables() {
-        return Collections.unmodifiableCollection(this.getSqlInterface().getAllTablesForSchema(this));
+        Collection<Table> tables = getChildTableCache();
+        if (tables == null) {
+            tables = this.getSqlInterface().getAllTablesForSchema(this);
+            cacheChildTables(new ArrayList<>(tables));
+        }
+        return Collections.unmodifiableCollection(tables);
     }
 
+    public void cacheChildTables(Collection<Table> tables) {
+        this.childTableCache = new SoftReference<Collection<Table>>(tables);
+    }
+
+    private Collection<Table> getChildTableCache() {
+        if (this.childTableCache == null) {
+            return null;
+        }
+        Collection<Table> childTables = this.childTableCache.get();
+        if (childTables == null) {
+            this.childTableCache = null;
+        }
+        return childTables;
+    }
+    
     @Override
     public Column findColumn(final int columnId) {
         for (final Table table : getTables()) {
