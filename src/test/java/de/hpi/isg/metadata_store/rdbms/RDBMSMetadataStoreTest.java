@@ -46,7 +46,6 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
-import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
@@ -187,7 +186,7 @@ public class RDBMSMetadataStoreTest {
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
         // setup schema
-//        final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new DefaultLocation());
+        // final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new DefaultLocation());
         final Schema dummySchema = store1.addSchema("PDB", new DefaultLocation());
 
         final DefaultLocation dummyTableLocation = new DefaultLocation();
@@ -571,5 +570,18 @@ public class RDBMSMetadataStoreTest {
         final Column column2 = table1.addColumn(store1, "bar", 1);
 
         table1.getColumnByName("bar");
+    }
+
+    @Test
+    public void testGettingOfColumnByName() {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        final Schema schema1 = store1.addSchema("pdb", new DefaultLocation());
+        final Table table1 = schema1.addTable(store1, "foo1", new DefaultLocation());
+        final Table table2 = schema1.addTable(store1, "foo2", new DefaultLocation());
+        final Column column1 = table1.addColumn(store1, "bar", 0);
+        final Column column2 = table2.addColumn(store1, "bar", 1);
+
+        assertEquals(column1, table1.getColumnByName("bar"));
     }
 }

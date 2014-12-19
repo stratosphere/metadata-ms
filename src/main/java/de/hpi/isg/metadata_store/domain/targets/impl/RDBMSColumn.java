@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
+import de.hpi.isg.metadata_store.domain.common.impl.Printable;
 import de.hpi.isg.metadata_store.domain.impl.AbstractRDBMSTarget;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -19,6 +20,7 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
     @ExcludeHashCodeEquals
     private final Table table;
 
+    @Printable
     private final Location location;
 
     public static RDBMSColumn buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Table table,
@@ -27,7 +29,7 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
         final RDBMSColumn newColumn = new RDBMSColumn(observer, table, id, name, location, true);
         newColumn.register();
-//        newColumn.getSqlInterface().addColumnToTable(newColumn, table);
+        // newColumn.getSqlInterface().addColumnToTable(newColumn, table);
         return newColumn;
     }
 
@@ -47,9 +49,9 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
     @Override
     protected void store() {
-    	this.sqlInterface.addColumnToTable(this, this.table);
+        this.sqlInterface.addColumnToTable(this, this.table);
     }
-    
+
     /**
      * @return the parent table
      */

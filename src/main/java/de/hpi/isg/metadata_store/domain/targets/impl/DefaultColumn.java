@@ -2,6 +2,7 @@ package de.hpi.isg.metadata_store.domain.targets.impl;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.Observer;
+import de.hpi.isg.metadata_store.domain.common.impl.Printable;
 import de.hpi.isg.metadata_store.domain.impl.AbstractTarget;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -12,7 +13,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  */
 
 public class DefaultColumn extends AbstractTarget implements Column {
-
+    @Printable
     private final Location location;
 
     public static Column buildAndRegister(final Observer observer, final Table table, final int id, final String name,

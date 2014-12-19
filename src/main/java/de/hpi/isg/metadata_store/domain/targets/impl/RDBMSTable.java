@@ -43,7 +43,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
         newTable.register();
         // TODO: Remove
-//        newTable.getSqlInterface().addTableToSchema(newTable, schema);
+        // newTable.getSqlInterface().addTableToSchema(newTable, schema);
         return newTable;
     }
 
@@ -94,14 +94,14 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
             cacheChildColumns(new ArrayList<>(columns));
         }
         return Collections.unmodifiableCollection(columns);
-        
+
     }
 
     @Override
     protected void store() {
-    	this.sqlInterface.addTableToSchema(this, this.schema);
+        this.sqlInterface.addTableToSchema(this, this.schema);
     }
-    
+
     /**
      * @return the parent schema
      */
@@ -117,7 +117,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     @Override
     public Column getColumnByName(String name) throws NameAmbigousException {
-        return this.getSqlInterface().getColumnByName(name);
+        return this.getSqlInterface().getColumnByName(name, this);
     }
 
     @Override

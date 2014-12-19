@@ -112,7 +112,7 @@ public interface SQLInterface {
 
     public Collection<Column> getColumnsByName(String name);
 
-    public Column getColumnByName(String name) throws NameAmbigousException;
+    public Column getColumnByName(String name, Table rdbmsTable) throws NameAmbigousException;
 
     public Table getTableByName(String name) throws NameAmbigousException;
 

@@ -15,7 +15,10 @@ public abstract class AbstractIdentifiableAndNamed extends AbstractHashCodeAndEq
         Serializable {
 
     private static final long serialVersionUID = -2489903063142674900L;
+
+    @Printable
     private int id;
+    @Printable
     private String name;
 
     public AbstractIdentifiableAndNamed(final Observer observer, int id, final String name) {
