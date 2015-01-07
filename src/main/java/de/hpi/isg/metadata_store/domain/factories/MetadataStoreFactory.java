@@ -21,6 +21,7 @@ public class MetadataStoreFactory {
             final ObjectInputStream ois = new ObjectInputStream(fin);
             final DefaultMetadataStore metadataStore = (DefaultMetadataStore) ois.readObject();
             ois.close();
+            metadataStore.setStoreLocation(file);
             return metadataStore;
         } catch (IOException | ClassNotFoundException e) {
             throw new MetadataStoreNotFoundException(e);

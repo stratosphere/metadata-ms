@@ -32,14 +32,12 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
-import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
-import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
@@ -141,8 +139,7 @@ public class RDBMSMetadataStoreTest {
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating INDS");
         final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
-        ConstraintCollection constraintCollection = new RDBMSConstraintCollection(1, new HashSet<Constraint>(),
-                new HashSet<Target>(), SQLiteInterface.buildAndRegisterStandardConstraints(connection));
+        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(); 
         int incNr = 0;
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
@@ -173,14 +170,13 @@ public class RDBMSMetadataStoreTest {
         }
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println(String.format("Adding %d inclusion dependencies.", inclusionDependencies.size()));
-        metadataStore.addConstraintCollection(constraintCollection);
         assertTrue(metadataStore.getConstraintCollections().iterator().next().getConstraints().size() == inclusionDependencies
                 .size());
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
     }
 
     @Test
-    public void testGetOrCreateOfExisting() {
+    public void testGetOrCreateOfExisting() throws Exception {
 
         // setup store
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
@@ -197,7 +193,10 @@ public class RDBMSMetadataStoreTest {
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
 
-        store1.addConstraint(dummyContraint);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection();
+        constraintCollection.add(dummyContraint);
+        
+        store1.flush();
 
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
@@ -236,9 +235,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", new DefaultLocation()).addColumn(store1,
                 "bar", 2);
 
-        final ConstraintCollection dummyConstraintCollection = new RDBMSConstraintCollection(1,
-                new HashSet<Constraint>(), new HashSet<Target>(),
-                SQLiteInterface.buildAndRegisterStandardConstraints(connection));
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(dummySchema1); 
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1),
@@ -249,8 +246,6 @@ public class RDBMSMetadataStoreTest {
                 new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
                 dummyConstraintCollection);
 
-        store1.addConstraintCollection(dummyConstraintCollection);
-
         ConstraintCollection cc = store1.getConstraintCollections().iterator().next();
         // store1.flush();
 
@@ -259,8 +254,6 @@ public class RDBMSMetadataStoreTest {
         assertTrue(store1.getConstraintCollections().contains(dummyConstraintCollection));
         assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyTypeContraint));
         assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyIndContraint));
-        assertTrue(store1.getConstraints().contains(dummyTypeContraint));
-        assertTrue(store1.getConstraints().contains(dummyIndContraint));
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -311,11 +304,12 @@ public class RDBMSMetadataStoreTest {
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 1);
-
+        
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(dummySchema);
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
-
-        store1.addConstraint(dummyContraint);
+        constraintCollection.add(dummyContraint);
+        
         store1.flush();
 
         // retrieve store
@@ -342,19 +336,17 @@ public class RDBMSMetadataStoreTest {
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection();
-
         final TupleCount dummyContraint = TupleCount.buildAndAddToCollection(new TupleCount.Reference(
                 dummyTable), constraintCollection, 5);
-
         constraintCollection.add(dummyContraint);
 
-        store1.addConstraintCollection(constraintCollection);
         store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraints().iterator().next(), store2.getConstraints().iterator().next());
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
     @Test
@@ -372,19 +364,17 @@ public class RDBMSMetadataStoreTest {
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 1);
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection();
-
         final TypeConstraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), constraintCollection, TypeConstraint.TYPES.STRING);
-
         constraintCollection.add(dummyContraint);
 
-        store1.addConstraintCollection(constraintCollection);
         store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraints().iterator().next(), store2.getConstraints().iterator().next());
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
     @Test
@@ -408,13 +398,13 @@ public class RDBMSMetadataStoreTest {
 
         constraintCollection.add(dummyContraint);
 
-        store1.addConstraintCollection(constraintCollection);
         store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraints().iterator().next(), store2.getConstraints().iterator().next());
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
     @Test
@@ -440,13 +430,13 @@ public class RDBMSMetadataStoreTest {
 
         constraintCollection.add(dummyContraint);
 
-        store1.addConstraintCollection(constraintCollection);
         store1.flush();
 
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraints().iterator().next(), store2.getConstraints().iterator().next());
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
     @Test

@@ -17,18 +17,6 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public interface MetadataStore extends Serializable, Observer {
 
     /**
-     * This method adds the given {@link ConstraintCollection} to the {@link MetadataStore}s collection of known
-     * {@link ConstraintCollection}s. It also adds all the constraints given in the {@link ConstraintCollection} for
-     * consistence.
-     * 
-     * @param constraintCollection
-     */
-    public void addConstraintCollection(ConstraintCollection constraintCollection);
-
-    @Deprecated
-    public void addConstraint(Constraint constraint);
-
-    /**
      * @deprecated use {@link #addSchema(String, Location)} instead
      */
     @Deprecated
@@ -39,8 +27,6 @@ public interface MetadataStore extends Serializable, Observer {
     public Collection<Target> getAllTargets();
 
     public Collection<ConstraintCollection> getConstraintCollections();
-
-    public Collection<Constraint> getConstraints();
 
     /**
      * Retrieve a schema from the store if it exists, throws {@link NameAmbigousException} if there are more than one
@@ -92,6 +78,10 @@ public interface MetadataStore extends Serializable, Observer {
 
     int getUnusedConstraintCollectonId();
 
+    /**
+     * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
+     * collection of known {@link ConstraintCollection}s.
+     */
     ConstraintCollection createConstraintCollection(Target... scope);
 
     IdUtils getIdUtils();

@@ -36,7 +36,7 @@ public interface SQLInterface {
 
     public void initializeMetadataStore();
 
-    public void addConstraint(Constraint constraint);
+    public void writeConstraint(Constraint constraint);
 
     public void addSchema(RDBMSSchema schema);
 
@@ -68,6 +68,7 @@ public interface SQLInterface {
 
     public void addScope(Target target, ConstraintCollection constraintCollection);
 
+    // TODO: Do we need this method? All constraints should reside within a constraint collection.
     public Collection<Constraint> getAllConstraintsOrOfConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection);
 

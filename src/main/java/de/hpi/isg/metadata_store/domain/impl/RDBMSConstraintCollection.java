@@ -10,21 +10,21 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
+import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -2911473574180511468L;
 
-    private Collection<Constraint> constraints;
+    private Collection<Constraint> constraints = null;
 
     private Collection<Target> scope;
 
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSConstraintCollection(int id, Set<Constraint> constraints, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, Set<Target> scope, SQLInterface sqlInterface) {
         super(id);
-        this.constraints = constraints;
         this.scope = scope;
         this.sqlInterface = sqlInterface;
     }
@@ -36,10 +36,14 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     @Override
     public Collection<Constraint> getConstraints() {
-        if (this.constraints != null) {
-            return Collections.unmodifiableCollection(this.constraints);
-        }
+        ensureConstraintsLoaded();
         return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsOrOfConstraintCollection(this));
+    }
+
+    private void ensureConstraintsLoaded() {
+        if (this.constraints == null) {
+            this.constraints = this.sqlInterface.getAllConstraintsOrOfConstraintCollection(this);
+        }
     }
 
     @Override
@@ -54,23 +58,44 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         return sqlInterface;
     }
 
-    public void setConstraints(Collection<Constraint> constraints) {
-        this.constraints = constraints;
-    }
-
     public void setScope(Collection<Target> scope) {
         this.scope = scope;
     }
 
     @Override
     public String toString() {
-        return "RDBMSConstraintCollection [constraints=" + constraints + ", scope=" + scope + ", getId()=" + getId()
-                + "]";
+        return "RDBMSConstraintCollection [scope=" + scope + ", getId()=" + getId() + "]";
     }
 
     @Override
     public void add(Constraint constraint) {
-        this.constraints.add(constraint);
+        this.constraints = null;
+        
+        // Ensure that all targets of the constraint are valid.
+        for (final Target target : constraint.getTargetReference().getAllTargets()) {
+            if (!this.sqlInterface.getAllTargets().contains(target)) {
+                throw new NotAllTargetsInStoreException(target);
+            }
+
+        }
+
+        // Write the constraint.
+        this.sqlInterface.writeConstraint(constraint);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        ensureConstraintsLoaded();
+        if (obj instanceof RDBMSConstraintCollection) {
+            ((RDBMSConstraintCollection) obj).ensureConstraintsLoaded();
+        }
+        return super.equals(obj);
+    }
+    
+    @Override
+    public int hashCode() {
+        ensureConstraintsLoaded();
+        return super.hashCode();
     }
 
 }

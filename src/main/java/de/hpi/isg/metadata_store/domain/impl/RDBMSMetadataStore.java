@@ -13,7 +13,6 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
@@ -26,7 +25,6 @@ import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 /**
  * The default implementation of the {@link MetadataStore}.
@@ -92,17 +90,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public void addConstraint(final Constraint constraint) {
-        for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!this.sqlInterface.getAllTargets().contains(target)) {
-                throw new NotAllTargetsInStoreException(target);
-            }
-
-        }
-        this.sqlInterface.addConstraint(constraint);
-    }
-
-    @Override
     public void addSchema(final Schema schema) {
         this.sqlInterface.addSchema((RDBMSSchema) schema);
     }
@@ -126,11 +113,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public Collection<Target> getAllTargets() {
         return Collections.unmodifiableCollection(this.sqlInterface.getAllTargets());
-    }
-
-    @Override
-    public Collection<Constraint> getConstraints() {
-        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsOrOfConstraintCollection(null));
     }
 
     @Override
@@ -216,21 +198,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         return this.sqlInterface.getAllConstraintCollections();
     }
 
-    @Override
-    public void addConstraintCollection(ConstraintCollection constraintCollection) {
-
-        this.sqlInterface.addConstraintCollection(constraintCollection);
-
-        for (Constraint constr : constraintCollection.getConstraints()) {
-            this.addConstraint(constr);
-        }
-
-        for (Target target : constraintCollection.getScope()) {
-            this.sqlInterface.addScope(target, constraintCollection);
-        }
-
-    }
-
     public SQLInterface getSQLInterface() {
         return this.sqlInterface;
     }
@@ -247,7 +214,14 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
         ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), getSQLInterface());
+                new HashSet<Target>(Arrays.asList(scope)), getSQLInterface());
+        
+        // Store the constraint collection in the DB.
+        this.sqlInterface.addConstraintCollection(constraintCollection);
+        for (Target target : constraintCollection.getScope()) {
+            this.sqlInterface.addScope(target, constraintCollection);
+        }
+        
         return constraintCollection;
     }
 

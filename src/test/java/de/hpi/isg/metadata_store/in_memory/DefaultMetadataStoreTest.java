@@ -87,9 +87,12 @@ public class DefaultMetadataStoreTest {
                 }
             }
         }
-        final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
+        
+        System.out.println("Adding inclusion dependencies.");
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
+            ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(schema);
+            int numInclusionDependencies = 0;
             OuterLoop: for (final Table table1 : schema.getTables()) {
                 for (final Table table2 : schema.getTables()) {
                     for (final Column column1 : table1.getColumns()) {
@@ -105,19 +108,17 @@ public class DefaultMetadataStoreTest {
                                 final InclusionDependency inclusionDependency = InclusionDependency
                                         .buildAndAddToCollection(
                                                 reference, mock(ConstraintCollection.class));
-                                inclusionDependencies.add(inclusionDependency);
-                                if (inclusionDependencies.size() >= 3000 * loadFactorForCreateComplexSchemaTest) {
+                                constraintCollection.add(inclusionDependency);
+                                numInclusionDependencies++;
+                                if (numInclusionDependencies >= 3000 * loadFactorForCreateComplexSchemaTest) {
                                     break OuterLoop;
                                 }
                             }
                         }
                     }
                 }
+                System.out.println(String.format("Added %d inclusion dependencies.", numInclusionDependencies));
             }
-        }
-        System.out.println(String.format("Adding %d inclusion dependencies.", inclusionDependencies.size()));
-        for (final InclusionDependency inclusionDependency : inclusionDependencies) {
-            metadataStore.addConstraint(inclusionDependency);
         }
     }
 
@@ -143,14 +144,11 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new DefaultLocation());
 
-        final ConstraintCollection cC = new DefaultConstraintCollection(1, new HashSet<Constraint>(),
-                new HashSet<Target>());
+        final ConstraintCollection cC = store1.createConstraintCollection(dummySchema);
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), cC, TYPES.STRING);
 
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
-
-        store1.addConstraint(dummyContraint);
 
         try {
             store1.save(file.getAbsolutePath());
@@ -210,12 +208,9 @@ public class DefaultMetadataStoreTest {
                 TYPES.STRING);
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(1, constraints, (Set<Target>) scope);
-
-        store1.addConstraintCollection(constraintCollection);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(dummySchema1);
 
         assertTrue(store1.getConstraintCollections().contains(constraintCollection));
-        assertTrue(store1.getConstraints().contains(dummyTypeContraint));
     }
 
     @Test(expected = NameAmbigousException.class)
@@ -276,17 +271,13 @@ public class DefaultMetadataStoreTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
                 new DefaultLocation());
 
-        final ConstraintCollection dummyConstraintCollection = new DefaultConstraintCollection(0,
-                new HashSet<Constraint>(), new HashSet<Target>());
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(dummySchema);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), dummyConstraintCollection, TYPES.STRING);
 
-        store1.addConstraintCollection(dummyConstraintCollection);
-
+        // XXX Do we need this line?
         store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn)));
-
-        store1.addConstraint(dummyContraint);
 
         try {
             store1.save(file.getAbsolutePath());

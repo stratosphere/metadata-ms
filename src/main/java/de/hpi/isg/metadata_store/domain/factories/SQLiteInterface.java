@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -866,7 +865,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addConstraint(Constraint constraint) {
+    public void writeConstraint(Constraint constraint) {
         ensureCurrentConstraintIdMaxInitialized();
 
         // for auto-increment id
@@ -990,8 +989,6 @@ public class SQLiteInterface implements SQLInterface {
                 while (rs.next()) {
                     constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), this);
                     constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
-                    constraintCollection.setConstraints(this
-                            .getAllConstraintsOrOfConstraintCollection(constraintCollection));
                 }
             }
             return constraintCollection;
@@ -1021,15 +1018,13 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public Collection<ConstraintCollection> getAllConstraintCollections() {
         try {
-            Collection<ConstraintCollection> constraintCollections = new HashSet<>();
+            Collection<ConstraintCollection> constraintCollections = new LinkedList<>();
             try (ResultSet rs = this.databaseAccess.query("SELECT id from ConstraintCollection;",
                     "ConstraintCollection")) {
                 while (rs.next()) {
                     RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"),
                             this);
                     constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
-                    constraintCollection.setConstraints(this
-                            .getAllConstraintsOrOfConstraintCollection(constraintCollection));
                     constraintCollections.add(constraintCollection);
                 }
             }

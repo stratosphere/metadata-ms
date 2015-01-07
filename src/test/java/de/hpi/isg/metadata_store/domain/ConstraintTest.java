@@ -3,6 +3,8 @@ package de.hpi.isg.metadata_store.domain;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import java.util.Collection;
+
 import org.junit.Test;
 
 import de.hpi.isg.metadata_store.domain.common.Observer;
@@ -23,6 +25,7 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class ConstraintTest {
 
+    @SuppressWarnings("unchecked")
     @Test(expected = UnsupportedOperationException.class)
     public void testAddingConstraintsToUnmodifiableConstraintCollectionFails() {
 
@@ -34,8 +37,9 @@ public class ConstraintTest {
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
-
-        store1.getConstraints().add(dummyTypeContraint);
+        
+        ConstraintCollection constraintCollection = store1.createConstraintCollection();
+        ((Collection<Constraint>)constraintCollection.getConstraints()).add(dummyTypeContraint);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -145,7 +149,8 @@ public class ConstraintTest {
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
-        store.addConstraint(dummyTypeContraint);
+        ConstraintCollection constraintCollection = store.createConstraintCollection();
+        constraintCollection.add(dummyTypeContraint);
     }
 
     @Test(expected = NotAllTargetsInStoreException.class)
@@ -160,7 +165,8 @@ public class ConstraintTest {
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
-        store2.addConstraint(dummyTypeContraint);
+        ConstraintCollection constraintCollection = store2.createConstraintCollection();
+        constraintCollection.add(dummyTypeContraint);
     }
 
 }

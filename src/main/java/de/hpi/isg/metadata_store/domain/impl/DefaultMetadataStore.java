@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -32,24 +33,21 @@ import de.hpi.isg.metadata_store.domain.targets.impl.DefaultSchema;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 /**
  * The default implementation of the {@link MetadataStore}.
- *
+ * 
  */
 
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
 
     private static final long serialVersionUID = -1214605256534100452L;
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMetadataStore.class);
 
     private final Collection<Schema> schemas;
 
     private final Collection<ConstraintCollection> constraintCollections;
-
-    private final Collection<Constraint> constraints;
 
     private final Collection<Target> allTargets;
 
@@ -71,21 +69,9 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         this.storeLocation = location;
 
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
-        this.constraints = Collections.synchronizedSet(new HashSet<Constraint>());
-        this.constraintCollections = Collections.synchronizedSet(new HashSet<ConstraintCollection>());
+        this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection>());
         this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
-    }
-
-    @Override
-    public void addConstraint(final Constraint constraint) {
-        for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!this.allTargets.contains(target)) {
-                throw new NotAllTargetsInStoreException(target);
-            }
-
-        }
-        this.constraints.add(constraint);
     }
 
     @Override
@@ -113,11 +99,6 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     @Override
     public Collection<Target> getAllTargets() {
         return Collections.unmodifiableCollection(this.allTargets);
-    }
-
-    @Override
-    public Collection<Constraint> getConstraints() {
-        return Collections.unmodifiableCollection(this.constraints);
     }
 
     @Override
@@ -187,7 +168,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         }
     }
 
-//    @Override
+    // @Override
     private void registerId(final int id) {
         synchronized (this.idsInUse) {
             if (!this.idsInUse.add(id)) {
@@ -198,13 +179,21 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public void registerTargetObject(final Target message) {
-    	registerId(message.getId());
+        registerId(message.getId());
         this.allTargets.add(message);
+    }
+    
+    /**
+     * @param storeLocation the storeLocation to set
+     */
+    public void setStoreLocation(File storeLocation) {
+        this.storeLocation = storeLocation;
     }
 
     @Override
     public String toString() {
-        return "MetadataStore[" + this.schemas.size() + " schemas, " + this.constraints.size() + " constraints]";
+        return "MetadataStore[" + this.schemas.size() + " schemas, " + this.constraintCollections.size()
+                + " constraint collections]";
     }
 
     @Override
@@ -213,20 +202,13 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public void addConstraintCollection(ConstraintCollection constraintCollection) {
-        for (Constraint constr : constraintCollection.getConstraints()) {
-            this.addConstraint(constr);
-        }
-        this.constraintCollections.add(constraintCollection);
-    }
-
-    @Override
     public ConstraintCollection createConstraintCollection(Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
         }
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(getUnusedConstraintCollectonId(),
+        ConstraintCollection constraintCollection = new DefaultConstraintCollection(this,
+                getUnusedConstraintCollectonId(),
                 new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)));
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
@@ -263,16 +245,14 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<Schema> getSchemasByName(String schemaName) {
-        // TODO Auto-generated method stub
+        // TODO Implement method.
         throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
     }
 
     @Override
     public Schema getSchemaById(int schemaId) {
-        // TODO Auto-generated method stub
+        // TODO Implement method.
         throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
     }
 
 }

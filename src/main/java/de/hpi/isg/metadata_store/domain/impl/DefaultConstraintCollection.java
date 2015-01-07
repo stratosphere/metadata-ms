@@ -8,15 +8,21 @@ import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
+import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
+import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
 public class DefaultConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -6633086023388829925L;
     private final Set<Constraint> constraints;
     private final Set<Target> scope;
+    
+    @ExcludeHashCodeEquals
+    private final DefaultMetadataStore metadataStore;
 
-    public DefaultConstraintCollection(int id, Set<Constraint> constraints, Set<Target> scope) {
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints, Set<Target> scope) {
         super(id);
+        this.metadataStore = metadataStore;
         this.constraints = constraints;
         this.scope = scope;
     }
@@ -38,11 +44,15 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
 
     @Override
     public void add(Constraint constraint) {
-        this.constraints.add(constraint);
-        for (Target t : constraint.getTargetReference().getAllTargets()) {
-            this.scope.add(t);
+        Collection<Target> allTargets = this.metadataStore.getAllTargets();
+        for (final Target target : constraint.getTargetReference().getAllTargets()) {
+            if (!allTargets.contains(target)) {
+                throw new NotAllTargetsInStoreException(target);
+            }
+
         }
-
+        
+        this.constraints.add(constraint);
     }
-
+    
 }
