@@ -9,6 +9,8 @@ import java.util.Collections;
 import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
@@ -29,6 +31,8 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     private static final long serialVersionUID = 8470123808962099640L;
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSTable.class);
 
     @ExcludeHashCodeEquals
     private final Schema schema;
@@ -40,7 +44,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
             final int id,
             final String name, final Location location) {
 
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, true);
         newTable.register();
         // TODO: Remove
         // newTable.getSqlInterface().addTableToSchema(newTable, schema);
@@ -58,6 +62,9 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
             final Location location, boolean isFreshlyCreated) {
         super(observer, id, name, location, isFreshlyCreated);
         this.schema = schema;
+        if (isFreshlyCreated) {
+            cacheChildColumns(new ArrayList<Column>());
+        }
     }
 
     @Override
@@ -90,8 +97,11 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     public Collection<Column> getColumns() {
         Collection<Column> columns = getChildColumnCache();
         if (columns == null) {
+            LOGGER.trace("Column cache miss");
             columns = this.getSqlInterface().getAllColumnsForTable(this);
             cacheChildColumns(new ArrayList<>(columns));
+        } else {
+            LOGGER.trace("Column cache hit");
         }
         return Collections.unmodifiableCollection(columns);
 

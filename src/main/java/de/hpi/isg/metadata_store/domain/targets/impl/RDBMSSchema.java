@@ -9,6 +9,8 @@ import java.util.Collections;
 import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
@@ -23,6 +25,8 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSSchema.class);
 
     /**
      * Stores the number of tables in this schema to quickly find free IDs for new tables.
@@ -111,8 +115,11 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     public Collection<Table> getTables() {
         Collection<Table> tables = getChildTableCache();
         if (tables == null) {
+            LOGGER.trace("Table cache miss");
             tables = this.getSqlInterface().getAllTablesForSchema(this);
             cacheChildTables(new ArrayList<>(tables));
+        } else {
+            LOGGER.trace("Table cache hit");
         }
         return Collections.unmodifiableCollection(tables);
     }
