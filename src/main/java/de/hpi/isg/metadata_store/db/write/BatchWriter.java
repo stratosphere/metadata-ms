@@ -78,7 +78,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
 		} else {
-		    LOGGER.warn("Attempted to flush empty batch writer {}.", this);
+		    LOGGER.debug("Attempted to flush empty batch writer {}.", this);
 		}
 		this.curBatchSize = 0;
 	}
