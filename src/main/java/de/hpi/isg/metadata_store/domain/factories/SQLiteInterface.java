@@ -42,6 +42,7 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.UniqueColumnCombination;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -52,6 +53,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.domain.util.LocationUtils;
+import de.hpi.isg.metadata_store.exceptions.ConstraintCollectionEmptyException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
@@ -350,6 +352,8 @@ public class SQLiteInterface implements SQLInterface {
                 sqlInterface));
         sqlInterface.registerConstraintSQLSerializer(TypeConstraint.class,
                 new TypeConstraint.TypeConstraintSQLiteSerializer(sqlInterface));
+        sqlInterface.registerConstraintSQLSerializer(UniqueColumnCombination.class, new
+                UniqueColumnCombination.UniqueColumnCombinationSQLiteSerializer(sqlInterface));
 
         return sqlInterface;
     }
@@ -907,6 +911,10 @@ public class SQLiteInterface implements SQLInterface {
         for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
             constraintsOfCollection.addAll(constraintSerializer
                     .deserializeConstraintsForConstraintCollection(rdbmsConstraintCollection));
+        }
+
+        if (constraintsOfCollection.isEmpty()) {
+            throw new ConstraintCollectionEmptyException(rdbmsConstraintCollection);
         }
 
         return constraintsOfCollection;

@@ -37,6 +37,7 @@ import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint.TYPES;
+import de.hpi.isg.metadata_store.domain.constraints.impl.UniqueColumnCombination;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
@@ -44,6 +45,7 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
+import de.hpi.isg.metadata_store.exceptions.ConstraintCollectionEmptyException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
@@ -139,7 +141,7 @@ public class RDBMSMetadataStoreTest {
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating INDS");
         final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(); 
+        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection();
         int incNr = 0;
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
@@ -195,7 +197,7 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection();
         constraintCollection.add(dummyContraint);
-        
+
         store1.flush();
 
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
@@ -235,7 +237,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", new DefaultLocation()).addColumn(store1,
                 "bar", 2);
 
-        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(dummySchema1); 
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(dummySchema1);
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1),
@@ -304,12 +306,12 @@ public class RDBMSMetadataStoreTest {
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", 1);
-        
+
         ConstraintCollection constraintCollection = store1.createConstraintCollection(dummySchema);
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
         constraintCollection.add(dummyContraint);
-        
+
         store1.flush();
 
         // retrieve store
@@ -345,7 +347,7 @@ public class RDBMSMetadataStoreTest {
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
@@ -373,7 +375,7 @@ public class RDBMSMetadataStoreTest {
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
@@ -403,7 +405,7 @@ public class RDBMSMetadataStoreTest {
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
@@ -435,7 +437,65 @@ public class RDBMSMetadataStoreTest {
         // retrieve store
         MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
 
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(), 
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
+    }
+
+    @Test
+    public void testUniqueColumnCombination() throws Exception {
+        // setup store
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        // setup schema
+        final Schema dummySchema = store1.addSchema("PDB", new DefaultLocation());
+
+        final DefaultLocation dummyTableLocation = new DefaultLocation();
+
+        final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
+
+        final Column dummyColumn1 = dummyTable.addColumn(store1, "dummyColumn1", 1);
+        final Column dummyColumn2 = dummyTable.addColumn(store1, "dummyColumn2", 2);
+
+        ConstraintCollection constraintCollection = store1.createConstraintCollection();
+
+        final UniqueColumnCombination dummyContraint = UniqueColumnCombination.buildAndAddToCollection(
+                new UniqueColumnCombination.Reference(
+                        new Column[] { dummyColumn1, dummyColumn2 }), constraintCollection);
+
+        constraintCollection.add(dummyContraint);
+
+        store1.flush();
+
+        // retrieve store
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
+
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
+                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
+    }
+
+    @Test(expected = ConstraintCollectionEmptyException.class)
+    public void testRetrievalOfUnknownConstraintTypeCausesWarningException() throws Exception {
+        // setup store
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        // setup schema
+        final Schema dummySchema = store1.addSchema("PDB", new DefaultLocation());
+
+        final DefaultLocation dummyTableLocation = new DefaultLocation();
+
+        final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
+
+        ConstraintCollection constraintCollection = store1.createConstraintCollection();
+
+        constraintCollection.add(DummyConstraintType.build(new DummyConstraintType.Reference(
+                dummyTable), constraintCollection, 5));
+
+        store1.flush();
+
+        // retrieve store
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
+
+        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
     }
 
