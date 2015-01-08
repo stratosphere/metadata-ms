@@ -20,18 +20,22 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     private Collection<Target> scope;
 
+    private String description;
+
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSConstraintCollection(int id, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface) {
         super(id);
         this.scope = scope;
         this.sqlInterface = sqlInterface;
+        this.description = description != null ? description : "";
     }
 
-    public RDBMSConstraintCollection(int id, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, SQLInterface sqlInterface) {
         super(id);
         this.sqlInterface = sqlInterface;
+        this.description = description;
     }
 
     @Override
@@ -70,7 +74,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     @Override
     public void add(Constraint constraint) {
         this.constraints = null;
-        
+
         // Ensure that all targets of the constraint are valid.
         for (final Target target : constraint.getTargetReference().getAllTargets()) {
             if (!this.sqlInterface.getAllTargets().contains(target)) {
@@ -82,20 +86,22 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         // Write the constraint.
         this.sqlInterface.writeConstraint(constraint);
     }
-    
+
     @Override
-    public boolean equals(Object obj) {
-        ensureConstraintsLoaded();
-        if (obj instanceof RDBMSConstraintCollection) {
-            ((RDBMSConstraintCollection) obj).ensureConstraintsLoaded();
-        }
-        return super.equals(obj);
+    public String getDescription() {
+        return description;
     }
-    
+
     @Override
-    public int hashCode() {
-        ensureConstraintsLoaded();
-        return super.hashCode();
+    public void setDescription(String description) {
+        this.description = description;
     }
+
+    /*
+     * @Override public boolean equals(Object obj) { ensureConstraintsLoaded(); if (obj instanceof
+     * RDBMSConstraintCollection) { ((RDBMSConstraintCollection) obj).ensureConstraintsLoaded(); } return
+     * super.equals(obj); }
+     * @Override public int hashCode() { ensureConstraintsLoaded(); return super.hashCode(); }
+     */
 
 }

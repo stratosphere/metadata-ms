@@ -22,7 +22,7 @@ public interface MetadataStore extends Serializable, Observer {
     @Deprecated
     public void addSchema(Schema schema);
 
-    public Schema addSchema(String name, Location location);
+    public Schema addSchema(String name, String description, Location location);
 
     public Collection<Target> getAllTargets();
 
@@ -82,7 +82,7 @@ public interface MetadataStore extends Serializable, Observer {
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    ConstraintCollection createConstraintCollection(Target... scope);
+    ConstraintCollection createConstraintCollection(String description, Target... scope);
 
     IdUtils getIdUtils();
 
@@ -92,10 +92,12 @@ public interface MetadataStore extends Serializable, Observer {
      * @throws IOException
      */
     public void save(String path) throws IOException;
-    
+
     /**
      * Saves any pending changes in the metadata store.
-     * @throws Exception if the saving fails
+     * 
+     * @throws Exception
+     *         if the saving fails
      */
     public void flush() throws Exception;
 

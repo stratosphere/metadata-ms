@@ -15,9 +15,11 @@ package de.hpi.isg.metadata_store.domain.constraints.impl;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
@@ -44,8 +46,6 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 public class TupleCount extends AbstractConstraint {
 
     public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer {
-
-        private boolean allTablesExistChecked = false;
 
         private final static String tableName = "TupleCount";
 
@@ -90,25 +90,6 @@ public class TupleCount extends AbstractConstraint {
 
         public TupleCountSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
-
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [tableId] integer NOT NULL,\n" +
-                            "    [tupleCount] integer,\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id]),\n" +
-                            "    FOREIGN KEY ([tableId])\n" +
-                            "    REFERENCES [Tablee] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createTable);
-                }
-                if (sqlInterface.tableExists(tableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
 
             try {
                 this.insertTupleCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
@@ -169,6 +150,31 @@ public class TupleCount extends AbstractConstraint {
                 return tupleCounts;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [tableId] integer NOT NULL,\n" +
+                        "    [tupleCount] integer,\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    FOREIGN KEY ([tableId])\n" +
+                        "    REFERENCES [Tablee] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createTable);
+            }
+            if (!sqlInterface.tableExists(tableName)) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }

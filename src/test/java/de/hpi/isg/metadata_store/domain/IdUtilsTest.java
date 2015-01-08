@@ -27,7 +27,7 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils;
 public class IdUtilsTest {
 
     private static final boolean VERBOSE = true;
-    
+
     private IdUtils idUtils = new IdUtils(12, 12);
 
     @Test
@@ -104,18 +104,20 @@ public class IdUtilsTest {
     @Test
     public void testGenerationOfIds() {
         final MetadataStore store = new DefaultMetadataStore();
-        store.addSchema("foo", mock(Location.class)).addTable(store, "bar", mock(Location.class))
-                .addColumn(store, "column1", 0);
+        store.addSchema("foo", null, mock(Location.class)).addTable(store, "bar", null, mock(Location.class))
+                .addColumn(store, "column1", null, 0);
         assertEquals(0b111111111111111111111111, store.getSchemaByName("foo").getId());
         assertEquals(0b000000000000111111111111, store.getSchemaByName("foo").getTableByName("bar").getId());
-        assertEquals(0b000000000000000000000000, store.getSchemaByName("foo").getTableByName("bar").getColumns().iterator().next()
+        assertEquals(0b000000000000000000000000, store.getSchemaByName("foo").getTableByName("bar").getColumns()
+                .iterator().next()
                 .getId());
 
-        store.addSchema("foo2", mock(Location.class)).addTable(store, "bar2", mock(Location.class))
-                .addColumn(store, "column1", 0);
+        store.addSchema("foo2", null, mock(Location.class)).addTable(store, "bar2", null, mock(Location.class))
+                .addColumn(store, "column1", null, 0);
         assertEquals(0b1111111111111111111111111, store.getSchemaByName("foo2").getId());
         assertEquals(0b1000000000000111111111111, store.getSchemaByName("foo2").getTableByName("bar2").getId());
-        assertEquals(0b1000000000000000000000000, store.getSchemaByName("foo2").getTableByName("bar2").getColumns().iterator()
+        assertEquals(0b1000000000000000000000000, store.getSchemaByName("foo2").getTableByName("bar2").getColumns()
+                .iterator()
                 .next().getId());
     }
 

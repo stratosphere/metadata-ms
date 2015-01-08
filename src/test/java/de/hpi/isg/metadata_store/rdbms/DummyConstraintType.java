@@ -15,9 +15,11 @@ package de.hpi.isg.metadata_store.rdbms;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
@@ -46,8 +48,6 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
 public class DummyConstraintType extends AbstractConstraint {
 
     public static class DummySQLiteSerializer implements ConstraintSQLSerializer {
-
-        private boolean allTablesExistChecked = false;
 
         private final static String tableName = "dummy";
 
@@ -92,25 +92,6 @@ public class DummyConstraintType extends AbstractConstraint {
 
         public DummySQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
-
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [tableId] integer NOT NULL,\n" +
-                            "    [dummy] integer,\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id]),\n" +
-                            "    FOREIGN KEY ([tableId])\n" +
-                            "    REFERENCES [Tablee] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createTable);
-                }
-                if (sqlInterface.tableExists(tableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
 
             try {
                 this.insertdummyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
@@ -171,6 +152,31 @@ public class DummyConstraintType extends AbstractConstraint {
                 return dummys;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [tableId] integer NOT NULL,\n" +
+                        "    [dummy] integer,\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    FOREIGN KEY ([tableId])\n" +
+                        "    REFERENCES [Tablee] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createTable);
+            }
+            if (!sqlInterface.tableExists(tableName)) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }

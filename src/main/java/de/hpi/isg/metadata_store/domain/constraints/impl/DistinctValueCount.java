@@ -15,8 +15,10 @@ package de.hpi.isg.metadata_store.domain.constraints.impl;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
@@ -41,8 +43,6 @@ public class DistinctValueCount extends AbstractConstraint {
 
     public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer {
 
-        private boolean allTablesExistChecked = false;
-
         private final static String tableName = "DistinctValueCount";
 
         private final SQLInterface sqlInterface;
@@ -61,9 +61,9 @@ public class DistinctValueCount extends AbstractConstraint {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, parameters[0]);
+                                preparedStatement.setInt(1, (Integer) parameters[0]);
                                 preparedStatement.setString(2, String.valueOf(parameters[1]));
-                                preparedStatement.setInt(3, parameters[2]);
+                                preparedStatement.setInt(3, (Integer) parameters[2]);
                             }
                         },
                         tableName);
@@ -87,27 +87,9 @@ public class DistinctValueCount extends AbstractConstraint {
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
-        public DistinctValueCountSQLiteSerializer(SQLInterface sqlInterface) {
-            this.sqlInterface = sqlInterface;
+        public DistinctValueCountSQLiteSerializer(SQLInterface sqliteInterface) {
+            this.sqlInterface = sqliteInterface;
 
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [columnId] integer NOT NULL,\n" +
-                            "    [distinctValueCount] integer,\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id]),\n" +
-                            "    FOREIGN KEY ([columnId])\n" +
-                            "    REFERENCES [Columnn] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createTable);
-                }
-                if (sqlInterface.tableExists(tableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
             try {
                 this.insertDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY);
@@ -164,6 +146,31 @@ public class DistinctValueCount extends AbstractConstraint {
                 return distinctValueCounts;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [columnId] integer NOT NULL,\n" +
+                        "    [distinctValueCount] integer,\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    FOREIGN KEY ([columnId])\n" +
+                        "    REFERENCES [Columnn] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createTable);
+            }
+            if (!sqlInterface.tableExists(tableName)) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }

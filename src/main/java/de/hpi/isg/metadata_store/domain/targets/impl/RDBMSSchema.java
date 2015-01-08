@@ -25,7 +25,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     private static final long serialVersionUID = -6940399614326634190L;
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSSchema.class);
 
     /**
@@ -33,20 +33,22 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
      */
     @ExcludeHashCodeEquals
     private int numTables = -1;
-    
+
     @ExcludeHashCodeEquals
     private Reference<Collection<Table>> childTableCache;
 
-    private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, Location location, boolean isFreshlyCreated) {
-        super(observer, id, name, location, isFreshlyCreated);
+    private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, String description, Location location,
+            boolean isFreshlyCreated) {
+        super(observer, id, name, description, location, isFreshlyCreated);
         if (isFreshlyCreated) {
             cacheChildTables(new ArrayList<Table>());
         }
     }
 
     public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, int id, String name,
+            String description,
             Location location) {
-        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, true);
+        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, description, location, true);
         newSchema.register();
         // TODO: remove
         // newSchema.getSqlInterface().addSchema(newSchema);
@@ -54,26 +56,28 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         return newSchema;
     }
 
-    public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name,
+    public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name, String description,
             Location location) {
 
-        return buildAndRegisterAndAdd(observer, -1, name, location);
+        return buildAndRegisterAndAdd(observer, -1, name, description, location);
     }
 
     public static RDBMSSchema restore(RDBMSMetadataStore observer, int id, String name,
-            Location location) {
+            String description, Location location) {
 
-        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, location, false);
+        final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, description, location, false);
         return newSchema;
     }
 
     @Override
-    public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
+    public Table addTable(final MetadataStore metadataStore, final String name, final String description,
+            final Location location) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
         Collection<Schema> schemas = metadataStore.getSchemas();
         Validate.isTrue(schemas.contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
         final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
+                description,
                 location);
         addToChildIdCache(tableId);
         if (this.numTables != -1) {
@@ -138,7 +142,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
         }
         return childTables;
     }
-    
+
     @Override
     public Column findColumn(final int columnId) {
         for (final Table table : getTables()) {
@@ -160,6 +164,6 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     @Override
     public String toString() {
-        return String.format("Schema[%s, %08x]", this.getName(), this.getId());
+        return String.format("Schema[%s, %s, %08x]", this.getName(), this.getDescription(), this.getId());
     }
 }

@@ -24,7 +24,7 @@ public interface Schema extends Target {
      *        is the location of the table
      * @return the added table
      */
-    public Table addTable(MetadataStore metadataStore, String name, Location location);
+    public Table addTable(MetadataStore metadataStore, String name, String description, Location location);
 
     /**
      * @deprecated use {@link #addTable(String, Location)} instead

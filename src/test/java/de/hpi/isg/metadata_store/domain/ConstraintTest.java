@@ -33,14 +33,14 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1",
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, mock(Table.class), "dummyColumn1", null,
                 mock(Location.class));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection();
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         ((Collection<Constraint>) constraintCollection.getConstraints()).add(dummyTypeContraint);
     }
 
@@ -49,7 +49,7 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", mock(Location.class));
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "dummySchema", null, mock(Location.class));
 
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummySchema),
                 mock(ConstraintCollection.class),
@@ -62,7 +62,7 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema", null,
                 mock(Location.class));
 
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummyTable),
@@ -76,7 +76,7 @@ public class ConstraintTest {
 
         final MetadataStore store1 = new DefaultMetadataStore();
 
-        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema",
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, mock(Schema.class), "dummySchema", null,
                 mock(Location.class));
 
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummyTable),
@@ -89,7 +89,7 @@ public class ConstraintTest {
     public void testTypeConstraint() {
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", mock(Location.class));
+                "dummyColumn1", null, mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(
@@ -104,7 +104,7 @@ public class ConstraintTest {
     public void testTupleCount() {
 
         final Table dummyTable = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class),
-                "dummyTable", new DefaultLocation());
+                "dummyTable", null, new DefaultLocation());
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(
@@ -121,7 +121,7 @@ public class ConstraintTest {
     public void testDistinctValueCount() {
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", mock(Location.class));
+                "dummyColumn1", null, mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(
@@ -138,9 +138,9 @@ public class ConstraintTest {
     public void testInclusionDependency() {
 
         final Column dummyColumn1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", mock(Location.class));
+                "dummyColumn1", null, mock(Location.class));
         final Column dummyColumn2 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn2", mock(Location.class));
+                "dummyColumn2", null, mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final InclusionDependency ind1 = InclusionDependency.build(new InclusionDependency.Reference(new Column[] {
@@ -161,11 +161,11 @@ public class ConstraintTest {
     public void testAssymetricInclusionDependencyFails() {
 
         final Column dummyColumn1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", mock(Location.class));
+                "dummyColumn1", null, mock(Location.class));
         final Column dummyColumn2 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn2", mock(Location.class));
+                "dummyColumn2", null, mock(Location.class));
         final Column dummyColumn3 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn3", mock(Location.class));
+                "dummyColumn3", null, mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         @SuppressWarnings("unused")
@@ -178,9 +178,9 @@ public class ConstraintTest {
     public void testUniqueColumnCombination() {
 
         final Column dummyColumn1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn1", mock(Location.class));
+                "dummyColumn1", null, mock(Location.class));
         final Column dummyColumn2 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class),
-                "dummyColumn2", mock(Location.class));
+                "dummyColumn2", null, mock(Location.class));
 
         final ConstraintCollection cC = mock(ConstraintCollection.class);
         final UniqueColumnCombination ucc1 = UniqueColumnCombination.build(new UniqueColumnCombination.Reference(
@@ -198,19 +198,19 @@ public class ConstraintTest {
 
         final MetadataStore store = new DefaultMetadataStore();
 
-        final Column dummyColumn = DefaultColumn.buildAndRegister(store, mock(Table.class), "dummyColumn3 ",
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store, mock(Table.class), "dummyColumn3 ", null,
                 mock(Location.class));
 
         store.getSchemas().add(
-                DefaultSchema.buildAndRegister(store, "dummySchema", null).addTable(
-                        DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null).addColumn(
+                DefaultSchema.buildAndRegister(store, "dummySchema", null, null).addTable(
+                        DefaultTable.buildAndRegister(store, mock(Schema.class), "dummyTable", null, null).addColumn(
                                 dummyColumn)));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
-        ConstraintCollection constraintCollection = store.createConstraintCollection();
+        ConstraintCollection constraintCollection = store.createConstraintCollection(null);
         constraintCollection.add(dummyTypeContraint);
     }
 
@@ -220,13 +220,13 @@ public class ConstraintTest {
         final MetadataStore store2 = new DefaultMetadataStore();
 
         final Column dummyColumn = DefaultColumn.buildAndRegister(mock(Observer.class), mock(Table.class),
-                "dummyColumn2", mock(Location.class));
+                "dummyColumn2", null, mock(Location.class));
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn),
                 mock(ConstraintCollection.class), TYPES.STRING);
 
-        ConstraintCollection constraintCollection = store2.createConstraintCollection();
+        ConstraintCollection constraintCollection = store2.createConstraintCollection(null);
         constraintCollection.add(dummyTypeContraint);
     }
 

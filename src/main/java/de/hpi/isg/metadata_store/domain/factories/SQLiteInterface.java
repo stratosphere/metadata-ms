@@ -72,7 +72,7 @@ public class SQLiteInterface implements SQLInterface {
     private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
 
     public static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "IND", "INDpart", "Scope", "Typee", "Location", "LocationProperty", "Config" };
+            "Constraintt", "Scope", "Location", "LocationProperty", "Config" };
 
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer> constraintSerializers = new HashMap<>();
 
@@ -80,7 +80,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TARGET_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Target (ID, name, locationId) VALUES (?, ?, ?);",
+                    "INSERT INTO Target (ID, name, locationId, description) VALUES (?, ?, ?, ?);",
                     new PreparedStatementAdapter<Object[]>() {
                         @Override
                         public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
@@ -94,6 +94,7 @@ public class SQLiteInterface implements SQLInterface {
                             } else {
                                 preparedStatement.setInt(3, locationId);
                             }
+                            preparedStatement.setString(4, target.getDescription());
                         }
                     },
                     "Target");
@@ -219,7 +220,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private static final StrategyBasedPreparedQuery.Factory<Integer> COLUMN_QUERY_FACTORY =
             new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name,"
+                    "SELECT target.id as id, target.name as name, target.description as description,"
                             + " columnn.tableId as tableId"
                             + " from target, columnn"
                             + " where target.id = columnn.id and columnn.id=?",
@@ -228,7 +229,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private static final StrategyBasedPreparedQuery.Factory<Integer> TABLE_QUERY_FACTORY =
             new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                    "SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
                             + " from target, tablee"
                             + " where target.id = tablee.id and tablee.id=?",
                     PreparedStatementAdapter.SINGLE_INT_ADAPTER,
@@ -244,7 +245,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private static final StrategyBasedPreparedQuery.Factory<Integer> SCHEMA_QUERY_FACTORY =
             new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name"
+                    "SELECT target.id as id, target.name as name, target.description as description"
                             + " from target, schemaa"
                             + " where target.id = schemaa.id and schemaa.id=?",
                     PreparedStatementAdapter.SINGLE_INT_ADAPTER,
@@ -367,6 +368,15 @@ public class SQLiteInterface implements SQLInterface {
                     String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
                     statement.execute(sql);
                 }
+
+                // also drop constraint tables, since they must be invalid after deletion of the store
+                for (ConstraintSQLSerializer serializer : this.constraintSerializers.values()) {
+                    for (String tableName : serializer.getTableNames()) {
+                        // toLowerCase because SQLite is case-insensitive for table names
+                        String sql = String.format("DROP TABLE IF EXISTS [%s];", tableName);
+                        statement.execute(sql);
+                    }
+                }
                 if (!this.databaseAccess.getConnection().getAutoCommit()) {
                     this.databaseAccess.getConnection().commit();
                 }
@@ -387,6 +397,11 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
+        // init constraint types
+        for (ConstraintSQLSerializer serializer : this.constraintSerializers.values()) {
+            serializer.initializeTables();
+        }
+
         try {
             flush();
         } catch (SQLException e) {
@@ -405,6 +420,7 @@ public class SQLiteInterface implements SQLInterface {
             if (!this.databaseAccess.getConnection().getAutoCommit()) {
                 this.databaseAccess.getConnection().commit();
             }
+
             this.loadTableNames();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -487,7 +503,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     private Int2ObjectMap<RDBMSSchema> loadAllSchemas() throws SQLException {
-        String sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+        String sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
                 + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                 + "FROM schemaa "
                 + "JOIN target ON schemaa.id = target.id "
@@ -506,14 +522,14 @@ public class SQLiteInterface implements SQLInterface {
                 if (schema == null || schema.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
-
+                    String description = rs.getString("description");
                     String locationClassName = rs.getString("locationType");
                     Location location = null;
                     if (locationClassName != null) {
                         location = LocationUtils.createLocation(locationClassName,
                                 Collections.<String, String> emptyMap());
                     }
-                    schema = RDBMSSchema.restore(this.store, targetId, name, location);
+                    schema = RDBMSSchema.restore(this.store, targetId, name, description, location);
                     schemas.put(targetId, schema);
                     lastSchema = schema;
                 }
@@ -544,7 +560,7 @@ public class SQLiteInterface implements SQLInterface {
             throws SQLException {
         String sql;
         if (areAllSchemasGiven) {
-            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
                     + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                     + "FROM tablee "
                     + "JOIN target ON tablee.id = target.id "
@@ -552,7 +568,7 @@ public class SQLiteInterface implements SQLInterface {
                     + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                     + "ORDER BY target.id;";
         } else {
-            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
                     + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                     + "FROM tablee "
                     + "JOIN target ON tablee.id = target.id "
@@ -577,6 +593,7 @@ public class SQLiteInterface implements SQLInterface {
                 if (table == null || table.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
+                    String description = rs.getString("description");
 
                     String locationClassName = rs.getString("locationType");
                     Location location = null;
@@ -591,7 +608,7 @@ public class SQLiteInterface implements SQLInterface {
                         throw new IllegalStateException(String.format("No schema found for table with id %08x.",
                                 schemaId));
                     }
-                    table = RDBMSTable.restore(this.store, schema, targetId, name, location);
+                    table = RDBMSTable.restore(this.store, schema, targetId, name, description, location);
                     tables.put(targetId, table);
 
                     Collection<Table> tablesForSchema = tablesBySchema.get(schemaId);
@@ -636,7 +653,7 @@ public class SQLiteInterface implements SQLInterface {
             throws SQLException {
         String sql;
         if (schema == null) {
-            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
                     + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                     + "FROM columnn "
                     + "JOIN target ON columnn.id = target.id "
@@ -644,7 +661,7 @@ public class SQLiteInterface implements SQLInterface {
                     + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
                     + "ORDER BY target.id;";
         } else {
-            sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
+            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
                     + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
                     + "FROM columnn "
                     + "JOIN tablee ON columnn.tableId = tablee.id " // join also tables
@@ -669,7 +686,7 @@ public class SQLiteInterface implements SQLInterface {
                 if (column == null || column.getId() != targetId) {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
-
+                    String description = rs.getString("description");
                     String locationClassName = rs.getString("locationType");
                     Location location = null;
                     if (locationClassName != null) {
@@ -683,7 +700,7 @@ public class SQLiteInterface implements SQLInterface {
                     if (table == null) {
                         throw new IllegalStateException(String.format("No table found for column with id %d.", tableId));
                     }
-                    column = RDBMSColumn.restore(this.store, table, targetId, name, location);
+                    column = RDBMSColumn.restore(this.store, table, targetId, name, description, location);
                     columns.put(targetId, column);
 
                     Collection<Column> columnsForTable = columnsByTable.get(tableId);
@@ -714,6 +731,7 @@ public class SQLiteInterface implements SQLInterface {
         return columns;
     }
 
+    // TODO use type enum
     private Target buildTarget(int id) {
         IdUtils idUtils = this.store.getIdUtils();
         if (idUtils.isSchemaId(id)) {
@@ -887,7 +905,10 @@ public class SQLiteInterface implements SQLInterface {
 
         ConstraintSQLSerializer serializer = constraintSerializers.get(constraint.getClass());
         if (serializer == null) {
-            constraintSerializers.put(constraint.getClass(), constraint.getConstraintSQLSerializer(this));
+            serializer = constraint.getConstraintSQLSerializer(this);
+            constraintSerializers.put(constraint.getClass(), serializer);
+            serializer.initializeTables();
+
         }
 
         serializer = constraintSerializers.get(constraint.getClass());
@@ -935,6 +956,7 @@ public class SQLiteInterface implements SQLInterface {
                                     this.getTableById(rs.getInt("tableId")),
                                     rs.getInt("id"),
                                     rs.getString("name"),
+                                    rs.getString("description"),
                                     getLocationFor(rs.getInt("id"))));
                     return columnCache.get(columnId);
                 }
@@ -959,6 +981,7 @@ public class SQLiteInterface implements SQLInterface {
                                     this.getSchemaById(rs.getInt("schemaId")),
                                     rs.getInt("id"),
                                     rs.getString("name"),
+                                    rs.getString("description"),
                                     getLocationFor(rs.getInt("id"))));
                     return tableCache.get(tableId);
                 }
@@ -982,6 +1005,7 @@ public class SQLiteInterface implements SQLInterface {
                             RDBMSSchema.restore(store,
                                     rs.getInt("id"),
                                     rs.getString("name"),
+                                    rs.getString("description"),
                                     getLocationFor(rs.getInt("id"))));
                     return schemaCache.get(schemaId);
                 }
@@ -997,10 +1021,11 @@ public class SQLiteInterface implements SQLInterface {
         try {
             RDBMSConstraintCollection constraintCollection = null;
             String getConstraintCollectionByIdQuery =
-                    String.format("SELECT id from ConstraintCollection where id=%d;", id);
+                    String.format("SELECT id, description from ConstraintCollection where id=%d;", id);
             try (ResultSet rs = this.databaseAccess.query(getConstraintCollectionByIdQuery, "ConstraintCollection")) {
                 while (rs.next()) {
-                    constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), this);
+                    constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), rs.getString("description"),
+                            this);
                     constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
                 }
             }
@@ -1032,10 +1057,11 @@ public class SQLiteInterface implements SQLInterface {
     public Collection<ConstraintCollection> getAllConstraintCollections() {
         try {
             Collection<ConstraintCollection> constraintCollections = new LinkedList<>();
-            try (ResultSet rs = this.databaseAccess.query("SELECT id from ConstraintCollection;",
+            try (ResultSet rs = this.databaseAccess.query("SELECT id, description from ConstraintCollection;",
                     "ConstraintCollection")) {
                 while (rs.next()) {
                     RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"),
+                            rs.getString("description"),
                             this);
                     constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
                     constraintCollections.add(constraintCollection);
@@ -1047,6 +1073,7 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
+    // TODO batch writer
     @Override
     public void addScope(Target target, ConstraintCollection constraintCollection) {
         try {
@@ -1058,11 +1085,13 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
+    // TODO batch writer
     @Override
     public void addConstraintCollection(ConstraintCollection constraintCollection) {
         try {
-            String sqlAddConstraintCollection = String.format("INSERT INTO ConstraintCollection (id) VALUES (%d);",
-                    constraintCollection.getId());
+            String sqlAddConstraintCollection = String.format(
+                    "INSERT INTO ConstraintCollection (id, description) VALUES (%d, '%s');",
+                    constraintCollection.getId(), constraintCollection.getDescription());
             this.databaseAccess.executeSQL(sqlAddConstraintCollection, "ConstraintCollection");
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -1108,7 +1137,7 @@ public class SQLiteInterface implements SQLInterface {
         }
         try {
             Collection<Column> columns = new HashSet<>();
-            // XXX
+            // use DatabaesAccess
             Statement stmt = this.connection.createStatement();
 
             String sqlTablesForSchema = String
@@ -1233,7 +1262,7 @@ public class SQLiteInterface implements SQLInterface {
     public Schema getSchemaByName(String schemaName) throws NameAmbigousException {
         try {
             String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name"
+                    .format("SELECT target.id as id, target.name as name, target.description as description"
                             + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
                             schemaName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
@@ -1246,6 +1275,7 @@ public class SQLiteInterface implements SQLInterface {
                 found = RDBMSSchema.restore(store,
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
 
             }
@@ -1267,7 +1297,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
 
             String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name"
+                    .format("SELECT target.id as id, target.name as name, target.description as description"
                             + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
                             schemaName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
@@ -1276,6 +1306,7 @@ public class SQLiteInterface implements SQLInterface {
                 RDBMSSchema schema = RDBMSSchema.restore(store,
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
                 schemaCache.put(schema.getId(), schema);
                 schemas.add(schema);
@@ -1343,7 +1374,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
 
             String sqlColumnsByName = String
-                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                    .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
                             + " from target, columnn where target.id = columnn.id and target.name='%s'",
                             columnName);
             ResultSet rs = databaseAccess.query(sqlColumnsByName, "columnn", "target");
@@ -1353,6 +1384,7 @@ public class SQLiteInterface implements SQLInterface {
                         this.getTableById(rs.getInt("tableId")),
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
                 columnCache.put(column.getId(), column);
                 columns.add(column);
@@ -1369,7 +1401,7 @@ public class SQLiteInterface implements SQLInterface {
     public Column getColumnByName(String columnName, Table table) throws NameAmbigousException {
         try {
             String sqlColumnByName = String
-                    .format("SELECT target.id as id, target.name as name, columnn.tableId as tableId"
+                    .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
                             + " from target, columnn where target.id = columnn.id and target.name='%s'"
                             + " and columnn.tableId=%d", columnName, table.getId()
                     );
@@ -1384,6 +1416,7 @@ public class SQLiteInterface implements SQLInterface {
                         table,
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
 
             }
@@ -1403,7 +1436,7 @@ public class SQLiteInterface implements SQLInterface {
     public Table getTableByName(String tableName) throws NameAmbigousException {
         try {
             String sqlTableByname = String
-                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                    .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
                             + " from target, tablee where target.id = tablee.id and target.name='%s'",
                             tableName);
             ResultSet rs = databaseAccess.query(sqlTableByname, "tablee", "target");
@@ -1417,6 +1450,7 @@ public class SQLiteInterface implements SQLInterface {
                         this.getSchemaById(rs.getInt("schemaId")),
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
 
             }
@@ -1438,7 +1472,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
 
             String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name, tablee.schemaId as schemaId"
+                    .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
                             + " from target, tablee where target.id = tablee.id and target.name='%s'",
                             tableName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "tablee", "target");
@@ -1448,6 +1482,7 @@ public class SQLiteInterface implements SQLInterface {
                         this.getSchemaById(rs.getInt("schemaId")),
                         rs.getInt("id"),
                         rs.getString("name"),
+                        rs.getString("description"),
                         getLocationFor(rs.getInt("id")));
                 tableCache.put(schema.getId(), schema);
                 tables.add(schema);

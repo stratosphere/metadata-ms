@@ -47,8 +47,6 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
     public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
 
-        private boolean allTablesExistChecked = false;
-
         private final static String tableName = "IND";
         private final static String referenceTableName = "INDPart";
 
@@ -119,37 +117,6 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         public InclusionDependencySQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    PRIMARY KEY ([constraintId]),\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createINDTable);
-                }
-                if (!sqlInterface.tableExists(referenceTableName)) {
-                    String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [lhs] integer NOT NULL,\n" +
-                            "    [rhs] integer NOT NULL,\n" +
-                            "    FOREIGN KEY ([lhs])\n" +
-                            "    REFERENCES [Columnn] ([id]),\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [" + tableName + "] ([constraintId]),\n" +
-                            "    FOREIGN KEY ([rhs])\n" +
-                            "    REFERENCES [Columnn] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createINDpartTable);
-                }
-                // check again and set allTablesExistChecked to true
-                if (sqlInterface.tableExists(tableName) && sqlInterface.tableExists(referenceTableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
             try {
                 this.insertInclusionDependencyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY);
@@ -237,6 +204,44 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
             } catch (SQLException e)
             {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName, referenceTableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createINDTable);
+            }
+            if (!sqlInterface.tableExists(referenceTableName)) {
+                String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [lhs] integer NOT NULL,\n" +
+                        "    [rhs] integer NOT NULL,\n" +
+                        "    FOREIGN KEY ([lhs])\n" +
+                        "    REFERENCES [Columnn] ([id]),\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [" + tableName + "] ([constraintId]),\n" +
+                        "    FOREIGN KEY ([rhs])\n" +
+                        "    REFERENCES [Columnn] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createINDpartTable);
+            }
+            // check again and set allTablesExistChecked to true
+            if (!(sqlInterface.tableExists(tableName) && sqlInterface.tableExists(referenceTableName))) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }

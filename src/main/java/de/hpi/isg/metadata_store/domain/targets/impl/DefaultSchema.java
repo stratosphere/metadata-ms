@@ -25,14 +25,15 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class DefaultSchema extends AbstractTarget implements Schema {
 
     public static Schema buildAndRegister(final Observer observer, final int id, final String name,
-            final Location location) {
-        final DefaultSchema newSchema = new DefaultSchema(observer, id, name, location);
+            String description, final Location location) {
+        final DefaultSchema newSchema = new DefaultSchema(observer, id, name, description, location);
         newSchema.register();
         return newSchema;
     }
 
-    public static Schema buildAndRegister(final Observer observer, final String name, final Location location) {
-        final DefaultSchema newSchema = new DefaultSchema(observer, -1, name, location);
+    public static Schema buildAndRegister(final Observer observer, final String name, final String description,
+            final Location location) {
+        final DefaultSchema newSchema = new DefaultSchema(observer, -1, name, description, location);
         newSchema.register();
         return newSchema;
     }
@@ -42,16 +43,18 @@ public class DefaultSchema extends AbstractTarget implements Schema {
     @ExcludeHashCodeEquals
     private final Collection<Table> tables;
 
-    private DefaultSchema(final Observer observer, final int id, final String name, final Location location) {
-        super(observer, id, name, location);
+    private DefaultSchema(final Observer observer, final int id, final String name, final String description,
+            final Location location) {
+        super(observer, id, name, description, location);
         this.tables = Collections.synchronizedSet(new HashSet<Table>());
     }
 
     @Override
-    public Table addTable(final MetadataStore metadataStore, final String name, final Location location) {
+    public Table addTable(final MetadataStore metadataStore, final String name, final String description,
+            final Location location) {
         Validate.isTrue(metadataStore.getSchemas().contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
-        final Table table = DefaultTable.buildAndRegister(metadataStore, this, tableId, name, location);
+        final Table table = DefaultTable.buildAndRegister(metadataStore, this, tableId, name, description, location);
         this.addTable(table);
         return table;
     }

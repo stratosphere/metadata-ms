@@ -80,9 +80,9 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public Schema addSchema(final String name, final Location location) {
+    public Schema addSchema(final String name, String description, final Location location) {
         final int id = this.getUnusedSchemaId();
-        final Schema schema = DefaultSchema.buildAndRegister(this, id, name, location);
+        final Schema schema = DefaultSchema.buildAndRegister(this, id, name, description, location);
         this.addSchema(schema);
         return schema;
     }
@@ -182,9 +182,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         registerId(message.getId());
         this.allTargets.add(message);
     }
-    
+
     /**
-     * @param storeLocation the storeLocation to set
+     * @param storeLocation
+     *        the storeLocation to set
      */
     public void setStoreLocation(File storeLocation) {
         this.storeLocation = storeLocation;
@@ -202,7 +203,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection(Target... scope) {
+    public ConstraintCollection createConstraintCollection(String description, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());

@@ -47,8 +47,6 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
 
     public static class UniqueColumnCombinationSQLiteSerializer implements ConstraintSQLSerializer {
 
-        private boolean allTablesExistChecked = false;
-
         private final static String tableName = "UCC";
         private final static String referenceTableName = "UCCPart";
 
@@ -118,34 +116,6 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         public UniqueColumnCombinationSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    PRIMARY KEY ([constraintId]),\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createINDTable);
-                }
-                if (!sqlInterface.tableExists(referenceTableName)) {
-                    String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [col] integer NOT NULL,\n" +
-                            "    FOREIGN KEY ([col])\n" +
-                            "    REFERENCES [Columnn] ([id]),\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [" + tableName + "] ([constraintId])" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createINDpartTable);
-                }
-                // check again and set allTablesExistChecked to true
-                if (sqlInterface.tableExists(tableName) && sqlInterface.tableExists(referenceTableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
             try {
                 this.insertUniqueColumnCombinationWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY);
@@ -230,6 +200,41 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
             } catch (SQLException e)
             {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName, referenceTableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createINDTable);
+            }
+            if (!sqlInterface.tableExists(referenceTableName)) {
+                String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [col] integer NOT NULL,\n" +
+                        "    FOREIGN KEY ([col])\n" +
+                        "    REFERENCES [Columnn] ([id]),\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [" + tableName + "] ([constraintId])" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createINDpartTable);
+            }
+            // check again and set allTablesExistChecked to true
+            if (!(sqlInterface.tableExists(tableName) && sqlInterface.tableExists(referenceTableName))) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }
