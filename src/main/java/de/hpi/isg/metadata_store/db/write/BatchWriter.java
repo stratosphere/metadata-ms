@@ -22,7 +22,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
     
     private final static Logger LOGGER = LoggerFactory.getLogger(BatchWriter.class);
 
-	public static final int DEFAULT_BATCH_SIZE = 1000;
+	public static final int DEFAULT_BATCH_SIZE = 10000;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
@@ -55,7 +55,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 		fireAboutToAddBatchElement();
 		addBatch(element);
 		if (++this.curBatchSize >= this.maxBatchSize) {
-			flush();
+		    flush();
 		}
 	}
 
@@ -77,9 +77,10 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 			}
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
+		} else {
+		    LOGGER.warn("Attempted to flush empty batch writer {}.", this);
 		}
 		this.curBatchSize = 0;
-		fireBatchFlushed();
 	}
 	
 	/** Called when the batch was empty but is not anymore. */
@@ -91,13 +92,14 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	    }
 	}
 	
-	/** Called when the batch was flushed. */
-	private void fireBatchFlushed() {
-	    // Without queries in the batch, this writer is neutral wrt. accessed and modified tables.
-	    if (!this.manipulatedTables.isEmpty() || !this.accessedTables.isEmpty()) {
-	        this.databaseAccess.notifyTablesClear(this);
-	    }
-	}
+	// TODO Delete method code.
+//	/** Called when the batch was flushed. */
+//	private void fireBatchFlushed() {
+//	    // Without queries in the batch, this writer is neutral wrt. accessed and modified tables.
+//	    if (!this.manipulatedTables.isEmpty() || !this.accessedTables.isEmpty()) {
+//	        this.databaseAccess.notifyTablesClear(this);
+//	    }
+//	}
 	
 	@Override
 	public Set<String> getManipulatedTables() {

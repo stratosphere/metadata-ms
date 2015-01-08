@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.db.write;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -83,4 +84,17 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 	public Set<String> getAccessedTables() {
 		return accessedTables;
 	}
+
+
+	@Override
+    public void flush() throws SQLException {
+        if (this.statement != null) {
+            // Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
+            this.databaseAccess.prepareFlush(this);
+            doFlush();
+        }
+    }
+
+
+    protected abstract void doFlush() throws SQLException;
 }

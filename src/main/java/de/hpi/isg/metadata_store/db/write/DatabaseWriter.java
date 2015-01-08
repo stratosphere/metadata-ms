@@ -39,15 +39,8 @@ abstract public class DatabaseWriter<T> implements AutoCloseable {
     protected abstract void ensureStatementInitialized() throws SQLException;
 
     abstract protected void doWrite(T element) throws SQLException;
-
-    public void flush() throws SQLException {
-        if (this.statement != null) {
-            // Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
-            doFlush();
-        }
-    }
-
-    abstract protected void doFlush() throws SQLException;
+    
+    abstract public void flush() throws SQLException;
 
     public void close() throws SQLException {
         try {

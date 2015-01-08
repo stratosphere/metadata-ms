@@ -219,7 +219,7 @@ public class DatabaseAccess implements AutoCloseable {
 	public void flush() throws SQLException {
 		while (!this.manipulatingWriters.isEmpty()) {
 			DependentWriter<?> anyActiveWriter = this.manipulatingWriters.values().iterator().next().iterator().next();
-			flush(anyActiveWriter);
+			anyActiveWriter.flush();
 		}
 		// this.sqlExecutor.flush();
 		// for (Collection<DependentWriter<?>> writers : this.accessingWriters.values()) {
@@ -229,14 +229,23 @@ public class DatabaseAccess implements AutoCloseable {
 		// }
 	}
 
-	public void flush(DependentWriter<?> writerToFlush) throws SQLException {
+	/**
+     * Flushes any writer that has to preceed the given writer. Furthermore, any registered access on database tables of
+     * this writer will be removed.
+     * 
+     * @param writerToFlush is the writer that is about to be flushed
+     * @throws SQLException
+     */
+	public void prepareFlush(DependentWriter<?> writerToFlush) throws SQLException {
+	    
 		Set<DependentWriter<?>> preceedingWriters = this.preceedingWriters.get(writerToFlush);
 		if (preceedingWriters != null) {
 			for (DependentWriter<?> preceedingWriter : preceedingWriters) {
-				flush(preceedingWriter);
+			    preceedingWriter.flush();
 			}
 			this.preceedingWriters.remove(writerToFlush);
 		}
+		
 		for (String accessedTable : writerToFlush.getAccessedTables()) {
 			accessedTable = canonicalizeTableName(accessedTable);
 			Set<DependentWriter<?>> accessingWriters = this.accessingWriters.get(accessedTable);
@@ -255,7 +264,6 @@ public class DatabaseAccess implements AutoCloseable {
 				this.manipulatingWriters.remove(manipulatedTable);
 			}
 		}
-		writerToFlush.flush();
 	}
 
 	/**
@@ -275,7 +283,7 @@ public class DatabaseAccess implements AutoCloseable {
 			}
 			LOGGER.debug("Flushing modifications on {}...", table);
 			for (DependentWriter<?> writer : new ArrayList<>(writers)) {
-				flush(writer);
+			    writer.flush();
 			}
 			LOGGER.debug("...done flushing! (on {})", table);
 		}
@@ -375,7 +383,7 @@ public class DatabaseAccess implements AutoCloseable {
 					LOGGER.debug("Cycle detected: {}.", predecessorPath);
 					DependentWriter<?> writerToFlush = predecessorPath.get(predecessorPath.size() - 2);
 					try {
-						flush(writerToFlush);
+						writerToFlush.flush();;
 					} catch (SQLException e) {
 						throw new RuntimeException(e);
 					}
@@ -521,9 +529,9 @@ public class DatabaseAccess implements AutoCloseable {
 		}
 
 	}
-
-	public void notifyTablesClear(DependentWriter<?> writer) {
-		LOGGER.trace("Clear manipuations and accesses {}.", writer);
-	}
+//  TODO Delete code snippet.
+//	public void notifyTablesClear(DependentWriter<?> writer) {
+//		LOGGER.trace("Clear manipuations and accesses {}.", writer);
+//	}
 
 }

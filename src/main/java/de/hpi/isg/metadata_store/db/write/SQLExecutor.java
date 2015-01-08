@@ -69,7 +69,8 @@ public class SQLExecutor extends BatchWriter<String> {
         super.doFlush();
         this.manipulatedTables.clear();
         this.accessedTables.clear();
-        this.databaseAccess.notifyTablesClear(this);
+        // TODO Delete code.
+//        this.databaseAccess.notifyTablesClear(this);
     }
     
     @Override
@@ -83,8 +84,7 @@ public class SQLExecutor extends BatchWriter<String> {
 
     @Override
     public String toString() {
-        return "SQLExecutor [manipulatedTables=" + getManipulatedTables() + ", accessedTables=" + getAccessedTables()
-                + "]";
+        return "SQLExecutor [manipulatedTables=" + getManipulatedTables() + ", accessedTables=" + getAccessedTables() + "]";
     }
 
 }
