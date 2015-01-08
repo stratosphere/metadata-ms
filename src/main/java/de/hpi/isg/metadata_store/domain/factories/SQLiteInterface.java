@@ -99,31 +99,6 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Target");
 
-    // private static final PreparedStatementBatchWriter.Factory<Target> UPDATE_TARGET_NAME_WRITER_FACTORY =
-    // new PreparedStatementBatchWriter.Factory<>(
-    // "UPDATE Target set name = ? where id=?;",
-    // new PreparedStatementAdapter<Target>() {
-    // @Override
-    // public void translateParameter(Target target, PreparedStatement preparedStatement) throws SQLException {
-    // // TODO generic escapeing
-    // preparedStatement.setString(1, target.getName().replace("'", "''"));
-    // preparedStatement.setInt(2, target.getId());
-    // }
-    // },
-    // "Target");
-    //
-    // private static final PreparedStatementBatchWriter.Factory<int[]> UPDATE_TARGET_LOCATION_WRITER_FACTORY =
-    // new PreparedStatementBatchWriter.Factory<>(
-    // "UPDATE Target set locationId = ? where id=?;",
-    // new PreparedStatementAdapter<int[]>() {
-    // @Override
-    // public void translateParameter(int[] parameters, PreparedStatement preparedStatement) throws SQLException {
-    // preparedStatement.setInt(1, parameters[0]);
-    // preparedStatement.setInt(2, parameters[1]);
-    // }
-    // },
-    // "Target");
-
     private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_LOCATION_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Location (id, typee) VALUES (?, ?);",
@@ -258,8 +233,6 @@ public class SQLiteInterface implements SQLInterface {
 
     private final DatabaseAccess databaseAccess;
 
-    private DatabaseWriter<Object[]> insertTargetWriter;
-
     private int currentConstraintIdMax = -1;
 
     private int currentLocationIdMax = -1;
@@ -287,6 +260,8 @@ public class SQLiteInterface implements SQLInterface {
 
     /** @see #LOCATION_PROPERTIES_QUERY_FACTORY */
     private DatabaseQuery<Integer> locationPropertiesQuery;
+
+    private DatabaseWriter<Object[]> insertTargetWriter;
 
     private DatabaseWriter<Target> updateTargetNameWriter;
 
@@ -446,11 +421,13 @@ public class SQLiteInterface implements SQLInterface {
         try {
             storeTargetWithLocation(schema);
             insertSchemaWriter.write(schema);
-            // TODO investigate why the flush is necessary
-            this.databaseAccess.flush();
+
+            // XXX why the flush was necessary
+            // this.databaseAccess.flush();
 
             // TODO: Why not update the schemas directly?
             // invalidate cache
+
             if (allSchemas != null) {
                 allSchemas.add(schema);
             }
@@ -731,16 +708,18 @@ public class SQLiteInterface implements SQLInterface {
         return columns;
     }
 
-    // TODO use type enum
     private Target buildTarget(int id) {
         IdUtils idUtils = this.store.getIdUtils();
-        if (idUtils.isSchemaId(id)) {
+        switch (idUtils.getIdType(id)) {
+        case SCHEMA_ID:
             return getSchemaById(id);
-        } else if (idUtils.isTableId(id)) {
+        case TABLE_ID:
             return getTableById(id);
-        } else {
+        case COLUMN_ID:
             return getColumnById(id);
         }
+        return null;
+
     }
 
     @Override
@@ -843,30 +822,6 @@ public class SQLiteInterface implements SQLInterface {
         }
         return isIdInUse;
     }
-
-    // private boolean addToIdsInUse(int id) {
-    // try {
-    // this.targetIdWriter.write(id);
-    //
-    // // invalidate cache
-    // allTargets = null;
-    //
-    // return true;
-    // } catch (SQLException e) {
-    // throw new RuntimeException(String.format("Could not insert ID %d.", id), e);
-    // }
-    // }
-
-    /*
-     * private void saveTargetWithLocation(Target target) { try { // TODO: Merge these two-three queries if possible.
-     * this.updateTargetNameWriter.write(target); Integer locationId = addLocation(target.getLocation());
-     * this.updateTargetLocationWriter.write(new int[] { locationId, target.getId() }); // update caches if (allTargets
-     * != null) { this.allTargets.add(target); } if (target instanceof RDBMSSchema) { if (this.allSchemas != null) {
-     * this.allSchemas.add((Schema) target); } this.schemaCache.put(target.getId(), (RDBMSSchema) target); } else if
-     * (target instanceof RDBMSTable) { this.tableCache.put(target.getId(), (RDBMSTable) target); } else if (target
-     * instanceof RDBMSColumn) { this.columnCache.put(target.getId(), (RDBMSColumn) target); } } catch (SQLException e)
-     * { throw new RuntimeException(e); } }
-     */
 
     /**
      * Stores the given location.
@@ -1073,7 +1028,6 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
-    // TODO batch writer
     @Override
     public void addScope(Target target, ConstraintCollection constraintCollection) {
         try {
@@ -1085,7 +1039,6 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
-    // TODO batch writer
     @Override
     public void addConstraintCollection(ConstraintCollection constraintCollection) {
         try {
@@ -1234,7 +1187,6 @@ public class SQLiteInterface implements SQLInterface {
      */
     @Override
     public void flush() throws SQLException {
-        // TODO Auto-generated method stub
         this.databaseAccess.flush();
     }
 
