@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,7 +87,11 @@ public class SQLiteInterface implements SQLInterface {
                             Integer locationId = (Integer) parameters[1];
                             preparedStatement.setInt(1, target.getId());
                             preparedStatement.setString(2, target.getName());
-                            preparedStatement.setInt(3, locationId);
+                            if (locationId == null) {
+                                preparedStatement.setNull(3, Types.INTEGER);
+                            } else {
+                                preparedStatement.setInt(3, locationId);
+                            }
                         }
                     },
                     "Target");
