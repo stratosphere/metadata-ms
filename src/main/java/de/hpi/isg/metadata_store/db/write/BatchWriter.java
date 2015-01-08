@@ -62,6 +62,15 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	abstract protected void addBatch(T element) throws SQLException;
 	
 	@Override
+	public void flush() throws SQLException {
+	    if (this.curBatchSize > 0) {
+	        super.flush();
+	    } else {
+	        LOGGER.debug("Attempted to flush empty batch writer {}.", this);
+	    }
+	}
+	
+	@Override
 	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
 		    int batchSize = this.curBatchSize;
@@ -77,8 +86,6 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 			}
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
-		} else {
-		    LOGGER.debug("Attempted to flush empty batch writer {}.", this);
 		}
 		this.curBatchSize = 0;
 	}
