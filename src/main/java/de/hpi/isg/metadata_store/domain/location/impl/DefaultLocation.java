@@ -5,6 +5,7 @@ import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.util.LocationUtils;
 
 /**
  * A {@link Location} representing a HDFS location.
@@ -14,6 +15,15 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 
 public class DefaultLocation extends AbstractHashCodeAndEquals implements Location {
 
+    static {
+        LocationUtils.registerProperty(TYPE);
+        LocationUtils.registerPropertyForValueCanoicalization(TYPE);
+        LocationUtils.registerProperty(INDEX);
+        LocationUtils.registerPropertyForValueCanoicalization(INDEX);
+        LocationUtils.registerProperty(PATH);
+    }
+
+    
     private static final long serialVersionUID = 4906351571223005639L;
 
     private Map<String, String> properties;
@@ -30,7 +40,7 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
 
     @Override
     public void set(String propertyKey, String value) {
-        this.properties.put(propertyKey, value);
+        LocationUtils.setCanonicalProperty(propertyKey, value, this);
     }
     
     @Override
