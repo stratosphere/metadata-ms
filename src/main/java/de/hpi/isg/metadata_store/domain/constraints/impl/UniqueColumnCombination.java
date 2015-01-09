@@ -39,30 +39,30 @@ import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 
 /**
- * Constraint implementation for an n-ary inclusion dependency.
+ * Constraint implementation for an n-ary unique column combination.
  * 
  * @author Sebastian Kruse
  */
-public class InclusionDependency extends AbstractConstraint implements Constraint {
+public class UniqueColumnCombination extends AbstractConstraint implements Constraint {
 
-    public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
+    public static class UniqueColumnCombinationSQLiteSerializer implements ConstraintSQLSerializer {
 
-        private final static String tableName = "IND";
-        private final static String referenceTableName = "INDPart";
+        private final static String tableName = "UCC";
+        private final static String referenceTableName = "UCCPart";
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<Integer> insertInclusionDependencyWriter;
+        DatabaseWriter<Integer> insertUniqueColumnCombinationWriter;
 
-        DatabaseWriter<int[]> insertINDPartWriter;
+        DatabaseWriter<int[]> insertUCCPartWriter;
 
-        DatabaseQuery<Void> queryInclusionDependencies;
+        DatabaseQuery<Void> queryUniqueColumnCombination;
 
-        DatabaseQuery<Integer> queryInclusionDependenciesForConstraintCollection;
+        DatabaseQuery<Integer> queryUniqueColumnCombinationsForConstraintCollection;
 
-        DatabaseQuery<Integer> queryINDPart;
+        DatabaseQuery<Integer> queryUCCPart;
 
-        private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + tableName + " (constraintId) VALUES (?);",
                         new PreparedStatementAdapter<Integer>() {
@@ -74,22 +74,21 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                         },
                         tableName);
 
-        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INDPART_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_UCCPART_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + referenceTableName
-                                + " (constraintId, lhs, rhs) VALUES (?, ?, ?);",
+                                + " (constraintId, col) VALUES (?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
-                                preparedStatement.setInt(3, parameters[2]);
                             }
                         },
                         referenceTableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Void> INCLUSIONDEPENDENCY_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Void> UNIQECOLUMNCOMBINATION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
                                 + " from " + tableName + ", constraintt where " + tableName
@@ -97,7 +96,7 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Integer> INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Integer> UNIQECOLUMNCOMBINATION_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
                                 + " from " + tableName + ", constraintt where " + tableName
@@ -106,52 +105,50 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Integer> INDPART_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Integer> UCCPART_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT lhs, rhs "
+                        "SELECT col "
                                 + "from " + referenceTableName + " "
                                 + "where " + referenceTableName + ".constraintId = ?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         referenceTableName);
 
-        public InclusionDependencySQLiteSerializer(SQLInterface sqlInterface) {
+        public UniqueColumnCombinationSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
             try {
-                this.insertInclusionDependencyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
-                        INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY);
+                this.insertUniqueColumnCombinationWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY);
 
-                this.insertINDPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
-                        INSERT_INDPART_WRITER_FACTORY);
+                this.insertUCCPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_UCCPART_WRITER_FACTORY);
 
-                this.queryInclusionDependencies = sqlInterface.getDatabaseAccess().createQuery(
-                        INCLUSIONDEPENDENCY_QUERY_FACTORY);
+                this.queryUniqueColumnCombination = sqlInterface.getDatabaseAccess().createQuery(
+                        UNIQECOLUMNCOMBINATION_QUERY_FACTORY);
 
-                this.queryInclusionDependenciesForConstraintCollection = sqlInterface.getDatabaseAccess()
+                this.queryUniqueColumnCombinationsForConstraintCollection = sqlInterface.getDatabaseAccess()
                         .createQuery(
-                                INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+                                UNIQECOLUMNCOMBINATION_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
 
-                this.queryINDPart = sqlInterface.getDatabaseAccess()
+                this.queryUCCPart = sqlInterface.getDatabaseAccess()
                         .createQuery(
-                                INDPART_QUERY_FACTORY);
+                                UCCPART_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint inclusionDependency) {
+        public void serialize(Integer constraintId, Constraint uniqueColumnCombination) {
 
-            Validate.isTrue(inclusionDependency instanceof InclusionDependency);
+            Validate.isTrue(uniqueColumnCombination instanceof UniqueColumnCombination);
             try {
-                insertInclusionDependencyWriter.write(constraintId);
+                insertUniqueColumnCombinationWriter.write(constraintId);
 
-                for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
-                    insertINDPartWriter.write(new int[] { constraintId,
-                            ((InclusionDependency) inclusionDependency).getTargetReference()
-                                    .getDependentColumns()[i].getId(),
-                            ((InclusionDependency) inclusionDependency).getTargetReference()
-                                    .getReferencedColumns()[i].getId() });
+                for (int i = 0; i < ((UniqueColumnCombination) uniqueColumnCombination).getArity(); i++) {
+                    insertUCCPartWriter.write(new int[] { constraintId,
+                            ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference()
+                                    .getUniqueColumns()[i].getId() });
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -164,43 +161,42 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> inclusionDependencies = new HashSet<>();
+            Collection<Constraint> uniqueColumnCombiantions = new HashSet<>();
 
             try {
-                ResultSet rsInclusionDependencies = retrieveConstraintCollection ?
-                        queryInclusionDependencies.execute(null) : queryInclusionDependenciesForConstraintCollection
+                ResultSet rsUniqueColumnCombinations = retrieveConstraintCollection ?
+                        queryUniqueColumnCombination.execute(null)
+                        : queryUniqueColumnCombinationsForConstraintCollection
                                 .execute(constraintCollection.getId());
-                while (rsInclusionDependencies.next()) {
+                while (rsUniqueColumnCombinations.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
-                                .getConstraintCollectionById(rsInclusionDependencies
+                                .getConstraintCollectionById(rsUniqueColumnCombinations
                                         .getInt("constraintCollectionId"));
                     }
-                    inclusionDependencies
-                            .add(InclusionDependency.build(
-                                    getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
+                    uniqueColumnCombiantions
+                            .add(UniqueColumnCombination.build(
+                                    getUniqueColumnCombinationReferences(rsUniqueColumnCombinations.getInt("id")),
                                     constraintCollection));
 
                 }
-                rsInclusionDependencies.close();
+                rsUniqueColumnCombinations.close();
 
-                return inclusionDependencies;
+                return uniqueColumnCombiantions;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        public Reference getInclusionDependencyReferences(int id) {
-            List<Column> lhs = new ArrayList<>();
-            List<Column> rhs = new ArrayList<>();
+        public Reference getUniqueColumnCombinationReferences(int id) {
+            List<Column> cols = new ArrayList<>();
             try {
-                try (ResultSet rs = this.queryINDPart.execute(id);) {
+                try (ResultSet rs = this.queryUCCPart.execute(id);) {
                     while (rs.next()) {
-                        lhs.add(this.sqlInterface.getColumnById(rs.getInt("lhs")));
-                        rhs.add(this.sqlInterface.getColumnById(rs.getInt("rhs")));
+                        cols.add(this.sqlInterface.getColumnById(rs.getInt("col")));
                     }
                 }
-                return new Reference(lhs.toArray(new Column[lhs.size()]), rhs.toArray(new Column[rhs.size()]));
+                return new Reference(cols.toArray(new Column[cols.size()]));
             } catch (SQLException e)
             {
                 throw new RuntimeException(e);
@@ -228,14 +224,11 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 String createINDpartTable = "CREATE TABLE [" + referenceTableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
-                        "    [lhs] integer NOT NULL,\n" +
-                        "    [rhs] integer NOT NULL,\n" +
-                        "    FOREIGN KEY ([lhs])\n" +
+                        "    [col] integer NOT NULL,\n" +
+                        "    FOREIGN KEY ([col])\n" +
                         "    REFERENCES [Columnn] ([id]),\n" +
                         "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [" + tableName + "] ([constraintId]),\n" +
-                        "    FOREIGN KEY ([rhs])\n" +
-                        "    REFERENCES [Columnn] ([id])\n" +
+                        "    REFERENCES [" + tableName + "] ([constraintId])" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createINDpartTable);
             }
@@ -248,91 +241,77 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
 
-        private static final long serialVersionUID = -861294530676768362L;
+        private static final long serialVersionUID = -3272378011671591628L;
 
-        Column[] dependentColumns;
-        Column[] referencedColumns;
+        Column[] uniqueColumns;
 
-        public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
-            this.dependentColumns = dependentColumns;
-            this.referencedColumns = referencedColumns;
+        public Reference(final Column[] uniqueColumns) {
+            this.uniqueColumns = uniqueColumns;
         }
 
         @Override
         public Collection<Target> getAllTargets() {
-            final List<Target> result = new ArrayList<>(this.dependentColumns.length + this.referencedColumns.length);
-            result.addAll(Arrays.asList(this.dependentColumns));
-            result.addAll(Arrays.asList(this.referencedColumns));
+            final List<Target> result = new ArrayList<>(this.uniqueColumns.length);
+            result.addAll(Arrays.asList(this.uniqueColumns));
             return result;
         }
 
         /**
-         * @return the dependentColumns
+         * @return the unique columns
          */
-        public Column[] getDependentColumns() {
-            return this.dependentColumns;
-        }
-
-        /**
-         * @return the referencedColumns
-         */
-        public Column[] getReferencedColumns() {
-            return this.referencedColumns;
+        public Column[] getUniqueColumns() {
+            return this.uniqueColumns;
         }
 
         @Override
         public String toString() {
-            return "Reference [dependentColumns=" + Arrays.toString(dependentColumns) + ", referencedColumns="
-                    + Arrays.toString(referencedColumns) + "]";
+            return "Reference [uniqueColumns=" + Arrays.toString(uniqueColumns) + "]";
         }
     }
 
     private static final long serialVersionUID = -932394088609862495L;
-    private InclusionDependency.Reference target;
+    private UniqueColumnCombination.Reference target;
 
-    public static InclusionDependency build(final InclusionDependency.Reference target,
+    public static UniqueColumnCombination build(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
-        return inclusionDependency;
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        return uniqueColumnCombination;
     }
 
-    public static InclusionDependency buildAndAddToCollection(final InclusionDependency.Reference target,
+    public static UniqueColumnCombination buildAndAddToCollection(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
-        constraintCollection.add(inclusionDependency);
-        return inclusionDependency;
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        constraintCollection.add(uniqueColumnCombination);
+        return uniqueColumnCombination;
     }
 
     /**
      * @see AbstractConstraint
      */
-    private InclusionDependency(final InclusionDependency.Reference target,
+    private UniqueColumnCombination(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
         super(constraintCollection);
-        if (target.dependentColumns.length != target.referencedColumns.length) {
-            throw new IllegalArgumentException("Number of dependent columns must equal number of referenced columns!");
-        }
         this.target = target;
     }
 
     @Override
-    public InclusionDependency.Reference getTargetReference() {
+    public UniqueColumnCombination.Reference getTargetReference() {
         return target;
     }
 
     @Override
     public String toString() {
-        return "InclusionDependency [target=" + target + "]";
+        return "UniqueColumnCombination [target=" + target + "]";
     }
 
     public int getArity() {
-        return this.getTargetReference().getDependentColumns().length;
+        return this.getTargetReference().getUniqueColumns().length;
     }
 
     @Override
     public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            return new InclusionDependencySQLiteSerializer(sqlInterface);
+            return new UniqueColumnCombinationSQLiteSerializer(sqlInterface);
         } else {
             throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
         }

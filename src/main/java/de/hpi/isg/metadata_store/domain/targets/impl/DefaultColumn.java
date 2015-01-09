@@ -17,15 +17,17 @@ public class DefaultColumn extends AbstractTarget implements Column {
     private final Location location;
 
     public static Column buildAndRegister(final Observer observer, final Table table, final int id, final String name,
+            final String description,
             final Location location) {
-        final DefaultColumn newColumn = new DefaultColumn(observer, table, id, name, location);
+        final DefaultColumn newColumn = new DefaultColumn(observer, table, id, name, description, location);
         newColumn.register();
         return newColumn;
     }
 
     public static Column buildAndRegister(final Observer observer, final Table table, final String name,
+            final String description,
             final Location location) {
-        final DefaultColumn newColumn = new DefaultColumn(observer, table, -1, name, location);
+        final DefaultColumn newColumn = new DefaultColumn(observer, table, -1, name, description, location);
         newColumn.register();
         return newColumn;
     }
@@ -35,8 +37,9 @@ public class DefaultColumn extends AbstractTarget implements Column {
     private final Table table;
 
     private DefaultColumn(final Observer observer, final Table table, final int id, final String name,
+            String description,
             final Location location) {
-        super(observer, id, name, location);
+        super(observer, id, name, description, location);
         this.location = location;
         this.table = table;
     }
@@ -64,5 +67,4 @@ public class DefaultColumn extends AbstractTarget implements Column {
         return String.format("Column[%s, %08x]", getNameWithTableName(), getId());
 
     }
-
 }

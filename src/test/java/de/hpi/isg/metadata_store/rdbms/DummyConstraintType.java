@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
-package de.hpi.isg.metadata_store.domain.constraints.impl;
+package de.hpi.isg.metadata_store.rdbms;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,6 +33,8 @@ import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.constraints.impl.AbstractConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
@@ -43,23 +45,23 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  * 
  * @author Sebastian Kruse
  */
-public class TupleCount extends AbstractConstraint {
+public class DummyConstraintType extends AbstractConstraint {
 
-    public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class DummySQLiteSerializer implements ConstraintSQLSerializer {
 
-        private final static String tableName = "TupleCount";
+        private final static String tableName = "dummy";
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<int[]> insertTupleCountWriter;
+        DatabaseWriter<int[]> insertdummyWriter;
 
-        DatabaseQuery<Void> queryTupleCounts;
+        DatabaseQuery<Void> querydummys;
 
-        DatabaseQuery<Integer> queryTupleCountsForConstraintCollection;
+        DatabaseQuery<Integer> querydummysForConstraintCollection;
 
-        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_TUPLECOUNT_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_dummy_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, dummy, tableId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -71,46 +73,46 @@ public class TupleCount extends AbstractConstraint {
                         },
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Void> TUPLECOUNT_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Void> dummy_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id;",
+                                + " from dummy, constraintt where dummy.constraintId = constraintt.id;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Integer> TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Integer> dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id"
+                                + " from dummy, constraintt where dummy.constraintId = constraintt.id"
                                 + " and constraintt.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
-        public TupleCountSQLiteSerializer(SQLInterface sqlInterface) {
+        public DummySQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
 
             try {
-                this.insertTupleCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
-                        INSERT_TUPLECOUNT_WRITER_FACTORY);
+                this.insertdummyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_dummy_WRITER_FACTORY);
 
-                this.queryTupleCounts = sqlInterface.getDatabaseAccess().createQuery(
-                        TUPLECOUNT_QUERY_FACTORY);
+                this.querydummys = sqlInterface.getDatabaseAccess().createQuery(
+                        dummy_QUERY_FACTORY);
 
-                this.queryTupleCountsForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
-                        TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+                this.querydummysForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
+                        dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint tupleCount) {
-            Validate.isTrue(tupleCount instanceof TupleCount);
+        public void serialize(Integer constraintId, Constraint dummy) {
+            Validate.isTrue(dummy instanceof DummyConstraintType);
             try {
-                insertTupleCountWriter.write(new int[] {
-                        constraintId, ((TupleCount) tupleCount).getNumTuples(), tupleCount
+                insertdummyWriter.write(new int[] {
+                        constraintId, ((DummyConstraintType) dummy).getNumTuples(), dummy
                                 .getTargetReference()
                                 .getAllTargets().iterator()
                                 .next().getId()
@@ -127,27 +129,27 @@ public class TupleCount extends AbstractConstraint {
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> tupleCounts = new HashSet<>();
+            Collection<Constraint> dummys = new HashSet<>();
 
             try {
-                ResultSet rsTupleCounts = retrieveConstraintCollection ?
-                        queryTupleCounts.execute(null) : queryTupleCountsForConstraintCollection
+                ResultSet rsdummys = retrieveConstraintCollection ?
+                        querydummys.execute(null) : querydummysForConstraintCollection
                                 .execute(constraintCollection.getId());
-                while (rsTupleCounts.next()) {
+                while (rsdummys.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
-                                .getConstraintCollectionById(rsTupleCounts
+                                .getConstraintCollectionById(rsdummys
                                         .getInt("constraintCollectionId"));
                     }
-                    tupleCounts
-                            .add(TupleCount.build(
-                                    new TupleCount.Reference(this.sqlInterface.getTableById(rsTupleCounts
+                    dummys
+                            .add(DummyConstraintType.build(
+                                    new DummyConstraintType.Reference(this.sqlInterface.getTableById(rsdummys
                                             .getInt("tableId"))), constraintCollection,
-                                    rsTupleCounts.getInt("tupleCount")));
+                                    rsdummys.getInt("dummy")));
                 }
-                rsTupleCounts.close();
+                rsdummys.close();
 
-                return tupleCounts;
+                return dummys;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -165,7 +167,7 @@ public class TupleCount extends AbstractConstraint {
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
                         "    [tableId] integer NOT NULL,\n" +
-                        "    [tupleCount] integer,\n" +
+                        "    [dummy] integer,\n" +
                         "    FOREIGN KEY ([constraintId])\n" +
                         "    REFERENCES [Constraintt] ([id]),\n" +
                         "    FOREIGN KEY ([tableId])\n" +
@@ -210,7 +212,7 @@ public class TupleCount extends AbstractConstraint {
     /**
      * @see AbstractConstraint
      */
-    private TupleCount(final Reference target,
+    private DummyConstraintType(final Reference target,
             final ConstraintCollection constraintCollection, int numTuples) {
 
         super(constraintCollection);
@@ -218,22 +220,22 @@ public class TupleCount extends AbstractConstraint {
         this.numTuples = numTuples;
     }
 
-    public static TupleCount build(final Reference target, ConstraintCollection constraintCollection,
+    public static DummyConstraintType build(final Reference target, ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
-        return tupleCount;
+        DummyConstraintType dummy = new DummyConstraintType(target, constraintCollection, numTuples);
+        return dummy;
     }
 
-    public static TupleCount buildAndAddToCollection(final Reference target,
+    public static DummyConstraintType buildAndAddToCollection(final Reference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
-        constraintCollection.add(tupleCount);
-        return tupleCount;
+        DummyConstraintType dummy = new DummyConstraintType(target, constraintCollection, numTuples);
+        constraintCollection.add(dummy);
+        return dummy;
     }
 
     @Override
-    public TupleCount.Reference getTargetReference() {
+    public DummyConstraintType.Reference getTargetReference() {
         return this.target;
     }
 
@@ -254,13 +256,13 @@ public class TupleCount extends AbstractConstraint {
 
     @Override
     public String toString() {
-        return "TupleCount[" + getTargetReference() + ", numTuples=" + numTuples + "]";
+        return "dummy[" + getTargetReference() + ", numTuples=" + numTuples + "]";
     }
 
     @Override
     public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            return new TupleCountSQLiteSerializer(sqlInterface);
+            return new DummySQLiteSerializer(sqlInterface);
         } else {
             throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
         }

@@ -31,7 +31,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     private static final long serialVersionUID = 8470123808962099640L;
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSTable.class);
 
     private static final boolean USE_STICKY_CACHE = true;
@@ -50,9 +50,9 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
             final int id,
-            final String name, final Location location) {
+            final String name, String description, final Location location) {
 
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, true);
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, description, location, true);
         newTable.register();
         // TODO: Remove
         // newTable.getSqlInterface().addTableToSchema(newTable, schema);
@@ -60,15 +60,15 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     }
 
     public static RDBMSTable restore(final RDBMSMetadataStore observer, final Schema schema, final int id,
-            final String name, final Location location) {
+            final String name, String description, final Location location) {
 
-        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, location, false);
+        final RDBMSTable newTable = new RDBMSTable(observer, schema, id, name, description, location, false);
         return newTable;
     }
 
     private RDBMSTable(final RDBMSMetadataStore observer, final Schema schema, final int id, final String name,
-            final Location location, boolean isFreshlyCreated) {
-        super(observer, id, name, location, isFreshlyCreated);
+            String description, final Location location, boolean isFreshlyCreated) {
+        super(observer, id, name, description, location, isFreshlyCreated);
         this.schema = schema;
         if (isFreshlyCreated) {
             cacheChildColumns(new ArrayList<Column>());
@@ -81,7 +81,8 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     }
 
     @Override
-    public Column addColumn(final MetadataStore metadataStore, final String name, final int index) {
+    public Column addColumn(final MetadataStore metadataStore, final String name, final String description,
+            final int index) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
         Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
         IdUtils idUtils = metadataStore.getIdUtils();
@@ -91,7 +92,7 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         final Location location = new DefaultLocation();
         location.getProperties().put(Location.INDEX, index + "");
         final Column column = RDBMSColumn.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, columnId,
-                name,
+                name, description,
                 location);
         addToChildIdCache(columnId);
         Collection<Column> columnCache = getChildColumnCache();

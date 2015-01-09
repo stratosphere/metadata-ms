@@ -1,5 +1,3 @@
-
-
 /* Create Tables */
 
 CREATE TABLE [Location]
@@ -14,6 +12,7 @@ CREATE TABLE [Target]
 	[id] integer NOT NULL,
 	[name] text,
 	[locationId] integer,
+	[description] text,
 	PRIMARY KEY ([id]),
 	FOREIGN KEY ([locationId])
 	REFERENCES [Location] ([id])
@@ -34,10 +33,10 @@ CREATE TABLE [Tablee]
 	[id] integer NOT NULL,
 	[schemaId] integer NOT NULL,
 	PRIMARY KEY ([id]),
-	FOREIGN KEY ([schemaId])
-	REFERENCES [Schemaa] ([id]),
 	FOREIGN KEY ([id])
-	REFERENCES [Target] ([id])
+	REFERENCES [Target] ([id]),
+	FOREIGN KEY ([schemaId])
+	REFERENCES [Schemaa] ([id])
 );
 
 
@@ -64,14 +63,16 @@ CREATE TABLE [Config]
 CREATE TABLE [ConstraintCollection]
 (
 	[id] integer NOT NULL,
+	[description] text,
 	PRIMARY KEY ([id])
 );
 
 
 CREATE TABLE [Constraintt]
 (
-	[id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+	[id] integer NOT NULL,
 	[constraintCollectionId] integer NOT NULL,
+	PRIMARY KEY ([id]),
 	FOREIGN KEY ([constraintCollectionId])
 	REFERENCES [ConstraintCollection] ([id])
 );
@@ -91,10 +92,10 @@ CREATE TABLE [INDpart]
 	[constraintId] integer NOT NULL,
 	[lhs] integer NOT NULL,
 	[rhs] integer NOT NULL,
-	FOREIGN KEY ([lhs])
-	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([constraintId])
 	REFERENCES [IND] ([constraintId]),
+	FOREIGN KEY ([lhs])
+	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([rhs])
 	REFERENCES [Columnn] ([id])
 );
@@ -131,6 +132,3 @@ CREATE TABLE [Typee]
 	FOREIGN KEY ([columnId])
 	REFERENCES [Columnn] ([id])
 );
-
-
-

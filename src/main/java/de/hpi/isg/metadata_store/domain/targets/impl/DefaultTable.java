@@ -25,15 +25,17 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class DefaultTable extends AbstractTarget implements Table {
 
     public static Table buildAndRegister(final Observer observer, final Schema schema, final int id, final String name,
+            final String description,
             final Location location) {
-        final DefaultTable newTable = new DefaultTable(observer, schema, id, name, location);
+        final DefaultTable newTable = new DefaultTable(observer, schema, id, name, description, location);
         newTable.register();
         return newTable;
     }
 
     public static Table buildAndRegister(final Observer observer, final Schema schema, final String name,
+            final String description,
             final Location location) {
-        final DefaultTable newTable = new DefaultTable(observer, schema, -1, name, location);
+        final DefaultTable newTable = new DefaultTable(observer, schema, -1, name, description, location);
         newTable.register();
         return newTable;
     }
@@ -47,8 +49,9 @@ public class DefaultTable extends AbstractTarget implements Table {
     private final Schema schema;
 
     private DefaultTable(final Observer observer, final Schema schema, final int id, final String name,
+            final String description,
             final Location location) {
-        super(observer, id, name, location);
+        super(observer, id, name, description, location);
         this.columns = Collections.synchronizedSet(new HashSet<Column>());
         this.schema = schema;
     }
@@ -60,7 +63,8 @@ public class DefaultTable extends AbstractTarget implements Table {
     }
 
     @Override
-    public Column addColumn(final MetadataStore metadataStore, final String name, final int index) {
+    public Column addColumn(final MetadataStore metadataStore, final String name, final String description,
+            final int index) {
         Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
         IdUtils idUtils = metadataStore.getIdUtils();
         final int localSchemaId = idUtils.getLocalSchemaId(getId());
@@ -68,7 +72,8 @@ public class DefaultTable extends AbstractTarget implements Table {
         final int columnId = idUtils.createGlobalId(localSchemaId, localTableId, idUtils.getMinColumnNumber() + index);
         final Location location = new DefaultLocation();
         location.getProperties().put(Location.INDEX, index + "");
-        final Column column = DefaultColumn.buildAndRegister(metadataStore, this, columnId, name, location);
+        final Column column = DefaultColumn
+                .buildAndRegister(metadataStore, this, columnId, name, description, location);
         addColumn(column);
         return column;
     }

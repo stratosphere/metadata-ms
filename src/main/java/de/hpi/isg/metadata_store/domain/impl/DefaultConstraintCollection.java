@@ -16,11 +16,14 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
     private static final long serialVersionUID = -6633086023388829925L;
     private final Set<Constraint> constraints;
     private final Set<Target> scope;
-    
+
+    private String description;
+
     @ExcludeHashCodeEquals
     private final DefaultMetadataStore metadataStore;
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints, Set<Target> scope) {
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
+            Set<Target> scope) {
         super(id);
         this.metadataStore = metadataStore;
         this.constraints = constraints;
@@ -51,8 +54,18 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
             }
 
         }
-        
+
         this.constraints.add(constraint);
     }
-    
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
 }
