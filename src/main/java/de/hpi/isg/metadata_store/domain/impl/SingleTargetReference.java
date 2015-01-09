@@ -35,4 +35,11 @@ public class SingleTargetReference extends AbstractHashCodeAndEquals implements 
         return IntLists.singleton(this.targetId);
     }
 
+    @Override
+    public String toString() {
+        return "SingleTargetReference[" + targetId + "]";
+    }
+
+    
+    
 }
