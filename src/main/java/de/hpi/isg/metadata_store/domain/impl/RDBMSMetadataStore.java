@@ -160,11 +160,16 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
     }
 
+    @Override
+    public boolean hasTargetWithId(int id) {
+        return idIsInUse(id);
+    }
+    
     private boolean idIsInUse(final int id) {
         try {
             return this.sqlInterface.isTargetIdInUse(id);
         } catch (SQLException e) {
-            throw new RuntimeException(String.format("Could not determin if ID %s is in use.", id), e);
+            throw new RuntimeException(String.format("Could not determine if ID %s is in use.", id), e);
         }
         // synchronized (this.sqlInterface.getIdsInUse()) {
         //

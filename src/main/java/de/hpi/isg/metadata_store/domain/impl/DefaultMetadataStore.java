@@ -1,7 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashBigSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,11 +49,9 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     private final Collection<ConstraintCollection> constraintCollections;
 
-    private final Collection<Target> allTargets;
+    private final Int2ObjectMap<Target> allTargets;
 
     transient private File storeLocation;
-
-    private final IntSet idsInUse = new IntOpenHashBigSet();
 
     @ExcludeHashCodeEquals
     private final IdUtils idUtils;
@@ -70,7 +68,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
         this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection>());
-        this.allTargets = Collections.synchronizedSet(new HashSet<Target>());
+        this.allTargets = new Int2ObjectOpenHashMap<>();
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
     }
 
@@ -98,7 +96,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<Target> getAllTargets() {
-        return Collections.unmodifiableCollection(this.allTargets);
+        return this.allTargets.values();
     }
 
     @Override
@@ -162,25 +160,28 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         throw new IllegalStateException(String.format("No free table ID left within schema %s.", schema));
     }
 
-    private boolean idIsInUse(final int id) {
-        synchronized (this.idsInUse) {
-            return this.idsInUse.contains(id);
+    @Override
+    public boolean hasTargetWithId(int id) {
+        synchronized (this.allTargets) {
+            return this.allTargets.containsKey(id);
         }
+    }
+    
+    private boolean idIsInUse(final int id) {
+        // delegate
+        return hasTargetWithId(id);
     }
 
-    // @Override
-    private void registerId(final int id) {
-        synchronized (this.idsInUse) {
-            if (!this.idsInUse.add(id)) {
-                throw new IdAlreadyInUseException("id is already in use: " + id);
-            }
-        }
-    }
 
     @Override
     public void registerTargetObject(final Target message) {
-        registerId(message.getId());
-        this.allTargets.add(message);
+        synchronized (this.allTargets) {
+            Target oldTarget = this.allTargets.put(message.getId(), message);
+            if (oldTarget != null) {
+                this.allTargets.put(oldTarget.getId(), oldTarget);
+                throw new IdAlreadyInUseException("Id is already in use: " + message.getId());
+            }
+        }
     }
     
     /**

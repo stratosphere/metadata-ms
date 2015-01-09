@@ -1078,7 +1078,11 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore) {
         this.store = rdbmsMetadataStore;
-
+    }
+    
+    @Override
+    public RDBMSMetadataStore getMetadataStore() {
+        return this.store;
     }
 
     @SuppressWarnings("unchecked")

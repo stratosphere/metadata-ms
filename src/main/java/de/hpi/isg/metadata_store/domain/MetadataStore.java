@@ -24,7 +24,10 @@ public interface MetadataStore extends Serializable, Observer {
 
     public Schema addSchema(String name, Location location);
 
+    @Deprecated
     public Collection<Target> getAllTargets();
+    
+    public boolean hasTargetWithId(int id);
 
     public Collection<ConstraintCollection> getConstraintCollections();
 

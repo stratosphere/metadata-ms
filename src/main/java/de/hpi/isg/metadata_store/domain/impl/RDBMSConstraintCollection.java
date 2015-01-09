@@ -1,5 +1,6 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -15,6 +16,8 @@ import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -2911473574180511468L;
+    
+    public static final boolean IS_CHECK_CONSTRAINT_TARGETS = false;
 
     private Collection<Constraint> constraints = null;
 
@@ -70,11 +73,19 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     @Override
     public void add(Constraint constraint) {
         this.constraints = null;
-        
-        // Ensure that all targets of the constraint are valid.
-        for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!this.sqlInterface.getAllTargets().contains(target)) {
-                throw new NotAllTargetsInStoreException(target);
+
+        if (IS_CHECK_CONSTRAINT_TARGETS) {
+            // Ensure that all targets of the constraint are valid.
+            for (final Target target : constraint.getTargetReference().getAllTargets()) {
+                int targetId = target.getId();
+                try {
+                    if (!this.sqlInterface.isTargetIdInUse(targetId)) {
+                        throw new NotAllTargetsInStoreException(target);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
             }
 
         }

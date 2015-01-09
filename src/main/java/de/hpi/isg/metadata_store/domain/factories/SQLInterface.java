@@ -53,6 +53,8 @@ public interface SQLInterface {
     Collection<Schema> getAllSchemas();
 
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
+    
+    public RDBMSMetadataStore getMetadataStore();
 
     // boolean addToIdsInUse(int id);
 
