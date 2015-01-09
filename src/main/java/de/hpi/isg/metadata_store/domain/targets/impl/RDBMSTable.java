@@ -34,11 +34,19 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSTable.class);
 
+    private static final boolean USE_STICKY_CACHE = true;
+    
     @ExcludeHashCodeEquals
     private final Schema schema;
 
     @ExcludeHashCodeEquals
     private Reference<Collection<Column>> childColumnCache;
+    
+    /**
+     * Experimental: keep the garbage collector from deleting the child column cache by keeping a firm reference to it.
+     */
+    @ExcludeHashCodeEquals
+    private Collection<Column> stickyChildColumnCache;
 
     public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
             final int id,
@@ -142,9 +150,15 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
     public void cacheChildColumns(Collection<Column> columns) {
         this.childColumnCache = new SoftReference<Collection<Column>>(columns);
+        if (USE_STICKY_CACHE) {
+            this.stickyChildColumnCache = columns;
+        }
     }
 
     private Collection<Column> getChildColumnCache() {
+        if (USE_STICKY_CACHE) {
+            return this.stickyChildColumnCache;
+        }
         if (this.childColumnCache == null) {
             return null;
         }
