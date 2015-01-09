@@ -12,12 +12,14 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.rdbms;
 
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntLists;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -30,7 +32,6 @@ import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.constraints.impl.AbstractConstraint;
@@ -114,8 +115,8 @@ public class DummyConstraintType extends AbstractConstraint {
                 insertdummyWriter.write(new int[] {
                         constraintId, ((DummyConstraintType) dummy).getNumTuples(), dummy
                                 .getTargetReference()
-                                .getAllTargets().iterator()
-                                .next().getId()
+                                .getAllTargetIds().iterator()
+                                .nextInt()
                 });
 
             } catch (SQLException e) {
@@ -192,8 +193,8 @@ public class DummyConstraintType extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Target> getAllTargets() {
-            return Collections.<Target> singleton(this.table);
+        public IntCollection getAllTargetIds() {
+            return IntLists.singleton(this.table.getId());
         }
 
         @Override

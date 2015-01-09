@@ -12,10 +12,14 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntList;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,7 +34,6 @@ import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
@@ -145,10 +148,9 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
             try {
                 insertUniqueColumnCombinationWriter.write(constraintId);
 
-                for (int i = 0; i < ((UniqueColumnCombination) uniqueColumnCombination).getArity(); i++) {
-                    insertUCCPartWriter.write(new int[] { constraintId,
-                            ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference()
-                                    .getUniqueColumns()[i].getId() });
+				IntCollection targetIds = ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference().getAllTargetIds();
+				for (IntIterator i = targetIds.iterator(); i.hasNext();) {
+                    insertUCCPartWriter.write(new int[] { constraintId, i.nextInt() });
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -189,14 +191,14 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         }
 
         public Reference getUniqueColumnCombinationReferences(int id) {
-            List<Column> cols = new ArrayList<>();
+            IntList cols = new IntArrayList();
             try {
                 try (ResultSet rs = this.queryUCCPart.execute(id);) {
                     while (rs.next()) {
-                        cols.add(this.sqlInterface.getColumnById(rs.getInt("col")));
+                        cols.add(rs.getInt("col"));
                     }
                 }
-                return new Reference(cols.toArray(new Column[cols.size()]));
+                return new Reference(cols.toIntArray());
             } catch (SQLException e)
             {
                 throw new RuntimeException(e);
@@ -243,24 +245,29 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
 
         private static final long serialVersionUID = -3272378011671591628L;
 
-        Column[] uniqueColumns;
+        private static int[] toIntArray(Column[] columns) {
+            int[] intArray = new int[columns.length];
+            for (int i = 0; i < columns.length; i++) {
+                intArray[i] = columns[i].getId();
+            }
+            return intArray;
+        }
+        
+        int[] uniqueColumns;
 
+        @Deprecated
         public Reference(final Column[] uniqueColumns) {
-            this.uniqueColumns = uniqueColumns;
+        	this(toIntArray(uniqueColumns));
+        }
+        
+        public Reference(final int[] uniqueColumns) {
+        	this.uniqueColumns = uniqueColumns;
+        	Arrays.sort(this.uniqueColumns);
         }
 
         @Override
-        public Collection<Target> getAllTargets() {
-            final List<Target> result = new ArrayList<>(this.uniqueColumns.length);
-            result.addAll(Arrays.asList(this.uniqueColumns));
-            return result;
-        }
-
-        /**
-         * @return the unique columns
-         */
-        public Column[] getUniqueColumns() {
-            return this.uniqueColumns;
+        public IntCollection getAllTargetIds() {
+        	return new IntArrayList(this.uniqueColumns);
         }
 
         @Override
@@ -305,7 +312,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
     }
 
     public int getArity() {
-        return this.getTargetReference().getUniqueColumns().length;
+        return this.getTargetReference().uniqueColumns.length;
     }
 
     @Override
