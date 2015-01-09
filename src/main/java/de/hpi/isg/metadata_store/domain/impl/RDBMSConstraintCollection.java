@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
+import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -7,6 +9,7 @@ import java.util.Set;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
@@ -60,6 +63,11 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     public SQLInterface getSqlInterface() {
         return sqlInterface;
     }
+    
+    @Override
+    public MetadataStore getMetadataStore() {
+        return this.sqlInterface.getMetadataStore();
+    }
 
     public void setScope(Collection<Target> scope) {
         this.scope = scope;
@@ -76,11 +84,11 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
         if (IS_CHECK_CONSTRAINT_TARGETS) {
             // Ensure that all targets of the constraint are valid.
-            for (final Target target : constraint.getTargetReference().getAllTargets()) {
-                int targetId = target.getId();
+            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
+                int targetId = i.nextInt();
                 try {
                     if (!this.sqlInterface.isTargetIdInUse(targetId)) {
-                        throw new NotAllTargetsInStoreException(target);
+                        throw new NotAllTargetsInStoreException(targetId);
                     }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);

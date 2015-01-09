@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,6 +9,8 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
 import de.hpi.isg.metadata_store.db.query.DatabaseQuery;
@@ -15,19 +19,23 @@ import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 import de.hpi.isg.metadata_store.domain.targets.Column;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.domain.util.IdUtils.IdTypes;
 
 /**
  * This class is a {@link Constraint} representing the data type of a certain {@link Column}. {@link Column}.
  */
 public class TypeConstraint extends AbstractConstraint implements Constraint {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class); 
+    
     public enum TYPES {
         STRING, INTEGER, DECIMAL
     };
@@ -120,8 +128,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 insertTypeConstraintWriter.write(new Object[] {
                         constraintId, ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
-                                .getAllTargets().iterator()
-                                .next().getId()
+                                .getAllTargetIds().iterator().nextInt()
                 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -185,11 +192,21 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
     private TypeConstraint(final SingleTargetReference target, ConstraintCollection constraintCollection,
             TYPES type) {
         super(constraintCollection);
-        Validate.isTrue(target.getAllTargets().size() == 1);
-        for (final Target t : target.getAllTargets()) {
-            if (!(t instanceof Column)) {
-                throw new IllegalArgumentException("TypeConstrains can only be defined on Columns. But target was: "
-                        + t);
+        Validate.isTrue(target.getAllTargetIds().size() == 1);
+        MetadataStore metadataStore = constraintCollection.getMetadataStore();
+        if (metadataStore == null) {
+            LOGGER.warn(
+                    "Could not obtain a metadata store from {}, will not validate if type constraint points to column.",
+                    constraintCollection);
+        } else {
+            IdUtils idUtils = constraintCollection.getMetadataStore().getIdUtils();
+            for (IntIterator i = target.getAllTargetIds().iterator(); i.hasNext();) {
+                int targetId = i.nextInt();
+                IdTypes idType = idUtils.getIdType(targetId);
+                if (idType != IdTypes.COLUMN_ID) {
+                    throw new IllegalArgumentException("TypeConstrains can only be defined on Columns. But target was of type "
+                            + idType);
+                }
             }
         }
         this.type = type;

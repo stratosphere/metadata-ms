@@ -128,7 +128,7 @@ public class DistinctValueCount extends AbstractConstraint {
             try {
                 this.insertDistinctValueCountWriter.write(new int[] { constraintId,
                         ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
-                                .getTargetReference().getAllTargets().iterator().next().getId() });
+                                .getTargetReference().getAllTargetIds().iterator().nextInt() });
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);

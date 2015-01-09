@@ -19,4 +19,6 @@ public interface ConstraintCollection extends Identifiable {
     public Collection<Target> getScope();
 
     public void add(Constraint constraint);
+    
+    public MetadataStore getMetadataStore();
 }

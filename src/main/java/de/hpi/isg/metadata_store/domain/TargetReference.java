@@ -1,7 +1,8 @@
 package de.hpi.isg.metadata_store.domain;
 
+import it.unimi.dsi.fastutil.ints.IntCollection;
+
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * A {@link TargetReference} stores the information about {@link Target}s for which a certains {@link Constraint} holds.
@@ -9,5 +10,6 @@ import java.util.Collection;
  */
 
 public interface TargetReference extends Serializable {
-    public Collection<Target> getAllTargets();
+    
+    public IntCollection getAllTargetIds();
 }

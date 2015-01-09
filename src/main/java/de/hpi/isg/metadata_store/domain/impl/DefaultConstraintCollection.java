@@ -1,5 +1,7 @@
 package de.hpi.isg.metadata_store.domain.impl;
 
+import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -44,15 +46,19 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
 
     @Override
     public void add(Constraint constraint) {
-        Collection<Target> allTargets = this.metadataStore.getAllTargets();
-        for (final Target target : constraint.getTargetReference().getAllTargets()) {
-            if (!allTargets.contains(target)) {
-                throw new NotAllTargetsInStoreException(target);
+        for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
+            int targetId = i.nextInt();
+            if (!this.metadataStore.hasTargetWithId(targetId)) {
+                throw new NotAllTargetsInStoreException(targetId);
             }
-
         }
         
         this.constraints.add(constraint);
+    }
+
+    @Override
+    public DefaultMetadataStore getMetadataStore() {
+        return this.metadataStore;
     }
     
 }

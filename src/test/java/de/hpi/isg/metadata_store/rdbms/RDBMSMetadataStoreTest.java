@@ -336,7 +336,7 @@ public class RDBMSMetadataStoreTest {
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", dummyTableLocation);
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection();
-        final TupleCount dummyContraint = TupleCount.buildAndAddToCollection(new TupleCount.Reference(
+        final TupleCount dummyContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
                 dummyTable), constraintCollection, 5);
         constraintCollection.add(dummyContraint);
 

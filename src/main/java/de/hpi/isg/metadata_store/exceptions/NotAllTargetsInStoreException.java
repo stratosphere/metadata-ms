@@ -19,4 +19,8 @@ public class NotAllTargetsInStoreException extends IllegalStateException {
     public NotAllTargetsInStoreException(final Target target) {
         super(target.toString());
     }
+    
+    public NotAllTargetsInStoreException(final int targetId) {
+        super(String.format("Target with id %d", targetId));
+    }
 }

@@ -12,6 +12,10 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.constraints.impl;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntList;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,7 +34,6 @@ import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
-import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
@@ -180,9 +183,9 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
                     insertINDPartWriter.write(new int[] { constraintId,
                             ((InclusionDependency) inclusionDependency).getTargetReference()
-                                    .getDependentColumns()[i].getId(),
+                                    .getDependentColumns()[i],
                             ((InclusionDependency) inclusionDependency).getTargetReference()
-                                    .getReferencedColumns()[i].getId() });
+                                    .getReferencedColumns()[i] });
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -243,33 +246,46 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
         private static final long serialVersionUID = -861294530676768362L;
 
-        Column[] dependentColumns;
-        Column[] referencedColumns;
-
-        public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
-            this.dependentColumns = dependentColumns;
-            this.referencedColumns = referencedColumns;
+        private static int[] toIntArray(Column[] columns) {
+            int[] intArray = new int[columns.length];
+            for (int i = 0; i < columns.length; i++) {
+                intArray[i] = columns[i].getId();
+            }
+            return intArray;
         }
 
+        int[] dependentColumns;
+        int[] referencedColumns;
+
+        public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
+            this(toIntArray(dependentColumns), toIntArray(referencedColumns));
+        }
+        
+        
+        public Reference(final int[] dependentColumnIds, final int[] referencedColumnIds) {
+            this.dependentColumns = dependentColumnIds;
+            this.referencedColumns = referencedColumnIds;
+        }
+        
         @Override
-        public Collection<Target> getAllTargets() {
-            final List<Target> result = new ArrayList<>(this.dependentColumns.length + this.referencedColumns.length);
-            result.addAll(Arrays.asList(this.dependentColumns));
-            result.addAll(Arrays.asList(this.referencedColumns));
-            return result;
+        public IntCollection getAllTargetIds() {
+            IntList allTargetIds = new IntArrayList(this.dependentColumns.length + this.referencedColumns.length);
+            allTargetIds.addElements(0, this.dependentColumns);
+            allTargetIds.addElements(allTargetIds.size(), this.referencedColumns);
+            return allTargetIds;
         }
 
         /**
          * @return the dependentColumns
          */
-        public Column[] getDependentColumns() {
+        public int[] getDependentColumns() {
             return this.dependentColumns;
         }
 
         /**
          * @return the referencedColumns
          */
-        public Column[] getReferencedColumns() {
+        public int[] getReferencedColumns() {
             return this.referencedColumns;
         }
 
