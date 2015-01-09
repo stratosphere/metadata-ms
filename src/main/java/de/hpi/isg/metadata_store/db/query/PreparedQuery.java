@@ -40,7 +40,11 @@ abstract public class PreparedQuery<T> extends DatabaseQuery<T> {
 		this.databaseAccess.flush(this.queriedTables);
 		ensureStatementPrepared();
 		setStatementParameters(element);
-		return this.preparedStatement.executeQuery();
+		long startTime = System.currentTimeMillis();
+		ResultSet resultSet = this.preparedStatement.executeQuery();
+		long endTime = System.currentTimeMillis();
+		LOGGER.trace("ResultSet available after {} ms", (endTime - startTime));
+        return resultSet;
 	}
 
 	abstract protected void setStatementParameters(T element) throws SQLException;

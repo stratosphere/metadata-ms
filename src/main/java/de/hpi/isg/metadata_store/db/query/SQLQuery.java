@@ -40,8 +40,11 @@ public class SQLQuery extends DatabaseQuery<SQLQuery.Parameters> {
 	    LOGGER.trace("Query issued: {}", queryParameter.sql);
 		this.databaseAccess.flush(queryParameter.queriedTables);
 		ensureStatementCreated();
-		return this.statement.executeQuery(queryParameter.sql);
-	}
+        long startTime = System.currentTimeMillis();
+        ResultSet resultSet = this.statement.executeQuery(queryParameter.sql);
+        long endTime = System.currentTimeMillis();
+        LOGGER.trace("ResultSet available after {} ms", (endTime - startTime));
+        return resultSet;	}
 
 	private void ensureStatementCreated() throws SQLException {
 		if (this.statement == null) {

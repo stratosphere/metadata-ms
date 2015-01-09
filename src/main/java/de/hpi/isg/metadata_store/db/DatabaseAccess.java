@@ -204,7 +204,6 @@ public class DatabaseAccess implements AutoCloseable {
 //	}
 
 	public ResultSet query(String sql, String... queriedTables) throws SQLException {
-	    LOGGER.trace("Query issued: {}", sql);
 		queriedTables = canonicalizeTableNames(queriedTables);
 		flush(Arrays.asList(queriedTables));
 		return this.sqlQuery.execute(sql, queriedTables);

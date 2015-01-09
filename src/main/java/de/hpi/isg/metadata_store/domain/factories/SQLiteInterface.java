@@ -26,6 +26,8 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
@@ -64,6 +66,8 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class SQLiteInterface implements SQLInterface {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
+    
     /**
      * Resource path of the SQL script to set up the metadata store schema.
      */
@@ -538,6 +542,8 @@ public class SQLiteInterface implements SQLInterface {
      */
     private Int2ObjectMap<RDBMSTable> loadAllTables(Int2ObjectMap<RDBMSSchema> schemas, boolean areAllSchemasGiven)
             throws SQLException {
+        
+        LOG.trace("Loading all tables for {} schemas.", schemas.size());
         String sql;
         if (areAllSchemasGiven) {
             sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
@@ -615,6 +621,8 @@ public class SQLiteInterface implements SQLInterface {
             }
         }
 
+        LOG.trace("Loading tables finished.");
+        
         return tables;
     }
 
@@ -630,6 +638,9 @@ public class SQLiteInterface implements SQLInterface {
      */
     private Int2ObjectMap<RDBMSColumn> loadAllColumns(Int2ObjectMap<RDBMSTable> tables, RDBMSSchema schema)
             throws SQLException {
+        
+        LOG.trace("Loading all columns for {} tables.", tables.size());
+        
         String sql;
         if (schema == null) {
             sql = "SELECT target.id AS targetId, target.name AS name, location.typee AS locationType, "
@@ -707,6 +718,8 @@ public class SQLiteInterface implements SQLInterface {
             }
         }
 
+        LOG.trace("Loading columns finished.");
+        
         return columns;
     }
 
