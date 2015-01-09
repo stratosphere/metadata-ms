@@ -62,7 +62,7 @@ public class DistinctValueCount extends AbstractConstraint {
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters[0]);
-                                preparedStatement.setString(2, String.valueOf(parameters[1]));
+                                preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
                             }
                         },
