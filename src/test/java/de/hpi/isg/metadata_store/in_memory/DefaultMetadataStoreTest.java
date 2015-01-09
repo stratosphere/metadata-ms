@@ -69,7 +69,7 @@ public class DefaultMetadataStoreTest {
     @Test
     public void testAddingOfSchema() {
         final MetadataStore store1 = new DefaultMetadataStore();
-        final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", mock(Location.class));
+        final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", null, mock(Location.class));
         store1.addSchema(schema1);
         assertTrue(store1.getSchemas().contains(schema1));
         assertTrue(store1.getAllTargets().contains(schema1));
@@ -79,19 +79,20 @@ public class DefaultMetadataStoreTest {
     public void testConstructingAComplexSchema() {
         final MetadataStore metadataStore = new DefaultMetadataStore();
         for (int schemaNumber = 0; schemaNumber <= Math.min(3, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {
-            final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null);
+            final Schema schema = metadataStore.addSchema(String.format("schema-%03d", schemaNumber), null, null);
             for (int tableNumber = 0; tableNumber < 100 * loadFactorForCreateComplexSchemaTest; tableNumber++) {
-                final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null);
+                final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber),
+                        null, null);
                 for (int columnNumber = 0; columnNumber < 10 * loadFactorForCreateComplexSchemaTest; columnNumber++) {
-                    table.addColumn(metadataStore, String.format("column-%03d", columnNumber), columnNumber);
+                    table.addColumn(metadataStore, String.format("column-%03d", columnNumber), null, columnNumber);
                 }
             }
         }
-        
+
         System.out.println("Adding inclusion dependencies.");
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
-            ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(schema);
+            ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null, schema);
             int numInclusionDependencies = 0;
             OuterLoop: for (final Table table1 : schema.getTables()) {
                 for (final Table table2 : schema.getTables()) {
@@ -135,16 +136,17 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", null, new DefaultLocation());
 
         final DefaultLocation dummyTableLocation = new DefaultLocation();
 
-        final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", null,
+                dummyTableLocation);
 
-        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", null,
                 new DefaultLocation());
 
-        final ConstraintCollection cC = store1.createConstraintCollection(dummySchema);
+        final ConstraintCollection cC = store1.createConstraintCollection(null, dummySchema);
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), cC, TYPES.STRING);
 
@@ -188,7 +190,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
         store1.getSchemas().add(dummySchema1);
 
         assertEquals(store1.getSchemaByName("PDB"), dummySchema1);
@@ -199,16 +201,17 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
         store1.getSchemas().add(dummySchema1);
-        Column col = dummySchema1.addTable(store1, "table1", mock(Location.class)).addColumn(store1, "foo", 1);
+        Column col = dummySchema1.addTable(store1, "table1", null, mock(Location.class)).addColumn(store1, "foo", null,
+                1);
         final Set<?> scope = Collections.singleton(dummySchema1);
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(col),
                 mock(ConstraintCollection.class),
                 TYPES.STRING);
         final Set<Constraint> constraints = Collections.singleton(dummyTypeContraint);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(dummySchema1);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
         assertTrue(store1.getConstraintCollections().contains(constraintCollection));
     }
@@ -218,10 +221,10 @@ public class DefaultMetadataStoreTest {
         // setup store
         final MetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
         store1.getSchemas().add(dummySchema1);
 
-        final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", mock(Location.class));
+        final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
         store1.getSchemas().add(dummySchema2);
 
         store1.getSchemaByName("PDB");
@@ -262,16 +265,17 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", null, new DefaultLocation());
 
         final DefaultLocation dummyTableLocation = new DefaultLocation();
 
-        final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", dummyTableLocation);
+        final Table dummyTable = DefaultTable.buildAndRegister(store1, dummySchema, "dummyTable", null,
+                dummyTableLocation);
 
-        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn",
+        final Column dummyColumn = DefaultColumn.buildAndRegister(store1, dummyTable, "dummyColumn", null,
                 new DefaultLocation());
 
-        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(dummySchema);
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn), dummyConstraintCollection, TYPES.STRING);
@@ -313,7 +317,7 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation());
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "PDB", null, new DefaultLocation());
         store1.getSchemas().add(dummySchema);
 
         try {
@@ -346,8 +350,8 @@ public class DefaultMetadataStoreTest {
         // setup store
         final DefaultMetadataStore store1 = new DefaultMetadataStore();
         // setup schema
-        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", new DefaultLocation())
-                .addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null));
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, new DefaultLocation())
+                .addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null, null));
         store1.getSchemas().add(dummySchema1);
 
         try {

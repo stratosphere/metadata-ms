@@ -25,10 +25,15 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     @Printable
     private final Location location;
 
-    public AbstractTarget(final Observer observer, final int id, final String name, final Location location) {
+    @Printable
+    private String description;
+
+    public AbstractTarget(final Observer observer, final int id, final String name, String description,
+            final Location location) {
         super(observer, id, name);
         this.location = location;
         this.observer = observer;
+        this.description = description != null ? description : "";
     }
 
     @Override
@@ -52,4 +57,14 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
      * if (getClass() != obj.getClass()) return false; AbstractTarget other = (AbstractTarget) obj; return this.getId()
      * == other.getId(); }
      */
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

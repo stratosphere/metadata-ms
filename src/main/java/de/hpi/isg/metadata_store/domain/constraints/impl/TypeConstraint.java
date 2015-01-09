@@ -5,8 +5,10 @@ import it.unimi.dsi.fastutil.ints.IntIterator;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -41,8 +43,6 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
     };
 
     public static class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer {
-
-        private boolean allTablesExistChecked = false;
 
         private final static String tableName = "Typee";
 
@@ -87,25 +87,6 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
 
         public TypeConstraintSQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
-
-            if (!allTablesExistChecked) {
-                if (!sqlInterface.tableExists(tableName)) {
-                    String createTable = "CREATE TABLE [" + tableName + "]\n" +
-                            "(\n" +
-                            "    [constraintId] integer NOT NULL,\n" +
-                            "    [columnId] integer NOT NULL,\n" +
-                            "    [typee] text,\n" +
-                            "    FOREIGN KEY ([constraintId])\n" +
-                            "    REFERENCES [Constraintt] ([id]),\n" +
-                            "    FOREIGN KEY ([columnId])\n" +
-                            "    REFERENCES [Columnn] ([id])\n" +
-                            ");";
-                    this.sqlInterface.executeCreateTableStatement(createTable);
-                }
-                if (sqlInterface.tableExists(tableName)) {
-                    this.allTablesExistChecked = true;
-                }
-            }
 
             try {
                 this.insertTypeConstraintWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
@@ -164,6 +145,31 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 return typeConstraints;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public List<String> getTableNames() {
+            return Arrays.asList(tableName);
+        }
+
+        @Override
+        public void initializeTables() {
+            if (!sqlInterface.tableExists(tableName)) {
+                String createTable = "CREATE TABLE [" + tableName + "]\n" +
+                        "(\n" +
+                        "    [constraintId] integer NOT NULL,\n" +
+                        "    [columnId] integer NOT NULL,\n" +
+                        "    [typee] text,\n" +
+                        "    FOREIGN KEY ([constraintId])\n" +
+                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    FOREIGN KEY ([columnId])\n" +
+                        "    REFERENCES [Columnn] ([id])\n" +
+                        ");";
+                this.sqlInterface.executeCreateTableStatement(createTable);
+            }
+            if (!sqlInterface.tableExists(tableName)) {
+                throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
     }

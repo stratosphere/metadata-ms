@@ -31,7 +31,7 @@ public interface Table extends Target {
      *        is the index of the column within this table
      * @return the added column
      */
-    public Column addColumn(MetadataStore metadataStore, String name, int index);
+    public Column addColumn(MetadataStore metadataStore, String name, String description, int index);
 
     public Collection<Column> getColumns();
 

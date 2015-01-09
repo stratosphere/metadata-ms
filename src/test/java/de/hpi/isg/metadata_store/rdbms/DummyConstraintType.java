@@ -10,13 +10,14 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
-package de.hpi.isg.metadata_store.domain.constraints.impl;
+package de.hpi.isg.metadata_store.rdbms;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -29,34 +30,38 @@ import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
+import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.TargetReference;
+import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
+import de.hpi.isg.metadata_store.domain.constraints.impl.AbstractConstraint;
+import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
-import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
+import de.hpi.isg.metadata_store.domain.targets.Table;
 
 /**
- * Constraint implementation distinct value counts of a single column.
+ * Constraint implementation for the number of tuples in a table.
  * 
  * @author Sebastian Kruse
  */
-public class DistinctValueCount extends AbstractConstraint {
+public class DummyConstraintType extends AbstractConstraint {
 
-    public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class DummySQLiteSerializer implements ConstraintSQLSerializer {
 
-        private final static String tableName = "DistinctValueCount";
+        private final static String tableName = "dummy";
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<int[]> insertDistinctValueCountWriter;
+        DatabaseWriter<int[]> insertdummyWriter;
 
-        DatabaseQuery<Void> queryDistinctValueCount;
+        DatabaseQuery<Void> querydummys;
 
-        DatabaseQuery<Integer> queryDistinctValueCountForConstraintCollection;
+        DatabaseQuery<Integer> querydummysForConstraintCollection;
 
-        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_dummy_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName
-                                + " (constraintId, distinctValueCount, columnId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, dummy, tableId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -68,49 +73,50 @@ public class DistinctValueCount extends AbstractConstraint {
                         },
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Void> DISTINCTVALUECOUNT_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Void> dummy_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
-                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
+                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id;",
+                                + " from dummy, constraintt where dummy.constraintId = constraintt.id;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Integer> DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Integer> dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
-                                + " DistinctValueCount.distinctValueCount as distinctValueCount,"
+                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id"
+                                + " from dummy, constraintt where dummy.constraintId = constraintt.id"
                                 + " and constraintt.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
-        public DistinctValueCountSQLiteSerializer(SQLInterface sqliteInterface) {
-            this.sqlInterface = sqliteInterface;
+        public DummySQLiteSerializer(SQLInterface sqlInterface) {
+            this.sqlInterface = sqlInterface;
 
             try {
-                this.insertDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
-                        INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY);
+                this.insertdummyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_dummy_WRITER_FACTORY);
 
-                this.queryDistinctValueCount = sqlInterface.getDatabaseAccess().createQuery(
-                        DISTINCTVALUECOUNT_QUERY_FACTORY);
+                this.querydummys = sqlInterface.getDatabaseAccess().createQuery(
+                        dummy_QUERY_FACTORY);
 
-                this.queryDistinctValueCountForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
-                        DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+                this.querydummysForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
+                        dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint distinctValueCount) {
-            Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
+        public void serialize(Integer constraintId, Constraint dummy) {
+            Validate.isTrue(dummy instanceof DummyConstraintType);
             try {
-                this.insertDistinctValueCountWriter.write(new int[] { constraintId,
-                        ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
-                                .getTargetReference().getAllTargetIds().iterator().nextInt() });
+                insertdummyWriter.write(new int[] {
+                        constraintId, ((DummyConstraintType) dummy).getNumTuples(), dummy
+                                .getTargetReference()
+                                .getAllTargets().iterator()
+                                .next().getId()
+                });
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -123,27 +129,27 @@ public class DistinctValueCount extends AbstractConstraint {
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> distinctValueCounts = new HashSet<>();
+            Collection<Constraint> dummys = new HashSet<>();
 
             try {
-
-                ResultSet rsDistinctValueCounts = retrieveConstraintCollection ?
-                        queryDistinctValueCount.execute(null) : queryDistinctValueCountForConstraintCollection
+                ResultSet rsdummys = retrieveConstraintCollection ?
+                        querydummys.execute(null) : querydummysForConstraintCollection
                                 .execute(constraintCollection.getId());
-                while (rsDistinctValueCounts.next()) {
+                while (rsdummys.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
-                                .getConstraintCollectionById(rsDistinctValueCounts
+                                .getConstraintCollectionById(rsdummys
                                         .getInt("constraintCollectionId"));
                     }
-                    distinctValueCounts
-                            .add(DistinctValueCount.build(
-                                    new SingleTargetReference(this.sqlInterface.getColumnById(rsDistinctValueCounts
-                                            .getInt("columnId"))), constraintCollection,
-                                    rsDistinctValueCounts.getInt("distinctValueCount")));
+                    dummys
+                            .add(DummyConstraintType.build(
+                                    new DummyConstraintType.Reference(this.sqlInterface.getTableById(rsdummys
+                                            .getInt("tableId"))), constraintCollection,
+                                    rsdummys.getInt("dummy")));
                 }
-                rsDistinctValueCounts.close();
-                return distinctValueCounts;
+                rsdummys.close();
+
+                return dummys;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -160,12 +166,12 @@ public class DistinctValueCount extends AbstractConstraint {
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
-                        "    [columnId] integer NOT NULL,\n" +
-                        "    [distinctValueCount] integer,\n" +
+                        "    [tableId] integer NOT NULL,\n" +
+                        "    [dummy] integer,\n" +
                         "    FOREIGN KEY ([constraintId])\n" +
                         "    REFERENCES [Constraintt] ([id]),\n" +
-                        "    FOREIGN KEY ([columnId])\n" +
-                        "    REFERENCES [Columnn] ([id])\n" +
+                        "    FOREIGN KEY ([tableId])\n" +
+                        "    REFERENCES [Tablee] ([id])\n" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createTable);
             }
@@ -175,50 +181,69 @@ public class DistinctValueCount extends AbstractConstraint {
         }
     }
 
+    public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
+
+        private static final long serialVersionUID = -861294530676768362L;
+
+        Table table;
+
+        public Reference(final Table column) {
+            this.table = column;
+        }
+
+        @Override
+        public Collection<Target> getAllTargets() {
+            return Collections.<Target> singleton(this.table);
+        }
+
+        @Override
+        public String toString() {
+            return "Reference [table=" + table + "]";
+        }
+
+    }
+
     private static final long serialVersionUID = -932394088609862495L;
 
-    private int numDistinctValues;
+    private int numTuples;
 
-    private SingleTargetReference target;
+    private Reference target;
 
     /**
      * @see AbstractConstraint
      */
-    public DistinctValueCount(final SingleTargetReference target,
-            final ConstraintCollection constraintCollection, int numDistinctValues) {
+    private DummyConstraintType(final Reference target,
+            final ConstraintCollection constraintCollection, int numTuples) {
 
         super(constraintCollection);
         this.target = target;
-        this.numDistinctValues = numDistinctValues;
+        this.numTuples = numTuples;
     }
 
-    public static DistinctValueCount build(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
-            int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
-                numDistinctValues);
-        return distinctValueCount;
+    public static DummyConstraintType build(final Reference target, ConstraintCollection constraintCollection,
+            int numTuples) {
+        DummyConstraintType dummy = new DummyConstraintType(target, constraintCollection, numTuples);
+        return dummy;
     }
 
-    public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
+    public static DummyConstraintType buildAndAddToCollection(final Reference target,
             ConstraintCollection constraintCollection,
-            int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
-                numDistinctValues);
-        constraintCollection.add(distinctValueCount);
-        return distinctValueCount;
+            int numTuples) {
+        DummyConstraintType dummy = new DummyConstraintType(target, constraintCollection, numTuples);
+        constraintCollection.add(dummy);
+        return dummy;
     }
 
     @Override
-    public SingleTargetReference getTargetReference() {
+    public DummyConstraintType.Reference getTargetReference() {
         return this.target;
     }
 
     /**
      * @return the numDistinctValues
      */
-    public int getNumDistinctValues() {
-        return numDistinctValues;
+    public int getNumTuples() {
+        return numTuples;
     }
 
     /**
@@ -226,18 +251,18 @@ public class DistinctValueCount extends AbstractConstraint {
      *        the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
-        this.numDistinctValues = numDistinctValues;
+        this.numTuples = numDistinctValues;
     }
 
     @Override
     public String toString() {
-        return "DistinctValueCount[" + getTargetReference() + ", numDistinctValues=" + numDistinctValues + "]";
+        return "dummy[" + getTargetReference() + ", numTuples=" + numTuples + "]";
     }
 
     @Override
     public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            return new DistinctValueCountSQLiteSerializer(sqlInterface);
+            return new DummySQLiteSerializer(sqlInterface);
         } else {
             throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
         }
