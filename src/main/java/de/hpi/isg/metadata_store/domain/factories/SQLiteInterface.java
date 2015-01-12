@@ -904,6 +904,8 @@ public class SQLiteInterface implements SQLInterface {
 
         if (constraintsOfCollection.isEmpty()) {
             throw new ConstraintCollectionEmptyException(rdbmsConstraintCollection);
+            // Why not only warn? Deserialization defects should be handled more accurately.
+//            LOG.warn("Could not find constraints for constraint collection {}", rdbmsConstraintCollection.getId());
         }
 
         return constraintsOfCollection;
@@ -1467,5 +1469,10 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public DatabaseAccess getDatabaseAccess() {
         return this.databaseAccess;
+    }
+    
+    @Override
+    public String toString() {
+        return "SQLiteInterface[" + this.connection.getClass() + "]";
     }
 }

@@ -194,8 +194,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public String toString() {
-        return "MetadataStore[" + this.sqlInterface.getAllSchemas().size() + " schemas, "
-                + this.sqlInterface.getAllConstraintsOrOfConstraintCollection(null) + " constraints]";
+        return "MetadataStore[" + this.sqlInterface + "]";
     }
 
     @Override
