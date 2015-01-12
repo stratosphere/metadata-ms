@@ -207,6 +207,20 @@ public class IdUtils implements Serializable {
     public int getMaxColumnNumber() {
         return maxColumnNumber;
     }
+    
+    public int getTableId(int id) {
+    	int schemaNumber = getLocalSchemaId(id);
+    	int tableNumber = getLocalTableId(id);
+    	if (tableNumber == this.maxTableNumber + 1) {
+    		throw new IllegalArgumentException("Cannot create a table ID for the ID " + id);
+    	}
+    	return createGlobalId(schemaNumber, tableNumber);
+    }
+    
+    public int getSchemaId(int id) {
+    	int schemaNumber = getLocalSchemaId(id);
+    	return createGlobalId(schemaNumber);
+    }
 
     public IdTypes getIdType(int id) {
         if (isSchemaId(id)) {
