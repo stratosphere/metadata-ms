@@ -70,7 +70,8 @@ public class ConstraintInsertPerfomanceBenchmark {
     public void testInsertDistinctValueCountsIntoDefaultMetadataStore() throws Exception {
 
         LOGGER.info("Creating Java-serialized metadata store...");
-        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(createTempFile("ser"));
+        File metadataStoreFile = createTempFile("ser");
+        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(metadataStoreFile);
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
@@ -97,14 +98,15 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
-
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
     }
 
     @Test
     public void testInsertDistinctValueCountsIntoRDBMSMetadataStore() throws Exception {
 
         LOGGER.info("Creating RDBMS metadata store...");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(createTempFile("sqlite"));
+        File metadataStoreFile = createTempFile("sqlite");
+        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
         MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
         LOGGER.info("Creating schema...");
@@ -137,13 +139,15 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
     }
 
     @Test
     public void testInsertInclusionDependenciesIntoDefaultMetadataStore() throws Exception {
 
         LOGGER.info("Creating Java-serialized metadata store...");
-        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(createTempFile("ser"));
+        File metadataStoreFile = createTempFile("ser");
+        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(metadataStoreFile);
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
@@ -194,14 +198,15 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
-
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
     }
 
     @Test
     public void testInsertInclusionDependenciesIntoRDBMSMetadataStore() throws Exception {
 
         LOGGER.info("Creating RDBMS metadata store...");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(createTempFile("sqlite"));
+        File metadataStoreFile = createTempFile("sqlite");
+        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
         MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
         LOGGER.info("Creating schema...");
@@ -253,14 +258,15 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
-
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
     }
 
     @Test
     public void testInsertUniqueColumnCombinationsIntoDefaultMetadataStore() throws Exception {
 
         LOGGER.info("Creating Java-serialized metadata store...");
-        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(createTempFile("ser"));
+        File metadataStoreFile = createTempFile("ser");
+        MetadataStore metadataStore = MetadataStoreFactory.createAndSaveDefaultMetadataStore(metadataStoreFile);
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
@@ -309,6 +315,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
 
     }
 
@@ -316,7 +323,8 @@ public class ConstraintInsertPerfomanceBenchmark {
     public void testInsertUniqueColumnCombinationsIntoRDBMSMetadataStore() throws Exception {
 
         LOGGER.info("Creating RDBMS metadata store...");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(createTempFile("sqlite"));
+        File metadataStoreFile = createTempFile("sqlite");
+        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
         MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
         LOGGER.info("Creating schema...");
@@ -366,6 +374,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         double numInsertsPerSecNet = 1000d * numColumns / (endTimeNet - startTimeNet);
         LOGGER.info("[gross] Inserted in {} ms ({} inserts/s)", endTimeGross - startTimeGross, numInsertsPerSecGross);
         LOGGER.info("[net]   Inserted in {} ms ({} inserts/s)", endTimeNet - startTimeNet, numInsertsPerSecNet);
+        LOGGER.info("File size: {} MB", metadataStoreFile.length() / (1024 * 1024));
 
     }
 }
