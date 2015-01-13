@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.hpi.isg.metadata_store.db.DatabaseAccess;
 
 /**
@@ -19,6 +22,8 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
  */
 abstract public class DependentWriter<T> extends DatabaseWriter<T> {
 
+    private static Logger LOGGER = LoggerFactory.getLogger(DatabaseWriter.class);
+    
 	/**
 	 * A {@link DatabaseAccess} that manages dependencies among writers.
 	 */
@@ -91,7 +96,12 @@ abstract public class DependentWriter<T> extends DatabaseWriter<T> {
         if (this.statement != null) {
             // Logger.getGlobal().log(Level.INFO, String.format("Flushing %s.", this));
             this.databaseAccess.prepareFlush(this);
-            doFlush();
+            try {
+                doFlush();
+            } catch (SQLException e) {
+                LOGGER.error("{} when flushing {}.", e.getClass().getSimpleName(), this);
+                throw e;
+            }
         }
     }
 
