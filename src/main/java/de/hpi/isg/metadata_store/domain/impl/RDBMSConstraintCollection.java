@@ -2,10 +2,13 @@ package de.hpi.isg.metadata_store.domain.impl;
 
 import it.unimi.dsi.fastutil.ints.IntIterator;
 
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
@@ -14,17 +17,21 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
-import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
+import de.hpi.isg.metadata_store.domain.util.IdUtils;
 
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -2911473574180511468L;
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSConstraintCollection.class);
+
     public static final boolean IS_CHECK_CONSTRAINT_TARGETS = false;
 
     private Collection<Constraint> constraints = null;
 
     private Collection<Target> scope;
+
+    private Set<Integer> scopeIdSet;
 
     private String description;
 
@@ -34,8 +41,17 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface) {
         super(id);
         this.scope = scope;
+        this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
         this.description = description != null ? description : "";
+    }
+
+    private Set<Integer> rebuildScopeSet(Collection<Target> scope) {
+        Set<Integer> set = new HashSet<>();
+        for (Target t : scope) {
+            set.add(t.getId());
+        }
+        return set;
     }
 
     public RDBMSConstraintCollection(int id, String description, SQLInterface sqlInterface) {
@@ -67,7 +83,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     public SQLInterface getSqlInterface() {
         return sqlInterface;
     }
-    
+
     @Override
     public MetadataStore getMetadataStore() {
         return this.sqlInterface.getMetadataStore();
@@ -75,6 +91,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     public void setScope(Collection<Target> scope) {
         this.scope = scope;
+        this.scopeIdSet = rebuildScopeSet(scope);
     }
 
     @Override
@@ -90,12 +107,8 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
             // Ensure that all targets of the constraint are valid.
             for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
                 int targetId = i.nextInt();
-                try {
-                    if (!this.sqlInterface.isTargetIdInUse(targetId)) {
-                        throw new NotAllTargetsInStoreException(targetId);
-                    }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                if (!targetInScope(targetId)) {
+                    LOGGER.warn("Target with id {} not in scope of constraint collection", targetId);
                 }
             }
 
@@ -103,6 +116,21 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
         // Write the constraint.
         this.sqlInterface.writeConstraint(constraint);
+    }
+
+    private boolean targetInScope(int targetId) {
+        IdUtils idUtils = this.sqlInterface.getMetadataStore().idUtils;
+        if (this.scopeIdSet.contains(targetId)) {
+            return true;
+        }
+        if (idUtils.isSchemaId(targetId)) {
+            return false;
+        } else if (idUtils.isTableId(targetId)) {
+            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
+        } else {
+            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
+                    || this.scopeIdSet.contains(idUtils.getTableId(targetId));
+        }
     }
 
     @Override

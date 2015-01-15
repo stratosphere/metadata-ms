@@ -142,7 +142,8 @@ public class RDBMSMetadataStoreTest {
         System.out.println(dateFormat.format(Calendar.getInstance().getTime()));
         System.out.println("Creating INDS");
         final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection("", metadataStore
+                .getSchemas().toArray(new Schema[metadataStore.getSchemas().size()]));
         int incNr = 0;
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
