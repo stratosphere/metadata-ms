@@ -29,29 +29,38 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 public class LocationUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocationUtils.class);
-    
+
     private static final Map<String, String> KNOWN_PROPERTIES = new HashMap<>();
-    
+
     private static final Map<String, Map<String, String>> CANONICAL_PROPERTY_VALUES = new HashMap<>();
+
+    private static final Map<Integer, Class<? extends Location>> classHashCode2ClassMapping = new HashMap<>();
+
+    static {
+        classHashCode2ClassMapping.put(DefaultLocation.class.getName().hashCode(), DefaultLocation.class);
+    }
 
     private LocationUtils() {
     }
-    
+
     /**
      * Registering a property allows to reuse the property key String object in new instances.
      * 
-     * @param key is the key of the property
+     * @param key
+     *        is the key of the property
      */
     public static void registerProperty(String key) {
         synchronized (KNOWN_PROPERTIES) {
             KNOWN_PROPERTIES.put(key, key);
         }
     }
-    
+
     /**
-     * Registering a property here allows to share {@link String} objects for the property values among different {@link Location} objects.
+     * Registering a property here allows to share {@link String} objects for the property values among different
+     * {@link Location} objects.
      * 
-     * @param key is the key of the property
+     * @param key
+     *        is the key of the property
      */
     public static void registerPropertyForValueCanoicalization(String key) {
         synchronized (CANONICAL_PROPERTY_VALUES) {
@@ -63,27 +72,40 @@ public class LocationUtils {
      * Creates a new {@link Location} based on the given class name and properties. If no {@link Location} could be
      * created for the given class name, a {@link DefaultLocation} will be returned instead.
      * 
-     * @param className is the class name of a {@link Location} subtype
-     * @param properties are the properties to take on by the location to be created
+     * @param className
+     *        is the class name of a {@link Location} subtype
+     * @param properties
+     *        are the properties to take on by the location to be created
      * @return a location with the given properties
      */
-    public static Location createLocation(String className, Map<String, String> properties) {
+    public static Location createLocation(Integer classNameHashCode, Map<String, String> properties) {
         Location location = null;
         try {
-            Class<? extends Location> locationClass = Class.forName(className).asSubclass(Location.class);
+            Class<? extends Location> locationClass = lookupClassFor(classNameHashCode);
             location = locationClass.newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             LOGGER.warn("Could not instantiate location -- using DefaultLocation.", e);
             location = new DefaultLocation();
         }
-        
+
         for (Map.Entry<String, String> property : properties.entrySet()) {
             String key = property.getKey();
-            String value = property.getValue(); 
+            String value = property.getValue();
             setCanonicalProperty(key, value, location);
         }
 
         return location;
+    }
+
+    private static Class<? extends Location> lookupClassFor(Integer classNameHashCode) {
+        Class<? extends Location> clazz = classHashCode2ClassMapping.get(classNameHashCode);
+        if (clazz == null) {
+            LOGGER.warn(
+                    "The given class hash code is not known for any registered location Type, did you register your location type in {}",
+                    LocationUtils.class);
+            return DefaultLocation.class;
+        }
+        return clazz;
     }
 
     public static void setCanonicalProperty(String key, String value, Location location) {
@@ -94,7 +116,7 @@ public class LocationUtils {
         if (knownProperty != null) {
             key = knownProperty;
         }
-        
+
         Map<String, String> knownPropertyValues;
         synchronized (CANONICAL_PROPERTY_VALUES) {
             knownPropertyValues = CANONICAL_PROPERTY_VALUES.get(value);

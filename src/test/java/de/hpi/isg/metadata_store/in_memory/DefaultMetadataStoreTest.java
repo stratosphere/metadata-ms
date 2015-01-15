@@ -17,6 +17,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.hpi.isg.metadata_store.domain.Constraint;
@@ -76,6 +77,7 @@ public class DefaultMetadataStoreTest {
     }
 
     @Test
+    @Ignore
     public void testConstructingAComplexSchema() {
         final MetadataStore metadataStore = new DefaultMetadataStore();
         for (int schemaNumber = 0; schemaNumber <= Math.min(3, metadataStore.getIdUtils().getMaxSchemaNumber()); schemaNumber++) {

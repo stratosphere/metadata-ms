@@ -69,7 +69,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public class SQLiteInterface implements SQLInterface {
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
-    
+
     /**
      * Resource path of the SQL script to set up the metadata store schema.
      */
@@ -103,15 +103,15 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Target");
 
-    private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_LOCATION_WRITER_FACTORY =
+    private static final PreparedStatementBatchWriter.Factory<Integer[]> INSERT_LOCATION_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Location (id, typee) VALUES (?, ?);",
-                    new PreparedStatementAdapter<Object[]>() {
+                    new PreparedStatementAdapter<Integer[]>() {
                         @Override
-                        public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
+                        public void translateParameter(Integer[] parameters, PreparedStatement preparedStatement)
                                 throws SQLException {
-                            preparedStatement.setInt(1, (Integer) parameters[0]);
-                            preparedStatement.setString(2, (String) parameters[1]);
+                            preparedStatement.setInt(1, parameters[0]);
+                            preparedStatement.setInt(2, parameters[1]);
                         }
                     },
                     "Location");
@@ -265,11 +265,13 @@ public class SQLiteInterface implements SQLInterface {
     /** @see #LOCATION_PROPERTIES_QUERY_FACTORY */
     private DatabaseQuery<Integer> locationPropertiesQuery;
 
-    private DatabaseWriter<Object[]> insertTargetWriter;
-
+    // XXX to be deleted?
     private DatabaseWriter<Target> updateTargetNameWriter;
 
     private DatabaseWriter<int[]> updateTargetLocationWriter;
+
+    private DatabaseQuery<Integer> tableColumnsQuery;
+    // XXX
 
     private DatabaseQuery<Integer> columnQuery;
 
@@ -277,9 +279,9 @@ public class SQLiteInterface implements SQLInterface {
 
     private DatabaseQuery<Integer> schemaQuery;
 
-    private DatabaseQuery<Integer> tableColumnsQuery;
+    private DatabaseWriter<Object[]> insertTargetWriter;
 
-    private DatabaseWriter<Object[]> insertLocationWriter;
+    private DatabaseWriter<Integer[]> insertLocationWriter;
 
     private DatabaseWriter<Object[]> insertLocationPropertyWriter;
 
@@ -504,10 +506,10 @@ public class SQLiteInterface implements SQLInterface {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
                     String description = rs.getString("description");
-                    String locationClassName = rs.getString("locationType");
+                    Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
-                    if (locationClassName != null) {
-                        location = LocationUtils.createLocation(locationClassName,
+                    if (locationClassHash != null) {
+                        location = LocationUtils.createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
                     schema = RDBMSSchema.restore(this.store, targetId, name, description, location);
@@ -539,7 +541,7 @@ public class SQLiteInterface implements SQLInterface {
      */
     private Int2ObjectMap<RDBMSTable> loadAllTables(Int2ObjectMap<RDBMSSchema> schemas, boolean areAllSchemasGiven)
             throws SQLException {
-        
+
         LOG.trace("Loading all tables for {} schemas.", schemas.size());
         String sql;
         if (areAllSchemasGiven) {
@@ -578,10 +580,10 @@ public class SQLiteInterface implements SQLInterface {
                     String name = rs.getString("name");
                     String description = rs.getString("description");
 
-                    String locationClassName = rs.getString("locationType");
+                    Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
-                    if (locationClassName != null) {
-                        location = LocationUtils.createLocation(locationClassName,
+                    if (locationClassHash != null) {
+                        location = LocationUtils.createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
 
@@ -620,7 +622,7 @@ public class SQLiteInterface implements SQLInterface {
         }
 
         LOG.trace("Loading tables finished.");
-        
+
         return tables;
     }
 
@@ -636,9 +638,9 @@ public class SQLiteInterface implements SQLInterface {
      */
     private Int2ObjectMap<RDBMSColumn> loadAllColumns(Int2ObjectMap<RDBMSTable> tables, RDBMSSchema schema)
             throws SQLException {
-        
+
         LOG.trace("Loading all columns for {} tables.", tables.size());
-        
+
         String sql;
         if (schema == null) {
             sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
@@ -675,10 +677,10 @@ public class SQLiteInterface implements SQLInterface {
                     // For a new target, create a new object, potentially with location.
                     String name = rs.getString("name");
                     String description = rs.getString("description");
-                    String locationClassName = rs.getString("locationType");
+                    Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
-                    if (locationClassName != null) {
-                        location = LocationUtils.createLocation(locationClassName,
+                    if (locationClassHash != null) {
+                        location = LocationUtils.createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
 
@@ -717,7 +719,7 @@ public class SQLiteInterface implements SQLInterface {
         }
 
         LOG.trace("Loading columns finished.");
-        
+
         return columns;
     }
 
@@ -763,7 +765,7 @@ public class SQLiteInterface implements SQLInterface {
             ResultSet rs = this.locationQuery.execute(id);
             while (rs.next()) {
                 // Get the class name of the location.
-                String locationClassName = rs.getString("typee");
+                Integer locationClassHash = rs.getInt("typee");
 
                 // Load the properties of the location.
                 // TODO Rather perform a right outer join with the previous query if too slow.
@@ -776,7 +778,7 @@ public class SQLiteInterface implements SQLInterface {
                 rsProperties.close();
 
                 // Create the location.
-                location = LocationUtils.createLocation(locationClassName, locationProperties);
+                location = LocationUtils.createLocation(locationClassHash, locationProperties);
             }
             rs.close();
 
@@ -852,7 +854,7 @@ public class SQLiteInterface implements SQLInterface {
         // for auto-increment id
         ensureCurrentLocationIdMaxInitialized();
         Integer locationId = ++currentLocationIdMax;
-        this.insertLocationWriter.write(new Object[] { locationId, location.getClass().getCanonicalName() });
+        this.insertLocationWriter.write(new Integer[] { locationId, location.getClass().getName().hashCode() });
         for (Entry<String, String> entry : location.getProperties().entrySet()) {
             this.insertLocationPropertyWriter.write(new Object[] { locationId, entry.getKey(), entry.getValue() });
         }
@@ -905,7 +907,7 @@ public class SQLiteInterface implements SQLInterface {
         if (constraintsOfCollection.isEmpty()) {
             throw new ConstraintCollectionEmptyException(rdbmsConstraintCollection);
             // Why not only warn? Deserialization defects should be handled more accurately.
-//            LOG.warn("Could not find constraints for constraint collection {}", rdbmsConstraintCollection.getId());
+            // LOG.warn("Could not find constraints for constraint collection {}", rdbmsConstraintCollection.getId());
         }
 
         return constraintsOfCollection;
@@ -1071,7 +1073,7 @@ public class SQLiteInterface implements SQLInterface {
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore) {
         this.store = rdbmsMetadataStore;
     }
-    
+
     @Override
     public RDBMSMetadataStore getMetadataStore() {
         return this.store;
@@ -1109,20 +1111,16 @@ public class SQLiteInterface implements SQLInterface {
         }
         try {
             Collection<Column> columns = new HashSet<>();
-            // use DatabaesAccess
-            Statement stmt = this.connection.createStatement();
 
             String sqlTablesForSchema = String
                     .format("SELECT columnn.id as id from columnn, target where target.id = columnn.id and columnn.tableId=%d;",
                             rdbmsTable.getId());
 
-            ResultSet rs = stmt
-                    .executeQuery(sqlTablesForSchema);
+            ResultSet rs = databaseAccess.query(sqlTablesForSchema, "columnn", "target");
             while (rs.next()) {
                 columns.add(getColumnById(rs.getInt("id")));
             }
             rs.close();
-            stmt.close();
             allColumnsForTableCache.put(rdbmsTable, columns);
             return allColumnsForTableCache.get(rdbmsTable);
         } catch (SQLException e) {
@@ -1470,7 +1468,7 @@ public class SQLiteInterface implements SQLInterface {
     public DatabaseAccess getDatabaseAccess() {
         return this.databaseAccess;
     }
-    
+
     @Override
     public String toString() {
         return "SQLiteInterface[" + this.connection.getClass() + "]";
