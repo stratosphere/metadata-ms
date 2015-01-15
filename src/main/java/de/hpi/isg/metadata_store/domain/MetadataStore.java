@@ -93,6 +93,7 @@ public interface MetadataStore extends Serializable, Observer {
      * Saves this store to the given path, if manual saving is supported.
      * 
      * @throws IOException
+     * @deprecated Not all MetadataStores support saving to a path, so rather use {@link #flush()}.
      */
     public void save(String path) throws IOException;
 
