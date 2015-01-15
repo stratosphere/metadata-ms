@@ -17,9 +17,11 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -254,6 +256,40 @@ public class RDBMSMetadataStoreTest {
         assertTrue(store1.getConstraintCollections().contains(dummyConstraintCollection));
         assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyTypeContraint));
         assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyIndContraint));
+    }
+
+    @Test
+    public void testUnregisteredLocationTypeIsDeserializedAsdefaultLocation() {
+        // setup store
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        store1.addSchema("Foobar", "description", new Location() {
+
+            @Override
+            public void set(String propertyKey, String value) {
+            }
+
+            @Override
+            public Map<String, String> getProperties() {
+                return new HashMap<>();
+            }
+
+            @Override
+            public String getIfExists(String propertyKey) {
+                return null;
+            }
+
+            @Override
+            public String get(String propertyKey) {
+                return null;
+            }
+
+            @Override
+            public void delete(String propertyKey) {
+            }
+        });
+
+        assertEquals(DefaultLocation.class, store1.getSchemaByName("Foobar").getLocation().getClass());
     }
 
     @Test(expected = UnsupportedOperationException.class)
