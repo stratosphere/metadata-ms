@@ -55,7 +55,6 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.domain.util.LocationUtils;
-import de.hpi.isg.metadata_store.exceptions.ConstraintCollectionEmptyException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
@@ -889,7 +888,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Constraint> getAllConstraintsOrOfConstraintCollection(
+    public Collection<Constraint> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection) {
 
         Collection<Constraint> constraintsOfCollection = new HashSet<>();
@@ -905,9 +904,9 @@ public class SQLiteInterface implements SQLInterface {
         }
 
         if (constraintsOfCollection.isEmpty()) {
-            throw new ConstraintCollectionEmptyException(rdbmsConstraintCollection);
-            // Why not only warn? Deserialization defects should be handled more accurately.
-            // LOG.warn("Could not find constraints for constraint collection {}", rdbmsConstraintCollection.getId());
+            LOG.warn(
+                    "Could not find constraints for constraint collection {}. Did you register the constraint type properly?",
+                    rdbmsConstraintCollection != null ? rdbmsConstraintCollection.getId() : "");
         }
 
         return constraintsOfCollection;

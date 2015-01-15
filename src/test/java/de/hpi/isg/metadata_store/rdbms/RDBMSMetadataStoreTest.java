@@ -47,7 +47,6 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
-import de.hpi.isg.metadata_store.exceptions.ConstraintCollectionEmptyException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 public class RDBMSMetadataStoreTest {
@@ -498,32 +497,6 @@ public class RDBMSMetadataStoreTest {
                         new Column[] { dummyColumn1, dummyColumn2 }), constraintCollection);
 
         constraintCollection.add(dummyContraint);
-
-        store1.flush();
-
-        // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteInterface.buildAndRegisterStandardConstraints(connection));
-
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
-                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
-    }
-
-    @Test(expected = ConstraintCollectionEmptyException.class)
-    public void testRetrievalOfUnknownConstraintTypeCausesWarningException() throws Exception {
-        // setup store
-        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
-                .buildAndRegisterStandardConstraints(connection));
-        // setup schema
-        final Schema dummySchema = store1.addSchema("PDB", null, new DefaultLocation());
-
-        final DefaultLocation dummyTableLocation = new DefaultLocation();
-
-        final Table dummyTable = dummySchema.addTable(store1, "dummyTable", null, dummyTableLocation);
-
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
-
-        constraintCollection.add(DummyConstraintType.build(new DummyConstraintType.Reference(
-                dummyTable), constraintCollection, 5));
 
         store1.flush();
 

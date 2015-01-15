@@ -47,12 +47,12 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     @Override
     public Collection<Constraint> getConstraints() {
         ensureConstraintsLoaded();
-        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsOrOfConstraintCollection(this));
+        return Collections.unmodifiableCollection(this.sqlInterface.getAllConstraintsForConstraintCollection(this));
     }
 
     private void ensureConstraintsLoaded() {
         if (this.constraints == null) {
-            this.constraints = this.sqlInterface.getAllConstraintsOrOfConstraintCollection(this);
+            this.constraints = this.sqlInterface.getAllConstraintsForConstraintCollection(this);
         }
     }
 

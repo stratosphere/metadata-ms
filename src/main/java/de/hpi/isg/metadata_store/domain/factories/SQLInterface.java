@@ -53,7 +53,7 @@ public interface SQLInterface {
     Collection<Schema> getAllSchemas();
 
     public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
-    
+
     public RDBMSMetadataStore getMetadataStore();
 
     // boolean addToIdsInUse(int id);
@@ -70,8 +70,8 @@ public interface SQLInterface {
 
     public void addScope(Target target, ConstraintCollection constraintCollection);
 
-    // TODO: Do we need this method? All constraints should reside within a constraint collection.
-    public Collection<Constraint> getAllConstraintsOrOfConstraintCollection(
+    // TODO if collection if null all constraints are returned
+    public Collection<Constraint> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection);
 
     public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
