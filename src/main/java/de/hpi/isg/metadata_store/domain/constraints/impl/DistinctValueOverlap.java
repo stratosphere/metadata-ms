@@ -50,22 +50,23 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<DistinctValueOverlap> insertWriter;
+        DatabaseWriter<int[]> insertWriter;
 
         DatabaseQuery<Void> queryAllConstraints;
 
         DatabaseQuery<Integer> queryConstraintForConstraintCollection;
 
-        private static final PreparedStatementBatchWriter.Factory<DistinctValueOverlap> INSERT_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (overlap, column1, column2) VALUES (?, ?, ?);",
-                        new PreparedStatementAdapter<DistinctValueOverlap>() {
+                        "INSERT INTO " + tableName + " (constraintid, overlap, column1, column2) VALUES (?, ?, ?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
                             @Override
-                            public void translateParameter(DistinctValueOverlap parameter, PreparedStatement preparedStatement)
+                            public void translateParameter(int[] parameter, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, parameter.overlap);
-                                preparedStatement.setInt(2, parameter.getTargetReference().column1);
-                                preparedStatement.setInt(3, parameter.getTargetReference().column2);
+                                preparedStatement.setInt(1, parameter[0]);
+                                preparedStatement.setInt(2, parameter[1]);
+                                preparedStatement.setInt(3, parameter[2]);
+                                preparedStatement.setInt(4, parameter[3]);
                             }
                         },
                         tableName);
@@ -116,7 +117,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
             Validate.isTrue(constraint instanceof DistinctValueOverlap);
             DistinctValueOverlap dvo = (DistinctValueOverlap) constraint;
             try {
-                insertWriter.write(dvo);
+                insertWriter.write(new int[] { constraintId, dvo.overlap, dvo.target.column1, dvo.target.column2 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
