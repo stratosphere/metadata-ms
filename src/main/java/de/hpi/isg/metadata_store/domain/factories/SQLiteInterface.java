@@ -180,7 +180,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_CONSTRAINT_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Constraintt where id=?;",
+                    "DELETE from Constraintt where constraintCollectionId=?;",
                     new PreparedStatementAdapter<Integer>() {
                         @Override
                         public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
@@ -1654,34 +1654,31 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void removeConstraint(Constraint constraint) {
-
-        Integer constraintId = ++currentConstraintIdMax;
+    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
         try {
-            this.insertConstraintWriter.write(new int[] { constraintId, constraint.getConstraintCollection().getId() });
+            this.flush();
+            for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
+                constraintSerializer
+                        .removeConstraintsForConstraintCollection(constraintCollection);
+
+            }
+
+            String sqlDeleteScope = String.format("DELETE from Scope where constraintCollectionId=%d;",
+                    constraintCollection.getId());
+            this.databaseAccess.executeSQL(sqlDeleteScope, "Scope");
+
+            String sqlDeleteConstraintCollection = String.format(
+                    "DELETE from ConstraintCollection where id=%d;",
+                    constraintCollection.getId());
+            this.databaseAccess.executeSQL(sqlDeleteConstraintCollection, "ConstraintCollection");
+
+            this.deleteConstraintWriter.write(constraintCollection.getId());
+
+            this.flush();
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        ConstraintSQLSerializer serializer = constraintSerializers.get(constraint.getClass());
-        if (serializer == null) {
-            serializer = constraint.getConstraintSQLSerializer(this);
-            constraintSerializers.put(constraint.getClass(), serializer);
-            serializer.initializeTables();
-
-        }
-
-        serializer = constraintSerializers.get(constraint.getClass());
-
-        Validate.isTrue(serializer != null);
-
-        serializer.serialize(constraintId, constraint);
-    }
-
-    @Override
-    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        //
     }
 }

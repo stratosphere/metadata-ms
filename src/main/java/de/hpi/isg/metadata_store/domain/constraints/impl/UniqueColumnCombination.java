@@ -57,7 +57,11 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
 
         DatabaseWriter<Integer> insertUniqueColumnCombinationWriter;
 
+        DatabaseWriter<Integer> deleteUniqueColumnCombinationWriter;
+
         DatabaseWriter<int[]> insertUCCPartWriter;
+
+        DatabaseWriter<Integer> deleteUCCPartWriter;
 
         DatabaseQuery<Void> queryUniqueColumnCombination;
 
@@ -77,6 +81,18 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
                         },
                         tableName);
 
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_UNIQECOLUMNCOMBINATION_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + tableName + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
+                            }
+                        },
+                        tableName);
+
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_UCCPART_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + referenceTableName
@@ -87,6 +103,19 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
+                            }
+                        },
+                        referenceTableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_UCCPART_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + referenceTableName
+                                + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
                             }
                         },
                         referenceTableName);
@@ -123,8 +152,14 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
                 this.insertUniqueColumnCombinationWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY);
 
+                this.deleteUniqueColumnCombinationWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_UNIQECOLUMNCOMBINATION_WRITER_FACTORY);
+
                 this.insertUCCPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_UCCPART_WRITER_FACTORY);
+
+                this.deleteUCCPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_UCCPART_WRITER_FACTORY);
 
                 this.queryUniqueColumnCombination = sqlInterface.getDatabaseAccess().createQuery(
                         UNIQECOLUMNCOMBINATION_QUERY_FACTORY);
@@ -148,8 +183,9 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
             try {
                 insertUniqueColumnCombinationWriter.write(constraintId);
 
-				IntCollection targetIds = ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference().getAllTargetIds();
-				for (IntIterator i = targetIds.iterator(); i.hasNext();) {
+                IntCollection targetIds = ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference()
+                        .getAllTargetIds();
+                for (IntIterator i = targetIds.iterator(); i.hasNext();) {
                     insertUCCPartWriter.write(new int[] { constraintId, i.nextInt() });
                 }
             } catch (SQLException e) {
@@ -239,6 +275,21 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsUCCs = queryUniqueColumnCombinationsForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsUCCs.next()) {
+                    this.deleteUniqueColumnCombinationWriter.write(rsUCCs.getInt("id"));
+                    this.deleteUCCPartWriter.write(rsUCCs.getInt("id"));
+                }
+                rsUCCs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
@@ -252,22 +303,22 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
             }
             return intArray;
         }
-        
+
         int[] uniqueColumns;
 
         @Deprecated
         public Reference(final Column[] uniqueColumns) {
-        	this(toIntArray(uniqueColumns));
+            this(toIntArray(uniqueColumns));
         }
-        
+
         public Reference(final int[] uniqueColumns) {
-        	this.uniqueColumns = uniqueColumns;
-        	Arrays.sort(this.uniqueColumns);
+            this.uniqueColumns = uniqueColumns;
+            Arrays.sort(this.uniqueColumns);
         }
 
         @Override
         public IntCollection getAllTargetIds() {
-        	return new IntArrayList(this.uniqueColumns);
+            return new IntArrayList(this.uniqueColumns);
         }
 
         @Override

@@ -129,7 +129,5 @@ public interface SQLInterface {
 
     public void removeTable(RDBMSTable table);
 
-    public void removeConstraint(Constraint constraint);
-
     public void removeConstraintCollection(ConstraintCollection constraintCollection);
 }

@@ -36,8 +36,8 @@ import de.hpi.isg.metadata_store.domain.util.IdUtils.IdTypes;
  */
 public class TypeConstraint extends AbstractConstraint implements Constraint {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class); 
-    
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class);
+
     public enum TYPES {
         STRING, INTEGER, DECIMAL
     };
@@ -49,6 +49,8 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         private final SQLInterface sqlInterface;
 
         DatabaseWriter<Object[]> insertTypeConstraintWriter;
+
+        DatabaseWriter<Integer> deleteTypeConstraintWriter;
 
         DatabaseQuery<Void> queryTypeConstraints;
 
@@ -64,6 +66,19 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                                 preparedStatement.setInt(1, (Integer) parameters[0]);
                                 preparedStatement.setString(2, String.valueOf(parameters[1]));
                                 preparedStatement.setInt(3, (Integer) parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_TYPECONSTRAINT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + tableName
+                                + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
                             }
                         },
                         tableName);
@@ -91,6 +106,9 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
             try {
                 this.insertTypeConstraintWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_TYPECONSTRAINT_WRITER_FACTORY);
+
+                this.deleteTypeConstraintWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_TYPECONSTRAINT_WRITER_FACTORY);
 
                 this.queryTypeConstraints = sqlInterface.getDatabaseAccess().createQuery(
                         TYPECONSTRAINT_QUERY_FACTORY);
@@ -172,6 +190,20 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsTypeConstraints = queryTypeConstraintsForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsTypeConstraints.next()) {
+                    this.deleteTypeConstraintWriter.write(rsTypeConstraints.getInt("id"));
+                }
+                rsTypeConstraints.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private static final long serialVersionUID = 3194245498846860560L;
@@ -210,8 +242,9 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                 int targetId = i.nextInt();
                 IdTypes idType = idUtils.getIdType(targetId);
                 if (idType != IdTypes.COLUMN_ID) {
-                    throw new IllegalArgumentException("TypeConstrains can only be defined on Columns. But target was of type "
-                            + idType);
+                    throw new IllegalArgumentException(
+                            "TypeConstrains can only be defined on Columns. But target was of type "
+                                    + idType);
                 }
             }
         }

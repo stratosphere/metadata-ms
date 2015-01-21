@@ -16,4 +16,6 @@ public interface ConstraintSQLSerializer {
 
     void initializeTables();
 
+    void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection);
+
 }

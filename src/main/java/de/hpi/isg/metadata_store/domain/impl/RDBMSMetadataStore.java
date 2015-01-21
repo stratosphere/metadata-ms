@@ -302,9 +302,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void removeConstraintCollection(ConstraintCollection constraintCollection) {
-        for (Constraint constraint : constraintCollection.getConstraints()) {
-            sqlInterface.removeConstraint(constraint);
-        }
         sqlInterface.removeConstraintCollection(constraintCollection);
     }
 }

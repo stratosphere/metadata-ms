@@ -57,7 +57,11 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
 
         DatabaseWriter<Integer> insertInclusionDependencyWriter;
 
+        DatabaseWriter<Integer> deleteInclusionDependencyWriter;
+
         DatabaseWriter<int[]> insertINDPartWriter;
+
+        DatabaseWriter<Integer> deleteINDPartWriter;
 
         DatabaseQuery<Void> queryInclusionDependencies;
 
@@ -68,6 +72,18 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + tableName + " (constraintId) VALUES (?);",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
+                            }
+                        },
+                        tableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_INCLUSIONDEPENDENCY_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + tableName + " where constraintId=?;",
                         new PreparedStatementAdapter<Integer>() {
                             @Override
                             public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
@@ -88,6 +104,19 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
+                            }
+                        },
+                        referenceTableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_INDPART_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + referenceTableName
+                                + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
                             }
                         },
                         referenceTableName);
@@ -121,8 +150,14 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
             this.sqlInterface = sqlInterface;
 
             try {
+                this.deleteInclusionDependencyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_INCLUSIONDEPENDENCY_WRITER_FACTORY);
+
                 this.insertInclusionDependencyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY);
+
+                this.deleteINDPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_INDPART_WRITER_FACTORY);
 
                 this.insertINDPartWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_INDPART_WRITER_FACTORY);
@@ -247,6 +282,21 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsINDs = queryInclusionDependenciesForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsINDs.next()) {
+                    this.deleteInclusionDependencyWriter.write(rsINDs.getInt("id"));
+                    this.deleteINDPartWriter.write(rsINDs.getInt("id"));
+                }
+                rsINDs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
@@ -267,13 +317,12 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
             this(toIntArray(dependentColumns), toIntArray(referencedColumns));
         }
-        
-        
+
         public Reference(final int[] dependentColumnIds, final int[] referencedColumnIds) {
             this.dependentColumns = dependentColumnIds;
             this.referencedColumns = referencedColumnIds;
         }
-        
+
         @Override
         public IntCollection getAllTargetIds() {
             IntList allTargetIds = new IntArrayList(this.dependentColumns.length + this.referencedColumns.length);

@@ -180,6 +180,13 @@ public class DummyConstraintType extends AbstractConstraint {
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Not supported yet.");
+            //
+        }
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {

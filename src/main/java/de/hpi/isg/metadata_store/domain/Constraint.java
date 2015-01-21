@@ -16,7 +16,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  * etc. Sub types may store additional information outside of the included {@link Map} fore easier use.
  *
  */
-public interface Constraint extends Serializable, Identifiable {
+public interface Constraint extends Serializable {
     public enum BASIC_STATS {
         TYPE
     }

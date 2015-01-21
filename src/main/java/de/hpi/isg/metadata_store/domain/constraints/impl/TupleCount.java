@@ -49,6 +49,8 @@ public class TupleCount extends AbstractConstraint {
 
         DatabaseWriter<int[]> insertTupleCountWriter;
 
+        DatabaseWriter<Integer> deleteTupleCountWriter;
+
         DatabaseQuery<Void> queryTupleCounts;
 
         DatabaseQuery<Integer> queryTupleCountsForConstraintCollection;
@@ -63,6 +65,19 @@ public class TupleCount extends AbstractConstraint {
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_TUPLECOUNT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + tableName
+                                + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
                             }
                         },
                         tableName);
@@ -90,6 +105,9 @@ public class TupleCount extends AbstractConstraint {
             try {
                 this.insertTupleCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_TUPLECOUNT_WRITER_FACTORY);
+
+                this.deleteTupleCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_TUPLECOUNT_WRITER_FACTORY);
 
                 this.queryTupleCounts = sqlInterface.getDatabaseAccess().createQuery(
                         TUPLECOUNT_QUERY_FACTORY);
@@ -170,6 +188,20 @@ public class TupleCount extends AbstractConstraint {
             }
             if (!sqlInterface.tableExists(tableName)) {
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
+            }
+        }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsTupleCounts = queryTupleCountsForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsTupleCounts.next()) {
+                    this.deleteTupleCountWriter.write(rsTupleCounts.getInt("id"));
+                }
+                rsTupleCounts.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }

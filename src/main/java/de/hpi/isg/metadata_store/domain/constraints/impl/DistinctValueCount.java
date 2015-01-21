@@ -49,6 +49,8 @@ public class DistinctValueCount extends AbstractConstraint {
 
         DatabaseWriter<int[]> insertDistinctValueCountWriter;
 
+        DatabaseWriter<Integer> deleteDistinctValueCountWriter;
+
         DatabaseQuery<Void> queryDistinctValueCount;
 
         DatabaseQuery<Integer> queryDistinctValueCountForConstraintCollection;
@@ -64,6 +66,19 @@ public class DistinctValueCount extends AbstractConstraint {
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
+                            }
+                        },
+                        tableName);
+
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_DISTINCTVALUECOUNT_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from " + tableName
+                                + " where constraintId=?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
                             }
                         },
                         tableName);
@@ -93,6 +108,9 @@ public class DistinctValueCount extends AbstractConstraint {
             try {
                 this.insertDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY);
+
+                this.deleteDistinctValueCountWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_DISTINCTVALUECOUNT_WRITER_FACTORY);
 
                 this.queryDistinctValueCount = sqlInterface.getDatabaseAccess().createQuery(
                         DISTINCTVALUECOUNT_QUERY_FACTORY);
@@ -173,6 +191,21 @@ public class DistinctValueCount extends AbstractConstraint {
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsDistinctValueCounts = queryDistinctValueCountForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsDistinctValueCounts.next()) {
+                    this.deleteDistinctValueCountWriter.write(rsDistinctValueCounts.getInt("id"));
+                }
+                rsDistinctValueCounts.close();
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private static final long serialVersionUID = -932394088609862495L;
@@ -242,5 +275,4 @@ public class DistinctValueCount extends AbstractConstraint {
             throw new IllegalArgumentException("No suitable serializer found for: " + sqlInterface);
         }
     }
-
 }

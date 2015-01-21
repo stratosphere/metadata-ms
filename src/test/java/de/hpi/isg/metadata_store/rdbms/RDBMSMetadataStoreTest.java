@@ -679,34 +679,83 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testRemovalOfConstraintCollections() throws Exception {
         // setup store
-        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+        MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
         // setup schema
-        final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
-        Column col1 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
-                "foo", null, 1);
+        Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
+        Table dummyTable1 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation());
+
+        Column col1 = dummyTable1.addColumn(store1, "foo", null, 1);
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
+        Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1),
                 dummyConstraintCollection,
                 TYPES.STRING);
 
-        final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
-                new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
-                dummyConstraintCollection);
+        Constraint dummyDistinctValueCount = DistinctValueCount.buildAndAddToCollection(
+                new SingleTargetReference(col1),
+                dummyConstraintCollection,
+                1);
+
+        Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(new
+                InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
+
+        Constraint dummyTupleCountContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
+                dummyTable1),
+                dummyConstraintCollection, 1);
+
+        Constraint dummyUCCConstraint = UniqueColumnCombination.buildAndAddToCollection(new
+                UniqueColumnCombination.Reference(new Column[] { col1 }), dummyConstraintCollection);
 
         store1.removeConstraintCollection(dummyConstraintCollection);
         assertTrue(store1.getConstraintCollections().isEmpty());
-        assertTrue(store1.getAllTargets().isEmpty());
+
+        // setup store
+        store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        // setup schema
+        dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
+        dummyTable1 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation());
+
+        col1 = dummyTable1.addColumn(store1, "foo", null, 1);
+        col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
+                "bar", null, 2);
+
+        dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+
+        dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1),
+                dummyConstraintCollection,
+                TYPES.STRING);
+
+        dummyDistinctValueCount = DistinctValueCount.buildAndAddToCollection(
+                new SingleTargetReference(col1),
+                dummyConstraintCollection,
+                1);
+
+        dummyIndContraint = InclusionDependency.buildAndAddToCollection(new
+                InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
+
+        dummyTupleCountContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
+                dummyTable1),
+                dummyConstraintCollection, 1);
+
+        /*
+         * dummyUCCConstraint = UniqueColumnCombination.buildAndAddToCollection( new
+         * UniqueColumnCombination.Reference(new Column[] { col1 }), dummyConstraintCollection);
+         */
+
+        store1.removeConstraintCollection(dummyConstraintCollection);
+        assertTrue(store1.getConstraintCollections().isEmpty());
 
     }
 
     @Test
-    public void testRemovalOfSchemaCascadesConstraintCollectionRemoval() {
+    public void testRemovalOfSchemaCascadesConstraintCollectionRemoval() throws Exception {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
@@ -727,6 +776,8 @@ public class RDBMSMetadataStoreTest {
         final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
                 new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
                 dummyConstraintCollection);
+
+        store1.flush();
 
         store1.removeSchema(dummySchema1);
         assertTrue(store1.getConstraintCollections().isEmpty());
