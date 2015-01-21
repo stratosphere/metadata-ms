@@ -13,7 +13,6 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
@@ -288,15 +287,26 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         }
         for (Table table : schema.getTables()) {
             for (Column column : table.getColumns()) {
+                checkIfInScopeAndDelete(column);
                 sqlInterface.removeColumn((RDBMSColumn) column);
             }
+            checkIfInScopeAndDelete(table);
             sqlInterface.removeTable((RDBMSTable) table);
         }
+        checkIfInScopeAndDelete(schema);
         sqlInterface.removeSchema((RDBMSSchema) schema);
         try {
             this.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void checkIfInScopeAndDelete(Target target) {
+        for (ConstraintCollection collection : this.getConstraintCollections()) {
+            if (collection.getScope().contains(target)) {
+                this.removeConstraintCollection(collection);
+            }
         }
     }
 
