@@ -13,6 +13,7 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.hpi.isg.metadata_store.domain.Constraint;
 import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
@@ -21,8 +22,12 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
+import de.hpi.isg.metadata_store.domain.targets.Table;
+import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
+import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
@@ -164,7 +169,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public boolean hasTargetWithId(int id) {
         return idIsInUse(id);
     }
-    
+
     private boolean idIsInUse(final int id) {
         try {
             return this.sqlInterface.isTargetIdInUse(id);
@@ -272,5 +277,34 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public Schema getSchemaById(int schemaId) {
         return this.sqlInterface.getSchemaById(schemaId);
+    }
+
+    @Override
+    public void removeSchema(Schema schema) {
+        try {
+            this.flush();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        for (Table table : schema.getTables()) {
+            for (Column column : table.getColumns()) {
+                sqlInterface.removeColumn((RDBMSColumn) column);
+            }
+            sqlInterface.removeTable((RDBMSTable) table);
+        }
+        sqlInterface.removeSchema((RDBMSSchema) schema);
+        try {
+            this.flush();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+        for (Constraint constraint : constraintCollection.getConstraints()) {
+            sqlInterface.removeConstraint(constraint);
+        }
+        sqlInterface.removeConstraintCollection(constraintCollection);
     }
 }

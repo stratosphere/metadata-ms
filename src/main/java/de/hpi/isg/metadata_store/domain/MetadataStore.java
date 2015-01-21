@@ -26,7 +26,7 @@ public interface MetadataStore extends Serializable, Observer {
 
     @Deprecated
     public Collection<Target> getAllTargets();
-    
+
     public boolean hasTargetWithId(int id);
 
     public Collection<ConstraintCollection> getConstraintCollections();
@@ -104,5 +104,9 @@ public interface MetadataStore extends Serializable, Observer {
      *         if the saving fails
      */
     public void flush() throws Exception;
+
+    public void removeSchema(Schema target);
+
+    public void removeConstraintCollection(ConstraintCollection constraintCollection);
 
 }

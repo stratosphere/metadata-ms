@@ -18,6 +18,7 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.domain.util.IdUtils.IdTypes;
 
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
@@ -120,17 +121,21 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     private boolean targetInScope(int targetId) {
         IdUtils idUtils = this.sqlInterface.getMetadataStore().idUtils;
+
         if (this.scopeIdSet.contains(targetId)) {
             return true;
         }
-        if (idUtils.isSchemaId(targetId)) {
+
+        switch (idUtils.getIdType(targetId)) {
+        case SCHEMA_ID:
             return false;
-        } else if (idUtils.isTableId(targetId)) {
+        case TABLE_ID:
             return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
-        } else {
+        case COLUMN_ID:
             return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
                     || this.scopeIdSet.contains(idUtils.getTableId(targetId));
         }
+        return false;
     }
 
     @Override

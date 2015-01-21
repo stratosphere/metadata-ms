@@ -122,4 +122,14 @@ public interface SQLInterface {
     public Collection<Table> getTablesByName(String name);
 
     public DatabaseAccess getDatabaseAccess();
+
+    public void removeSchema(RDBMSSchema schema);
+
+    public void removeColumn(RDBMSColumn column);
+
+    public void removeTable(RDBMSTable table);
+
+    public void removeConstraint(Constraint constraint);
+
+    public void removeConstraintCollection(ConstraintCollection constraintCollection);
 }

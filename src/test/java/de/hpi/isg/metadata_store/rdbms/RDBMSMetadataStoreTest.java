@@ -1,7 +1,6 @@
 package de.hpi.isg.metadata_store.rdbms;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
@@ -642,5 +641,94 @@ public class RDBMSMetadataStoreTest {
         final Column column2 = table2.addColumn(store1, "bar", null, 1);
 
         assertEquals(column1, table1.getColumnByName("bar"));
+    }
+
+    @Test
+    public void testRemovalOfSchema() throws Exception {
+        MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        Schema schema1 = store1.addSchema("pdb", null, new DefaultLocation());
+        Table table1 = schema1.addTable(store1, "foo1", null, new DefaultLocation());
+        Table table2 = schema1.addTable(store1, "foo2", null, new DefaultLocation());
+
+        Column column1 = table1.addColumn(store1, "bar1", null, 0);
+        Column column2 = table1.addColumn(store1, "bar2", null, 1);
+        Column column3 = table2.addColumn(store1, "bar3", null, 0);
+
+        assertTrue(!store1.getSchemas().isEmpty());
+
+        store1.removeSchema(schema1);
+
+        assertTrue(store1.getSchemas().isEmpty());
+
+        schema1 = store1.addSchema("pdb", null, new DefaultLocation());
+        table1 = schema1.addTable(store1, "foo1", null, new DefaultLocation());
+        table2 = schema1.addTable(store1, "foo2", null, new DefaultLocation());
+
+        column1 = table1.addColumn(store1, "bar", null, 0);
+        column2 = table1.addColumn(store1, "bar", null, 1);
+        column3 = table2.addColumn(store1, "bar", null, 0);
+
+        store1.flush();
+
+        store1.removeSchema(schema1);
+
+        assertTrue(store1.getSchemas().isEmpty());
+    }
+
+    @Test
+    public void testRemovalOfConstraintCollections() throws Exception {
+        // setup store
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        // setup schema
+        final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
+        Column col1 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
+                "foo", null, 1);
+        Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
+                "bar", null, 2);
+
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1),
+                dummyConstraintCollection,
+                TYPES.STRING);
+
+        final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
+                new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
+                dummyConstraintCollection);
+
+        store1.removeConstraintCollection(dummyConstraintCollection);
+        assertTrue(store1.getConstraintCollections().isEmpty());
+        assertTrue(store1.getAllTargets().isEmpty());
+
+    }
+
+    @Test
+    public void testRemovalOfSchemaCascadesConstraintCollectionRemoval() {
+        // setup store
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+        // setup schema
+        final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
+        Column col1 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
+                "foo", null, 1);
+        Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
+                "bar", null, 2);
+
+        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+
+        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1),
+                dummyConstraintCollection,
+                TYPES.STRING);
+
+        final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
+                new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
+                dummyConstraintCollection);
+
+        store1.removeSchema(dummySchema1);
+        assertTrue(store1.getConstraintCollections().isEmpty());
     }
 }

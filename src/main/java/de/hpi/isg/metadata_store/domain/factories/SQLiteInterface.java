@@ -102,6 +102,18 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Target");
 
+    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_TARGET_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE FROM Target where id=?;",
+                    new PreparedStatementAdapter<Integer>() {
+                        @Override
+                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter);
+                        }
+                    },
+                    "Target");
+
     private static final PreparedStatementBatchWriter.Factory<Integer[]> INSERT_LOCATION_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Location (id, typee) VALUES (?, ?);",
@@ -111,6 +123,18 @@ public class SQLiteInterface implements SQLInterface {
                                 throws SQLException {
                             preparedStatement.setInt(1, parameters[0]);
                             preparedStatement.setInt(2, parameters[1]);
+                        }
+                    },
+                    "Location");
+
+    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_LOCATION_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE FROM Location where id=?;",
+                    new PreparedStatementAdapter<Integer>() {
+                        @Override
+                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter);
                         }
                     },
                     "Location");
@@ -129,6 +153,18 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "LocationProperty");
 
+    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_LOCATION_PROPERTY_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE FROM LocationProperty where locationId=?;",
+                    new PreparedStatementAdapter<Integer>() {
+                        @Override
+                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter);
+                        }
+                    },
+                    "LocationProperty");
+
     private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_CONSTRAINT_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (?, ?);",
@@ -142,6 +178,18 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Constraintt");
 
+    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_CONSTRAINT_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE from Constraintt where id=?;",
+                    new PreparedStatementAdapter<Integer>() {
+                        @Override
+                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter);
+                        }
+                    },
+                    "Constraintt");
+
     private static final PreparedStatementBatchWriter.Factory<RDBMSSchema> INSERT_SCHEMA_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Schemaa (id) VALUES (?);",
@@ -150,6 +198,18 @@ public class SQLiteInterface implements SQLInterface {
                         public void translateParameter(RDBMSSchema parameters, PreparedStatement preparedStatement)
                                 throws SQLException {
                             preparedStatement.setInt(1, parameters.getId());
+                        }
+                    },
+                    "Schemaa");
+
+    private static final PreparedStatementBatchWriter.Factory<RDBMSSchema> DELETE_SCHEMA_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE from Schemaa where id=?",
+                    new PreparedStatementAdapter<RDBMSSchema>() {
+                        @Override
+                        public void translateParameter(RDBMSSchema parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter.getId());
                         }
                     },
                     "Schemaa");
@@ -167,6 +227,18 @@ public class SQLiteInterface implements SQLInterface {
                     },
                     "Tablee");
 
+    private static final PreparedStatementBatchWriter.Factory<RDBMSTable> DELETE_TABLE_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE from Tablee where id=?",
+                    new PreparedStatementAdapter<RDBMSTable>() {
+                        @Override
+                        public void translateParameter(RDBMSTable parameter, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameter.getId());
+                        }
+                    },
+                    "Tablee");
+
     private static final PreparedStatementBatchWriter.Factory<RDBMSColumn> INSERT_COLUMN_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
                     "INSERT INTO Columnn (id, tableId) VALUES (?, ?);",
@@ -176,6 +248,18 @@ public class SQLiteInterface implements SQLInterface {
                                 throws SQLException {
                             preparedStatement.setInt(1, parameters.getId());
                             preparedStatement.setInt(2, parameters.getTable().getId());
+                        }
+                    },
+                    "Columnn");
+
+    private static final PreparedStatementBatchWriter.Factory<RDBMSColumn> DELETE_COLUMN_WRITER_FACTORY =
+            new PreparedStatementBatchWriter.Factory<>(
+                    "DELETE from Columnn where id=?;",
+                    new PreparedStatementAdapter<RDBMSColumn>() {
+                        @Override
+                        public void translateParameter(RDBMSColumn parameters, PreparedStatement preparedStatement)
+                                throws SQLException {
+                            preparedStatement.setInt(1, parameters.getId());
                         }
                     },
                     "Columnn");
@@ -278,19 +362,34 @@ public class SQLiteInterface implements SQLInterface {
 
     private DatabaseQuery<Integer> schemaQuery;
 
+    // TODO change generic type to domain types?!
     private DatabaseWriter<Object[]> insertTargetWriter;
+
+    private DatabaseWriter<Integer> deleteTargetWriter;
 
     private DatabaseWriter<Integer[]> insertLocationWriter;
 
+    private DatabaseWriter<Integer> deleteLocationWriter;
+
     private DatabaseWriter<Object[]> insertLocationPropertyWriter;
+
+    private DatabaseWriter<Integer> deleteLocationPropertyWriter;
 
     private DatabaseWriter<int[]> insertConstraintWriter;
 
+    private DatabaseWriter<Integer> deleteConstraintWriter;
+
     private DatabaseWriter<RDBMSSchema> insertSchemaWriter;
+
+    private DatabaseWriter<RDBMSSchema> deleteSchemaWriter;
 
     private DatabaseWriter<RDBMSTable> insertTableWriter;
 
+    private DatabaseWriter<RDBMSTable> deleteTableWriter;
+
     private DatabaseWriter<RDBMSColumn> insertColumnWriter;
+
+    private DatabaseWriter<RDBMSColumn> deleteColumnWriter;
 
     public SQLiteInterface(Connection connection) {
         this.connection = connection;
@@ -300,16 +399,24 @@ public class SQLiteInterface implements SQLInterface {
         try {
             // Writers
             this.insertTargetWriter = this.databaseAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
+            this.deleteTargetWriter = this.databaseAccess.createBatchWriter(DELETE_TARGET_WRITER_FACTORY);
             // this.updateTargetNameWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_NAME_WRITER_FACTORY);
             // this.updateTargetLocationWriter =
             // this.databaseAccess.createBatchWriter(UPDATE_TARGET_LOCATION_WRITER_FACTORY);
             this.insertLocationWriter = this.databaseAccess.createBatchWriter(INSERT_LOCATION_WRITER_FACTORY);
+            this.deleteLocationWriter = this.databaseAccess.createBatchWriter(DELETE_LOCATION_WRITER_FACTORY);
             this.insertLocationPropertyWriter = this.databaseAccess
                     .createBatchWriter(INSERT_LOCATION_PROPERTY_WRITER_FACTORY);
+            this.deleteLocationPropertyWriter = this.databaseAccess
+                    .createBatchWriter(DELETE_LOCATION_PROPERTY_WRITER_FACTORY);
             this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
+            this.deleteConstraintWriter = this.databaseAccess.createBatchWriter(DELETE_CONSTRAINT_WRITER_FACTORY);
             this.insertColumnWriter = this.databaseAccess.createBatchWriter(INSERT_COLUMN_WRITER_FACTORY);
+            this.deleteColumnWriter = this.databaseAccess.createBatchWriter(DELETE_COLUMN_WRITER_FACTORY);
             this.insertTableWriter = this.databaseAccess.createBatchWriter(INSERT_TABLE_WRITER_FACTORY);
+            this.deleteTableWriter = this.databaseAccess.createBatchWriter(DELETE_TABLE_WRITER_FACTORY);
             this.insertSchemaWriter = this.databaseAccess.createBatchWriter(INSERT_SCHEMA_WRITER_FACTORY);
+            this.deleteSchemaWriter = this.databaseAccess.createBatchWriter(DELETE_SCHEMA_WRITER_FACTORY);
 
             // Queries
             this.locationQuery = this.databaseAccess.createQuery(LOCATION_QUERY_FACTORY);
@@ -1471,5 +1578,110 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public String toString() {
         return "SQLiteInterface[" + this.connection.getClass() + "]";
+    }
+
+    @Override
+    public void removeSchema(RDBMSSchema schema) {
+        try {
+            this.deleteSchemaWriter.write(schema);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        this.allSchemas.remove(schema);
+        this.schemaCache.remove(schema.getId());
+        removeTarget(schema);
+    }
+
+    @Override
+    public void removeColumn(RDBMSColumn column) {
+        try {
+            this.deleteColumnWriter.write(column);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        if (this.allColumnsForTableCache.get(column.getTable()) != null)
+            this.allColumnsForTableCache.get(column.getTable()).remove(column);
+        this.columnCache.remove(column.getId());
+        removeTarget(column);
+    }
+
+    @Override
+    public void removeTable(RDBMSTable table) {
+        try {
+            this.deleteTableWriter.write(table);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        this.tableCache.remove(table);
+        this.allColumnsForTableCache.remove(table);
+        removeTarget(table);
+    }
+
+    private void removeTarget(Target target) {
+        // first delete location and location properties
+        try {
+            ResultSet rs = this.locationQuery.execute(target.getId());
+            while (rs.next()) {
+                Integer locationId = rs.getInt("id");
+                removeLocation(target, locationId);
+            }
+            rs.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        // thein remove target
+        try {
+            this.deleteTargetWriter.write(target.getId());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (this.allTargets != null)
+            this.allTargets.remove(target);
+
+    }
+
+    private void removeLocation(Target target, Integer locationId) {
+        try {
+            this.deleteLocationPropertyWriter.write(locationId);
+            this.deleteLocationWriter.write(locationId);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        this.locationCache.remove(target.getLocation());
+    }
+
+    @Override
+    public void removeConstraint(Constraint constraint) {
+
+        Integer constraintId = ++currentConstraintIdMax;
+        try {
+            this.insertConstraintWriter.write(new int[] { constraintId, constraint.getConstraintCollection().getId() });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        ConstraintSQLSerializer serializer = constraintSerializers.get(constraint.getClass());
+        if (serializer == null) {
+            serializer = constraint.getConstraintSQLSerializer(this);
+            constraintSerializers.put(constraint.getClass(), serializer);
+            serializer.initializeTables();
+
+        }
+
+        serializer = constraintSerializers.get(constraint.getClass());
+
+        Validate.isTrue(serializer != null);
+
+        serializer.serialize(constraintId, constraint);
+    }
+
+    @Override
+    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        //
     }
 }

@@ -166,12 +166,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
             return this.allTargets.containsKey(id);
         }
     }
-    
+
     private boolean idIsInUse(final int id) {
         // delegate
         return hasTargetWithId(id);
     }
-
 
     @Override
     public void registerTargetObject(final Target message) {
@@ -255,6 +254,20 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     public Schema getSchemaById(int schemaId) {
         // TODO Implement method.
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void removeSchema(Schema schema) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        //
+    }
+
+    @Override
+    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Not supported yet.");
+        //
     }
 
 }
