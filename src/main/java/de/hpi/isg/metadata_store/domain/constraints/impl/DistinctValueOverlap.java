@@ -73,23 +73,23 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
 
         private static final StrategyBasedPreparedQuery.Factory<Void> QUERY_ALL_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT %table%.constraintId AS constraintId, "
+                        ("SELECT %table%.constraintId AS constraintId, "
                         + "%table%.column1 AS column1, "
                         + "%table%.column2 AS column2, "
                         + "%table%.overlap AS overlap "
-                        + "FROM %table%;".replaceAll("%table%", tableName),
+                        + "FROM %table%;").replaceAll("%table%", tableName),
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> QUERY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT %table%.constraintId AS constraintId, "
+                        ("SELECT %table%.constraintId AS constraintId, "
                                 + "%table%.column1 AS column1, "
                                 + "%table%.column2 AS column2, "
                                 + "%table%.overlap AS overlap "
                                 + "FROM %table%, constraintt "
                                 + "WHERE %table%.constraintId = constraintt.id "
-                                + "AND constraintt.constraintCollectionId = ?;".replaceAll("%table%", tableName),
+                                + "AND constraintt.constraintCollectionId = ?;").replaceAll("%table%", tableName),
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
