@@ -43,6 +43,10 @@ public class LocationUtils {
     private LocationUtils() {
     }
 
+    public static void registerLocationType(Class<? extends Location> locationType) {
+        classHashCode2ClassMapping.put(locationType.getName().hashCode(), locationType);
+    }
+    
     /**
      * Registering a property allows to reuse the property key String object in new instances.
      * 
