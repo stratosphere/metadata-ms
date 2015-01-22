@@ -156,8 +156,7 @@ public class DistinctValueCount extends AbstractConstraint {
                     }
                     distinctValueCounts
                             .add(DistinctValueCount.build(
-                                    new SingleTargetReference(this.sqlInterface.getColumnById(rsDistinctValueCounts
-                                            .getInt("columnId"))), constraintCollection,
+                                    new SingleTargetReference(rsDistinctValueCounts.getInt("columnId")), constraintCollection,
                                     rsDistinctValueCounts.getInt("distinctValueCount")));
                 }
                 rsDistinctValueCounts.close();

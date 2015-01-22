@@ -41,6 +41,7 @@ import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueCount;
+import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueOverlap;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
@@ -442,6 +443,8 @@ public class SQLiteInterface implements SQLInterface {
                 new TypeConstraint.TypeConstraintSQLiteSerializer(sqlInterface));
         sqlInterface.registerConstraintSQLSerializer(UniqueColumnCombination.class, new
                 UniqueColumnCombination.UniqueColumnCombinationSQLiteSerializer(sqlInterface));
+        sqlInterface.registerConstraintSQLSerializer(DistinctValueOverlap.class, new
+                DistinctValueOverlap.DistinctValueOverlapSQLiteSerializer(sqlInterface));
 
         return sqlInterface;
     }
