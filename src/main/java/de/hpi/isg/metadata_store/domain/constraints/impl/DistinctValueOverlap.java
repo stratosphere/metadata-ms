@@ -52,6 +52,8 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
 
         DatabaseWriter<int[]> insertWriter;
 
+        DatabaseWriter<Integer> deleteWriter;
+
         DatabaseQuery<Void> queryAllConstraints;
 
         DatabaseQuery<Integer> queryConstraintForConstraintCollection;
@@ -71,13 +73,25 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
                         },
                         tableName);
 
+        private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE from  " + tableName + " where constraintId = ?;",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
+                            }
+                        },
+                        tableName);
+
         private static final StrategyBasedPreparedQuery.Factory<Void> QUERY_ALL_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         ("SELECT %table%.constraintId AS constraintId, "
-                        + "%table%.column1 AS column1, "
-                        + "%table%.column2 AS column2, "
-                        + "%table%.overlap AS overlap "
-                        + "FROM %table%;").replaceAll("%table%", tableName),
+                                + "%table%.column1 AS column1, "
+                                + "%table%.column2 AS column2, "
+                                + "%table%.overlap AS overlap "
+                                + "FROM %table%;").replaceAll("%table%", tableName),
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
@@ -99,6 +113,9 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
             try {
                 this.insertWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
                         INSERT_WRITER_FACTORY);
+
+                this.deleteWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        DELETE_WRITER_FACTORY);
 
                 this.queryAllConstraints = sqlInterface.getDatabaseAccess().createQuery(
                         QUERY_ALL_FACTORY);
@@ -132,17 +149,18 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
             Collection<Constraint> constraints = new HashSet<>();
 
             try (ResultSet rsDistinctValueOverlap = retrieveConstraintCollection ?
-                        queryAllConstraints.execute(null)
-                        : queryConstraintForConstraintCollection
-                                .execute(constraintCollection.getId())) {
+                    queryAllConstraints.execute(null)
+                    : queryConstraintForConstraintCollection
+                            .execute(constraintCollection.getId())) {
                 while (rsDistinctValueOverlap.next()) {
                     int overlap = rsDistinctValueOverlap.getInt("overlap");
-                    Reference reference = new Reference(rsDistinctValueOverlap.getInt("column1"), 
+                    Reference reference = new Reference(rsDistinctValueOverlap.getInt("column1"),
                             rsDistinctValueOverlap.getInt("column2"));
                     if (retrieveConstraintCollection) {
-                        constraints.add(DistinctValueOverlap.build(overlap,reference,constraintCollection));
+                        constraints.add(DistinctValueOverlap.build(overlap, reference, constraintCollection));
                     } else {
-                        constraints.add(DistinctValueOverlap.buildAndAddToCollection(overlap,reference,constraintCollection));
+                        constraints.add(DistinctValueOverlap.buildAndAddToCollection(overlap, reference,
+                                constraintCollection));
                     }
                 }
 
@@ -181,6 +199,20 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
                 throw new IllegalStateException("Not all tables necessary for serializer were created.");
             }
         }
+
+        @Override
+        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+            try {
+                ResultSet rsINDs = queryConstraintForConstraintCollection
+                        .execute(constraintCollection.getId());
+                while (rsINDs.next()) {
+                    this.deleteWriter.write(rsINDs.getInt("constraintId"));
+                }
+                rsINDs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
@@ -197,9 +229,9 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
 
         @Override
         public IntCollection getAllTargetIds() {
-        	IntArrayList targetIds = new IntArrayList(2);
-        	targetIds.add(this.column1);
-        	targetIds.add(this.column2);
+            IntArrayList targetIds = new IntArrayList(2);
+            targetIds.add(this.column1);
+            targetIds.add(this.column2);
             return targetIds;
         }
 
@@ -207,13 +239,13 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
         public String toString() {
             return "Reference [" + column1 + ", " + column2 + "]";
         }
-        
+
     }
 
     private static final long serialVersionUID = -932394088609862495L;
-    
+
     private DistinctValueOverlap.Reference target;
-    
+
     private int overlap;
 
     public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target,
@@ -222,8 +254,8 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
         return uniqueColumnCombination;
     }
 
-    public static DistinctValueOverlap buildAndAddToCollection(final int overlap, 
-            final DistinctValueOverlap.Reference target,            ConstraintCollection constraintCollection) {
+    public static DistinctValueOverlap buildAndAddToCollection(final int overlap,
+            final DistinctValueOverlap.Reference target, ConstraintCollection constraintCollection) {
         DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target, constraintCollection);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;

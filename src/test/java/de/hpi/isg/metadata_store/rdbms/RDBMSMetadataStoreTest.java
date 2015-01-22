@@ -34,6 +34,7 @@ import de.hpi.isg.metadata_store.domain.ConstraintCollection;
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueCount;
+import de.hpi.isg.metadata_store.domain.constraints.impl.DistinctValueOverlap;
 import de.hpi.isg.metadata_store.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TupleCount;
 import de.hpi.isg.metadata_store.domain.constraints.impl.TypeConstraint;
@@ -711,6 +712,11 @@ public class RDBMSMetadataStoreTest {
         Constraint dummyUCCConstraint = UniqueColumnCombination.buildAndAddToCollection(new
                 UniqueColumnCombination.Reference(new Column[] { col1 }), dummyConstraintCollection);
 
+        Constraint dummyValueOverlapConstraint = DistinctValueOverlap
+                .buildAndAddToCollection(1, new
+                        DistinctValueOverlap.Reference(1, 2),
+                        dummyConstraintCollection);
+
         store1.removeConstraintCollection(dummyConstraintCollection);
         assertTrue(store1.getConstraintCollections().isEmpty());
 
@@ -743,6 +749,11 @@ public class RDBMSMetadataStoreTest {
         dummyTupleCountContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
                 dummyTable1),
                 dummyConstraintCollection, 1);
+
+        dummyValueOverlapConstraint = DistinctValueOverlap
+                .buildAndAddToCollection(1, new
+                        DistinctValueOverlap.Reference(1, 2),
+                        dummyConstraintCollection);
 
         /*
          * dummyUCCConstraint = UniqueColumnCombination.buildAndAddToCollection( new
