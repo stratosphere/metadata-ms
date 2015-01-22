@@ -276,7 +276,7 @@ public class SQLiteInterface implements SQLInterface {
     private static final StrategyBasedPreparedQuery.Factory<Integer> LOCATION_PROPERTIES_QUERY_FACTORY =
             new StrategyBasedPreparedQuery.Factory<>(
                     "SELECT LocationProperty.keyy as keyy, LocationProperty.value as value "
-                            + "from Location, LocationProperty "
+                            + "from LocationProperty "
                             + "where LocationProperty.locationId = ?;",
                     PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                     "Location", "LocationProperty");
