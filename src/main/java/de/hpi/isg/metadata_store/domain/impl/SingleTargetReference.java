@@ -30,6 +30,10 @@ public class SingleTargetReference extends AbstractHashCodeAndEquals implements 
         this.targetId = targetId;
     }
 
+    public int getTargetId() {
+        return targetId;
+    }
+    
     @Override
     public IntCollection getAllTargetIds() {
         return IntLists.singleton(this.targetId);
