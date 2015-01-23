@@ -203,6 +203,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
+    public ConstraintCollection getConstraintCollection(int id) {
+        throw new UnsupportedOperationException("Implement me!");
+    }
+
+    @Override
     public ConstraintCollection createConstraintCollection(String description, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {

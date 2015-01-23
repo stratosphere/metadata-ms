@@ -31,6 +31,8 @@ public interface MetadataStore extends Serializable, Observer {
 
     public Collection<ConstraintCollection> getConstraintCollections();
 
+    public ConstraintCollection getConstraintCollection(int id);
+
     /**
      * Retrieve a schema from the store if it exists, throws {@link NameAmbigousException} if there are more than one
      * with that name

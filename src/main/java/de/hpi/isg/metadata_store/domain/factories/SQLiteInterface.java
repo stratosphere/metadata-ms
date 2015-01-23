@@ -392,6 +392,7 @@ public class SQLiteInterface implements SQLInterface {
 
     private DatabaseWriter<RDBMSColumn> deleteColumnWriter;
 
+    // TODO: Should be private, use #buildAndRegisterStandardConstraints?
     public SQLiteInterface(Connection connection) {
         this.connection = connection;
         this.databaseAccess = new DatabaseAccess(connection);
@@ -1009,8 +1010,12 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException("Could not flush metadata store before loading constraints.", e);
         }
         for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
-            constraintsOfCollection.addAll(constraintSerializer
-                    .deserializeConstraintsForConstraintCollection(rdbmsConstraintCollection));
+            try {
+                constraintsOfCollection.addAll(constraintSerializer
+                        .deserializeConstraintsForConstraintCollection(rdbmsConstraintCollection));
+            } catch (Exception e) {
+                LOG.error("Error on deserializing constraint collection. Continue anyway...", e);
+            }
         }
 
         if (constraintsOfCollection.isEmpty()) {
@@ -1137,6 +1142,7 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     public Collection<ConstraintCollection> getAllConstraintCollections() {
         try {
+            // TODO: This seems not to be working (only a single constraint collection is returned.
             Collection<ConstraintCollection> constraintCollections = new LinkedList<>();
             try (ResultSet rs = this.databaseAccess.query("SELECT id, description from ConstraintCollection;",
                     "ConstraintCollection")) {
