@@ -105,8 +105,8 @@ public class LocationUtils {
         Class<? extends Location> clazz = classHashCode2ClassMapping.get(classNameHashCode);
         if (clazz == null) {
             LOGGER.warn(
-                    "The given class hash code is not known for any registered location Type, did you register your location type in {}",
-                    LocationUtils.class);
+                    "The given class hash code {} is not known for any registered location Type, did you register your location type in {}",
+                    classNameHashCode, LocationUtils.class);
             return DefaultLocation.class;
         }
         return clazz;
