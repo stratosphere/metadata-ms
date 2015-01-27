@@ -12,6 +12,9 @@
  **********************************************************************************************************************/
 package de.hpi.isg.metadata_store.domain.util;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,25 +29,55 @@ import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
  * 
  * @author Sebastian Kruse
  */
-public class LocationUtils {
+public class LocationCache {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LocationUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocationCache.class);
 
-    private static final Map<String, String> KNOWN_PROPERTIES = new HashMap<>();
+    public static int computeId(Class<? extends Location> locationType) {
+        return computeId(locationType.getName());
+    }
+    
+    public static int computeId(String canonicalName) {
+        return canonicalName.hashCode();
+    }
 
-    private static final Map<String, Map<String, String>> CANONICAL_PROPERTY_VALUES = new HashMap<>();
+    private final Map<String, String> knownProperties = new HashMap<>();
 
-    private static final Map<Integer, Class<? extends Location>> classHashCode2ClassMapping = new HashMap<>();
+    private final Map<String, Map<String, String>> canonicalPropertyValues = new HashMap<>();
 
-    static {
+    private final Int2ObjectMap<Class<? extends Location>> classHashCode2ClassMapping = new Int2ObjectOpenHashMap<>();
+
+    public LocationCache() {
         classHashCode2ClassMapping.put(DefaultLocation.class.getName().hashCode(), DefaultLocation.class);
     }
 
-    private LocationUtils() {
-    }
-
-    public static void registerLocationType(Class<? extends Location> locationType) {
-        classHashCode2ClassMapping.put(locationType.getName().hashCode(), locationType);
+    /**
+     * Caches the given {@link Location} type.
+     * 
+     * @param locationType is the {@link Location} type to cache
+     * @return whether the locationType has not been cached yet
+     */
+    public boolean cacheLocationType(Class<? extends Location> locationType) {
+        int locationId = computeId(locationType);
+        if (!classHashCode2ClassMapping.containsKey(locationId)) {
+            classHashCode2ClassMapping.put(locationId, locationType);
+            
+            // Try to register the properties etc.
+            try {
+                Location location = locationType.newInstance();
+                for (String propertyKey : location.getAllPropertyKeys()) {
+                    cachePropertyKey(propertyKey);
+                }
+                for (String propertyKey : location.getPropertyKeysForValueCanonicalization()) {
+                    registerPropertyForValueCanoicalization(propertyKey);
+                }
+            } catch (InstantiationException | IllegalAccessException e) {
+                LOGGER.error("Could not register properties etc.", e);
+            }
+            
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -53,9 +86,9 @@ public class LocationUtils {
      * @param key
      *        is the key of the property
      */
-    public static void registerProperty(String key) {
-        synchronized (KNOWN_PROPERTIES) {
-            KNOWN_PROPERTIES.put(key, key);
+    public void cachePropertyKey(String key) {
+        synchronized (knownProperties) {
+            knownProperties.put(key, key);
         }
     }
 
@@ -66,9 +99,9 @@ public class LocationUtils {
      * @param key
      *        is the key of the property
      */
-    public static void registerPropertyForValueCanoicalization(String key) {
-        synchronized (CANONICAL_PROPERTY_VALUES) {
-            CANONICAL_PROPERTY_VALUES.put(key, new HashMap<String, String>());
+    public void registerPropertyForValueCanoicalization(String key) {
+        synchronized (canonicalPropertyValues) {
+            canonicalPropertyValues.put(key, new HashMap<String, String>());
         }
     }
 
@@ -82,7 +115,7 @@ public class LocationUtils {
      *        are the properties to take on by the location to be created
      * @return a location with the given properties
      */
-    public static Location createLocation(Integer classNameHashCode, Map<String, String> properties) {
+    public Location createLocation(Integer classNameHashCode, Map<String, String> properties) {
         Location location = null;
         try {
             Class<? extends Location> locationClass = lookupClassFor(classNameHashCode);
@@ -101,29 +134,29 @@ public class LocationUtils {
         return location;
     }
 
-    private static Class<? extends Location> lookupClassFor(Integer classNameHashCode) {
+    private Class<? extends Location> lookupClassFor(Integer classNameHashCode) {
         Class<? extends Location> clazz = classHashCode2ClassMapping.get(classNameHashCode);
         if (clazz == null) {
             LOGGER.warn(
                     "The given class hash code {} is not known for any registered location Type, did you register your location type in {}",
-                    classNameHashCode, LocationUtils.class);
+                    classNameHashCode, LocationCache.class);
             return DefaultLocation.class;
         }
         return clazz;
     }
 
-    public static void setCanonicalProperty(String key, String value, Location location) {
+    public void setCanonicalProperty(String key, String value, Location location) {
         String knownProperty;
-        synchronized (KNOWN_PROPERTIES) {
-            knownProperty = KNOWN_PROPERTIES.get(key);
+        synchronized (knownProperties) {
+            knownProperty = knownProperties.get(key);
         }
         if (knownProperty != null) {
             key = knownProperty;
         }
 
         Map<String, String> knownPropertyValues;
-        synchronized (CANONICAL_PROPERTY_VALUES) {
-            knownPropertyValues = CANONICAL_PROPERTY_VALUES.get(value);
+        synchronized (canonicalPropertyValues) {
+            knownPropertyValues = canonicalPropertyValues.get(value);
         }
         if (knownPropertyValues != null) {
             synchronized (knownPropertyValues) {
@@ -134,7 +167,7 @@ public class LocationUtils {
                 }
             }
         }
-        location.getProperties().put(key, value);
+        location.set(key, value);
     }
 
 }

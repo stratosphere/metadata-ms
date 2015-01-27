@@ -1,11 +1,12 @@
 package de.hpi.isg.metadata_store.domain.location.impl;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import de.hpi.isg.metadata_store.domain.Location;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
-import de.hpi.isg.metadata_store.domain.util.LocationUtils;
 
 /**
  * A {@link Location} representing a HDFS location.
@@ -14,14 +15,6 @@ import de.hpi.isg.metadata_store.domain.util.LocationUtils;
  */
 
 public class DefaultLocation extends AbstractHashCodeAndEquals implements Location {
-
-    static {
-        LocationUtils.registerProperty(TYPE);
-        LocationUtils.registerPropertyForValueCanoicalization(TYPE);
-        LocationUtils.registerProperty(INDEX);
-        LocationUtils.registerPropertyForValueCanoicalization(INDEX);
-        LocationUtils.registerProperty(PATH);
-    }
 
     
     private static final long serialVersionUID = 4906351571223005639L;
@@ -40,7 +33,7 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
 
     @Override
     public void set(String propertyKey, String value) {
-        LocationUtils.setCanonicalProperty(propertyKey, value, this);
+        this.properties.put(propertyKey, value);
     }
     
     @Override
@@ -71,4 +64,15 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
     public Map<String, String> getProperties() {
         return this.properties;
     }
+    
+    @Override
+    public Collection<String> getAllPropertyKeys() {
+        return Arrays.asList(TYPE, INDEX, PATH);
+    }
+    
+    @Override
+    public Collection<String> getPropertyKeysForValueCanonicalization() {
+        return Arrays.asList(TYPE, INDEX);
+    }
+
 }

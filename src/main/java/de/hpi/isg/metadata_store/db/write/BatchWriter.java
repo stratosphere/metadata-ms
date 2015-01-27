@@ -75,15 +75,20 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 		if (this.curBatchSize > 0) {
 		    int batchSize = this.curBatchSize;
 		    long startTime = System.currentTimeMillis();
-			int[] batchResults = this.statement.executeBatch();
-			if (!this.statement.getConnection().getAutoCommit()) {
-			    this.statement.getConnection().commit();
-			}
-			for (int result : batchResults) {
-				if (result == Statement.EXECUTE_FAILED) {
-					throw new SQLException("Batch execution returned error on one or more SQL statements.");
-				}
-			}
+		    try {
+    			int[] batchResults = this.statement.executeBatch();
+    			if (!this.statement.getConnection().getAutoCommit()) {
+    			    this.statement.getConnection().commit();
+    			}
+    			for (int result : batchResults) {
+    			    if (result == Statement.EXECUTE_FAILED) {
+    			        throw new SQLException("Batch execution returned error on one or more SQL statements.");
+    			    }
+    			}
+		    } catch (SQLException e) {
+		        LOGGER.error("Exception in {}.", this);
+		        throw e;
+		    }
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
 		}

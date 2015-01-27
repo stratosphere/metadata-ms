@@ -28,6 +28,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
+import de.hpi.isg.metadata_store.domain.util.LocationCache;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
@@ -53,6 +54,9 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @ExcludeHashCodeEquals
     transient final IdUtils idUtils;
+    
+    @ExcludeHashCodeEquals
+    transient final LocationCache locationCache = new LocationCache();
 
     public static RDBMSMetadataStore createNewInstance(SQLiteInterface sqliteInterface) {
         return createNewInstance(sqliteInterface, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
@@ -82,7 +86,9 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             throw new IllegalStateException("The metadata store does not seem to be initialized.");
         }
         Map<String, String> configuration = sqliteInterface.loadConfiguration();
-        return new RDBMSMetadataStore(sqliteInterface, configuration);
+        RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqliteInterface, configuration);
+        metadataStore.fillLocationCache();
+        return metadataStore;
     }
 
     private RDBMSMetadataStore(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
@@ -91,6 +97,17 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         int numTableBitsInIds = Integer.valueOf(configuration.get(NUM_TABLE_BITS_IN_IDS_KEY));
         int numColumnBitsInIds = Integer.valueOf(configuration.get(NUM_COLUMN_BITS_IN_IDS_KEY));
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void fillLocationCache() {
+        try {
+            for (String locationClassName : this.sqlInterface.getLocationClassNames()) {
+                this.locationCache.cacheLocationType((Class<? extends Location>) Class.forName(locationClassName));
+            }
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException("Could not fill location cache.", e);
+        }
     }
 
     @Override
@@ -192,6 +209,15 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     //
     @Override
     public void registerTargetObject(final Target target) {
+        // Register the Location type of the target.
+        if (this.locationCache.cacheLocationType(target.getLocation().getClass())) {
+            try {
+                this.sqlInterface.storeLocationType(target.getLocation().getClass());
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not register location type.", e);
+            }
+        }
+        
         ((AbstractRDBMSTarget) target).store();
         // this.sqlInterface.addTarget(target);
     }
@@ -247,6 +273,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         return idUtils;
     }
 
+    /**
+     * @return the locationCache
+     */
+    public LocationCache getLocationCache() {
+        return locationCache;
+    }
+    
     /**
      * @return key value pairs that describe the configuration of this metadata store.
      */

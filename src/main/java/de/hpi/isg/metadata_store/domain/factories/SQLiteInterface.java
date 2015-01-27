@@ -55,7 +55,7 @@ import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSColumn;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSSchema;
 import de.hpi.isg.metadata_store.domain.targets.impl.RDBMSTable;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
-import de.hpi.isg.metadata_store.domain.util.LocationUtils;
+import de.hpi.isg.metadata_store.domain.util.LocationCache;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
@@ -76,7 +76,7 @@ public class SQLiteInterface implements SQLInterface {
     private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
 
     public static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "Scope", "Location", "LocationProperty", "Config" };
+            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config" };
 
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer> constraintSerializers = new HashMap<>();
 
@@ -619,7 +619,7 @@ public class SQLiteInterface implements SQLInterface {
                     Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
                     if (locationClassHash != null) {
-                        location = LocationUtils.createLocation(locationClassHash,
+                        location = this.store.getLocationCache().createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
                     schema = RDBMSSchema.restore(this.store, targetId, name, description, location);
@@ -631,7 +631,7 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    schema.getLocation().set(locationPropKey, locationPropVal);
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, schema.getLocation());
                 }
             }
         }
@@ -693,7 +693,7 @@ public class SQLiteInterface implements SQLInterface {
                     Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
                     if (locationClassHash != null) {
-                        location = LocationUtils.createLocation(locationClassHash,
+                        location = this.store.getLocationCache().createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
 
@@ -719,7 +719,7 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    table.getLocation().set(locationPropKey, locationPropVal);
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, table.getLocation());
                 }
             }
 
@@ -790,7 +790,7 @@ public class SQLiteInterface implements SQLInterface {
                     Integer locationClassHash = rs.getInt("locationType");
                     Location location = null;
                     if (locationClassHash != null) {
-                        location = LocationUtils.createLocation(locationClassHash,
+                        location = this.store.getLocationCache().createLocation(locationClassHash,
                                 Collections.<String, String> emptyMap());
                     }
 
@@ -816,7 +816,7 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    column.getLocation().set(locationPropKey, locationPropVal);
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, column.getLocation());
                 }
             }
 
@@ -888,7 +888,7 @@ public class SQLiteInterface implements SQLInterface {
                 rsProperties.close();
 
                 // Create the location.
-                location = LocationUtils.createLocation(locationClassHash, locationProperties);
+                location = this.store.getLocationCache().createLocation(locationClassHash, locationProperties);
             }
             rs.close();
 
@@ -897,6 +897,31 @@ public class SQLiteInterface implements SQLInterface {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    @Override
+    public void storeLocationType(Class<? extends Location> locationType) throws SQLException {
+        String sql = String.format("INSERT INTO LocationType (id, className) VALUES (%d, '%s');", 
+                LocationCache.computeId(locationType), 
+                locationType.getCanonicalName());
+        this.databaseAccess.executeSQL(sql, "LocationType");
+    }
+    
+    @Override
+    public Collection<String> getLocationClassNames() throws SQLException {
+        Collection<String> classNames = new LinkedList<>();
+        try (ResultSet resultSet = this.databaseAccess.query("SELECT id, className FROM LocationType;", "LocationType")) {
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String className = resultSet.getString("className");
+                int computedId = LocationCache.computeId(className);
+                if (id != computedId) {
+                    throw new IllegalStateException(String.format("Expected ID %x for %s, found %x.", computedId, className, id));
+                }
+                classNames.add(className);
+            }
+        }
+        return classNames;
     }
 
     @Override

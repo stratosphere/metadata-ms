@@ -287,6 +287,17 @@ public class RDBMSMetadataStoreTest {
             @Override
             public void delete(String propertyKey) {
             }
+            
+            @Override
+            public Collection<String> getAllPropertyKeys() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Collection<String> getPropertyKeysForValueCanonicalization() {
+                return Collections.emptyList();
+            }
+            
         });
 
         assertEquals(DefaultLocation.class, store1.getSchemaByName("Foobar").getLocation().getClass());
@@ -305,7 +316,7 @@ public class RDBMSMetadataStoreTest {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
-        store1.addSchema("foo", null, mock(Location.class)).getTables().add(mock(Table.class));
+        store1.addSchema("foo", null, new DefaultLocation()).getTables().add(mock(Table.class));
     }
 
     @Test(expected = UnsupportedOperationException.class)

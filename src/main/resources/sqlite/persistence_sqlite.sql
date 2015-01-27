@@ -2,10 +2,20 @@
 
 /* Create Tables */
 
+CREATE TABLE [LocationType]
+(
+	[id] integer NOT NULL,
+	[className] text NOT NULL UNIQUE,
+	PRIMARY KEY ([id])
+);
+
+
 CREATE TABLE [Location]
 (
 	[id] integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-	[typee] integer
+	[typee] integer NOT NULL,
+	FOREIGN KEY ([typee])
+	REFERENCES [LocationType] ([id])
 );
 
 
@@ -96,10 +106,10 @@ CREATE TABLE [INDpart]
 	[rhs] integer NOT NULL,
 	FOREIGN KEY ([lhs])
 	REFERENCES [Columnn] ([id]),
-	FOREIGN KEY ([constraintId])
-	REFERENCES [IND] ([constraintId]),
 	FOREIGN KEY ([rhs])
-	REFERENCES [Columnn] ([id])
+	REFERENCES [Columnn] ([id]),
+	FOREIGN KEY ([constraintId])
+	REFERENCES [IND] ([constraintId])
 );
 
 
@@ -129,10 +139,10 @@ CREATE TABLE [Typee]
 	[constraintId] integer NOT NULL,
 	[columnId] integer NOT NULL,
 	[typee] text,
-	FOREIGN KEY ([columnId])
-	REFERENCES [Columnn] ([id]),
 	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id])
+	REFERENCES [Constraintt] ([id]),
+	FOREIGN KEY ([columnId])
+	REFERENCES [Columnn] ([id])
 );
 
 
