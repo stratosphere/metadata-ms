@@ -36,6 +36,7 @@ import de.hpi.isg.metadata_store.domain.factories.MetadataStoreFactory;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
+import de.hpi.isg.metadata_store.domain.location.impl.DefaultLocation;
 import de.hpi.isg.metadata_store.domain.targets.Column;
 import de.hpi.isg.metadata_store.domain.targets.Schema;
 import de.hpi.isg.metadata_store.domain.targets.Table;
@@ -57,9 +58,10 @@ public class ConstraintInsertPerfomanceBenchmark {
     }
 
     private Schema createSchema(MetadataStore metadataStore, int numTables, int numColumnsPerTable) {
-        Schema schema = metadataStore.addSchema("test-schema", null, null);
+        Schema schema = metadataStore.addSchema("test-schema", null, new DefaultLocation());
         for (int tableNum = 0; tableNum < numTables; tableNum++) {
-            Table table = schema.addTable(metadataStore, String.format("test-table-%04d", tableNum), null, null);
+            Table table = schema.addTable(metadataStore, String.format("test-table-%04d", tableNum), null,
+                    new DefaultLocation());
             for (int columnNum = 0; columnNum < numColumnsPerTable; columnNum++) {
                 table.addColumn(metadataStore, String.format("test-column-%04d", columnNum), null, columnNum);
             }
