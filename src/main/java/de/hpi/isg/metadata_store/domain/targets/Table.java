@@ -13,14 +13,6 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 public interface Table extends Target {
 
     /**
-     * @deprecated use {@link #addColumn(MetadataStore, String, int)} instead
-     * @param column
-     * @return
-     */
-    @Deprecated
-    public Table addColumn(Column column);
-
-    /**
      * Adds a new column to this table.
      *
      * @param metadataStore

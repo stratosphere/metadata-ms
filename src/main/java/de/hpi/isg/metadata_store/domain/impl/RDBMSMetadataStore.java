@@ -32,7 +32,7 @@ import de.hpi.isg.metadata_store.domain.util.LocationCache;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
- * The default implementation of the {@link MetadataStore}.
+ * The default implementation of the {@link MetadataStore} for storing the data inside of a RDBMS.
  * 
  */
 

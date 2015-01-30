@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,11 +91,6 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     @Override
     protected void store() {
         this.sqlInterface.addSchema(this);
-    }
-
-    @Override
-    public Schema addTable(final Table table) {
-        throw new RuntimeException(new OperationNotSupportedException());
     }
 
     @Override

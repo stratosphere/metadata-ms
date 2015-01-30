@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.Ignore;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +90,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         for (Table table : schema.getTables()) {
             for (Column column : table.getColumns()) {
                 DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(
-                        column), constraintCollection, 100);
+                        column.getId()), constraintCollection, 100);
                 constraintCollection.add(dvCount);
             }
         }
@@ -131,7 +131,8 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
         long startTimeNet = System.currentTimeMillis();
         for (Column column : allColumns) {
-            DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(column),
+            DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(
+                    new SingleTargetReference(column.getId()),
                     constraintCollection, 100);
             constraintCollection.add(dvCount);
         }
@@ -307,8 +308,12 @@ public class ConstraintInsertPerfomanceBenchmark {
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);
-            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(
-                    uniqueColumns.toArray(new Column[uniqueColumns.size()]));
+            List<Integer> ids = new ArrayList<>();
+            for (Column c : uniqueColumns) {
+                ids.add(c.getId());
+            }
+            int[] intArray = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
+            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(intArray);
             UniqueColumnCombination.buildAndAddToCollection(reference, constraintCollection);
         }
         long endTimeNet = System.currentTimeMillis();
@@ -366,8 +371,12 @@ public class ConstraintInsertPerfomanceBenchmark {
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);
-            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(
-                    uniqueColumns.toArray(new Column[uniqueColumns.size()]));
+            List<Integer> ids = new ArrayList<>();
+            for (Column c : uniqueColumns) {
+                ids.add(c.getId());
+            }
+            int[] intArray = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
+            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(intArray);
             UniqueColumnCombination.buildAndAddToCollection(reference, constraintCollection);
         }
         long endTimeNet = System.currentTimeMillis();

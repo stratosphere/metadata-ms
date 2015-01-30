@@ -26,12 +26,6 @@ public interface Schema extends Target {
      */
     public Table addTable(MetadataStore metadataStore, String name, String description, Location location);
 
-    /**
-     * @deprecated use {@link #addTable(String, Location)} instead
-     */
-    @Deprecated
-    public Schema addTable(Table table);
-
     public Table getTableByName(String name) throws NameAmbigousException;
 
     public Collection<Table> getTablesByName(String name);

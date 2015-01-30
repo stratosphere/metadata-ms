@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +33,13 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
     private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSTable.class);
 
     private static final boolean USE_STICKY_CACHE = true;
-    
+
     @ExcludeHashCodeEquals
     private final Schema schema;
 
     @ExcludeHashCodeEquals
     private Reference<Collection<Column>> childColumnCache;
-    
+
     /**
      * Experimental: keep the garbage collector from deleting the child column cache by keeping a firm reference to it.
      */
@@ -73,11 +71,6 @@ public class RDBMSTable extends AbstractRDBMSTarget implements Table {
         if (isFreshlyCreated) {
             cacheChildColumns(new ArrayList<Column>());
         }
-    }
-
-    @Override
-    public Table addColumn(final Column column) {
-        throw new RuntimeException(new OperationNotSupportedException());
     }
 
     @Override

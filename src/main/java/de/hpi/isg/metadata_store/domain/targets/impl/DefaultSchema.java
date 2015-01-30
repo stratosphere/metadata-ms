@@ -55,14 +55,8 @@ public class DefaultSchema extends AbstractTarget implements Schema {
         Validate.isTrue(metadataStore.getSchemas().contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
         final Table table = DefaultTable.buildAndRegister(metadataStore, this, tableId, name, description, location);
-        this.addTable(table);
-        return table;
-    }
-
-    @Override
-    public Schema addTable(final Table table) {
         this.tables.add(table);
-        return this;
+        return table;
     }
 
     @Override

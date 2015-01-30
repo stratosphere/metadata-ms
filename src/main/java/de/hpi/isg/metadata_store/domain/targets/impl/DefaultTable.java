@@ -57,12 +57,6 @@ public class DefaultTable extends AbstractTarget implements Table {
     }
 
     @Override
-    public Table addColumn(final Column column) {
-        this.columns.add(column);
-        return this;
-    }
-
-    @Override
     public Column addColumn(final MetadataStore metadataStore, final String name, final String description,
             final int index) {
         Validate.isTrue(metadataStore.getSchemas().contains(getSchema()));
@@ -74,7 +68,7 @@ public class DefaultTable extends AbstractTarget implements Table {
         location.getProperties().put(Location.INDEX, index + "");
         final Column column = DefaultColumn
                 .buildAndRegister(metadataStore, this, columnId, name, description, location);
-        addColumn(column);
+        this.columns.add(column);
         return column;
     }
 

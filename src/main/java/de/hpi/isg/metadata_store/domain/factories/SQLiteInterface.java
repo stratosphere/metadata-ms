@@ -1352,12 +1352,6 @@ public class SQLiteInterface implements SQLInterface {
         this.databaseAccess.flush();
     }
 
-    @Deprecated
-    @Override
-    public Statement createStatement() throws SQLException {
-        return this.connection.createStatement();
-    }
-
     @Override
     public boolean tableExists(String tablename) {
         if (existingTables == null) {

@@ -13,6 +13,13 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.exceptions.NotAllTargetsInStoreException;
 
+/**
+ * The default {@link ConstraintCollection} implementation that is used by the in-memory {@link DefaultMetadataStore}.
+ * 
+ * @author fabian
+ *
+ */
+
 public class DefaultConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -6633086023388829925L;
@@ -63,7 +70,7 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
     public DefaultMetadataStore getMetadataStore() {
         return this.metadataStore;
     }
-    
+
     public String getDescription() {
         return description;
     }

@@ -132,7 +132,7 @@ public class RDBMSMetadataStoreTest {
                 final Table table = schema.addTable(metadataStore, String.format("table-%03d", schemaNumber), null,
                         new DefaultLocation());
                 for (int columnNumber = 0; columnNumber < 3 * loadFactorForCreateComplexSchemaTest; columnNumber++) {
-                    Column column = table.addColumn(metadataStore, String.format("column-%03d", columnNumber), null,
+                    table.addColumn(metadataStore, String.format("column-%03d", columnNumber), null,
                             columnNumber);
                 }
             }
@@ -143,7 +143,6 @@ public class RDBMSMetadataStoreTest {
         final Collection<InclusionDependency> inclusionDependencies = new LinkedList<>();
         ConstraintCollection constraintCollection = metadataStore.createConstraintCollection("", metadataStore
                 .getSchemas().toArray(new Schema[metadataStore.getSchemas().size()]));
-        int incNr = 0;
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
             OuterLoop: for (final Table table1 : schema.getTables()) {
@@ -194,7 +193,7 @@ public class RDBMSMetadataStoreTest {
                 "dummyColumn", null, 0);
 
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
-                dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
+                dummyColumn.getId()), mock(ConstraintCollection.class), TYPES.STRING);
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         constraintCollection.add(dummyContraint);
@@ -241,16 +240,13 @@ public class RDBMSMetadataStoreTest {
         final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 TYPES.STRING);
 
         final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
                 new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
                 dummyConstraintCollection);
-
-        ConstraintCollection cc = store1.getConstraintCollections().iterator().next();
-        // store1.flush();
 
         assertTrue(store1.getConstraintCollections().contains(dummyConstraintCollection));
         assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyTypeContraint));
@@ -264,6 +260,11 @@ public class RDBMSMetadataStoreTest {
                 .buildAndRegisterStandardConstraints(connection));
         System.out.println("The following error is desired...");
         store1.addSchema("Foobar", "description", new Location() {
+
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 1L;
 
             @Override
             public void set(String propertyKey, String value) {
@@ -355,7 +356,7 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema);
         final Constraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
-                dummyColumn), mock(ConstraintCollection.class), TYPES.STRING);
+                dummyColumn.getId()), mock(ConstraintCollection.class), TYPES.STRING);
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -385,7 +386,7 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         final TupleCount dummyContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyTable), constraintCollection, 5);
+                dummyTable.getId()), constraintCollection, 5);
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -413,7 +414,7 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         final TypeConstraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
-                dummyColumn), constraintCollection, TypeConstraint.TYPES.STRING);
+                dummyColumn.getId()), constraintCollection, TypeConstraint.TYPES.STRING);
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -442,7 +443,7 @@ public class RDBMSMetadataStoreTest {
         ConstraintCollection constraintCollection = store1.createConstraintCollection("some collection");
 
         final DistinctValueCount dummyContraint = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyColumn), constraintCollection, 5);
+                dummyColumn.getId()), constraintCollection, 5);
 
         constraintCollection.add(dummyContraint);
 
@@ -506,7 +507,7 @@ public class RDBMSMetadataStoreTest {
 
         final UniqueColumnCombination dummyContraint = UniqueColumnCombination.buildAndAddToCollection(
                 new UniqueColumnCombination.Reference(
-                        new Column[] { dummyColumn1, dummyColumn2 }), constraintCollection);
+                        new int[] { dummyColumn1.getId(), dummyColumn2.getId() }), constraintCollection);
 
         constraintCollection.add(dummyContraint);
 
@@ -564,8 +565,8 @@ public class RDBMSMetadataStoreTest {
     public void testGettingOfSchemaByNameFails() {
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
-        final Schema schema1 = store1.addSchema("pdb", null, new DefaultLocation());
-        final Schema schema2 = store1.addSchema("pdb", null, new DefaultLocation());
+        store1.addSchema("pdb", null, new DefaultLocation());
+        store1.addSchema("pdb", null, new DefaultLocation());
         store1.getSchemaByName("pdb");
     }
 
@@ -599,8 +600,8 @@ public class RDBMSMetadataStoreTest {
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
         final Schema schema1 = store1.addSchema("pdb", null, new DefaultLocation());
-        final Table table1 = schema1.addTable(store1, "foo", null, new DefaultLocation());
-        final Table table2 = schema1.addTable(store1, "foo", null, new DefaultLocation());
+        schema1.addTable(store1, "foo", null, new DefaultLocation());
+        schema1.addTable(store1, "foo", null, new DefaultLocation());
 
         schema1.getTableByName("foo");
     }
@@ -636,8 +637,8 @@ public class RDBMSMetadataStoreTest {
                 .buildAndRegisterStandardConstraints(connection));
         final Schema schema1 = store1.addSchema("pdb", null, new DefaultLocation());
         final Table table1 = schema1.addTable(store1, "foo", null, new DefaultLocation());
-        final Column column1 = table1.addColumn(store1, "bar", null, 0);
-        final Column column2 = table1.addColumn(store1, "bar", null, 1);
+        table1.addColumn(store1, "bar", null, 0);
+        table1.addColumn(store1, "bar", null, 1);
 
         table1.getColumnByName("bar");
     }
@@ -650,7 +651,7 @@ public class RDBMSMetadataStoreTest {
         final Table table1 = schema1.addTable(store1, "foo1", null, new DefaultLocation());
         final Table table2 = schema1.addTable(store1, "foo2", null, new DefaultLocation());
         final Column column1 = table1.addColumn(store1, "bar", null, 0);
-        final Column column2 = table2.addColumn(store1, "bar", null, 1);
+        table2.addColumn(store1, "bar", null, 1);
 
         assertEquals(column1, table1.getColumnByName("bar"));
     }
@@ -663,9 +664,9 @@ public class RDBMSMetadataStoreTest {
         Table table1 = schema1.addTable(store1, "foo1", null, new DefaultLocation());
         Table table2 = schema1.addTable(store1, "foo2", null, new DefaultLocation());
 
-        Column column1 = table1.addColumn(store1, "bar1", null, 0);
-        Column column2 = table1.addColumn(store1, "bar2", null, 1);
-        Column column3 = table2.addColumn(store1, "bar3", null, 0);
+        table1.addColumn(store1, "bar1", null, 0);
+        table1.addColumn(store1, "bar2", null, 1);
+        table2.addColumn(store1, "bar3", null, 0);
 
         assertTrue(!store1.getSchemas().isEmpty());
 
@@ -677,9 +678,9 @@ public class RDBMSMetadataStoreTest {
         table1 = schema1.addTable(store1, "foo1", null, new DefaultLocation());
         table2 = schema1.addTable(store1, "foo2", null, new DefaultLocation());
 
-        column1 = table1.addColumn(store1, "bar", null, 0);
-        column2 = table1.addColumn(store1, "bar", null, 1);
-        column3 = table2.addColumn(store1, "bar", null, 0);
+        table1.addColumn(store1, "bar", null, 0);
+        table1.addColumn(store1, "bar", null, 1);
+        table2.addColumn(store1, "bar", null, 0);
 
         store1.flush();
 
@@ -703,27 +704,27 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
-        Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+        TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 TYPES.STRING);
 
-        Constraint dummyDistinctValueCount = DistinctValueCount.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+        DistinctValueCount.buildAndAddToCollection(
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 1);
 
-        Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(new
+        InclusionDependency.buildAndAddToCollection(new
                 InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
 
-        Constraint dummyTupleCountContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyTable1),
+        TupleCount.buildAndAddToCollection(new SingleTargetReference(
+                dummyTable1.getId()),
                 dummyConstraintCollection, 1);
 
-        Constraint dummyUCCConstraint = UniqueColumnCombination.buildAndAddToCollection(new
-                UniqueColumnCombination.Reference(new Column[] { col1 }), dummyConstraintCollection);
+        UniqueColumnCombination.buildAndAddToCollection(new
+                UniqueColumnCombination.Reference(new int[] { col1.getId() }), dummyConstraintCollection);
 
-        Constraint dummyValueOverlapConstraint = DistinctValueOverlap
+        DistinctValueOverlap
                 .buildAndAddToCollection(1, new
                         DistinctValueOverlap.Reference(1, 2),
                         dummyConstraintCollection);
@@ -744,24 +745,24 @@ public class RDBMSMetadataStoreTest {
 
         dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
-        dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+        TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 TYPES.STRING);
 
-        dummyDistinctValueCount = DistinctValueCount.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+        DistinctValueCount.buildAndAddToCollection(
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 1);
 
-        dummyIndContraint = InclusionDependency.buildAndAddToCollection(new
+        InclusionDependency.buildAndAddToCollection(new
                 InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
 
-        dummyTupleCountContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyTable1),
+        TupleCount.buildAndAddToCollection(new SingleTargetReference(
+                dummyTable1.getId()),
                 dummyConstraintCollection, 1);
 
-        dummyValueOverlapConstraint = DistinctValueOverlap
+        DistinctValueOverlap
                 .buildAndAddToCollection(1, new
                         DistinctValueOverlap.Reference(1, 2),
                         dummyConstraintCollection);
@@ -791,12 +792,12 @@ public class RDBMSMetadataStoreTest {
         final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null,
                 col1, col2);
 
-        final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(col1),
+        TypeConstraint.buildAndAddToCollection(
+                new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
                 TYPES.STRING);
 
-        final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
+        InclusionDependency.buildAndAddToCollection(
                 new InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }),
                 dummyConstraintCollection);
 

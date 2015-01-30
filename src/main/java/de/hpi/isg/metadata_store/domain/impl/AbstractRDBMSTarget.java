@@ -7,6 +7,13 @@ import de.hpi.isg.metadata_store.domain.Target;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 
+/**
+ * This class is the abstract super class for all kind of {@link Target} objects that can be stored inside an
+ * {@link RDBMSMetadataStore}.
+ * 
+ * @author fabian
+ *
+ */
 public abstract class AbstractRDBMSTarget extends AbstractTarget {
 
     private static final long serialVersionUID = -2207050281912169066L;

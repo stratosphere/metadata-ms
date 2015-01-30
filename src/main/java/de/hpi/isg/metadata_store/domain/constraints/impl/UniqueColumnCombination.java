@@ -297,6 +297,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
 
         private static final long serialVersionUID = -3272378011671591628L;
 
+        @SuppressWarnings("unused")
         private static int[] toIntArray(Column[] columns) {
             int[] intArray = new int[columns.length];
             for (int i = 0; i < columns.length; i++) {
@@ -306,11 +307,6 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         }
 
         int[] uniqueColumns;
-
-        @Deprecated
-        public Reference(final Column[] uniqueColumns) {
-            this(toIntArray(uniqueColumns));
-        }
 
         public Reference(final int[] uniqueColumns) {
             this.uniqueColumns = uniqueColumns;

@@ -35,7 +35,7 @@ import de.hpi.isg.metadata_store.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
 
 /**
- * The default implementation of the {@link MetadataStore}.
+ * The default in-memory implementation of the {@link MetadataStore}.
  * 
  */
 

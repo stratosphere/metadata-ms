@@ -48,7 +48,7 @@ import de.hpi.isg.metadata_store.domain.targets.Table;
  */
 public class DummyConstraintType extends AbstractConstraint {
 
-    public static class DummySQLiteSerializer implements ConstraintSQLSerializer {
+    public static class DummySQLiteSerializer implements ConstraintSQLSerializer<DummyConstraintType> {
 
         private final static String tableName = "dummy";
 
@@ -126,11 +126,11 @@ public class DummyConstraintType extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<DummyConstraintType> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> dummys = new HashSet<>();
+            Collection<DummyConstraintType> dummys = new HashSet<>();
 
             try {
                 ResultSet rsdummys = retrieveConstraintCollection ?
@@ -268,7 +268,7 @@ public class DummyConstraintType extends AbstractConstraint {
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<DummyConstraintType> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new DummySQLiteSerializer(sqlInterface);
         } else {

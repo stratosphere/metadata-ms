@@ -19,6 +19,13 @@ import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
 
+/**
+ * The default implementation of a {@link ConstraintCollection} that is used in {@link RDBMSMetadataStore}s.
+ * 
+ * @author fabian
+ *
+ */
+
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -2911473574180511468L;

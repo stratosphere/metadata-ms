@@ -69,13 +69,11 @@ public class TargetTest {
 
     @Test
     public void testSchemaGetTable() {
+        MetadataStore store = new DefaultMetadataStore();
         final DefaultLocation loc = new DefaultLocation();
 
-        final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", null,
-                loc);
-
-        final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", null, loc).addTable(
-                table1);
+        final Schema schema1 = store.addSchema("bar", "", loc);
+        Table table1 = schema1.addTable(store, "foo", "", loc);
 
         assertEquals(schema1.getTableByName("foo"), table1);
     }
@@ -105,13 +103,11 @@ public class TargetTest {
     @Test
     public void testSchemaFindColumn() {
 
-        final MetadataStore ms = mock(MetadataStore.class);
-        final Schema schema1 = DefaultSchema.buildAndRegister(ms, "foo", null, new DefaultLocation());
-        final Table table1 = DefaultTable.buildAndRegister(ms, schema1, "table1", null, new DefaultLocation());
-        final Column column1 = DefaultColumn.buildAndRegister(ms, table1, "column1", null, new DefaultLocation());
+        final MetadataStore ms = new DefaultMetadataStore();
+        final Schema schema1 = ms.addSchema("foo", "", new DefaultLocation());
 
-        schema1.addTable(table1);
-        table1.addColumn(column1);
+        final Table table1 = schema1.addTable(ms, "table1", "", new DefaultLocation());
+        final Column column1 = table1.addColumn(ms, "column1", "", 1);
 
         assertEquals(column1, schema1.findColumn(column1.getId()));
     }
@@ -131,20 +127,14 @@ public class TargetTest {
 
     @Test
     public void testSchemaHashCodeAndEquals() {
+        MetadataStore store1 = new DefaultMetadataStore();
+        MetadataStore store2 = new DefaultMetadataStore();
         final DefaultLocation loc = new DefaultLocation();
 
-        final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), "foo",
-                null,
-                new DefaultLocation());
-
-        final Table table1 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), "foo", null,
-                loc)
-                .addColumn(column1);
-
-        final Schema schema1 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", null, loc).addTable(
-                table1);
-        final Schema schema2 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo", null, loc).addTable(
-                table1);
+        final Schema schema1 = store1.addSchema("foo", "", loc);
+        schema1.addTable(store1, "foo", "", loc);
+        final Schema schema2 = store2.addSchema("foo", "", loc);
+        schema2.addTable(store2, "foo", "", loc);
 
         final Schema schema3 = DefaultSchema.buildAndRegister(mock(MetadataStore.class), "foo2", null, loc);
 
@@ -157,27 +147,18 @@ public class TargetTest {
     @Test
     public void testTableHashCodeAndEquals() {
 
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final MetadataStore store2 = new DefaultMetadataStore();
         final DefaultLocation loc = new DefaultLocation();
 
-        final Column column1 = DefaultColumn.buildAndRegister(mock(MetadataStore.class), mock(Table.class), 1, "foo",
-                null,
-                new DefaultLocation());
+        Table table1 = store1.addSchema("", "", loc).addTable(store1, "foo", "bar", loc);
+        table1.addColumn(store1, "col", "des", 0);
 
-        final Table table1 = DefaultTable
-                .buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", null, loc)
-                .addColumn(column1);
-
-        final Table table2 = DefaultTable
-                .buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 2, "foo", null, loc)
-                .addColumn(column1);
-
-        final Table table3 = DefaultTable.buildAndRegister(mock(MetadataStore.class), mock(Schema.class), 3, "foo2",
-                null,
-                loc);
+        Table table2 = store2.addSchema("", "", loc).addTable(store2, "foo", "bar", loc);
+        table1.addColumn(store2, "col", "des", 0);
 
         assertEquals(table1, table2);
 
         assertEquals(table1.hashCode(), table2.hashCode());
-        assertFalse(table1.equals(table3));
     }
 }
