@@ -41,7 +41,7 @@ import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
  */
 public class DistinctValueCount extends AbstractConstraint {
 
-    public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueCount> {
 
         private final static String tableName = "DistinctValueCount";
 
@@ -137,11 +137,11 @@ public class DistinctValueCount extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<DistinctValueCount> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> distinctValueCounts = new HashSet<>();
+            Collection<DistinctValueCount> distinctValueCounts = new HashSet<>();
 
             try {
 
@@ -156,7 +156,8 @@ public class DistinctValueCount extends AbstractConstraint {
                     }
                     distinctValueCounts
                             .add(DistinctValueCount.build(
-                                    new SingleTargetReference(rsDistinctValueCounts.getInt("columnId")), constraintCollection,
+                                    new SingleTargetReference(rsDistinctValueCounts.getInt("columnId")),
+                                    constraintCollection,
                                     rsDistinctValueCounts.getInt("distinctValueCount")));
                 }
                 rsDistinctValueCounts.close();
@@ -267,7 +268,7 @@ public class DistinctValueCount extends AbstractConstraint {
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<DistinctValueCount> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new DistinctValueCountSQLiteSerializer(sqlInterface);
         } else {

@@ -48,7 +48,8 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  */
 public class UniqueColumnCombination extends AbstractConstraint implements Constraint {
 
-    public static class UniqueColumnCombinationSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class UniqueColumnCombinationSQLiteSerializer implements
+            ConstraintSQLSerializer<UniqueColumnCombination> {
 
         private final static String tableName = "UCC";
         private final static String referenceTableName = "UCCPart";
@@ -195,11 +196,11 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<UniqueColumnCombination> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> uniqueColumnCombiantions = new HashSet<>();
+            Collection<UniqueColumnCombination> uniqueColumnCombiantions = new HashSet<>();
 
             try {
                 ResultSet rsUniqueColumnCombinations = retrieveConstraintCollection ?
@@ -367,7 +368,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<UniqueColumnCombination> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new UniqueColumnCombinationSQLiteSerializer(sqlInterface);
         } else {

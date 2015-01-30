@@ -3,7 +3,6 @@ package de.hpi.isg.metadata_store.domain;
 import java.io.Serializable;
 import java.util.Map;
 
-import de.hpi.isg.metadata_store.domain.common.Identifiable;
 import de.hpi.isg.metadata_store.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.targets.Column;
@@ -33,10 +32,28 @@ public interface Constraint extends Serializable {
         MIN_DECIMAL, MAX_DECIMAL, AVG_DECIMAL
     };
 
+    /**
+     * This functions returns the corresponding {@link ConstraintCollection}.
+     * 
+     * @return the {@link ConstraintCollection}
+     */
     public ConstraintCollection getConstraintCollection();
 
+    /**
+     * This function returns the {@link TargetReference} including all {@link Target}(s) of this constraint.
+     * 
+     * @return the {@link TargetReference}
+     */
     public TargetReference getTargetReference();
 
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface);
+    /**
+     * This function returns a new copy of the constraint's own {@link ConstraintSQLSerializer}. Therefore you have to
+     * pass a {@link SQLInterface}.
+     * 
+     * @param sqlInterface
+     *        {@link SQLInterface}
+     * @return a new copy of a {@link ConstraintSQLSerializer}
+     */
+    public ConstraintSQLSerializer<? extends Constraint> getConstraintSQLSerializer(SQLInterface sqlInterface);
 
 }

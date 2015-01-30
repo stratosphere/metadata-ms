@@ -41,7 +41,7 @@ import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
  */
 public class TupleCount extends AbstractConstraint {
 
-    public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer<TupleCount> {
 
         private final static String tableName = "TupleCount";
 
@@ -136,11 +136,11 @@ public class TupleCount extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<TupleCount> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> tupleCounts = new HashSet<>();
+            Collection<TupleCount> tupleCounts = new HashSet<>();
 
             try {
                 ResultSet rsTupleCounts = retrieveConstraintCollection ?
@@ -155,7 +155,7 @@ public class TupleCount extends AbstractConstraint {
                     tupleCounts
                             .add(TupleCount.build(
                                     new SingleTargetReference(this.sqlInterface.getTableById(rsTupleCounts
-                                            .getInt("tableId"))), constraintCollection,
+                                            .getInt("tableId")).getId()), constraintCollection,
                                     rsTupleCounts.getInt("tupleCount")));
                 }
                 rsTupleCounts.close();
@@ -263,7 +263,7 @@ public class TupleCount extends AbstractConstraint {
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<TupleCount> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new TupleCountSQLiteSerializer(sqlInterface);
         } else {

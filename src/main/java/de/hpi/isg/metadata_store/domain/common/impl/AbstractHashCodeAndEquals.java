@@ -20,11 +20,30 @@ public abstract class AbstractHashCodeAndEquals {
 
     private static Map<Class<?>, Set<String>> excludedFields = new HashMap<>();
 
+    /**
+     * Uses Apache's {@link EqualsBuilder} to compute if the provided object is equal to this object. Fields can be
+     * excluded from equality check with the help of {@link ExcludeHashCodeEquals} annotation.
+     */
     @Override
     public boolean equals(final Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj, this.getExlcudedFields());
     }
 
+    /**
+     * Uses Apache's {@link HashCodeBuilder} to compute the hash code of this object. Fields can be excluded from hash
+     * code generation with the help of {@link ExcludeHashCodeEquals} annotation.
+     */
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this, this.getExlcudedFields());
+    }
+
+    /**
+     * Traverses the object's class and it's superclass to get the {@link Collection} of field to be excluded from
+     * hashCode() and equals(). The annotation {@link ExcludeHashCodeEquals} can be used to do so.
+     * 
+     * @return
+     */
     private Collection<String> getExlcudedFields() {
         Set<String> excludes = excludedFields.get(getClass());
         if (excludes == null) {
@@ -46,11 +65,5 @@ public abstract class AbstractHashCodeAndEquals {
             excludedFields.put(getClass(), excludes);
         }
         return excludes;
-    }
-
-    @Override
-    public int hashCode() {
-
-        return HashCodeBuilder.reflectionHashCode(this, this.getExlcudedFields());
     }
 }

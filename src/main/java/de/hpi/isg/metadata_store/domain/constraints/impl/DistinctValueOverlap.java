@@ -37,7 +37,6 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
 import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
-import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
  * Constraint implementation for an n-ary unique column combination.
@@ -46,7 +45,7 @@ import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
  */
 public class DistinctValueOverlap extends AbstractConstraint implements Constraint {
 
-    public static class DistinctValueOverlapSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class DistinctValueOverlapSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueOverlap> {
 
         private final static String tableName = "DistinctValueOverlap";
 
@@ -144,11 +143,11 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<DistinctValueOverlap> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> constraints = new HashSet<>();
+            Collection<DistinctValueOverlap> constraints = new HashSet<>();
 
             try {
 
@@ -285,7 +284,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<DistinctValueOverlap> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new DistinctValueOverlapSQLiteSerializer(sqlInterface);
         } else {

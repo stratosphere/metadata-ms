@@ -9,9 +9,18 @@ import de.hpi.isg.metadata_store.domain.Target;
  * get notified by {@link Observable}s.
  */
 public interface Observer {
+    /**
+     * Generates random integer ids.
+     * 
+     * @return
+     */
     public int generateRandomId();
 
-//    public void registerId(int id);
-
+    /**
+     * This method is called by {@link Target} objects that want to be registered by the {@link Observer}.
+     * 
+     * @param target
+     *        to register
+     */
     public void registerTargetObject(Target target);
 }

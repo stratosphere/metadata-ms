@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class LRUCache<K, V> extends LinkedHashMap<K, V> {
     /**
-     * 
+     * A cache with least-recently-used strategy.
      */
     private static final long serialVersionUID = -4065480724108252213L;
     private final int maxEntries;

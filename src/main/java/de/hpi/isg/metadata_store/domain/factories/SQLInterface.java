@@ -107,7 +107,8 @@ public interface SQLInterface {
 
     void executeCreateTableStatement(String sqlCreateTables);
 
-    void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer);
+    void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
+            ConstraintSQLSerializer<? extends Constraint> serializer);
 
     public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
@@ -133,15 +134,16 @@ public interface SQLInterface {
 
     /**
      * @return all stored {@link Location} types
-     * @throws SQLException 
+     * @throws SQLException
      */
     public Collection<String> getLocationClassNames() throws SQLException;
 
     /**
      * Stores a given {@link Location} type.
      * 
-     * @param locationType is the type of a {@link Location} to be stored
-     * @throws SQLException 
+     * @param locationType
+     *        is the type of a {@link Location} to be stored
+     * @throws SQLException
      */
     public void storeLocationType(Class<? extends Location> locationType) throws SQLException;
 }

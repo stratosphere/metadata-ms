@@ -54,7 +54,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @ExcludeHashCodeEquals
     transient final IdUtils idUtils;
-    
+
     @ExcludeHashCodeEquals
     transient final LocationCache locationCache = new LocationCache();
 
@@ -111,11 +111,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public void addSchema(final Schema schema) {
-        this.sqlInterface.addSchema((RDBMSSchema) schema);
-    }
-
-    @Override
     public Schema addSchema(final String name, final String description, final Location location) {
         final int id = this.getUnusedSchemaId();
         final Schema schema = RDBMSSchema.buildAndRegisterAndAdd(this, id, name, description, location);
@@ -129,11 +124,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             return this.generateRandomId();
         }
         return id;
-    }
-
-    @Override
-    public Collection<Target> getAllTargets() {
-        return Collections.unmodifiableCollection(this.sqlInterface.getAllTargets());
     }
 
     @Override
@@ -217,7 +207,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
                 throw new RuntimeException("Could not register location type.", e);
             }
         }
-        
+
         ((AbstractRDBMSTarget) target).store();
         // this.sqlInterface.addTarget(target);
     }
@@ -231,7 +221,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public Collection<ConstraintCollection> getConstraintCollections() {
         return this.sqlInterface.getAllConstraintCollections();
     }
-    
+
     @Override
     public ConstraintCollection getConstraintCollection(int id) {
         return this.sqlInterface.getConstraintCollectionById(id);
@@ -279,7 +269,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public LocationCache getLocationCache() {
         return locationCache;
     }
-    
+
     /**
      * @return key value pairs that describe the configuration of this metadata store.
      */

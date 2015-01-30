@@ -48,7 +48,7 @@ import de.hpi.isg.metadata_store.domain.targets.Column;
  */
 public class InclusionDependency extends AbstractConstraint implements Constraint {
 
-    public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer {
+    public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer<InclusionDependency> {
 
         private final static String tableName = "IND";
         private final static String referenceTableName = "INDPart";
@@ -198,11 +198,11 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<InclusionDependency> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> inclusionDependencies = new HashSet<>();
+            Collection<InclusionDependency> inclusionDependencies = new HashSet<>();
 
             try {
                 ResultSet rsInclusionDependencies = retrieveConstraintCollection ?
@@ -395,7 +395,7 @@ public class InclusionDependency extends AbstractConstraint implements Constrain
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<InclusionDependency> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new InclusionDependencySQLiteSerializer(sqlInterface);
         } else {

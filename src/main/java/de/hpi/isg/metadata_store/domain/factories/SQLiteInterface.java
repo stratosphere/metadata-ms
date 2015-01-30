@@ -78,7 +78,7 @@ public class SQLiteInterface implements SQLInterface {
     public static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
             "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config" };
 
-    private final Map<Class<? extends Constraint>, ConstraintSQLSerializer> constraintSerializers = new HashMap<>();
+    private final Map<Class<? extends Constraint>, ConstraintSQLSerializer<? extends Constraint>> constraintSerializers = new HashMap<>();
 
     private final int CACHE_SIZE = 1000;
 
@@ -349,11 +349,12 @@ public class SQLiteInterface implements SQLInterface {
     /** @see #LOCATION_PROPERTIES_QUERY_FACTORY */
     private DatabaseQuery<Integer> locationPropertiesQuery;
 
-    // XXX to be deleted?
+    // TODO remove???
+    @SuppressWarnings("unused")
     private DatabaseWriter<Target> updateTargetNameWriter;
-
+    @SuppressWarnings("unused")
     private DatabaseWriter<int[]> updateTargetLocationWriter;
-
+    @SuppressWarnings("unused")
     private DatabaseQuery<Integer> tableColumnsQuery;
     // XXX
 
@@ -461,7 +462,7 @@ public class SQLiteInterface implements SQLInterface {
                 }
 
                 // also drop constraint tables, since they must be invalid after deletion of the store
-                for (ConstraintSQLSerializer serializer : this.constraintSerializers.values()) {
+                for (ConstraintSQLSerializer<?> serializer : this.constraintSerializers.values()) {
                     for (String tableName : serializer.getTableNames()) {
                         // toLowerCase because SQLite is case-insensitive for table names
                         String sql = String.format("DROP TABLE IF EXISTS [%s];", tableName);
@@ -489,7 +490,7 @@ public class SQLiteInterface implements SQLInterface {
         }
 
         // init constraint types
-        for (ConstraintSQLSerializer serializer : this.constraintSerializers.values()) {
+        for (ConstraintSQLSerializer<? extends Constraint> serializer : this.constraintSerializers.values()) {
             serializer.initializeTables();
         }
 
@@ -631,7 +632,8 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, schema.getLocation());
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
+                            schema.getLocation());
                 }
             }
         }
@@ -719,7 +721,8 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, table.getLocation());
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
+                            table.getLocation());
                 }
             }
 
@@ -816,7 +819,8 @@ public class SQLiteInterface implements SQLInterface {
                 String locationPropKey = rs.getString("locationPropKey");
                 if (locationPropKey != null) {
                     String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal, column.getLocation());
+                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
+                            column.getLocation());
                 }
             }
 
@@ -898,15 +902,15 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
     public void storeLocationType(Class<? extends Location> locationType) throws SQLException {
-        String sql = String.format("INSERT INTO LocationType (id, className) VALUES (%d, '%s');", 
-                LocationCache.computeId(locationType), 
+        String sql = String.format("INSERT INTO LocationType (id, className) VALUES (%d, '%s');",
+                LocationCache.computeId(locationType),
                 locationType.getCanonicalName());
         this.databaseAccess.executeSQL(sql, "LocationType");
     }
-    
+
     @Override
     public Collection<String> getLocationClassNames() throws SQLException {
         Collection<String> classNames = new LinkedList<>();
@@ -916,7 +920,8 @@ public class SQLiteInterface implements SQLInterface {
                 String className = resultSet.getString("className");
                 int computedId = LocationCache.computeId(className);
                 if (id != computedId) {
-                    throw new IllegalStateException(String.format("Expected ID %x for %s, found %x.", computedId, className, id));
+                    throw new IllegalStateException(String.format("Expected ID %x for %s, found %x.", computedId,
+                            className, id));
                 }
                 classNames.add(className);
             }
@@ -1008,7 +1013,7 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
-        ConstraintSQLSerializer serializer = constraintSerializers.get(constraint.getClass());
+        ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
         if (serializer == null) {
             serializer = constraint.getConstraintSQLSerializer(this);
             constraintSerializers.put(constraint.getClass(), serializer);
@@ -1034,7 +1039,7 @@ public class SQLiteInterface implements SQLInterface {
         } catch (Exception e) {
             throw new RuntimeException("Could not flush metadata store before loading constraints.", e);
         }
-        for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
+        for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers.values()) {
             try {
                 constraintsOfCollection.addAll(constraintSerializer
                         .deserializeConstraintsOfConstraintCollection(rdbmsConstraintCollection));
@@ -1363,7 +1368,8 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz, ConstraintSQLSerializer serializer) {
+    public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
+            ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
     }
 
@@ -1691,7 +1697,8 @@ public class SQLiteInterface implements SQLInterface {
     public void removeConstraintCollection(ConstraintCollection constraintCollection) {
         try {
             this.flush();
-            for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
+            for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers
+                    .values()) {
                 constraintSerializer
                         .removeConstraintsOfConstraintCollection(constraintCollection);
 

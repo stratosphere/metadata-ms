@@ -70,10 +70,8 @@ public class DefaultMetadataStoreTest {
     @Test
     public void testAddingOfSchema() {
         final MetadataStore store1 = new DefaultMetadataStore();
-        final Schema schema1 = DefaultSchema.buildAndRegister(store1, "pdb", null, mock(Location.class));
-        store1.addSchema(schema1);
+        final Schema schema1 = store1.addSchema("pdb", "foo", mock(Location.class));
         assertTrue(store1.getSchemas().contains(schema1));
-        assertTrue(store1.getAllTargets().contains(schema1));
     }
 
     @Test
@@ -372,11 +370,6 @@ public class DefaultMetadataStoreTest {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        final Collection<Target> allTargets1 = store1.getAllTargets();
-        final Collection<Target> allTargets2 = store2.getAllTargets();
-        assertTrue(allTargets1.contains(dummySchema1));
-        assertTrue(allTargets2.contains(dummySchema1));
 
         assertEquals(store1, store2);
     }

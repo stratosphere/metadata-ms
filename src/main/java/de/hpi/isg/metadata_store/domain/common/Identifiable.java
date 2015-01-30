@@ -8,5 +8,10 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  *
  */
 public interface Identifiable {
+    /**
+     * Returns the id of an {@link Identifiable} object.
+     * 
+     * @return the id
+     */
     public int getId();
 }

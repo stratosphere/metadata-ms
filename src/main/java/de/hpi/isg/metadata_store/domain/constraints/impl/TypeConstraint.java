@@ -42,7 +42,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         STRING, INTEGER, DECIMAL
     };
 
-    public static class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer {
+    public static class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer<TypeConstraint> {
 
         private final static String tableName = "Typee";
 
@@ -136,11 +136,11 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
+        public Collection<TypeConstraint> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
-            Collection<Constraint> typeConstraints = new HashSet<>();
+            Collection<TypeConstraint> typeConstraints = new HashSet<>();
 
             try {
                 ResultSet rsTypeConstraints = retrieveConstraintCollection ?
@@ -155,7 +155,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
                     typeConstraints
                             .add(TypeConstraint.build(
                                     new SingleTargetReference(this.sqlInterface.getColumnById(rsTypeConstraints
-                                            .getInt("columnId"))), constraintCollection,
+                                            .getInt("columnId")).getId()), constraintCollection,
                                     TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 }
                 rsTypeConstraints.close();
@@ -267,7 +267,7 @@ public class TypeConstraint extends AbstractConstraint implements Constraint {
     }
 
     @Override
-    public ConstraintSQLSerializer getConstraintSQLSerializer(SQLInterface sqlInterface) {
+    public ConstraintSQLSerializer<TypeConstraint> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
             return new TypeConstraintSQLiteSerializer(sqlInterface);
         } else {

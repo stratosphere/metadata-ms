@@ -8,5 +8,10 @@ import de.hpi.isg.metadata_store.domain.MetadataStore;
  *
  */
 public interface Named {
+    /**
+     * Returns the name of a {@link Named} object.
+     * 
+     * @return the name
+     */
     public String getName();
 }

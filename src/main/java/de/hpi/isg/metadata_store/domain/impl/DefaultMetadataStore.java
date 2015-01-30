@@ -73,15 +73,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public void addSchema(final Schema schema) {
-        this.schemas.add(schema);
-    }
-
-    @Override
     public Schema addSchema(final String name, String description, final Location location) {
         final int id = this.getUnusedSchemaId();
         final Schema schema = DefaultSchema.buildAndRegister(this, id, name, description, location);
-        this.addSchema(schema);
+        this.schemas.add(schema);
         return schema;
     }
 
@@ -92,11 +87,6 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
             return this.generateRandomId();
         }
         return id;
-    }
-
-    @Override
-    public Collection<Target> getAllTargets() {
-        return this.allTargets.values();
     }
 
     @Override

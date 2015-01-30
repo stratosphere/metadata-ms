@@ -115,7 +115,6 @@ public class RDBMSMetadataStoreTest {
                 .buildAndRegisterStandardConstraints(connection));
         final Schema schema1 = store1.addSchema("pdb", "foobar", new DefaultLocation());
         assertTrue(store1.getSchemas().contains(schema1));
-        assertTrue(store1.getAllTargets().contains(schema1));
     }
 
     @Test
@@ -263,6 +262,7 @@ public class RDBMSMetadataStoreTest {
         // setup store
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(SQLiteInterface
                 .buildAndRegisterStandardConstraints(connection));
+        System.out.println("The following error is desired...");
         store1.addSchema("Foobar", "description", new Location() {
 
             @Override
@@ -287,7 +287,7 @@ public class RDBMSMetadataStoreTest {
             @Override
             public void delete(String propertyKey) {
             }
-            
+
             @Override
             public Collection<String> getAllPropertyKeys() {
                 return Collections.emptyList();
@@ -297,10 +297,10 @@ public class RDBMSMetadataStoreTest {
             public Collection<String> getPropertyKeysForValueCanonicalization() {
                 return Collections.emptyList();
             }
-            
-        });
 
+        });
         assertEquals(DefaultLocation.class, store1.getSchemaByName("Foobar").getLocation().getClass());
+        System.out.println("The last error was desired...");
     }
 
     @Test(expected = UnsupportedOperationException.class)

@@ -18,7 +18,6 @@ import de.hpi.isg.metadata_store.domain.common.impl.AbstractIdentifiable;
 import de.hpi.isg.metadata_store.domain.common.impl.ExcludeHashCodeEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.util.IdUtils;
-import de.hpi.isg.metadata_store.domain.util.IdUtils.IdTypes;
 
 public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
 
