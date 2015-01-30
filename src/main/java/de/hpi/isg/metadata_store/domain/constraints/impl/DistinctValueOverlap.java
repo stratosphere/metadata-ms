@@ -36,6 +36,8 @@ import de.hpi.isg.metadata_store.domain.TargetReference;
 import de.hpi.isg.metadata_store.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.metadata_store.domain.factories.SQLInterface;
 import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSConstraintCollection;
+import de.hpi.isg.metadata_store.domain.impl.SingleTargetReference;
 
 /**
  * Constraint implementation for an n-ary unique column combination.
@@ -142,28 +144,29 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
             Collection<Constraint> constraints = new HashSet<>();
 
-            try (ResultSet rsDistinctValueOverlap = retrieveConstraintCollection ?
-                    queryAllConstraints.execute(null)
-                    : queryConstraintForConstraintCollection
-                            .execute(constraintCollection.getId())) {
+            try {
+
+                ResultSet rsDistinctValueOverlap = retrieveConstraintCollection ?
+                        queryAllConstraints.execute(null) : queryConstraintForConstraintCollection
+                                .execute(constraintCollection.getId());
                 while (rsDistinctValueOverlap.next()) {
+                    if (retrieveConstraintCollection) {
+                        constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
+                                .getConstraintCollectionById(rsDistinctValueOverlap
+                                        .getInt("constraintCollectionId"));
+                    }
                     int overlap = rsDistinctValueOverlap.getInt("overlap");
                     Reference reference = new Reference(rsDistinctValueOverlap.getInt("column1"),
                             rsDistinctValueOverlap.getInt("column2"));
-                    if (retrieveConstraintCollection) {
-                        constraints.add(DistinctValueOverlap.build(overlap, reference, constraintCollection));
-                    } else {
-                        constraints.add(DistinctValueOverlap.buildAndAddToCollection(overlap, reference,
-                                constraintCollection));
-                    }
+                    constraints.add(DistinctValueOverlap.build(overlap, reference, constraintCollection));
                 }
-
+                rsDistinctValueOverlap.close();
                 return constraints;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -201,7 +204,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements Constrai
         }
 
         @Override
-        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
             try {
                 ResultSet rsINDs = queryConstraintForConstraintCollection
                         .execute(constraintCollection.getId());

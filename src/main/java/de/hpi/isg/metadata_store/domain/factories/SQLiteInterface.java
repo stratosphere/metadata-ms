@@ -1037,7 +1037,7 @@ public class SQLiteInterface implements SQLInterface {
         for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
             try {
                 constraintsOfCollection.addAll(constraintSerializer
-                        .deserializeConstraintsForConstraintCollection(rdbmsConstraintCollection));
+                        .deserializeConstraintsOfConstraintCollection(rdbmsConstraintCollection));
             } catch (Exception e) {
                 LOG.error("Error on deserializing constraint collection. Continue anyway...", e);
             }
@@ -1693,7 +1693,7 @@ public class SQLiteInterface implements SQLInterface {
             this.flush();
             for (ConstraintSQLSerializer constraintSerializer : this.constraintSerializers.values()) {
                 constraintSerializer
-                        .removeConstraintsForConstraintCollection(constraintCollection);
+                        .removeConstraintsOfConstraintCollection(constraintCollection);
 
             }
 

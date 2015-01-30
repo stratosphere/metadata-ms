@@ -10,12 +10,12 @@ public interface ConstraintSQLSerializer {
 
     void serialize(Integer constraintId, Constraint constraint);
 
-    Collection<Constraint> deserializeConstraintsForConstraintCollection(ConstraintCollection constraintCollection);
+    Collection<Constraint> deserializeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection);
 
     List<String> getTableNames();
 
     void initializeTables();
 
-    void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection);
+    void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection);
 
 }

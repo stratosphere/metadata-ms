@@ -137,7 +137,7 @@ public class DistinctValueCount extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
@@ -192,7 +192,7 @@ public class DistinctValueCount extends AbstractConstraint {
         }
 
         @Override
-        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
             try {
                 ResultSet rsDistinctValueCounts = queryDistinctValueCountForConstraintCollection
                         .execute(constraintCollection.getId());

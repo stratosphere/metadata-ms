@@ -195,7 +195,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
@@ -277,7 +277,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements Const
         }
 
         @Override
-        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
             try {
                 ResultSet rsUCCs = queryUniqueColumnCombinationsForConstraintCollection
                         .execute(constraintCollection.getId());

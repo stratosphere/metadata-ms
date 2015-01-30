@@ -126,7 +126,7 @@ public class DummyConstraintType extends AbstractConstraint {
         }
 
         @Override
-        public Collection<Constraint> deserializeConstraintsForConstraintCollection(
+        public Collection<Constraint> deserializeConstraintsOfConstraintCollection(
                 ConstraintCollection constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
@@ -182,7 +182,7 @@ public class DummyConstraintType extends AbstractConstraint {
         }
 
         @Override
-        public void removeConstraintsForConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
             // TODO Auto-generated method stub
             throw new UnsupportedOperationException("Not supported yet.");
             //
