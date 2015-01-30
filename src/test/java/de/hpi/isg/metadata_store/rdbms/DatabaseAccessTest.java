@@ -17,7 +17,10 @@ import de.hpi.isg.metadata_store.db.DatabaseAccess;
 import de.hpi.isg.metadata_store.db.PreparedStatementAdapter;
 import de.hpi.isg.metadata_store.db.write.DatabaseWriter;
 import de.hpi.isg.metadata_store.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.metadata_store.domain.MetadataStore;
 import de.hpi.isg.metadata_store.domain.Target;
+import de.hpi.isg.metadata_store.domain.factories.SQLiteInterface;
+import de.hpi.isg.metadata_store.domain.impl.RDBMSMetadataStore;
 
 public class DatabaseAccessTest {
 
@@ -56,6 +59,9 @@ public class DatabaseAccessTest {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
         }
+        RDBMSMetadataStore.createNewInstance(SQLiteInterface
+                .buildAndRegisterStandardConstraints(connection));
+
     }
 
     @After
