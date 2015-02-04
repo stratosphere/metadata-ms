@@ -62,10 +62,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
  * 
  * @author fabian
- * @param <RDBMS>
- * 
  */
-
 public class SQLiteInterface implements SQLInterface {
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
