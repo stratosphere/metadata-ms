@@ -1713,4 +1713,16 @@ public class SQLiteInterface implements SQLInterface {
         }
 
     }
+
+    @Override
+    public void setUseJournal(boolean isUseJournal) {
+        try {
+            this.databaseAccess.flush();
+            try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
+                statement.execute(String.format("PRAGMA journal_mode = %s;", isUseJournal ? "TRUNCATE" : "OFF"));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not change journal usage.", e);
+        }
+    }
 }

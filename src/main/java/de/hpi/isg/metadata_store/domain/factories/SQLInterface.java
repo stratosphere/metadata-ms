@@ -310,4 +310,7 @@ public interface SQLInterface {
      * @throws SQLException
      */
     public void storeLocationType(Class<? extends Location> locationType) throws SQLException;
+
+
+    void setUseJournal(boolean isUseJournal);
 }
