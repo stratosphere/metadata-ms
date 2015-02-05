@@ -342,4 +342,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public void removeConstraintCollection(ConstraintCollection constraintCollection) {
         sqlInterface.removeConstraintCollection(constraintCollection);
     }
+
+    public void setUseJournal(boolean isUseJournal) {
+        this.sqlInterface.setUseJournal(isUseJournal);
+    }
 }

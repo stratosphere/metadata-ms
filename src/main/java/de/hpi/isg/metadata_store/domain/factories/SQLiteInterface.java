@@ -62,8 +62,7 @@ import de.hpi.isg.metadata_store.exceptions.NameAmbigousException;
  * This class acts as an executor of SQLite specific Queries for the {@link RDBMSMetadataStore}.
  * 
  * @author fabian
- * @param <RDBMS>
- * 
+ *
  */
 
 public class SQLiteInterface implements SQLInterface {
@@ -1715,5 +1714,17 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public void setUseJournal(boolean isUseJournal) {
+        try {
+            this.databaseAccess.flush();
+            try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
+                statement.execute(String.format("PRAGMA journal_mode = %s;", isUseJournal ? "TRUNCATE" : "OFF"));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not change journal usage.", e);
+        }
     }
 }
