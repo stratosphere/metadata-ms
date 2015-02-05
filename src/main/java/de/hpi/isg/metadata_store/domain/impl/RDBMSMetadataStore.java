@@ -94,6 +94,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     private RDBMSMetadataStore(SQLiteInterface sqliteInterface, Map<String, String> configuration) {
         this.sqlInterface = sqliteInterface;
         this.sqlInterface.setMetadataStore(this);
+        this.setUseJournal(true);
         int numTableBitsInIds = Integer.valueOf(configuration.get(NUM_TABLE_BITS_IN_IDS_KEY));
         int numColumnBitsInIds = Integer.valueOf(configuration.get(NUM_COLUMN_BITS_IN_IDS_KEY));
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
