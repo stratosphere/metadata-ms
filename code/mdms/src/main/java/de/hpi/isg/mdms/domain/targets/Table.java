@@ -1,0 +1,40 @@
+package de.hpi.isg.mdms.domain.targets;
+
+import java.util.Collection;
+
+import de.hpi.isg.mdms.domain.MetadataStore;
+import de.hpi.isg.mdms.domain.Target;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+
+/**
+ * A {@link Table} represents a table inside of a {@link Schema} and consists of one or more {@link Column}s.
+ */
+
+public interface Table extends Target {
+
+    /**
+     * Adds a new column to this table.
+     *
+     * @param metadataStore
+     *        is the metadata store in which the new column shall be stored
+     * @param name
+     *        is the name of the new column
+     * @param index
+     *        is the index of the column within this table
+     * @return the added column
+     */
+    public Column addColumn(MetadataStore metadataStore, String name, String description, int index);
+
+    public Collection<Column> getColumns();
+
+    public Column getColumnByName(String name) throws NameAmbigousException;
+
+    public Collection<Column> getColumnsByName(String name);
+
+    public Column getColumnById(int id);
+
+    /**
+     * @return the parent schema of this table
+     */
+    public Schema getSchema();
+}
