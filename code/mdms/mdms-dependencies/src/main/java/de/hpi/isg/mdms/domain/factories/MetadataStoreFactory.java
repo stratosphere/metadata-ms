@@ -11,6 +11,10 @@ import java.io.ObjectInputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
+/**
+ * @deprecated There should be no central utility for creating metadata stores.
+ */
+@Deprecated
 public class MetadataStoreFactory {
 
     public static DefaultMetadataStore loadDefaultMetadataStore(final File file) throws MetadataStoreNotFoundException {
@@ -59,15 +63,6 @@ public class MetadataStoreFactory {
         return metadataStore;
     }
 
-    public static Connection createSQLiteConnection(File file) {
-        try {
-            Class.forName("org.sqlite.JDBC");
-            String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
-            return DriverManager.getConnection(connString);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     // public static RDBMSMetadataStore getMetadataStoreFromSQLite(Connection connection) {
     // SQLiteInterface sqliteInterface = new SQLiteInterface(connection);

@@ -1,8 +1,6 @@
 package de.hpi.isg.mdms;
 
-import de.hpi.isg.mdms.domain.Constraint;
 import de.hpi.isg.mdms.domain.ConstraintCollection;
-import de.hpi.isg.mdms.domain.Location;
 import de.hpi.isg.mdms.domain.MetadataStore;
 import de.hpi.isg.mdms.domain.constraints.impl.*;
 import de.hpi.isg.mdms.domain.constraints.impl.TypeConstraint.TYPES;
@@ -12,19 +10,16 @@ import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
 import de.hpi.isg.mdms.domain.targets.Column;
 import de.hpi.isg.mdms.domain.targets.Schema;
 import de.hpi.isg.mdms.domain.targets.Table;
-import de.hpi.isg.mdms.domain.util.SQLiteUtils;
+import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.factories.SQLiteInterface;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -87,7 +82,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
@@ -114,7 +109,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
@@ -141,7 +136,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         ConstraintCollection loadedCollection1 = store1.getConstraintCollections().iterator().next();
         ConstraintCollection loadedCollection2 = store2.getConstraintCollections().iterator().next();
@@ -176,7 +171,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
@@ -207,7 +202,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
                 store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
@@ -222,7 +217,7 @@ public class RDBMSMetadataStoreTest {
         store1.flush();
 
         // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteUtils.registerStandardConstraints(new SQLiteInterface(connection)));
+        MetadataStore store2 = RDBMSMetadataStore.load(SQLiteConstraintUtils.registerStandardConstraints(new SQLiteInterface(connection)));
 
         assertEquals(store1, store2);
 

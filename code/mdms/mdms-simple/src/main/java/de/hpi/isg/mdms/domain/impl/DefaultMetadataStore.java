@@ -1,13 +1,10 @@
 package de.hpi.isg.mdms.domain.impl;
 
+import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +41,61 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private static final long serialVersionUID = -1214605256534100452L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(de.hpi.isg.mdms.domain.impl.DefaultMetadataStore.class);
+
+    /**
+     * Creates a new DefaultMetadataStore and saves it to disk.
+     * @param file stores the metadata store
+     * @return the DefaultMetadataStore
+     * @throws IOException
+     */
+    public static DefaultMetadataStore createAndSave(final File file) throws IOException {
+        return createAndSave(file, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
+    }
+
+    /**
+     * Creates a new DefaultMetadataStore and saves it to disk.
+     * @param file stores the metadata store
+     * @param numTableBitsInIds is the number of bits in object IDs to use for tables
+     * @param numColumnBitsInIds is the number of bits in object IDs to use for columns
+     * @return the DefaultMetadataStore
+     * @throws IOException
+     */
+    public static DefaultMetadataStore createAndSave(final File file, int numTableBitsInIds,
+                                                                         int numColumnBitsInIds) throws IOException {
+
+        final DefaultMetadataStore metadataStore = new DefaultMetadataStore(file, numTableBitsInIds, numColumnBitsInIds);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        try {
+            metadataStore.flush();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return metadataStore;
+    }
+
+    /**
+     * Loads a DefaultMetadataStore from the given file.
+     * @param file is the file that contains the metadata store
+     * @return the loaded metadata store
+     * @throws MetadataStoreNotFoundException if no metadata store could be loaded from the given file
+     */
+    public static DefaultMetadataStore load(final File file) throws MetadataStoreNotFoundException {
+
+        FileInputStream fin;
+        try {
+            fin = new FileInputStream(file);
+            final ObjectInputStream ois = new ObjectInputStream(fin);
+            final DefaultMetadataStore metadataStore = (DefaultMetadataStore) ois.readObject();
+            ois.close();
+            metadataStore.setStoreLocation(file);
+            return metadataStore;
+        } catch (IOException | ClassNotFoundException e) {
+            throw new MetadataStoreNotFoundException(e);
+        }
+
+    }
 
     private final Collection<Schema> schemas;
 

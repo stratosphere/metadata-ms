@@ -3,7 +3,9 @@ package de.hpi.isg.mdms.domain.util;
 import de.hpi.isg.mdms.domain.constraints.impl.*;
 import de.hpi.isg.mdms.factories.SQLiteInterface;
 
+import java.io.File;
 import java.sql.Connection;
+import java.sql.DriverManager;
 
 /**
  * This class provides utility methods to work with SQLiteInterfaces.
@@ -11,7 +13,7 @@ import java.sql.Connection;
  * @author Sebastian
  * @since 04.03.2015.
  */
-public class SQLiteUtils {
+public class SQLiteConstraintUtils {
 
 
     /**
@@ -35,5 +37,8 @@ public class SQLiteUtils {
 
         return sqliteInterface;
     }
+
+
+
 
 }

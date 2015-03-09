@@ -7,7 +7,7 @@ import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.*;
-import de.hpi.isg.mdms.domain.constraints.impl.*;
+import de.hpi.isg.mdms.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.domain.factories.LRUCache;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
@@ -31,6 +31,7 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
@@ -51,8 +52,8 @@ public class SQLiteInterface implements SQLInterface {
      */
     private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
 
-    public static final String[] tableNames = { "Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config" };
+    public static final String[] tableNames = {"Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
+            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config"};
 
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer<? extends Constraint>> constraintSerializers = new HashMap<>();
 
@@ -291,6 +292,23 @@ public class SQLiteInterface implements SQLInterface {
                     "Target", "Schemaa");
 
     /**
+     * Creates a SQLiteInterface for the SQLite DB that is embedded in the given file.
+     *
+     * @param file is the file that contains the SQLite DB
+     * @return the SQLiteInterface
+     */
+    public static SQLiteInterface createForFile(File file) {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            String connString = String.format("jdbc:sqlite:%s", file.getAbsoluteFile());
+            Connection connection = DriverManager.getConnection(connString);
+            return new SQLiteInterface(connection);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * @deprecated Use {@link #databaseAccess} instead.
      */
     private final Connection connection;
@@ -319,10 +337,14 @@ public class SQLiteInterface implements SQLInterface {
 
     Set<String> existingTables = null;
 
-    /** @see #LOCATION_QUERY_FACTORY */
+    /**
+     * @see #LOCATION_QUERY_FACTORY
+     */
     private DatabaseQuery<Integer> locationQuery;
 
-    /** @see #LOCATION_PROPERTIES_QUERY_FACTORY */
+    /**
+     * @see #LOCATION_PROPERTIES_QUERY_FACTORY
+     */
     private DatabaseQuery<Integer> locationPropertiesQuery;
 
     // TODO remove???
@@ -368,6 +390,7 @@ public class SQLiteInterface implements SQLInterface {
     private DatabaseWriter<RDBMSColumn> insertColumnWriter;
 
     private DatabaseWriter<RDBMSColumn> deleteColumnWriter;
+
 
     // TODO: Should be private, use #buildAndRegisterStandardConstraints?
     public SQLiteInterface(Connection connection) {
@@ -481,8 +504,7 @@ public class SQLiteInterface implements SQLInterface {
     /**
      * Loads the given resource as String.
      *
-     * @param resourcePath
-     *        is the path of the resource
+     * @param resourcePath is the path of the resource
      * @return a {@link String} with the contents of the resource
      * @throws java.io.IOException
      */
@@ -516,7 +538,7 @@ public class SQLiteInterface implements SQLInterface {
     private void storeTargetWithLocation(Target target) throws SQLException {
         // write target and location to DB
         Integer locationId = addLocation(target.getLocation());
-        this.insertTargetWriter.write(new Object[] { target, locationId });
+        this.insertTargetWriter.write(new Object[]{target, locationId});
 
         // update caches
         if (allTargets != null) {
@@ -580,7 +602,7 @@ public class SQLiteInterface implements SQLInterface {
                     Location location = null;
                     if (locationClassHash != null) {
                         location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String> emptyMap());
+                                Collections.<String, String>emptyMap());
                     }
                     schema = RDBMSSchema.restore(this.store, targetId, name, description, location);
                     schemas.put(targetId, schema);
@@ -603,10 +625,8 @@ public class SQLiteInterface implements SQLInterface {
     /**
      * Loads all tables (for the given schemas).
      *
-     * @param schemas
-     *        are the schemas to load the tables for
-     * @param areAllSchemasGiven
-     *        tells if the given schemas are all schemas in the metadata store
+     * @param schemas            are the schemas to load the tables for
+     * @param areAllSchemasGiven tells if the given schemas are all schemas in the metadata store
      * @return the loaded tables
      * @throws java.sql.SQLException
      */
@@ -655,7 +675,7 @@ public class SQLiteInterface implements SQLInterface {
                     Location location = null;
                     if (locationClassHash != null) {
                         location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String> emptyMap());
+                                Collections.<String, String>emptyMap());
                     }
 
                     int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId));
@@ -701,10 +721,8 @@ public class SQLiteInterface implements SQLInterface {
     /**
      * Loads and caches all columns.
      *
-     * @param tables
-     *        are the parent tables for the loaded columns
-     * @param schema
-     *        can be {@code null} or a concrete schema that restricts the columns to be loaded
+     * @param tables are the parent tables for the loaded columns
+     * @param schema can be {@code null} or a concrete schema that restricts the columns to be loaded
      * @return the loaded columns indexed by their ID
      * @throws java.sql.SQLException
      */
@@ -753,7 +771,7 @@ public class SQLiteInterface implements SQLInterface {
                     Location location = null;
                     if (locationClassHash != null) {
                         location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String> emptyMap());
+                                Collections.<String, String>emptyMap());
                     }
 
                     int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId),
@@ -799,12 +817,12 @@ public class SQLiteInterface implements SQLInterface {
     private Target buildTarget(int id) {
         IdUtils idUtils = this.store.getIdUtils();
         switch (idUtils.getIdType(id)) {
-        case SCHEMA_ID:
-            return getSchemaById(id);
-        case TABLE_ID:
-            return getTableById(id);
-        case COLUMN_ID:
-            return getColumnById(id);
+            case SCHEMA_ID:
+                return getSchemaById(id);
+            case TABLE_ID:
+                return getTableById(id);
+            case COLUMN_ID:
+                return getColumnById(id);
         }
         return null;
 
@@ -894,38 +912,38 @@ public class SQLiteInterface implements SQLInterface {
         IdUtils idUtils = this.store.getIdUtils();
         Integer wrappedId = new Integer(id);
         switch (idUtils.getIdType(id)) {
-        case SCHEMA_ID:
-            if (this.schemaCache.containsKey(wrappedId)) {
-                return true;
-            }
-            break;
-        case TABLE_ID:
-            if (this.tableCache.containsKey(wrappedId)) {
-                return true;
-            } else {
-                int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id));
-                RDBMSSchema parentSchema = this.schemaCache.get(schemaId);
-                if (parentSchema != null) {
-                    IntCollection childIdCache = parentSchema.getChildIdCache();
-                    if (childIdCache != null) {
-                        return childIdCache.contains(id);
+            case SCHEMA_ID:
+                if (this.schemaCache.containsKey(wrappedId)) {
+                    return true;
+                }
+                break;
+            case TABLE_ID:
+                if (this.tableCache.containsKey(wrappedId)) {
+                    return true;
+                } else {
+                    int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id));
+                    RDBMSSchema parentSchema = this.schemaCache.get(schemaId);
+                    if (parentSchema != null) {
+                        IntCollection childIdCache = parentSchema.getChildIdCache();
+                        if (childIdCache != null) {
+                            return childIdCache.contains(id);
+                        }
                     }
                 }
-            }
-            break;
-        case COLUMN_ID:
-            if (this.columnCache.containsKey(wrappedId)) {
-                return true;
-            } else {
-                int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id), idUtils.getLocalTableId(id));
-                RDBMSTable parentTable = this.tableCache.get(tableId);
-                if (parentTable != null) {
-                    IntCollection childIdCache = parentTable.getChildIdCache();
-                    if (childIdCache != null) {
-                        return childIdCache.contains(id);
+                break;
+            case COLUMN_ID:
+                if (this.columnCache.containsKey(wrappedId)) {
+                    return true;
+                } else {
+                    int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id), idUtils.getLocalTableId(id));
+                    RDBMSTable parentTable = this.tableCache.get(tableId);
+                    if (parentTable != null) {
+                        IntCollection childIdCache = parentTable.getChildIdCache();
+                        if (childIdCache != null) {
+                            return childIdCache.contains(id);
+                        }
                     }
                 }
-            }
         }
 
         // Issue a query, to find out if the ID is in use.
@@ -940,8 +958,7 @@ public class SQLiteInterface implements SQLInterface {
     /**
      * Stores the given location.
      *
-     * @param location
-     *        is the location to store
+     * @param location is the location to store
      * @return the DB ID of the added location tuple
      * @throws java.sql.SQLException
      */
@@ -953,9 +970,9 @@ public class SQLiteInterface implements SQLInterface {
         // for auto-increment id
         ensureCurrentLocationIdMaxInitialized();
         Integer locationId = ++currentLocationIdMax;
-        this.insertLocationWriter.write(new Integer[] { locationId, location.getClass().getName().hashCode() });
+        this.insertLocationWriter.write(new Integer[]{locationId, location.getClass().getName().hashCode()});
         for (Entry<String, String> entry : location.getProperties().entrySet()) {
-            this.insertLocationPropertyWriter.write(new Object[] { locationId, entry.getKey(), entry.getValue() });
+            this.insertLocationPropertyWriter.write(new Object[]{locationId, entry.getKey(), entry.getValue()});
         }
         return locationId;
     }
@@ -975,7 +992,7 @@ public class SQLiteInterface implements SQLInterface {
         // for auto-increment id
         Integer constraintId = ++currentConstraintIdMax;
         try {
-            this.insertConstraintWriter.write(new int[] { constraintId, constraint.getConstraintCollection().getId() });
+            this.insertConstraintWriter.write(new int[]{constraintId, constraint.getConstraintCollection().getId()});
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1330,7 +1347,7 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
-            ConstraintSQLSerializer<? extends Constraint> serializer) {
+                                                ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
     }
 
@@ -1339,7 +1356,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             String sqlSchemaeById = String
                     .format("SELECT target.id as id, target.name as name, target.description as description"
-                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                                    + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
                             schemaName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
             RDBMSSchema found = null;
@@ -1374,7 +1391,7 @@ public class SQLiteInterface implements SQLInterface {
 
             String sqlSchemaeById = String
                     .format("SELECT target.id as id, target.name as name, target.description as description"
-                            + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
+                                    + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
                             schemaName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
             while (rs.next()) {
@@ -1401,7 +1418,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             meta = this.databaseAccess.getConnection().getMetaData();
             ResultSet res = meta.getTables(null, null, null,
-                    new String[] { "TABLE" });
+                    new String[]{"TABLE"});
             while (res.next()) {
                 // toLowerCase because SQLite is case-insensitive for table names
                 existingTables.add(res.getString("TABLE_NAME").toLowerCase());
@@ -1451,7 +1468,7 @@ public class SQLiteInterface implements SQLInterface {
 
             String sqlColumnsByName = String
                     .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
-                            + " from target, columnn where target.id = columnn.id and target.name='%s'",
+                                    + " from target, columnn where target.id = columnn.id and target.name='%s'",
                             columnName);
             ResultSet rs = databaseAccess.query(sqlColumnsByName, "columnn", "target");
             while (rs.next()) {
@@ -1478,8 +1495,8 @@ public class SQLiteInterface implements SQLInterface {
         try {
             String sqlColumnByName = String
                     .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
-                            + " from target, columnn where target.id = columnn.id and target.name='%s'"
-                            + " and columnn.tableId=%d", columnName, table.getId()
+                                    + " from target, columnn where target.id = columnn.id and target.name='%s'"
+                                    + " and columnn.tableId=%d", columnName, table.getId()
                     );
             ResultSet rs = databaseAccess.query(sqlColumnByName, "columnn", "target");
             RDBMSColumn found = null;
@@ -1513,7 +1530,7 @@ public class SQLiteInterface implements SQLInterface {
         try {
             String sqlTableByname = String
                     .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
-                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                                    + " from target, tablee where target.id = tablee.id and target.name='%s'",
                             tableName);
             ResultSet rs = databaseAccess.query(sqlTableByname, "tablee", "target");
             RDBMSTable found = null;
@@ -1549,7 +1566,7 @@ public class SQLiteInterface implements SQLInterface {
 
             String sqlSchemaeById = String
                     .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
-                            + " from target, tablee where target.id = tablee.id and target.name='%s'",
+                                    + " from target, tablee where target.id = tablee.id and target.name='%s'",
                             tableName);
             ResultSet rs = databaseAccess.query(sqlSchemaeById, "tablee", "target");
             while (rs.next()) {

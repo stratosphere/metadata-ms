@@ -245,7 +245,7 @@ public class DefaultMetadataStoreTest {
      * store1.getSchemas().add(dummySchema.addTable(dummyTable.addColumn(dummyColumn))); try {
      * store1.save(file.getAbsolutePath()); } catch (final IOException e) { // TODO Auto-generated catch block
      * e.printStackTrace(); } // retrieve store MetadataStore store2 = null; try { store2 =
-     * MetadataStoreFactory.loadDefaultMetadataStore(file); } catch (final MetadataStoreNotFoundException e) { // TODO
+     * MetadataStoreFactory.load(file); } catch (final MetadataStoreNotFoundException e) { // TODO
      * Auto-generated catch block e.printStackTrace(); } assertEquals(dummySchema,
      * store2.getSchemas().iterator().next()); Constraint cc1 =
      * store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(); Constraint cc2 =
@@ -293,7 +293,7 @@ public class DefaultMetadataStoreTest {
      * .addTable(DefaultTable.buildAndRegister(store1, mock(Schema.class), "foo", null, null));
      * store1.getSchemas().add(dummySchema1); try { store1.save(file.getAbsolutePath()); } catch (final IOException e) {
      * // TODO Auto-generated catch block e.printStackTrace(); } // retrieve store MetadataStore store2 = null; try {
-     * store2 = MetadataStoreFactory.loadDefaultMetadataStore(file); } catch (final MetadataStoreNotFoundException e) {
+     * store2 = MetadataStoreFactory.load(file); } catch (final MetadataStoreNotFoundException e) {
      * // TODO Auto-generated catch block e.printStackTrace(); } assertEquals(store1, store2); }
      */
 }

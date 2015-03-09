@@ -109,8 +109,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Creating RDBMS metadata store...");
         File metadataStoreFile = createTempFile("sqlite");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
-        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(SQLiteInterface.createForFile(metadataStoreFile));
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
@@ -210,8 +209,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Creating RDBMS metadata store...");
         File metadataStoreFile = createTempFile("sqlite");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
-        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(SQLiteInterface.createForFile(metadataStoreFile));
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
@@ -332,8 +330,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Creating RDBMS metadata store...");
         File metadataStoreFile = createTempFile("sqlite");
-        Connection connection = MetadataStoreFactory.createSQLiteConnection(metadataStoreFile);
-        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        MetadataStore metadataStore = RDBMSMetadataStore.createNewInstance(SQLiteInterface.createForFile(metadataStoreFile));
 
         LOGGER.info("Creating schema...");
         int numTables = 1000;
