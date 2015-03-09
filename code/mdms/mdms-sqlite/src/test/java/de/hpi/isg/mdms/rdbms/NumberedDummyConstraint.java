@@ -37,7 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * Constraint implementation for the number of tuples in a table.
+ * Constraint implementation for the number of tuples in a target.
  * 
  * @author Sebastian Kruse
  */
@@ -49,15 +49,17 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<int[]> insertdummyWriter;
+        DatabaseWriter<int[]> insertDummyWriter;
 
-        DatabaseQuery<Void> querydummys;
+        DatabaseQuery<Void> queryConstraints;
 
-        DatabaseQuery<Integer> querydummysForConstraintCollection;
+        DatabaseQuery<Integer> queryConstraintsForConstraintCollection;
 
-        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_dummy_WRITER_FACTORY =
+        DatabaseWriter<Integer> removeWriter;
+
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, dummy, tableId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, dummy, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -69,17 +71,31 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                         },
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Void> dummy_QUERY_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<Integer> REMOVE_DUMMY_WRITER_FACTORY =
+                new PreparedStatementBatchWriter.Factory<>(
+                        "DELETE FROM " + tableName + " WHERE constraintId IN (" +
+                                "SELECT id FROM constraintt WHERE constraintCollectionId = ?" +
+                                ");",
+                        new PreparedStatementAdapter<Integer>() {
+                            @Override
+                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                                    throws SQLException {
+                                preparedStatement.setInt(1, parameter);
+                            }
+                        },
+                        tableName);
+
+        private static final StrategyBasedPreparedQuery.Factory<Void> DUMMY_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
+                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
                                 + " from dummy, constraintt where dummy.constraintId = constraintt.id;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
-        private static final StrategyBasedPreparedQuery.Factory<Integer> dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+        private static final StrategyBasedPreparedQuery.Factory<Integer> DUMMY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.tableId as tableId, dummy.dummy as dummy,"
+                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
                                 + " constraintt.constraintCollectionId as constraintCollectionId"
                                 + " from dummy, constraintt where dummy.constraintId = constraintt.id"
                                 + " and constraintt.constraintCollectionId=?;",
@@ -90,14 +106,16 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
             this.sqlInterface = sqlInterface;
 
             try {
-                this.insertdummyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
-                        INSERT_dummy_WRITER_FACTORY);
+                this.insertDummyWriter = sqlInterface.getDatabaseAccess().createBatchWriter(
+                        INSERT_DUMMY_WRITER_FACTORY);
 
-                this.querydummys = sqlInterface.getDatabaseAccess().createQuery(
-                        dummy_QUERY_FACTORY);
+                this.queryConstraints = sqlInterface.getDatabaseAccess().createQuery(
+                        DUMMY_QUERY_FACTORY);
 
-                this.querydummysForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
-                        dummy_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+                this.queryConstraintsForConstraintCollection = sqlInterface.getDatabaseAccess().createQuery(
+                        DUMMY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
+
+                this.removeWriter = sqlInterface.getDatabaseAccess().createBatchWriter(REMOVE_DUMMY_WRITER_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -107,11 +125,11 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
         public void serialize(Integer constraintId, Constraint dummy) {
             Validate.isTrue(dummy instanceof NumberedDummyConstraint);
             try {
-                insertdummyWriter.write(new int[] {
-                        constraintId, ((NumberedDummyConstraint) dummy).getNumTuples(), dummy
-                                .getTargetReference()
-                                .getAllTargetIds().iterator()
-                                .nextInt()
+                insertDummyWriter.write(new int[]{
+                        constraintId, ((NumberedDummyConstraint) dummy).getValue(), dummy
+                        .getTargetReference()
+                        .getAllTargetIds().iterator()
+                        .nextInt()
                 });
 
             } catch (SQLException e) {
@@ -129,7 +147,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
             try {
                 ResultSet rsdummys = retrieveConstraintCollection ?
-                        querydummys.execute(null) : querydummysForConstraintCollection
+                        queryConstraints.execute(null) : queryConstraintsForConstraintCollection
                                 .execute(constraintCollection.getId());
                 while (rsdummys.next()) {
                     if (retrieveConstraintCollection) {
@@ -139,8 +157,8 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                     }
                     dummys
                             .add(NumberedDummyConstraint.build(
-                                    new NumberedDummyConstraint.Reference(this.sqlInterface.getTableById(rsdummys
-                                            .getInt("tableId"))), constraintCollection,
+                                    new NumberedDummyConstraint.Reference(this.sqlInterface.getColumnById(rsdummys
+                                            .getInt("columnId"))), constraintCollection,
                                     rsdummys.getInt("dummy")));
                 }
                 rsdummys.close();
@@ -162,12 +180,12 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
-                        "    [tableId] integer NOT NULL,\n" +
+                        "    [columnId] integer NOT NULL,\n" +
                         "    [dummy] integer,\n" +
                         "    FOREIGN KEY ([constraintId])\n" +
                         "    REFERENCES [Constraintt] ([id]),\n" +
-                        "    FOREIGN KEY ([tableId])\n" +
-                        "    REFERENCES [Tablee] ([id])\n" +
+                        "    FOREIGN KEY ([columnId])\n" +
+                        "    REFERENCES [Columnn] ([id])\n" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createTable);
             }
@@ -178,9 +196,12 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         @Override
         public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Not supported yet.");
-            //
+            try {
+                this.removeWriter.write(constraintCollection.getId());
+                this.removeWriter.flush();
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not delete constraints.", e);
+            }
         }
     }
 
@@ -188,27 +209,27 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final long serialVersionUID = -861294530676768362L;
 
-        Target table;
+        Target target;
 
         public Reference(final Target target) {
-            this.table = target;
+            this.target = target;
         }
 
         @Override
         public IntCollection getAllTargetIds() {
-            return IntLists.singleton(this.table.getId());
+            return IntLists.singleton(this.target.getId());
         }
 
         @Override
         public String toString() {
-            return "Reference [table=" + table + "]";
+            return "Reference [target=" + target + "]";
         }
 
     }
 
     private static final long serialVersionUID = -932394088609862495L;
 
-    private int numTuples;
+    private int value;
 
     private Reference target;
 
@@ -216,11 +237,11 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
      * @see de.hpi.isg.mdms.domain.constraints.impl.AbstractConstraint
      */
     private NumberedDummyConstraint(final Reference target,
-                                    final ConstraintCollection constraintCollection, int numTuples) {
+                                    final ConstraintCollection constraintCollection, int value) {
 
         super(constraintCollection);
         this.target = target;
-        this.numTuples = numTuples;
+        this.value = value;
     }
 
     public static NumberedDummyConstraint build(final Reference target, ConstraintCollection constraintCollection,
@@ -251,8 +272,8 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
     /**
      * @return the numDistinctValues
      */
-    public int getNumTuples() {
-        return numTuples;
+    public int getValue() {
+        return value;
     }
 
     /**
@@ -260,12 +281,12 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
      *        the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
-        this.numTuples = numDistinctValues;
+        this.value = numDistinctValues;
     }
 
     @Override
     public String toString() {
-        return "dummy[" + getTargetReference() + ", numTuples=" + numTuples + "]";
+        return "dummy[" + getTargetReference() + ", value=" + value + "]";
     }
 
     @Override

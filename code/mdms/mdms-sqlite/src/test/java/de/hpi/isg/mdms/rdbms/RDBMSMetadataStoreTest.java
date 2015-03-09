@@ -75,7 +75,7 @@ public class RDBMSMetadataStoreTest {
             while (res.next()) {
                 // assertTrue(tables.remove(res.getString("TABLE_NAME")));
                 if (!tables.remove(res.getString("TABLE_NAME").toLowerCase())) {
-                    System.out.println("Unexpected table: " + res.getString("TABLE_NAME"));
+                    System.out.println("Unexpected target: " + res.getString("TABLE_NAME"));
                 }
             }
         } catch (SQLException e) {
@@ -150,17 +150,18 @@ public class RDBMSMetadataStoreTest {
 
         final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
 
-        final Constraint dummyTypeContraint = NumberedDummyConstraint.buildAndAddToCollection(col1,
+        final Constraint dummyTypeConstraint1 = NumberedDummyConstraint.buildAndAddToCollection(col1,
                 dummyConstraintCollection,
                 100);
 
-        final Constraint dummyIndContraint = InclusionDependency.buildAndAddToCollection(
-                new InclusionDependency.Reference(new Column[]{col1}, new Column[]{col2}),
-                dummyConstraintCollection);
+        final Constraint dummyTypeConstraint2 = NumberedDummyConstraint.buildAndAddToCollection(col2,
+                dummyConstraintCollection,
+                200);
 
         assertTrue(store1.getConstraintCollections().contains(dummyConstraintCollection));
-        assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyTypeContraint));
-        assertTrue(store1.getConstraintCollections().iterator().next().getConstraints().contains(dummyIndContraint));
+        ConstraintCollection constraintCollection = store1.getConstraintCollections().iterator().next();
+        assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint1));
+        assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint2));
     }
 
     @Test
@@ -276,56 +277,6 @@ public class RDBMSMetadataStoreTest {
         assertEquals(store1, store2);
     }
 
-    @Test
-    public void testStoringTupleCountConstraint() throws Exception {
-        // setup store
-        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
-        // setup schema
-        final Schema dummySchema = store1.addSchema("PDB", null, new DefaultLocation());
-
-        final DefaultLocation dummyTableLocation = new DefaultLocation();
-
-        final Table dummyTable = dummySchema.addTable(store1, "dummyTable", null, dummyTableLocation);
-
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
-        final Constraint dummyContraint = NumberedDummyConstraint.buildAndAddToCollection(dummyTable, constraintCollection, 5);
-        constraintCollection.add(dummyContraint);
-
-        store1.flush();
-
-        // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
-
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
-                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
-    }
-
-    @Test
-    public void testStoringTypeConstraint() throws Exception {
-        // setup store
-        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
-        // setup schema
-        final Schema dummySchema = store1.addSchema("PDB", null, new DefaultLocation());
-
-        final DefaultLocation dummyTableLocation = new DefaultLocation();
-
-        final Table dummyTable = dummySchema.addTable(store1, "dummyTable", null, dummyTableLocation);
-
-        final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", null, 1);
-
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
-        final Constraint dummyContraint = NumberedDummyConstraint.buildAndAddToCollection(
-                dummyColumn, constraintCollection, 25);
-        constraintCollection.add(dummyContraint);
-
-        store1.flush();
-
-        // retrieve store
-        MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
-
-        assertEquals(store1.getConstraintCollections().iterator().next().getConstraints().iterator().next(),
-                store2.getConstraintCollections().iterator().next().getConstraints().iterator().next());
-    }
 
     @Test
     public void testStoringOfFilledMetadataStore2() throws Exception {

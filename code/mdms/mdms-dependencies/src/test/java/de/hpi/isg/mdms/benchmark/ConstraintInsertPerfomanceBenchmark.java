@@ -33,7 +33,7 @@ import de.hpi.isg.mdms.domain.constraints.impl.DistinctValueCount;
 import de.hpi.isg.mdms.domain.constraints.impl.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.impl.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.factories.MetadataStoreFactory;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
 import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;

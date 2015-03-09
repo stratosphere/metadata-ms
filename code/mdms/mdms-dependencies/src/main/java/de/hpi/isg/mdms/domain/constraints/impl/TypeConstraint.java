@@ -5,17 +5,14 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
-import de.hpi.isg.mdms.domain.Constraint;
-import de.hpi.isg.mdms.domain.ConstraintCollection;
-import de.hpi.isg.mdms.domain.MetadataStore;
-import de.hpi.isg.mdms.domain.TargetReference;
+import de.hpi.isg.mdms.domain.*;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
 import de.hpi.isg.mdms.domain.targets.Column;
 import de.hpi.isg.mdms.domain.util.IdUtils;
 import de.hpi.isg.mdms.domain.util.IdUtils.IdTypes;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -32,7 +29,7 @@ import java.util.List;
 /**
  * This class is a {@link Constraint} representing the data type of a certain {@link Column}. {@link Column}.
  */
-public class TypeConstraint extends AbstractConstraint implements Constraint {
+public class TypeConstraint extends AbstractConstraint implements RDBMSConstraint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class);
 

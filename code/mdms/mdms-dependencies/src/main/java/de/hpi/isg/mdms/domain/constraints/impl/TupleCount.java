@@ -19,10 +19,11 @@ import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.Constraint;
 import de.hpi.isg.mdms.domain.ConstraintCollection;
+import de.hpi.isg.mdms.domain.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -38,7 +39,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class TupleCount extends AbstractConstraint {
+public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
     public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer<TupleCount> {
 

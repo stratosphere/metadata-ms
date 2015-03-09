@@ -5,8 +5,8 @@ import de.hpi.isg.mdms.db.PreparedStatementAdapter;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.Target;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class DatabaseAccessTest {
                     "Target");
 
     @Before
-    public void setUp() {
+    public void setUp() throws SQLException, ClassNotFoundException {
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();
@@ -55,7 +55,7 @@ public class DatabaseAccessTest {
 
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
+            throw e;
         }
         RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 

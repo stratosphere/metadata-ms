@@ -21,7 +21,7 @@ import de.hpi.isg.mdms.domain.Constraint;
 import de.hpi.isg.mdms.domain.ConstraintCollection;
 import de.hpi.isg.mdms.domain.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
 import org.apache.commons.lang3.Validate;

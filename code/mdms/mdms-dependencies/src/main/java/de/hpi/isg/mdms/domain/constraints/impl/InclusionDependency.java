@@ -19,14 +19,13 @@ import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.Constraint;
 import de.hpi.isg.mdms.domain.ConstraintCollection;
+import de.hpi.isg.mdms.domain.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.TargetReference;
 import de.hpi.isg.mdms.domain.common.impl.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.domain.constraints.impl.AbstractConstraint;
-import de.hpi.isg.mdms.domain.constraints.impl.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.targets.Column;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -42,7 +41,7 @@ import java.util.*;
  * 
  * @author Sebastian Kruse
  */
-public class InclusionDependency extends AbstractConstraint implements Constraint {
+public class InclusionDependency extends AbstractConstraint implements RDBMSConstraint {
 
     public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer<InclusionDependency> {
 

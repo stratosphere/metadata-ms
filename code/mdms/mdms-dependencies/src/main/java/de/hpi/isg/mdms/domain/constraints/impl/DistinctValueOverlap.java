@@ -23,7 +23,7 @@ import de.hpi.isg.mdms.domain.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.TargetReference;
 import de.hpi.isg.mdms.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;

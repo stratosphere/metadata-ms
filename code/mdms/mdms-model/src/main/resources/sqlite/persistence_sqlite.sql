@@ -89,30 +89,6 @@ CREATE TABLE [Constraintt]
 	REFERENCES [ConstraintCollection] ([id])
 );
 
-
-CREATE TABLE [IND]
-(
-	[constraintId] integer NOT NULL,
-	PRIMARY KEY ([constraintId]),
-	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id])
-);
-
-
-CREATE TABLE [INDpart]
-(
-	[constraintId] integer NOT NULL,
-	[lhs] integer NOT NULL,
-	[rhs] integer NOT NULL,
-	FOREIGN KEY ([lhs])
-	REFERENCES [Columnn] ([id]),
-	FOREIGN KEY ([rhs])
-	REFERENCES [Columnn] ([id]),
-	FOREIGN KEY ([constraintId])
-	REFERENCES [IND] ([constraintId])
-);
-
-
 CREATE TABLE [LocationProperty]
 (
 	[locationId] integer NOT NULL,
@@ -132,18 +108,3 @@ CREATE TABLE [Scope]
 	FOREIGN KEY ([targetId])
 	REFERENCES [Target] ([id])
 );
-
-
-CREATE TABLE [Typee]
-(
-	[constraintId] integer NOT NULL,
-	[columnId] integer NOT NULL,
-	[typee] text,
-	FOREIGN KEY ([constraintId])
-	REFERENCES [Constraintt] ([id]),
-	FOREIGN KEY ([columnId])
-	REFERENCES [Columnn] ([id])
-);
-
-
-

@@ -19,10 +19,11 @@ import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.Constraint;
 import de.hpi.isg.mdms.domain.ConstraintCollection;
+import de.hpi.isg.mdms.domain.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.TargetReference;
 import de.hpi.isg.mdms.domain.common.impl.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.factories.SQLiteInterface;
+import de.hpi.isg.mdms.factories.SQLiteInterface;
 import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -44,7 +45,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class UniqueColumnCombination extends AbstractConstraint implements Constraint {
+public class UniqueColumnCombination extends AbstractConstraint implements RDBMSConstraint {
 
     public static class UniqueColumnCombinationSQLiteSerializer implements
             ConstraintSQLSerializer<UniqueColumnCombination> {
