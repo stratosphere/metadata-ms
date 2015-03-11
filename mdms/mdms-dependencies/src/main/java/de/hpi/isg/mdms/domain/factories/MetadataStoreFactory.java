@@ -1,15 +1,13 @@
 package de.hpi.isg.mdms.domain.factories;
 
-import de.hpi.isg.mdms.domain.impl.DefaultMetadataStore;
-import de.hpi.isg.mdms.domain.util.IdUtils;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
+import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
 
 /**
  * @deprecated There should be no central utility for creating metadata stores.

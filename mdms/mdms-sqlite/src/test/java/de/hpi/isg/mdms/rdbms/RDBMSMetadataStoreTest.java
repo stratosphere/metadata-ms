@@ -1,16 +1,15 @@
 package de.hpi.isg.mdms.rdbms;
 
-import de.hpi.isg.mdms.domain.Constraint;
-import de.hpi.isg.mdms.domain.ConstraintCollection;
-import de.hpi.isg.mdms.domain.Location;
-import de.hpi.isg.mdms.domain.MetadataStore;
-import de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
-import de.hpi.isg.mdms.domain.targets.Column;
-import de.hpi.isg.mdms.domain.targets.Schema;
-import de.hpi.isg.mdms.domain.targets.Table;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
-import de.hpi.isg.mdms.factories.SQLiteInterface;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

@@ -1,6 +1,6 @@
 package de.hpi.isg.mdms.exceptions;
 
-import de.hpi.isg.mdms.domain.MetadataStore;
+import de.hpi.isg.mdms.model.MetadataStore;
 
 /**
  * This {@link Exception} is thrown if a certain {@link MetadataStore} can not be found for a given location.

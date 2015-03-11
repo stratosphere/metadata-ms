@@ -17,13 +17,14 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
-import de.hpi.isg.mdms.domain.*;
-import de.hpi.isg.mdms.domain.common.impl.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.domain.constraints.impl.AbstractConstraint;
-import de.hpi.isg.mdms.domain.constraints.impl.ConstraintSQLSerializer;
-import de.hpi.isg.mdms.domain.factories.SQLInterface;
-import de.hpi.isg.mdms.domain.impl.RDBMSConstraintCollection;
-import de.hpi.isg.mdms.factories.SQLiteInterface;
+import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.targets.Target;
+import de.hpi.isg.mdms.model.targets.TargetReference;
+import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
+import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntLists;
 import org.apache.commons.lang3.Validate;
@@ -234,7 +235,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
     private Reference target;
 
     /**
-     * @see de.hpi.isg.mdms.domain.constraints.impl.AbstractConstraint
+     * @see de.hpi.isg.mdms.model.constraints.AbstractConstraint
      */
     private NumberedDummyConstraint(final Reference target,
                                     final ConstraintCollection constraintCollection, int value) {

@@ -7,16 +7,19 @@ import static org.mockito.Mockito.mock;
 
 import java.util.HashSet;
 
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.targets.Target;
 import org.junit.Test;
 
-import de.hpi.isg.mdms.domain.impl.DefaultMetadataStore;
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
-import de.hpi.isg.mdms.domain.targets.Column;
-import de.hpi.isg.mdms.domain.targets.Schema;
-import de.hpi.isg.mdms.domain.targets.Table;
-import de.hpi.isg.mdms.domain.targets.impl.DefaultColumn;
-import de.hpi.isg.mdms.domain.targets.impl.DefaultSchema;
-import de.hpi.isg.mdms.domain.targets.impl.DefaultTable;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.DefaultColumn;
+import de.hpi.isg.mdms.model.targets.DefaultSchema;
+import de.hpi.isg.mdms.model.targets.DefaultTable;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 
 public class TargetTest {

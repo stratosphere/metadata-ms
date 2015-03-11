@@ -12,7 +12,7 @@
  **********************************************************************************************************************/
 package de.hpi.isg.mdms.domain;
 
-import de.hpi.isg.mdms.domain.util.IdUtils;
+import de.hpi.isg.mdms.model.util.IdUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

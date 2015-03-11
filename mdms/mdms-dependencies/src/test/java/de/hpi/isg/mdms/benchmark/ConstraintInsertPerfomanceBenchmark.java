@@ -14,7 +14,6 @@ package de.hpi.isg.mdms.benchmark;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,19 +26,19 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.hpi.isg.mdms.domain.ConstraintCollection;
-import de.hpi.isg.mdms.domain.MetadataStore;
-import de.hpi.isg.mdms.domain.constraints.impl.DistinctValueCount;
-import de.hpi.isg.mdms.domain.constraints.impl.InclusionDependency;
-import de.hpi.isg.mdms.domain.constraints.impl.UniqueColumnCombination;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
+import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
+import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.factories.MetadataStoreFactory;
-import de.hpi.isg.mdms.factories.SQLiteInterface;
-import de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
-import de.hpi.isg.mdms.domain.targets.Column;
-import de.hpi.isg.mdms.domain.targets.Schema;
-import de.hpi.isg.mdms.domain.targets.Table;
+import de.hpi.isg.mdms.rdbms.SQLiteInterface;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
 
 /**
  * A little test set to quantify the performance of constraint insertions into a metadata store.

@@ -3,9 +3,10 @@ package de.hpi.isg.mdms.domain;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import de.hpi.isg.mdms.model.location.Location;
 import org.junit.Test;
 
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
 
 public class LocationTest {
 

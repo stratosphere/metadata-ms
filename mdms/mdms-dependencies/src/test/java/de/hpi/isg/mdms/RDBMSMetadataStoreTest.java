@@ -1,18 +1,18 @@
 package de.hpi.isg.mdms;
 
-import de.hpi.isg.mdms.domain.ConstraintCollection;
-import de.hpi.isg.mdms.domain.MetadataStore;
-import de.hpi.isg.mdms.domain.constraints.impl.*;
-import de.hpi.isg.mdms.domain.constraints.impl.TypeConstraint.TYPES;
-import de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.impl.SingleTargetReference;
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
-import de.hpi.isg.mdms.domain.targets.Column;
-import de.hpi.isg.mdms.domain.targets.Schema;
-import de.hpi.isg.mdms.domain.targets.Table;
+import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.domain.constraints.TypeConstraint.TYPES;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
-import de.hpi.isg.mdms.factories.SQLiteInterface;
+import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -357,7 +357,7 @@ public class RDBMSMetadataStoreTest {
 
         DistinctValueOverlap
                 .buildAndAddToCollection(1, new
-                        DistinctValueOverlap.Reference(1, 2),
+                                DistinctValueOverlap.Reference(1, 2),
                         dummyConstraintCollection);
 
         store1.removeConstraintCollection(dummyConstraintCollection);

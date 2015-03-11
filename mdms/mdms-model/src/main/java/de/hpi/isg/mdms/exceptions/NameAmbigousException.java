@@ -1,7 +1,7 @@
 package de.hpi.isg.mdms.exceptions;
 
-import de.hpi.isg.mdms.domain.MetadataStore;
-import de.hpi.isg.mdms.domain.targets.Schema;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.targets.Schema;
 
 /**
  * This exception is thrown if the {@link MetadataStore} is queried for a not existing {@link Schema}.

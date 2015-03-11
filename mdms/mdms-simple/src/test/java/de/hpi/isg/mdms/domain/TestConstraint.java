@@ -1,7 +1,9 @@
 package de.hpi.isg.mdms.domain;
 
-import de.hpi.isg.mdms.domain.constraints.impl.AbstractConstraint;
-import de.hpi.isg.mdms.domain.targets.Column;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.targets.TargetReference;
+import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
+import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 

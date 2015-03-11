@@ -1,6 +1,6 @@
 package de.hpi.isg.mdms.exceptions;
 
-import de.hpi.isg.mdms.domain.MetadataStore;
+import de.hpi.isg.mdms.model.MetadataStore;
 
 /**
  * This {@link Exception} is thrown if a certain id is already taken inside one {@link MetadataStore}.

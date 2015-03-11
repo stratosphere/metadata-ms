@@ -1,11 +1,7 @@
 package de.hpi.isg.mdms.domain.util;
 
-import de.hpi.isg.mdms.domain.constraints.impl.*;
-import de.hpi.isg.mdms.factories.SQLiteInterface;
-
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
+import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 
 /**
  * This class provides utility methods to work with SQLiteInterfaces.

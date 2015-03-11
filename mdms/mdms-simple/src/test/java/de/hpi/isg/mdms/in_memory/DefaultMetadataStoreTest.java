@@ -12,19 +12,23 @@ import java.util.Random;
 import java.util.Set;
 
 import de.hpi.isg.mdms.domain.*;
-import de.hpi.isg.mdms.domain.factories.DefaultMetadataStoreFactory;
+import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.MetadataStore;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import de.hpi.isg.mdms.domain.impl.DefaultMetadataStore;
-import de.hpi.isg.mdms.domain.location.impl.DefaultLocation;
-import de.hpi.isg.mdms.domain.targets.Column;
-import de.hpi.isg.mdms.domain.targets.Schema;
-import de.hpi.isg.mdms.domain.targets.Table;
-import de.hpi.isg.mdms.domain.targets.impl.DefaultSchema;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.DefaultSchema;
 import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 
