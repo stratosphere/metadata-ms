@@ -26,8 +26,8 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- * The default implementation of the {@link MetadataStore} for storing the data inside of a RDBMS.
- * 
+ * The default implementation of the {@link MetadataStore} for storing the data inside of a RDBMS. The choice of
+ * the underlying database is given through the use of an appropriate {@link de.hpi.isg.mdms.rdbms.SQLInterface}.
  */
 
 public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {

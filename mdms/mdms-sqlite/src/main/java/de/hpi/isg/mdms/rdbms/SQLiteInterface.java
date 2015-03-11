@@ -1,35 +1,23 @@
 package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.db.DatabaseAccess;
-import de.hpi.isg.mdms.db.PreparedStatementAdapter;
-import de.hpi.isg.mdms.db.query.DatabaseQuery;
-import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
-import de.hpi.isg.mdms.db.write.DatabaseWriter;
-import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
-import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
-import de.hpi.isg.mdms.util.LRUCache;
-import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
+import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
-import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.rdbms.util.LocationCache;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntIterator;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,251 +35,45 @@ import java.util.Map.Entry;
  */
 public class SQLiteInterface implements SQLInterface {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
-
-    /**
-     * Resource path of the SQL script to set up the metadata store schema.
-     */
-    private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
-
     public static final String[] tableNames = {"Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
             "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config"};
 
-    private final Map<Class<? extends Constraint>, ConstraintSQLSerializer<? extends Constraint>> constraintSerializers = new HashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
 
-    private final int CACHE_SIZE = 1000;
+    /**
+     * Resource path of the SQL script to set up the metadata metadataStore schema.
+     */
+    private static final String SETUP_SCRIPT_RESOURCE_PATH = "/sqlite/persistence_sqlite.sql";
 
-    private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TARGET_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Target (ID, name, locationId, description) VALUES (?, ?, ?, ?);",
-                    new PreparedStatementAdapter<Object[]>() {
-                        @Override
-                        public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            Target target = (Target) parameters[0];
-                            Integer locationId = (Integer) parameters[1];
-                            preparedStatement.setInt(1, target.getId());
-                            preparedStatement.setString(2, target.getName());
-                            if (locationId == null) {
-                                preparedStatement.setNull(3, Types.INTEGER);
-                            } else {
-                                preparedStatement.setInt(3, locationId);
-                            }
-                            preparedStatement.setString(4, target.getDescription());
-                        }
-                    },
-                    "Target");
+    /**
+     * Encapsulates the DB connection to allow for lazy writes.
+     */
+    private final DatabaseAccess databaseAccess;
 
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_TARGET_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE FROM Target where id=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "Target");
+    RDBMSMetadataStore store;
 
-    private static final PreparedStatementBatchWriter.Factory<Integer[]> INSERT_LOCATION_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Location (id, typee) VALUES (?, ?);",
-                    new PreparedStatementAdapter<Integer[]>() {
-                        @Override
-                        public void translateParameter(Integer[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters[0]);
-                            preparedStatement.setInt(2, parameters[1]);
-                        }
-                    },
-                    "Location");
+    /**
+     * Keeps track of existing tables within the DB.
+     */
+    private Set<String> existingTables;
 
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_LOCATION_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE FROM Location where id=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "Location");
+    private int currentConstraintIdMax = -1;
 
-    private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_LOCATION_PROPERTY_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO LocationProperty (locationId, keyy, value) VALUES (?, ?, ?);",
-                    new PreparedStatementAdapter<Object[]>() {
-                        @Override
-                        public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, (Integer) parameters[0]);
-                            preparedStatement.setString(2, (String) parameters[1]);
-                            preparedStatement.setString(3, (String) parameters[2]);
-                        }
-                    },
-                    "LocationProperty");
+    private SQLiteSchemaHandler schemaHandler;
 
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_LOCATION_PROPERTY_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE FROM LocationProperty where locationId=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "LocationProperty");
+    private SQLiteConstraintHandler constraintHandler;
 
-    private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (?, ?);",
-                    new PreparedStatementAdapter<int[]>() {
-                        @Override
-                        public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters[0]);
-                            preparedStatement.setInt(2, parameters[1]);
-                        }
-                    },
-                    "Constraintt");
+    /**
+     * Creates a new instance that operates on the given connection.
+     *
+     * @param connection to operate on
+     */
+    public SQLiteInterface(Connection connection) {
+        this.databaseAccess = new DatabaseAccess(connection);
+        this.schemaHandler = new SQLiteSchemaHandler(this.databaseAccess);
+        this.constraintHandler = new SQLiteConstraintHandler(this);
 
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Constraintt where constraintCollectionId=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "Constraintt");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSSchema> INSERT_SCHEMA_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Schemaa (id) VALUES (?);",
-                    new PreparedStatementAdapter<RDBMSSchema>() {
-                        @Override
-                        public void translateParameter(RDBMSSchema parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters.getId());
-                        }
-                    },
-                    "Schemaa");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSSchema> DELETE_SCHEMA_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Schemaa where id=?",
-                    new PreparedStatementAdapter<RDBMSSchema>() {
-                        @Override
-                        public void translateParameter(RDBMSSchema parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter.getId());
-                        }
-                    },
-                    "Schemaa");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSTable> INSERT_TABLE_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Tablee (id, schemaId) VALUES (?, ?);",
-                    new PreparedStatementAdapter<RDBMSTable>() {
-                        @Override
-                        public void translateParameter(RDBMSTable parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters.getId());
-                            preparedStatement.setInt(2, parameters.getSchema().getId());
-                        }
-                    },
-                    "Tablee");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSTable> DELETE_TABLE_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Tablee where id=?",
-                    new PreparedStatementAdapter<RDBMSTable>() {
-                        @Override
-                        public void translateParameter(RDBMSTable parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter.getId());
-                        }
-                    },
-                    "Tablee");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSColumn> INSERT_COLUMN_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Columnn (id, tableId) VALUES (?, ?);",
-                    new PreparedStatementAdapter<RDBMSColumn>() {
-                        @Override
-                        public void translateParameter(RDBMSColumn parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters.getId());
-                            preparedStatement.setInt(2, parameters.getTable().getId());
-                        }
-                    },
-                    "Columnn");
-
-    private static final PreparedStatementBatchWriter.Factory<RDBMSColumn> DELETE_COLUMN_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Columnn where id=?;",
-                    new PreparedStatementAdapter<RDBMSColumn>() {
-                        @Override
-                        public void translateParameter(RDBMSColumn parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters.getId());
-                        }
-                    },
-                    "Columnn");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> LOCATION_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT Location.id as id, Location.typee as typee "
-                            + "from Location, Target "
-                            + "where Location.id = Target.locationId and Target.id = ?;",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Location", "Target");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> LOCATION_PROPERTIES_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT LocationProperty.keyy as keyy, LocationProperty.value as value "
-                            + "from LocationProperty "
-                            + "where LocationProperty.locationId = ?;",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Location", "LocationProperty");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> COLUMN_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name, target.description as description,"
-                            + " columnn.tableId as tableId"
-                            + " from target, columnn"
-                            + " where target.id = columnn.id and columnn.id=?",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Target", "Columnn");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> TABLE_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
-                            + " from target, tablee"
-                            + " where target.id = tablee.id and tablee.id=?",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Target", "Tablee");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> TABLE_COLUMNS_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT columnn.id as id "
-                            + "from columnn, target "
-                            + "where target.id = columnn.id and columnn.tableId=?;",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Target", "Tablee");
-
-    private static final StrategyBasedPreparedQuery.Factory<Integer> SCHEMA_QUERY_FACTORY =
-            new StrategyBasedPreparedQuery.Factory<>(
-                    "SELECT target.id as id, target.name as name, target.description as description"
-                            + " from target, schemaa"
-                            + " where target.id = schemaa.id and schemaa.id=?",
-                    PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                    "Target", "Schemaa");
+    }
 
     /**
      * Creates a SQLiteInterface for the SQLite DB that is embedded in the given file.
@@ -310,162 +92,12 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
-    /**
-     * @deprecated Use {@link #databaseAccess} instead.
-     */
-    private final Connection connection;
-
-    private final DatabaseAccess databaseAccess;
-
-    private int currentConstraintIdMax = -1;
-
-    private int currentLocationIdMax = -1;
-
-    RDBMSMetadataStore store;
-
-    LRUCache<Integer, RDBMSColumn> columnCache = new LRUCache<>(CACHE_SIZE);
-
-    LRUCache<Integer, RDBMSTable> tableCache = new LRUCache<>(CACHE_SIZE);
-
-    LRUCache<Integer, RDBMSSchema> schemaCache = new LRUCache<>(CACHE_SIZE);
-
-    LRUCache<Integer, Location> locationCache = new LRUCache<>(CACHE_SIZE);
-
-    LRUCache<Table, Collection<Column>> allColumnsForTableCache = new LRUCache<>(CACHE_SIZE);
-
-    Collection<Target> allTargets = null;
-
-    Collection<Schema> allSchemas = null;
-
-    Set<String> existingTables = null;
-
-    /**
-     * @see #LOCATION_QUERY_FACTORY
-     */
-    private DatabaseQuery<Integer> locationQuery;
-
-    /**
-     * @see #LOCATION_PROPERTIES_QUERY_FACTORY
-     */
-    private DatabaseQuery<Integer> locationPropertiesQuery;
-
-    // TODO remove???
-    @SuppressWarnings("unused")
-    private DatabaseWriter<Target> updateTargetNameWriter;
-    @SuppressWarnings("unused")
-    private DatabaseWriter<int[]> updateTargetLocationWriter;
-    @SuppressWarnings("unused")
-    private DatabaseQuery<Integer> tableColumnsQuery;
-    // XXX
-
-    private DatabaseQuery<Integer> columnQuery;
-
-    private DatabaseQuery<Integer> tableQuery;
-
-    private DatabaseQuery<Integer> schemaQuery;
-
-    // TODO change generic type to domain types?!
-    private DatabaseWriter<Object[]> insertTargetWriter;
-
-    private DatabaseWriter<Integer> deleteTargetWriter;
-
-    private DatabaseWriter<Integer[]> insertLocationWriter;
-
-    private DatabaseWriter<Integer> deleteLocationWriter;
-
-    private DatabaseWriter<Object[]> insertLocationPropertyWriter;
-
-    private DatabaseWriter<Integer> deleteLocationPropertyWriter;
-
-    private DatabaseWriter<int[]> insertConstraintWriter;
-
-    private DatabaseWriter<Integer> deleteConstraintWriter;
-
-    private DatabaseWriter<RDBMSSchema> insertSchemaWriter;
-
-    private DatabaseWriter<RDBMSSchema> deleteSchemaWriter;
-
-    private DatabaseWriter<RDBMSTable> insertTableWriter;
-
-    private DatabaseWriter<RDBMSTable> deleteTableWriter;
-
-    private DatabaseWriter<RDBMSColumn> insertColumnWriter;
-
-    private DatabaseWriter<RDBMSColumn> deleteColumnWriter;
-
-
-    // TODO: Should be private, use #buildAndRegisterStandardConstraints?
-    public SQLiteInterface(Connection connection) {
-        this.connection = connection;
-        this.databaseAccess = new DatabaseAccess(connection);
-
-        // Initialize writers and queries.
-        try {
-            // Writers
-            this.insertTargetWriter = this.databaseAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
-            this.deleteTargetWriter = this.databaseAccess.createBatchWriter(DELETE_TARGET_WRITER_FACTORY);
-            // this.updateTargetNameWriter = this.databaseAccess.createBatchWriter(UPDATE_TARGET_NAME_WRITER_FACTORY);
-            // this.updateTargetLocationWriter =
-            // this.databaseAccess.createBatchWriter(UPDATE_TARGET_LOCATION_WRITER_FACTORY);
-            this.insertLocationWriter = this.databaseAccess.createBatchWriter(INSERT_LOCATION_WRITER_FACTORY);
-            this.deleteLocationWriter = this.databaseAccess.createBatchWriter(DELETE_LOCATION_WRITER_FACTORY);
-            this.insertLocationPropertyWriter = this.databaseAccess
-                    .createBatchWriter(INSERT_LOCATION_PROPERTY_WRITER_FACTORY);
-            this.deleteLocationPropertyWriter = this.databaseAccess
-                    .createBatchWriter(DELETE_LOCATION_PROPERTY_WRITER_FACTORY);
-            this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
-            this.deleteConstraintWriter = this.databaseAccess.createBatchWriter(DELETE_CONSTRAINT_WRITER_FACTORY);
-            this.insertColumnWriter = this.databaseAccess.createBatchWriter(INSERT_COLUMN_WRITER_FACTORY);
-            this.deleteColumnWriter = this.databaseAccess.createBatchWriter(DELETE_COLUMN_WRITER_FACTORY);
-            this.insertTableWriter = this.databaseAccess.createBatchWriter(INSERT_TABLE_WRITER_FACTORY);
-            this.deleteTableWriter = this.databaseAccess.createBatchWriter(DELETE_TABLE_WRITER_FACTORY);
-            this.insertSchemaWriter = this.databaseAccess.createBatchWriter(INSERT_SCHEMA_WRITER_FACTORY);
-            this.deleteSchemaWriter = this.databaseAccess.createBatchWriter(DELETE_SCHEMA_WRITER_FACTORY);
-
-            // Queries
-            this.locationQuery = this.databaseAccess.createQuery(LOCATION_QUERY_FACTORY);
-            this.locationPropertiesQuery = this.databaseAccess.createQuery(LOCATION_PROPERTIES_QUERY_FACTORY);
-            this.columnQuery = this.databaseAccess.createQuery(COLUMN_QUERY_FACTORY);
-            this.tableQuery = this.databaseAccess.createQuery(TABLE_QUERY_FACTORY);
-            this.schemaQuery = this.databaseAccess.createQuery(SCHEMA_QUERY_FACTORY);
-            this.tableColumnsQuery = this.databaseAccess.createQuery(TABLE_COLUMNS_QUERY_FACTORY);
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not initialze writers.", e);
-        }
-    }
-
-
-    @Override
-    public void dropTablesIfExist() {
-        try {
-            // Setting up the schema is not supported by database access. Do it with plain JDBC.
-            try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
-                for (String table : tableNames) {
-                    String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
-                    statement.execute(sql);
-                }
-
-                // also drop constraint tables, since they must be invalid after deletion of the store
-                for (ConstraintSQLSerializer<?> serializer : this.constraintSerializers.values()) {
-                    for (String tableName : serializer.getTableNames()) {
-                        // toLowerCase because SQLite is case-insensitive for table names
-                        String sql = String.format("DROP TABLE IF EXISTS [%s];", tableName);
-                        statement.execute(sql);
-                    }
-                }
-                if (!this.databaseAccess.getConnection().getAutoCommit()) {
-                    this.databaseAccess.getConnection().commit();
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public void initializeMetadataStore() {
+        // Drop any old tables.
         dropTablesIfExist();
 
+        // Create the DB schema.
         try {
             String sqlCreateTables = loadResource(SETUP_SCRIPT_RESOURCE_PATH);
             this.executeCreateTableStatement(sqlCreateTables);
@@ -473,31 +105,10 @@ public class SQLiteInterface implements SQLInterface {
             throw new RuntimeException(e);
         }
 
-        // init constraint types
-        for (ConstraintSQLSerializer<? extends Constraint> serializer : this.constraintSerializers.values()) {
-            serializer.initializeTables();
-        }
+        this.constraintHandler.initializeTables();
 
         try {
             flush();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void executeCreateTableStatement(String sqlCreateTables) {
-        try {
-            // Setting up databases is not supported by DatabaseAccess, so we do it directly.
-            Connection connection = this.databaseAccess.getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate(sqlCreateTables);
-            }
-            if (!this.databaseAccess.getConnection().getAutoCommit()) {
-                this.databaseAccess.getConnection().commit();
-            }
-
-            this.loadTableNames();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -516,764 +127,24 @@ public class SQLiteInterface implements SQLInterface {
         }
     }
 
-    @Override
-    public void addSchema(RDBMSSchema schema) {
-        try {
-            storeTargetWithLocation(schema);
-            insertSchemaWriter.write(schema);
-
-            // XXX why the flush was necessary
-            // this.databaseAccess.flush();
-
-            // TODO: Why not update the schemas directly?
-            // invalidate cache
-
-            if (allSchemas != null) {
-                allSchemas.add(schema);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    private void storeTargetWithLocation(Target target) throws SQLException {
-        // write target and location to DB
-        Integer locationId = addLocation(target.getLocation());
-        this.insertTargetWriter.write(new Object[]{target, locationId});
-
-        // update caches
-        if (allTargets != null) {
-            this.allTargets.add(target);
-        }
-        if (target instanceof RDBMSSchema) {
-            if (this.allSchemas != null) {
-                this.allSchemas.add((Schema) target);
-            }
-            this.schemaCache.put(target.getId(), (RDBMSSchema) target);
-        } else if (target instanceof RDBMSTable) {
-            this.tableCache.put(target.getId(), (RDBMSTable) target);
-        } else if (target instanceof RDBMSColumn) {
-            this.columnCache.put(target.getId(), (RDBMSColumn) target);
-        }
-    }
-
-    @Override
-    public Collection<Target> getAllTargets() {
-        if (allTargets != null) {
-            return allTargets;
-        }
-        try {
-            Int2ObjectMap<RDBMSSchema> schemas = loadAllSchemas();
-            Int2ObjectMap<RDBMSTable> tables = loadAllTables(schemas, true);
-            Int2ObjectMap<RDBMSColumn> columns = loadAllColumns(tables, null);
-
-            Collection<Target> allTargets = new HashSet<>();
-            allTargets.addAll(schemas.values());
-            allTargets.addAll(tables.values());
-            allTargets.addAll(columns.values());
-
-            return this.allTargets = allTargets;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Int2ObjectMap<RDBMSSchema> loadAllSchemas() throws SQLException {
-        String sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
-                + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                + "FROM schemaa "
-                + "JOIN target ON schemaa.id = target.id "
-                + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                + "ORDER BY target.id;";
-
-        Int2ObjectMap<RDBMSSchema> schemas = new Int2ObjectOpenHashMap<>();
-        RDBMSSchema lastSchema = null;
-        // Query schemas together with all important related tables.
-        try (ResultSet rs = this.databaseAccess.query(sql, "Schemaa", "Target", "Location", "LocationProperty")) {
-            while (rs.next()) {
-                // See if we are dealing with the same target as before.
-                int targetId = rs.getInt("targetId");
-                RDBMSSchema schema = lastSchema;
-                if (schema == null || schema.getId() != targetId) {
-                    // For a new target, create a new object, potentially with location.
-                    String name = rs.getString("name");
-                    String description = rs.getString("description");
-                    Integer locationClassHash = rs.getInt("locationType");
-                    Location location = null;
-                    if (locationClassHash != null) {
-                        location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String>emptyMap());
-                    }
-                    schema = RDBMSSchema.restore(this.store, targetId, name, description, location);
-                    schemas.put(targetId, schema);
-                    lastSchema = schema;
-                }
-
-                // Update location properties for the current schema.
-                String locationPropKey = rs.getString("locationPropKey");
-                if (locationPropKey != null) {
-                    String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
-                            schema.getLocation());
-                }
-            }
-        }
-
-        return schemas;
-    }
-
     /**
-     * Loads all tables (for the given schemas).
-     *
-     * @param schemas            are the schemas to load the tables for
-     * @param areAllSchemasGiven tells if the given schemas are all schemas in the metadata store
-     * @return the loaded tables
-     * @throws java.sql.SQLException
+     * Loads the tables that exist within the DB.
      */
-    private Int2ObjectMap<RDBMSTable> loadAllTables(Int2ObjectMap<RDBMSSchema> schemas, boolean areAllSchemasGiven)
-            throws SQLException {
-
-        LOG.trace("Loading all tables for {} schemas.", schemas.size());
-        String sql;
-        if (areAllSchemasGiven) {
-            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
-                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                    + "FROM tablee "
-                    + "JOIN target ON tablee.id = target.id "
-                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                    + "ORDER BY target.id;";
-        } else {
-            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
-                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                    + "FROM tablee "
-                    + "JOIN target ON tablee.id = target.id "
-                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                    + "WHERE tablee.schemaId IN (" + StringUtils.join(schemas.keySet(), ",") + ") "
-                    + "ORDER BY target.id;";
-        }
-
-        Int2ObjectMap<RDBMSTable> tables = new Int2ObjectOpenHashMap<>();
-        IdUtils idUtils = this.store.getIdUtils();
-
-        RDBMSTable lastTable = null;
-        Int2ObjectOpenHashMap<Collection<Table>> tablesBySchema = new Int2ObjectOpenHashMap<>();
-
-        // Query tables together with all important related tables.
-        try (ResultSet rs = this.databaseAccess.query(sql, "Tablee", "Target", "Location", "LocationProperty")) {
-            while (rs.next()) {
-                // See if we are dealing with the same target as before.
-                int targetId = rs.getInt("targetId");
-                RDBMSTable table = lastTable;
-                if (table == null || table.getId() != targetId) {
-                    // For a new target, create a new object, potentially with location.
-                    String name = rs.getString("name");
-                    String description = rs.getString("description");
-
-                    Integer locationClassHash = rs.getInt("locationType");
-                    Location location = null;
-                    if (locationClassHash != null) {
-                        location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String>emptyMap());
-                    }
-
-                    int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId));
-                    RDBMSSchema schema = schemas.get(schemaId);
-                    if (schema == null) {
-                        throw new IllegalStateException(String.format("No schema found for table with id %08x.",
-                                schemaId));
-                    }
-                    table = RDBMSTable.restore(this.store, schema, targetId, name, description, location);
-                    tables.put(targetId, table);
-
-                    Collection<Table> tablesForSchema = tablesBySchema.get(schemaId);
-                    if (tablesForSchema == null) {
-                        tablesForSchema = new LinkedList<>();
-                        tablesBySchema.put(schemaId, tablesForSchema);
-                    }
-                    tablesForSchema.add(table);
-                    lastTable = table;
-                }
-
-                // Update location properties for the current table.
-                String locationPropKey = rs.getString("locationPropKey");
-                if (locationPropKey != null) {
-                    String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
-                            table.getLocation());
-                }
+    private void loadTableNames() {
+        existingTables = new HashSet<>();
+        DatabaseMetaData meta;
+        try {
+            meta = this.databaseAccess.getConnection().getMetaData();
+            ResultSet res = meta.getTables(null, null, null,
+                    new String[]{"TABLE"});
+            while (res.next()) {
+                // toLowerCase because SQLite is case-insensitive for table names
+                existingTables.add(res.getString("TABLE_NAME").toLowerCase());
             }
-
-            for (Int2ObjectMap.Entry<Collection<Table>> entry : tablesBySchema.int2ObjectEntrySet()) {
-                int schemaId = entry.getIntKey();
-                Collection<Table> tablesForSchema = entry.getValue();
-                RDBMSSchema rdbmsSchema = schemas.get(schemaId);
-                rdbmsSchema.cacheChildTables(tablesForSchema);
-            }
-        }
-
-        LOG.trace("Loading tables finished.");
-
-        return tables;
-    }
-
-    /**
-     * Loads and caches all columns.
-     *
-     * @param tables are the parent tables for the loaded columns
-     * @param schema can be {@code null} or a concrete schema that restricts the columns to be loaded
-     * @return the loaded columns indexed by their ID
-     * @throws java.sql.SQLException
-     */
-    private Int2ObjectMap<RDBMSColumn> loadAllColumns(Int2ObjectMap<RDBMSTable> tables, RDBMSSchema schema)
-            throws SQLException {
-
-        LOG.trace("Loading all columns for {} tables.", tables.size());
-
-        String sql;
-        if (schema == null) {
-            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
-                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                    + "FROM columnn "
-                    + "JOIN target ON columnn.id = target.id "
-                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                    + "ORDER BY target.id;";
-        } else {
-            sql = "SELECT target.id AS targetId, target.name AS name, target.description as description, location.typee AS locationType, "
-                    + "locationproperty.keyy AS locationPropKey, locationproperty.value AS locationPropVal "
-                    + "FROM columnn "
-                    + "JOIN tablee ON columnn.tableId = tablee.id " // join also tables
-                    + "JOIN target ON columnn.id = target.id "
-                    + "LEFT OUTER JOIN location ON target.locationId = location.id "
-                    + "LEFT OUTER JOIN locationproperty ON location.id = locationproperty.locationId "
-                    + "WHERE tablee.schemaId = " + schema.getId() + " " // and check that they belong to the schema
-                    + "ORDER BY target.id;";
-        }
-
-        Int2ObjectMap<RDBMSColumn> columns = new Int2ObjectOpenHashMap<>();
-        IdUtils idUtils = this.store.getIdUtils();
-        Int2ObjectOpenHashMap<Collection<Column>> columnsByTable = new Int2ObjectOpenHashMap<>();
-
-        RDBMSColumn lastColumn = null;
-        // Query columns together with all important related columns.
-        try (ResultSet rs = this.databaseAccess.query(sql, "Columnn", "Target", "Location", "LocationProperty")) {
-            while (rs.next()) {
-                // See if we are dealing with the same target as before.
-                int targetId = rs.getInt("targetId");
-                RDBMSColumn column = lastColumn;
-                if (column == null || column.getId() != targetId) {
-                    // For a new target, create a new object, potentially with location.
-                    String name = rs.getString("name");
-                    String description = rs.getString("description");
-                    Integer locationClassHash = rs.getInt("locationType");
-                    Location location = null;
-                    if (locationClassHash != null) {
-                        location = this.store.getLocationCache().createLocation(locationClassHash,
-                                Collections.<String, String>emptyMap());
-                    }
-
-                    int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(targetId),
-                            idUtils.getLocalTableId(targetId));
-                    Table table = tables.get(tableId);
-                    if (table == null) {
-                        throw new IllegalStateException(String.format("No table found for column with id %d.", tableId));
-                    }
-                    column = RDBMSColumn.restore(this.store, table, targetId, name, description, location);
-                    columns.put(targetId, column);
-
-                    Collection<Column> columnsForTable = columnsByTable.get(tableId);
-                    if (columnsForTable == null) {
-                        columnsForTable = new LinkedList<>();
-                        columnsByTable.put(tableId, columnsForTable);
-                    }
-                    columnsForTable.add(column);
-                    lastColumn = column;
-                }
-
-                // Update location properties for the current table.
-                String locationPropKey = rs.getString("locationPropKey");
-                if (locationPropKey != null) {
-                    String locationPropVal = rs.getString("locationPropVal");
-                    this.store.getLocationCache().setCanonicalProperty(locationPropKey, locationPropVal,
-                            column.getLocation());
-                }
-            }
-
-            for (Int2ObjectMap.Entry<Collection<Column>> entry : columnsByTable.int2ObjectEntrySet()) {
-                int tableId = entry.getIntKey();
-                Collection<Column> columnsForTable = entry.getValue();
-                RDBMSTable rdbmsTable = tables.get(tableId);
-                rdbmsTable.cacheChildColumns(columnsForTable);
-            }
-        }
-
-        LOG.trace("Loading columns finished.");
-
-        return columns;
-    }
-
-    private Target buildTarget(int id) {
-        IdUtils idUtils = this.store.getIdUtils();
-        switch (idUtils.getIdType(id)) {
-            case SCHEMA_ID:
-                return getSchemaById(id);
-            case TABLE_ID:
-                return getTableById(id);
-            case COLUMN_ID:
-                return getColumnById(id);
-        }
-        return null;
-
-    }
-
-    @Override
-    public Collection<Schema> getAllSchemas() {
-        if (allSchemas != null) {
-            return allSchemas;
-        }
-        try {
-            Collection<Schema> schemas = new HashSet<>();
-            Int2ObjectMap<RDBMSSchema> loadedSchemas = loadAllSchemas();
-            schemas.addAll(loadedSchemas.values());
-            allSchemas = schemas;
-            return allSchemas;
+            res.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public Location getLocationFor(int id) {
-        Location cached = locationCache.get(id);
-        if (cached != null) {
-            return cached;
-        }
-
-        try {
-            Location location = null;
-            ResultSet rs = this.locationQuery.execute(id);
-            while (rs.next()) {
-                // Get the class name of the location.
-                Integer locationClassHash = rs.getInt("typee");
-
-                // Load the properties of the location.
-                // TODO Rather perform a right outer join with the previous query if too slow.
-                Map<String, String> locationProperties = new HashMap<>();
-                int locationId = rs.getInt("id");
-                ResultSet rsProperties = this.locationPropertiesQuery.execute(locationId);
-                while (rsProperties.next()) {
-                    locationProperties.put(rsProperties.getString("keyy"), rsProperties.getString("value"));
-                }
-                rsProperties.close();
-
-                // Create the location.
-                location = this.store.getLocationCache().createLocation(locationClassHash, locationProperties);
-            }
-            rs.close();
-
-            locationCache.put(id, location);
-            return locationCache.get(id);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void storeLocationType(Class<? extends Location> locationType) throws SQLException {
-        String sql = String.format("INSERT INTO LocationType (id, className) VALUES (%d, '%s');",
-                LocationCache.computeId(locationType),
-                locationType.getCanonicalName());
-        this.databaseAccess.executeSQL(sql, "LocationType");
-    }
-
-    @Override
-    public Collection<String> getLocationClassNames() throws SQLException {
-        Collection<String> classNames = new LinkedList<>();
-        try (ResultSet resultSet = this.databaseAccess.query("SELECT id, className FROM LocationType;", "LocationType")) {
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String className = resultSet.getString("className");
-                int computedId = LocationCache.computeId(className);
-                if (id != computedId) {
-                    throw new IllegalStateException(String.format("Expected ID %x for %s, found %x.", computedId,
-                            className, id));
-                }
-                classNames.add(className);
-            }
-        }
-        return classNames;
-    }
-
-    @Override
-    public boolean isTargetIdInUse(int id) throws SQLException {
-        // Check if the ID is in any of the caches or any of the child caches.
-        IdUtils idUtils = this.store.getIdUtils();
-        Integer wrappedId = new Integer(id);
-        switch (idUtils.getIdType(id)) {
-            case SCHEMA_ID:
-                if (this.schemaCache.containsKey(wrappedId)) {
-                    return true;
-                }
-                break;
-            case TABLE_ID:
-                if (this.tableCache.containsKey(wrappedId)) {
-                    return true;
-                } else {
-                    int schemaId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id));
-                    RDBMSSchema parentSchema = this.schemaCache.get(schemaId);
-                    if (parentSchema != null) {
-                        IntCollection childIdCache = parentSchema.getChildIdCache();
-                        if (childIdCache != null) {
-                            return childIdCache.contains(id);
-                        }
-                    }
-                }
-                break;
-            case COLUMN_ID:
-                if (this.columnCache.containsKey(wrappedId)) {
-                    return true;
-                } else {
-                    int tableId = idUtils.createGlobalId(idUtils.getLocalSchemaId(id), idUtils.getLocalTableId(id));
-                    RDBMSTable parentTable = this.tableCache.get(tableId);
-                    if (parentTable != null) {
-                        IntCollection childIdCache = parentTable.getChildIdCache();
-                        if (childIdCache != null) {
-                            return childIdCache.contains(id);
-                        }
-                    }
-                }
-        }
-
-        // Issue a query, to find out if the ID is in use.
-        boolean isIdInUse = false;
-        String sql = String.format("SELECT id FROM Target WHERE id=%d LIMIT 1", id);
-        try (ResultSet resultSet = this.databaseAccess.query(sql, "Target")) {
-            isIdInUse = resultSet.next();
-        }
-        return isIdInUse;
-    }
-
-    /**
-     * Stores the given location.
-     *
-     * @param location is the location to store
-     * @return the DB ID of the added location tuple
-     * @throws java.sql.SQLException
-     */
-    private synchronized Integer addLocation(Location location) throws SQLException {
-        if (location == null) {
-            return null;
-        }
-
-        // for auto-increment id
-        ensureCurrentLocationIdMaxInitialized();
-        Integer locationId = ++currentLocationIdMax;
-        this.insertLocationWriter.write(new Integer[]{locationId, location.getClass().getName().hashCode()});
-        for (Entry<String, String> entry : location.getProperties().entrySet()) {
-            this.insertLocationPropertyWriter.write(new Object[]{locationId, entry.getKey(), entry.getValue()});
-        }
-        return locationId;
-    }
-
-    @Override
-    public void writeConstraint(Constraint constraint) {
-        if (!(constraint instanceof RDBMSConstraint)) {
-            throw new IllegalArgumentException("Not an RDBMSConstraint: " + constraint);
-        }
-
-        writeConstraint((RDBMSConstraint) constraint);
-    }
-
-    public void writeConstraint(RDBMSConstraint constraint) {
-        ensureCurrentConstraintIdMaxInitialized();
-
-        // for auto-increment id
-        Integer constraintId = ++currentConstraintIdMax;
-        try {
-            this.insertConstraintWriter.write(new int[]{constraintId, constraint.getConstraintCollection().getId()});
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
-        if (serializer == null) {
-            serializer = constraint.getConstraintSQLSerializer(this);
-            constraintSerializers.put(constraint.getClass(), serializer);
-            serializer.initializeTables();
-
-        }
-
-        serializer = constraintSerializers.get(constraint.getClass());
-
-        Validate.isTrue(serializer != null);
-
-        serializer.serialize(constraintId, constraint);
-    }
-
-    @Override
-    public Collection<Constraint> getAllConstraintsForConstraintCollection(
-            RDBMSConstraintCollection rdbmsConstraintCollection) {
-
-        Collection<Constraint> constraintsOfCollection = new HashSet<>();
-
-        try {
-            this.store.flush();
-        } catch (Exception e) {
-            throw new RuntimeException("Could not flush metadata store before loading constraints.", e);
-        }
-        for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers.values()) {
-            try {
-                constraintsOfCollection.addAll(constraintSerializer
-                        .deserializeConstraintsOfConstraintCollection(rdbmsConstraintCollection));
-            } catch (Exception e) {
-                LOG.error("Error on deserializing constraint collection. Continue anyway...", e);
-            }
-        }
-
-        if (constraintsOfCollection.isEmpty()) {
-            LOG.warn(
-                    "Could not find constraints for constraint collection {}. Did you register the constraint type properly?",
-                    rdbmsConstraintCollection != null ? rdbmsConstraintCollection.getId() : "");
-        }
-
-        return constraintsOfCollection;
-    }
-
-    @Override
-    public Column getColumnById(int columnId) {
-        Column cached = columnCache.get(columnId);
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            try (ResultSet rs = this.columnQuery.execute(columnId)) {
-
-                while (rs.next()) {
-                    columnCache.put(columnId,
-                            RDBMSColumn.restore(store,
-                                    this.getTableById(rs.getInt("tableId")),
-                                    rs.getInt("id"),
-                                    rs.getString("name"),
-                                    rs.getString("description"),
-                                    getLocationFor(rs.getInt("id"))));
-                    return columnCache.get(columnId);
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    @Override
-    public Table getTableById(int tableId) {
-        Table cached = tableCache.get(tableId);
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            try (ResultSet rs = this.tableQuery.execute(tableId)) {
-                while (rs.next()) {
-                    tableCache.put(tableId, RDBMSTable
-                            .restore(store,
-                                    this.getSchemaById(rs.getInt("schemaId")),
-                                    rs.getInt("id"),
-                                    rs.getString("name"),
-                                    rs.getString("description"),
-                                    getLocationFor(rs.getInt("id"))));
-                    return tableCache.get(tableId);
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    @Override
-    public Schema getSchemaById(int schemaId) {
-        Schema cached = schemaCache.get(schemaId);
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            try (ResultSet rs = this.schemaQuery.execute(schemaId)) {
-                while (rs.next()) {
-                    schemaCache.put(schemaId,
-                            RDBMSSchema.restore(store,
-                                    rs.getInt("id"),
-                                    rs.getString("name"),
-                                    rs.getString("description"),
-                                    getLocationFor(rs.getInt("id"))));
-                    return schemaCache.get(schemaId);
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    @Override
-    public ConstraintCollection getConstraintCollectionById(int id) {
-        try {
-            RDBMSConstraintCollection constraintCollection = null;
-            String getConstraintCollectionByIdQuery =
-                    String.format("SELECT id, description from ConstraintCollection where id=%d;", id);
-            try (ResultSet rs = this.databaseAccess.query(getConstraintCollectionByIdQuery, "ConstraintCollection")) {
-                while (rs.next()) {
-                    constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), rs.getString("description"),
-                            this);
-                    constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
-                }
-            }
-            return constraintCollection;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection) {
-        try {
-            Collection<Target> targets = new HashSet<>();
-            String sqlGetScope = String
-                    .format("SELECT id from target, scope where scope.targetId = target.id and scope.constraintCollectionId=%d;",
-                            rdbmsConstraintCollection.getId());
-            try (ResultSet rs = this.databaseAccess.query(sqlGetScope, "Target", "Scope")) {
-                while (rs.next()) {
-                    targets.add(buildTarget(rs.getInt("id")));
-                }
-            }
-            return targets;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Collection<ConstraintCollection> getAllConstraintCollections() {
-        try {
-            // TODO: This seems not to be working (only a single constraint collection is returned.
-            Collection<ConstraintCollection> constraintCollections = new LinkedList<>();
-            try (ResultSet rs = this.databaseAccess.query("SELECT id, description from ConstraintCollection;",
-                    "ConstraintCollection")) {
-                while (rs.next()) {
-                    RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"),
-                            rs.getString("description"),
-                            this);
-                    constraintCollection.setScope(this.getScopeOfConstraintCollection(constraintCollection));
-                    constraintCollections.add(constraintCollection);
-                }
-            }
-            return constraintCollections;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void addScope(Target target, ConstraintCollection constraintCollection) {
-        try {
-            String sqlAddScope = String.format("INSERT INTO Scope (targetId, constraintCollectionId) VALUES (%d, %d);",
-                    target.getId(), constraintCollection.getId());
-            this.databaseAccess.executeSQL(sqlAddScope, "Scope");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void addConstraintCollection(ConstraintCollection constraintCollection) {
-        try {
-            String sqlAddConstraintCollection = String.format(
-                    "INSERT INTO ConstraintCollection (id, description) VALUES (%d, '%s');",
-                    constraintCollection.getId(), constraintCollection.getDescription());
-            this.databaseAccess.executeSQL(sqlAddConstraintCollection, "ConstraintCollection");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore) {
-        this.store = rdbmsMetadataStore;
-    }
-
-    @Override
-    public RDBMSMetadataStore getMetadataStore() {
-        return this.store;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) {
-        try {
-            Int2ObjectMap<RDBMSSchema> parentSchemas = Int2ObjectMaps.singleton(rdbmsSchema.getId(), rdbmsSchema);
-            Int2ObjectMap<RDBMSTable> tables = loadAllTables(parentSchemas, false);
-            loadAllColumns(tables, rdbmsSchema);
-            return (Collection<Table>) (Collection<?>) tables.values();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void addTableToSchema(RDBMSTable newTable, Schema schema) {
-        try {
-            storeTargetWithLocation(newTable);
-            this.insertTableWriter.write(newTable);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) {
-        Collection<Column> allColumnsForTable = allColumnsForTableCache.get(rdbmsTable);
-        if (allColumnsForTable != null) {
-            return allColumnsForTable;
-        }
-        try {
-            Collection<Column> columns = new HashSet<>();
-
-            String sqlTablesForSchema = String
-                    .format("SELECT columnn.id as id from columnn, target where target.id = columnn.id and columnn.tableId=%d;",
-                            rdbmsTable.getId());
-
-            ResultSet rs = databaseAccess.query(sqlTablesForSchema, "columnn", "target");
-            while (rs.next()) {
-                columns.add(getColumnById(rs.getInt("id")));
-            }
-            rs.close();
-            allColumnsForTableCache.put(rdbmsTable, columns);
-            return allColumnsForTableCache.get(rdbmsTable);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void addColumnToTable(RDBMSColumn newColumn, Table table) {
-        // update cache
-        Collection<Column> allColumnsForTable = allColumnsForTableCache.get(table);
-        if (allColumnsForTable != null) {
-            allColumnsForTable.add(newColumn);
-        }
-
-        try {
-            storeTargetWithLocation(newColumn);
-            this.insertColumnWriter.write(newColumn);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     @Override
@@ -1287,8 +158,139 @@ public class SQLiteInterface implements SQLInterface {
         return true;
     }
 
+    @Override
+    public void addSchema(RDBMSSchema schema) {
+        this.schemaHandler.addSchema(schema);
+    }
+
     /**
-     * Saves configuration of the metadata store.
+     * @see SQLiteSchemaHandler#getAllTargets()
+     */
+    @Override
+    public Collection<Target> getAllTargets() {
+        return this.schemaHandler.getAllTargets();
+    }
+
+    @Override
+    public boolean isTargetIdInUse(int id) throws SQLException {
+        return this.schemaHandler.isTargetIdInUse(id);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Collection<ConstraintCollection> getAllConstraintCollections() {
+        Collection<RDBMSConstraintCollection> constraintCollections = this.constraintHandler.getAllConstraintCollections();
+        for (RDBMSConstraintCollection constraintCollection : constraintCollections) {
+            Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
+            constraintCollection.setScope(scope);
+        }
+        return (Collection<ConstraintCollection>) (Collection<?>) constraintCollections;
+    }
+
+    @Override
+    public void addConstraintCollection(ConstraintCollection constraintCollection) {
+        this.constraintHandler.addConstraintCollection(constraintCollection);
+    }
+
+    /**
+     * @see SQLiteSchemaHandler#getAllSchemas()
+     */
+    @Override
+    public Collection<Schema> getAllSchemas() {
+        return this.schemaHandler.getAllSchemas();
+    }
+
+    @Override
+    public RDBMSMetadataStore getMetadataStore() {
+        return this.store;
+    }
+
+    @Override
+    public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore) {
+        this.store = rdbmsMetadataStore;
+        this.schemaHandler.setMetadataStore(rdbmsMetadataStore);
+        this.constraintHandler.setMetadataStore(rdbmsMetadataStore);
+    }
+
+    @Override
+    public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) {
+        return this.schemaHandler.getAllTablesForSchema(rdbmsSchema);
+    }
+
+    @Override
+    public void addTableToSchema(RDBMSTable newTable, Schema schema) {
+        this.schemaHandler.addTableToSchema(newTable, schema);
+    }
+
+    @Override
+    public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) {
+        return this.schemaHandler.getAllColumnsForTable(rdbmsTable);
+    }
+
+    @Override
+    public void addColumnToTable(RDBMSColumn newColumn, Table table) {
+        this.schemaHandler.addColumnToTable(newColumn, table);
+    }
+
+    @Override
+    public void addScope(Target target, ConstraintCollection constraintCollection) {
+        this.constraintHandler.addScope(target, constraintCollection);
+    }
+
+    @Override
+    public Collection<Constraint> getAllConstraintsForConstraintCollection(
+            RDBMSConstraintCollection rdbmsConstraintCollection) {
+
+        return this.constraintHandler.getAllConstraintsForConstraintCollection(rdbmsConstraintCollection);
+    }
+
+    @Override
+    public Set<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection) {
+        IntCollection targetIds = this.constraintHandler.getScopeOfConstraintCollectionAsIds(rdbmsConstraintCollection);
+        Set<Target> scope = new HashSet<>(targetIds.size());
+        for (IntIterator i = targetIds.iterator(); i.hasNext(); ) {
+            scope.add(this.schemaHandler.loadTarget(i.nextInt()));
+
+        }
+        return scope;
+    }
+
+    @Override
+    public Column getColumnById(int columnId) {
+        return this.schemaHandler.getColumnById(columnId);
+    }
+
+    @Override
+    public Table getTableById(int tableId) {
+        return this.schemaHandler.getTableById(tableId);
+    }
+
+    @Override
+    public Schema getSchemaById(int schemaId) {
+        return this.schemaHandler.getSchemaById(schemaId);
+    }
+
+    @Override
+    public ConstraintCollection getConstraintCollectionById(int id) {
+        RDBMSConstraintCollection constraintCollection = this.constraintHandler.getConstraintCollectionById(id);
+        if (constraintCollection != null) {
+            Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
+            constraintCollection.setScope(scope);
+        }
+        return constraintCollection;
+    }
+
+    @Override
+    public void writeConstraint(Constraint constraint) {
+        this.constraintHandler.writeConstraint(constraint);
+    }
+
+    public void writeConstraint(RDBMSConstraint constraint) {
+        this.constraintHandler.writeConstraint(constraint);
+    }
+
+    /**
+     * Saves configuration of the metadata metadataStore.
      */
     @Override
     public void saveConfiguration() {
@@ -1307,12 +309,12 @@ public class SQLiteInterface implements SQLInterface {
                         "Config");
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Could not save metadata store configuration.", e);
+            throw new RuntimeException("Could not save metadata metadataStore configuration.", e);
         }
     }
 
     /**
-     * Load configuration of the metadata store.
+     * Load configuration of the metadata metadataStore.
      */
     @Override
     public Map<String, String> loadConfiguration() {
@@ -1322,10 +324,37 @@ public class SQLiteInterface implements SQLInterface {
                 configuration.put(resultSet.getString("keyy"), resultSet.getString("value"));
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Could not load metadata store configuration.", e);
+            throw new RuntimeException("Could not load metadata metadataStore configuration.", e);
         }
 
         return configuration;
+    }
+
+    /**
+     * @see SQLiteSchemaHandler#getLocationFor(int)
+     */
+    @Override
+    public Location getLocationFor(int id) {
+        return this.schemaHandler.getLocationFor(id);
+    }
+
+    @Override
+    public void dropTablesIfExist() {
+        try {
+            // Setting up the schema is not supported by database access. Do it with plain JDBC.
+            try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
+                for (String table : tableNames) {
+                    String sql = String.format("DROP TABLE IF EXISTS [%s];", table);
+                    statement.execute(sql);
+                }
+                this.constraintHandler.dropConstraintTables(statement);
+                if (!this.databaseAccess.getConnection().getAutoCommit()) {
+                    this.databaseAccess.getConnection().commit();
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -1348,246 +377,27 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
+    public void executeCreateTableStatement(String sqlCreateTables) {
+        try {
+            // Setting up databases is not supported by DatabaseAccess, so we do it directly.
+            Connection connection = this.databaseAccess.getConnection();
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate(sqlCreateTables);
+            }
+            if (!this.databaseAccess.getConnection().getAutoCommit()) {
+                this.databaseAccess.getConnection().commit();
+            }
+
+            this.loadTableNames();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                                 ConstraintSQLSerializer<? extends Constraint> serializer) {
-        constraintSerializers.put(clazz, serializer);
-    }
-
-    @Override
-    public Schema getSchemaByName(String schemaName) throws NameAmbigousException {
-        try {
-            String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description"
-                                    + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
-                            schemaName);
-            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
-            RDBMSSchema found = null;
-            while (rs.next()) {
-                // second loop
-                if (found != null) {
-                    throw new NameAmbigousException(schemaName);
-                }
-                found = RDBMSSchema.restore(store,
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-
-            }
-            if (found != null) {
-                schemaCache.put(found.getId(), found);
-            }
-
-            rs.close();
-            return found;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Collection<Schema> getSchemasByName(String schemaName) {
-        Collection<Schema> schemas = new HashSet<>();
-        try {
-
-            String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description"
-                                    + " from target, schemaa where target.id = schemaa.id and target.name='%s'",
-                            schemaName);
-            ResultSet rs = databaseAccess.query(sqlSchemaeById, "schemaa", "target");
-            while (rs.next()) {
-                // second loop
-                RDBMSSchema schema = RDBMSSchema.restore(store,
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-                schemaCache.put(schema.getId(), schema);
-                schemas.add(schema);
-            }
-            rs.close();
-            return schemas;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void loadTableNames() {
-        existingTables = new HashSet<>();
-        DatabaseMetaData meta;
-        try {
-            meta = this.databaseAccess.getConnection().getMetaData();
-            ResultSet res = meta.getTables(null, null, null,
-                    new String[]{"TABLE"});
-            while (res.next()) {
-                // toLowerCase because SQLite is case-insensitive for table names
-                existingTables.add(res.getString("TABLE_NAME").toLowerCase());
-            }
-            res.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void ensureCurrentConstraintIdMaxInitialized() {
-        if (this.currentConstraintIdMax != -1) {
-            return;
-        }
-        try {
-            this.currentConstraintIdMax = 0;
-            try (ResultSet res = this.databaseAccess.query("SELECT MAX(id) from Constraintt;", "Constraintt")) {
-                while (res.next()) {
-                    this.currentConstraintIdMax = res.getInt("max(id)");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void ensureCurrentLocationIdMaxInitialized() {
-        if (this.currentLocationIdMax != -1) {
-            return;
-        }
-        try {
-            this.currentLocationIdMax = 0;
-            try (ResultSet res = this.databaseAccess.query("SELECT MAX(id) from Location;", "Location")) {
-                while (res.next()) {
-                    this.currentLocationIdMax = res.getInt("max(id)");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Collection<Column> getColumnsByName(String columnName) {
-        Collection<Column> columns = new HashSet<>();
-        try {
-
-            String sqlColumnsByName = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
-                                    + " from target, columnn where target.id = columnn.id and target.name='%s'",
-                            columnName);
-            ResultSet rs = databaseAccess.query(sqlColumnsByName, "columnn", "target");
-            while (rs.next()) {
-                // second loop
-                RDBMSColumn column = RDBMSColumn.restore(store,
-                        this.getTableById(rs.getInt("tableId")),
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-                columnCache.put(column.getId(), column);
-                columns.add(column);
-            }
-            rs.close();
-            return columns;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Column getColumnByName(String columnName, Table table) throws NameAmbigousException {
-        try {
-            String sqlColumnByName = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description, columnn.tableId as tableId"
-                                    + " from target, columnn where target.id = columnn.id and target.name='%s'"
-                                    + " and columnn.tableId=%d", columnName, table.getId()
-                    );
-            ResultSet rs = databaseAccess.query(sqlColumnByName, "columnn", "target");
-            RDBMSColumn found = null;
-            while (rs.next()) {
-                // second loop
-                if (found != null) {
-                    throw new NameAmbigousException(columnName);
-                }
-                found = RDBMSColumn.restore(store,
-                        table,
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-
-            }
-            if (found != null) {
-                columnCache.put(found.getId(), found);
-            }
-
-            rs.close();
-            return found;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Table getTableByName(String tableName) throws NameAmbigousException {
-        try {
-            String sqlTableByname = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
-                                    + " from target, tablee where target.id = tablee.id and target.name='%s'",
-                            tableName);
-            ResultSet rs = databaseAccess.query(sqlTableByname, "tablee", "target");
-            RDBMSTable found = null;
-            while (rs.next()) {
-                // second loop
-                if (found != null) {
-                    throw new NameAmbigousException(tableName);
-                }
-                found = RDBMSTable.restore(store,
-                        this.getSchemaById(rs.getInt("schemaId")),
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-
-            }
-            if (found != null) {
-                tableCache.put(found.getId(), found);
-            }
-
-            rs.close();
-            return found;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Collection<Table> getTablesByName(String tableName) {
-        Collection<Table> tables = new HashSet<>();
-        try {
-
-            String sqlSchemaeById = String
-                    .format("SELECT target.id as id, target.name as name, target.description as description, tablee.schemaId as schemaId"
-                                    + " from target, tablee where target.id = tablee.id and target.name='%s'",
-                            tableName);
-            ResultSet rs = databaseAccess.query(sqlSchemaeById, "tablee", "target");
-            while (rs.next()) {
-                // second loop
-                RDBMSTable schema = RDBMSTable.restore(store,
-                        this.getSchemaById(rs.getInt("schemaId")),
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        getLocationFor(rs.getInt("id")));
-                tableCache.put(schema.getId(), schema);
-                tables.add(schema);
-            }
-            rs.close();
-            return tables;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        this.constraintHandler.registerConstraintSQLSerializer(clazz, serializer);
     }
 
     @Override
@@ -1596,111 +406,69 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public String toString() {
-        return "SQLiteInterface[" + this.connection.getClass() + "]";
+    public Schema getSchemaByName(String schemaName) throws NameAmbigousException {
+        return this.schemaHandler.getSchemaByName(schemaName);
+    }
+
+    @Override
+    public Collection<Schema> getSchemasByName(String schemaName) {
+        return this.schemaHandler.getSchemasByName(schemaName);
+    }
+
+    @Override
+    public Collection<Column> getColumnsByName(String columnName) {
+        return this.schemaHandler.getColumnsByName(columnName);
+    }
+
+    @Override
+    public Column getColumnByName(String columnName, Table table) throws NameAmbigousException {
+        return this.schemaHandler.getColumnByName(columnName, table);
+    }
+
+    @Override
+    public Table getTableByName(String tableName) throws NameAmbigousException {
+        return this.schemaHandler.getTableByName(tableName);
+    }
+
+    @Override
+    public Collection<Table> getTablesByName(String tableName) {
+        return this.schemaHandler.getTablesByName(tableName);
     }
 
     @Override
     public void removeSchema(RDBMSSchema schema) {
-        try {
-            this.deleteSchemaWriter.write(schema);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        this.allSchemas.remove(schema);
-        this.schemaCache.remove(schema.getId());
-        removeTarget(schema);
+        this.schemaHandler.removeSchema(schema);
     }
 
     @Override
     public void removeColumn(RDBMSColumn column) {
-        try {
-            this.deleteColumnWriter.write(column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        if (this.allColumnsForTableCache.get(column.getTable()) != null)
-            this.allColumnsForTableCache.get(column.getTable()).remove(column);
-        this.columnCache.remove(column.getId());
-        removeTarget(column);
+        this.schemaHandler.removeColumn(column);
     }
 
     @Override
     public void removeTable(RDBMSTable table) {
-        try {
-            this.deleteTableWriter.write(table);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        this.tableCache.remove(table);
-        this.allColumnsForTableCache.remove(table);
-        removeTarget(table);
-    }
-
-    private void removeTarget(Target target) {
-        // first delete location and location properties
-        try {
-            ResultSet rs = this.locationQuery.execute(target.getId());
-            while (rs.next()) {
-                Integer locationId = rs.getInt("id");
-                removeLocation(target, locationId);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        // thein remove target
-        try {
-            this.deleteTargetWriter.write(target.getId());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (this.allTargets != null)
-            this.allTargets.remove(target);
-
-    }
-
-    private void removeLocation(Target target, Integer locationId) {
-        try {
-            this.deleteLocationPropertyWriter.write(locationId);
-            this.deleteLocationWriter.write(locationId);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        this.locationCache.remove(target.getLocation());
+        this.schemaHandler.removeTable(table);
     }
 
     @Override
     public void removeConstraintCollection(ConstraintCollection constraintCollection) {
-        try {
-            this.flush();
-            for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers
-                    .values()) {
-                constraintSerializer
-                        .removeConstraintsOfConstraintCollection(constraintCollection);
+        this.constraintHandler.removeConstraintCollection(constraintCollection);
+    }
 
-            }
+    /**
+     * @see SQLiteSchemaHandler#getLocationClassNames()
+     */
+    @Override
+    public Collection<String> getLocationClassNames() throws SQLException {
+        return this.schemaHandler.getLocationClassNames();
+    }
 
-            String sqlDeleteScope = String.format("DELETE from Scope where constraintCollectionId=%d;",
-                    constraintCollection.getId());
-            this.databaseAccess.executeSQL(sqlDeleteScope, "Scope");
-
-            String sqlDeleteConstraintCollection = String.format(
-                    "DELETE from ConstraintCollection where id=%d;",
-                    constraintCollection.getId());
-            this.databaseAccess.executeSQL(sqlDeleteConstraintCollection, "ConstraintCollection");
-
-            this.deleteConstraintWriter.write(constraintCollection.getId());
-
-            this.flush();
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
+    /**
+     * @see SQLiteSchemaHandler#getAllSchemas()
+     */
+    @Override
+    public void storeLocationType(Class<? extends Location> locationType) throws SQLException {
+        this.schemaHandler.storeLocationType(locationType);
     }
 
     @Override
@@ -1713,5 +481,10 @@ public class SQLiteInterface implements SQLInterface {
         } catch (SQLException e) {
             throw new RuntimeException("Could not change journal usage.", e);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "SQLiteInterface[" + this.databaseAccess.getConnection().getClass() + "]";
     }
 }

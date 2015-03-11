@@ -1,19 +1,19 @@
 package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.db.DatabaseAccess;
-import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.Target;
 
 import java.sql.SQLException;
 import java.util.Collection;
@@ -22,15 +22,10 @@ import java.util.Map;
 /**
  * This interface describes common functionalities that a RDBMS-specifc interface for a {@link RDBMSMetadataStore} must
  * provide.
- * 
- * @author fabian
  *
+ * @author fabian
  */
 public interface SQLInterface {
-
-    public static enum RDBMS {
-        SQLITE
-    };
 
     /**
      * Initializes an empty {@link de.hpi.isg.mdms.model.MetadataStore}. All Tables are dropped first if they exist. Creates all base tables
@@ -41,121 +36,120 @@ public interface SQLInterface {
     /**
      * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table and uses the corresponding {@link ConstraintSQLSerializer} to
      * serialize constraint specific information.
-     * 
-     * @param constraint
+     *
+     * @param constraint should be written
      */
     public void writeConstraint(Constraint constraint);
 
     /**
-     * Adds a {@link RDBMSSchema} to the {@link de.hpi.isg.mdms.model.MetadataStore}.
-     * 
-     * @param schema
+     * Writes the given schema into the database.
+     *
+     * @param schema is the schema to be written
      */
     public void addSchema(RDBMSSchema schema);
 
     /**
-     * Returns a {@link java.util.Collection} of all known {@link de.hpi.isg.mdms.model.targets.Target} objects inside of the target table.
+     * Returns all {@link de.hpi.isg.mdms.model.targets.Target}s from the underlying database.
      *
-     * @return
+     * @return the targets
      */
     public Collection<? extends Target> getAllTargets();
 
     /**
-     * Checks whether a target id is in use or not.
+     * Checks whether there exists a schema element with the given ID.
      *
-     * @param id
-     * @return
-     * @throws java.sql.SQLException
+     * @param id is the ID of the questionnable schema element
+     * @return whether the schema element exists
+     * @throws SQLException
      */
     public boolean isTargetIdInUse(int id) throws SQLException;
 
     /**
      * Returns all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s stored in the {@link de.hpi.isg.mdms.model.MetadataStore}.
      *
-     * @return
+     * @return the constraint collections
      */
     public Collection<ConstraintCollection> getAllConstraintCollections();
 
     /**
-     * Adds a {@link ConstraintCollection} to the {@link de.hpi.isg.mdms.model.MetadataStore}.
+     * Adds a {@link ConstraintCollection} to the database.
      *
-     * @param constraintCollection
+     * @param constraintCollection is the collection to be added
      */
     public void addConstraintCollection(ConstraintCollection constraintCollection);
 
     /**
-     * Returns a {@link java.util.Collection} of all {@link Schema}s.
+     * Loads all schemas from the database.
      *
-     * @return
+     * @return the loaded schemas
      */
     Collection<Schema> getAllSchemas();
 
     /**
-     * Setter for the {@link RDBMSMetadataStore} this {@link SQLInterface} takes care of.
-     *
-     * @param rdbmsMetadataStore
-     */
-    public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
-
-    /**
      * Getter for the {@link RDBMSMetadataStore} this {@link SQLInterface} takes care of.
      *
-     * @return
+     * @return the metadata store
      */
     public RDBMSMetadataStore getMetadataStore();
 
     /**
-     * Returns a {@link java.util.Collection} of all {@link Table}s for a specific {@link RDBMSSchema}.
+     * Setter for the {@link RDBMSMetadataStore} this {@link SQLInterface} takes care of.
+     */
+    public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
+
+    /**
+     * Loads all tables for a schema.
      *
-     * @param rdbmsSchema
-     * @return
+     * @param rdbmsSchema is the schema whose tables shall be loaded
+     * @return the tables of the schema
      */
     public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
 
     /**
-     * Adds a {@link RDBMSTable} to a {@link Schema}.
+     * Adds a table to the given schema.
      *
-     * @param newTable
-     * @param schema
+     * @param newTable is the table to add to the schema
+     * @param schema   is the schema to that the table should be added
      */
     public void addTableToSchema(RDBMSTable newTable, Schema schema);
 
     /**
-     * Returns a {@link java.util.Collection} of {@link Column}s for a given {@link RDBMSTable}.
+     * Loads all columns for a table.
      *
-     * @param rdbmsTable
-     * @return
+     * @param rdbmsTable is the table whose columns should be loaded
+     * @return the loaded columns
      */
     public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable);
 
     /**
-     * Adds a new {@link RDBMSColumn} to a {@link Table}.
+     * Adds a column to a table.
      *
-     * @param newColumn
-     * @param table
+     * @param newColumn is the column that should be added
+     * @param table     is the table to which the column should be added
      */
     public void addColumnToTable(RDBMSColumn newColumn, Table table);
 
     /**
      * This function ensures that all base tables needed by the {@link de.hpi.isg.mdms.model.MetadataStore} are existing.
      *
-     * @return
+     * @return whether all required tables exist
      */
     boolean allTablesExist();
 
     /**
      * Adds a {@link Target} object to the scope of a {@link ConstraintCollection}.
      *
-     * @param target
-     * @param constraintCollection
+     * @param target to be added
+     * @param constraintCollection to whose scope the target should be added
      */
     public void addScope(Target target, ConstraintCollection constraintCollection);
 
     /**
-     * Returns a {@link java.util.Collection} of all {@link RDBMSConstraintCollection}s.
+     * Returns a {@link java.util.Collection} of all {@link de.hpi.isg.mdms.model.constraints.Constraint}s in a
+     * {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}.
      *
-     * @param rdbmsConstraintCollection
-     * @return
+     * @param rdbmsConstraintCollection is the collection whose content is requested
+     * @return the constraints within the constraint collection
      */
     public Collection<Constraint> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection);
@@ -163,40 +157,40 @@ public interface SQLInterface {
     /**
      * Returns a {@link java.util.Collection} of {@link Target}s that are in the scope of a {@link ConstraintCollection}.
      *
-     * @param rdbmsConstraintCollection
-     * @return
+     * @param rdbmsConstraintCollection holds the scope
+     * @return the schema elements within the scope
      */
     public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
 
     /**
-     * Returns a {@link Column} for a given id, <code>null</code> if no such exists.
+     * Loads a column with the given ID.
      *
-     * @param columnId
-     * @return
+     * @param columnId is the ID of the column to load
+     * @return the loaded column
      */
     public Column getColumnById(int columnId);
 
     /**
-     * Returns a {@link Table} for the given id, <code>null</code> if no such exists.
+     * Load a table with the given ID.
      *
-     * @param tableId
-     * @return
+     * @param tableId is the ID of the table to load
+     * @return the loaded table
      */
     public Table getTableById(int tableId);
 
     /**
-     * Returns a {@link Schema} for a given id, <code>null</code> if no such exists.
+     * Load a schema with the given ID.
      *
-     * @param schemaId
-     * @return
+     * @param schemaId is the ID of the schema to load
+     * @return the loaded schema
      */
     public Schema getSchemaById(int schemaId);
 
     /**
      * Returns a {@link ConstraintCollection} for a given id, <code>null</code> if no such exists.
      *
-     * @param id
-     * @return
+     * @param id of the constraint collection
+     * @return the constraint collection
      */
     public ConstraintCollection getConstraintCollectionById(int id);
 
@@ -208,15 +202,15 @@ public interface SQLInterface {
     /**
      * Loads the {@link de.hpi.isg.mdms.model.MetadataStore} configuration from the database.
      *
-     * @return
+     * @return a mapping from configuration keys to their values
      */
     Map<String, String> loadConfiguration();
 
     /**
-     * Returns a {@link de.hpi.isg.mdms.model.location.Location} with the given id.
+     * Loads the {@link de.hpi.isg.mdms.model.location.Location} for the schema element with the given ID.
      *
-     * @param id
-     * @return
+     * @param id is the ID of the schema element for that the location should be loaded
+     * @return the loaded location
      */
     Location getLocationFor(int id);
 
@@ -236,16 +230,10 @@ public interface SQLInterface {
     /**
      * Ensures that a particular table exists in the database.
      *
-     * @param tablename
-     * @return
+     * @param tablename the name of the table whose existance shall be verified
+     * @return whether the table exists
      */
     public boolean tableExists(String tablename);
-
-    /**
-     * This helper method must be used for creating tables, instead
-     *
-     * @param sqlCreateTables
-     */
 
     /**
      * This function executes a given <code>create table</code> statement.
@@ -256,8 +244,8 @@ public interface SQLInterface {
      * This function is used to register {@link ConstraintSQLSerializer} and therefore the ability to store and retrieve
      * the corresponding {@link Constraint} type.
      *
-     * @param clazz
-     * @param serializer
+     * @param clazz is the type of the constraint
+     * @param serializer that can serialize the constraints of the given class
      */
     void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                          ConstraintSQLSerializer<? extends Constraint> serializer);
@@ -269,28 +257,81 @@ public interface SQLInterface {
      */
     public DatabaseAccess getDatabaseAccess();
 
+    /**
+     * Tries to load a schema with the given name.
+     *
+     * @param schemaName is the name of the schema to load
+     * @return the loaded schema or {@code null} if there is no such schema
+     * @throws NameAmbigousException if there are multiple schemata with the given name
+     */
     public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
+    /**
+     * Loads the schemas with the given name
+     *
+     * @param schemaName is the name of the schema to be loaded
+     * @return the loaded schemas
+     */
     public Collection<Schema> getSchemasByName(String schemaName);
 
-    public Collection<Column> getColumnsByName(String name);
+    /**
+     * Loads the columns with the given name.
+     *
+     * @param columnName is the name of the columns to load
+     * @return the loaded columns
+     */
+    public Collection<Column> getColumnsByName(String columnName);
 
-    public Column getColumnByName(String name, Table rdbmsTable) throws NameAmbigousException;
+    /**
+     * Loads the column with the given name.
+     *
+     * @param columnName is the name of the column to load
+     * @param table      is the table that should contain the column
+     * @return the column or {@code null} if no such column exists
+     * @throws NameAmbigousException if there is more than one such column within the given table
+     */
+    public Column getColumnByName(String columnName, Table table) throws NameAmbigousException;
 
-    public Table getTableByName(String name) throws NameAmbigousException;
+    /**
+     * Loads the table with the given name.
+     *
+     * @param tableName is the name of the table to load
+     * @return the loaded table or {@code null} if no such table exists
+     * @throws NameAmbigousException if there is more than table with the given name
+     */
+    public Table getTableByName(String tableName) throws NameAmbigousException;
 
-    public Collection<Table> getTablesByName(String name);
+    /**
+     * Loads the tables with the given name.
+     *
+     * @param tableName is the name of the table to be loaded
+     * @return the loaded tables
+     */
+    public Collection<Table> getTablesByName(String tableName);
 
+    /**
+     * Removes a schema from the database.
+     *
+     * @param schema shall be removed
+     */
     public void removeSchema(RDBMSSchema schema);
 
+    /**
+     * Removes a column from the database.
+     *
+     * @param column should be removed
+     */
     public void removeColumn(RDBMSColumn column);
 
+    /**
+     * Removes a table from the database.
+     *
+     * @param table is the table that should be removed
+     */
     public void removeTable(RDBMSTable table);
 
     /**
      * Removes a {@link ConstraintCollection} and all included {@link Constraint}s.
-     *
-     * @param constraintCollection
      */
     public void removeConstraintCollection(ConstraintCollection constraintCollection);
 
@@ -303,12 +344,23 @@ public interface SQLInterface {
     /**
      * Stores a given {@link Location} type.
      *
-     * @param locationType
-     *        is the type of a {@link Location} to be stored
+     * @param locationType is the type of a {@link Location} to be stored
      * @throws java.sql.SQLException
      */
     public void storeLocationType(Class<? extends Location> locationType) throws SQLException;
 
-
+    /**
+     * Set whether the underlying DB should use journaling. Note that this experimental feature should not affect
+     * the correctness of operations and might not be supported by DBs.
+     *
+     * @param isUseJournal tells whether to use journaling
+     */
     void setUseJournal(boolean isUseJournal);
+
+    /**
+     * An enumeration of DBs supported by default.
+     */
+    public static enum RDBMS {
+        SQLITE
+    }
 }

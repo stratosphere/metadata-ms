@@ -94,7 +94,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testGetOrCreateOfExisting() throws Exception {
 
-        // setup store
+        // setup metadataStore
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         // final Schema dummySchema = RDBMSSchema.buildAndRegisterAndAdd(store1, "PDB", new DefaultLocation());
@@ -128,7 +128,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testRetrievingOfSchemaByName() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
@@ -138,7 +138,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testConstraintCollections() throws Exception {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
@@ -157,15 +157,16 @@ public class RDBMSMetadataStoreTest {
                 dummyConstraintCollection,
                 200);
 
-        assertTrue(store1.getConstraintCollections().contains(dummyConstraintCollection));
-        ConstraintCollection constraintCollection = store1.getConstraintCollections().iterator().next();
+        Collection<ConstraintCollection> loadedConstraintCollections = store1.getConstraintCollections();
+        assertTrue(loadedConstraintCollections.contains(dummyConstraintCollection));
+        ConstraintCollection constraintCollection = loadedConstraintCollections.iterator().next();
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint1));
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint2));
     }
 
     @Test
     public void testUnregisteredLocationTypeIsDeserializedAsdefaultLocation() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         System.out.println("The following error is desired...");
         store1.addSchema("Foobar", "description", new Location() {
@@ -215,21 +216,21 @@ public class RDBMSMetadataStoreTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetSchemasAddingFails() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.getSchemas().add(mock(Schema.class));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetTablesAddingFails() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.addSchema("foo", null, new DefaultLocation()).getTables().add(mock(Table.class));
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetColumnsAddingFails() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         store1.addSchema("foo", null, new DefaultLocation()).addTable(store1, "bar", null, new DefaultLocation())
                 .getColumns()
@@ -238,7 +239,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testRetrievingOfSchemaByNameWithUnknownNameReturnsNull() {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
 
@@ -247,7 +248,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testStoringOfFilledMetadataStore() throws Exception {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema = store1.addSchema("PDB", null, new DefaultLocation());
@@ -265,7 +266,7 @@ public class RDBMSMetadataStoreTest {
 
         store1.flush();
 
-        // retrieve store
+        // retrieve metadataStore
         MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
 
         assertEquals(dummySchema, store2.getSchemas().iterator().next());
@@ -279,13 +280,13 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testStoringOfFilledMetadataStore2() throws Exception {
-        // setup store
+        // setup metadataStore
         final RDBMSMetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema = store1.addSchema("PDB", null, new DefaultLocation());
         store1.flush();
 
-        // retrieve store
+        // retrieve metadataStore
         MetadataStore store2 = RDBMSMetadataStore.load(new SQLiteInterface(connection));
 
         assertEquals(store1, store2);
@@ -436,7 +437,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testRemovalOfConstraintCollections() throws Exception {
-        // setup store
+        // setup metadataStore
         MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
@@ -453,7 +454,7 @@ public class RDBMSMetadataStoreTest {
         store1.removeConstraintCollection(dummyConstraintCollection);
         assertTrue(store1.getConstraintCollections().isEmpty());
 
-        // setup store
+        // setup metadataStore
         store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
@@ -479,7 +480,7 @@ public class RDBMSMetadataStoreTest {
 
     @Test
     public void testRemovalOfSchemaCascadesConstraintCollectionRemoval() throws Exception {
-        // setup store
+        // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // setup schema
         final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());

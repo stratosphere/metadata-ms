@@ -94,7 +94,8 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         return this.sqlInterface.getMetadataStore();
     }
 
-    public void setScope(Collection<Target> scope) {
+    public void setScope(Set<Target> scope) {
+        // We enforce the Set type to support equals properly.
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
     }

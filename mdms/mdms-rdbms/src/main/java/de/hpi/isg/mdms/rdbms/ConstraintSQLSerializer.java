@@ -53,7 +53,7 @@ public interface ConstraintSQLSerializer<T extends Constraint> {
     /**
      * Removes all {@link Constraint}s of the provided {@link ConstraintCollection}.
      * 
-     * @param constraintCollection
+     * @param constraintCollection is the constraint collection from that constraints are to be removed
      */
     void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection);
 
