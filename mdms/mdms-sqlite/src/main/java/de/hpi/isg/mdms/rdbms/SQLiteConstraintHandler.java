@@ -284,6 +284,7 @@ public class SQLiteConstraintHandler {
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                                 ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
+        serializer.initializeTables();
     }
 
 
