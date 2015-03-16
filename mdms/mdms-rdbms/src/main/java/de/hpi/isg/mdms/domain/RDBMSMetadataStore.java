@@ -341,4 +341,15 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public void setUseJournal(boolean isUseJournal) {
         this.sqlInterface.setUseJournal(isUseJournal);
     }
+
+	@Override
+	public void close() {
+		try {
+			sqlInterface.flush();
+			sqlInterface.closeMetaDataStore();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
 }

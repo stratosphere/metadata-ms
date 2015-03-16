@@ -358,6 +358,11 @@ public interface SQLInterface {
     void setUseJournal(boolean isUseJournal);
 
     /**
+     * Closes the the connection to the underlying database.
+     */
+    public void closeMetaDataStore();
+    
+    /**
      * An enumeration of DBs supported by default.
      */
     public static enum RDBMS {

@@ -152,5 +152,10 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param constraintCollection
      */
     public void removeConstraintCollection(ConstraintCollection constraintCollection);
+    
+    /**
+     * Closes the MetadataStore.
+     */
+    public void close();
 
 }

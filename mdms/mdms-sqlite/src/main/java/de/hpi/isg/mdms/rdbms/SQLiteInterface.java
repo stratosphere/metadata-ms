@@ -17,6 +17,7 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -487,4 +488,13 @@ public class SQLiteInterface implements SQLInterface {
     public String toString() {
         return "SQLiteInterface[" + this.databaseAccess.getConnection().getClass() + "]";
     }
+
+	@Override
+	public void closeMetaDataStore() {
+		try {
+			this.databaseAccess.close();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }
