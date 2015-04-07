@@ -130,8 +130,7 @@ public class SQLiteConstraintHandler {
         // If there is no serializer, create a new one.
         if (serializer == null) {
             serializer = constraint.getConstraintSQLSerializer(this.sqliteInterface);
-            constraintSerializers.put(constraint.getClass(), serializer);
-            serializer.initializeTables();
+            registerConstraintSQLSerializer(constraint.getClass(), serializer);
         }
 
         // Delegate the serialization.
@@ -284,6 +283,7 @@ public class SQLiteConstraintHandler {
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                                 ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
+        serializer.initializeTables();
     }
 
 
