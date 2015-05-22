@@ -10,6 +10,7 @@ import java.util.Set;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.common.AbstractIdentifiable;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.exceptions.NotAllTargetsInStoreException;
 
 /**
@@ -26,9 +27,20 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
     private final Set<Target> scope;
 
     private String description;
+    
+    private final Experiment experiment;
 
     @ExcludeHashCodeEquals
     private final DefaultMetadataStore metadataStore;
+
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
+            Set<Target> scope, Experiment experiment) {
+        super(id);
+        this.metadataStore = metadataStore;
+        this.constraints = constraints;
+        this.scope = scope;
+        this.experiment = experiment;
+    }
 
     public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
             Set<Target> scope) {
@@ -36,8 +48,10 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
         this.metadataStore = metadataStore;
         this.constraints = constraints;
         this.scope = scope;
+        this.experiment = null;
     }
 
+    
     @Override
     public Collection<Constraint> getConstraints() {
         return Collections.unmodifiableCollection(this.constraints);
@@ -78,5 +92,10 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
     public void setDescription(String description) {
         this.description = description;
     }
+
+	@Override
+	public Experiment getExperiment() {
+		return this.experiment;
+	}
 
 }

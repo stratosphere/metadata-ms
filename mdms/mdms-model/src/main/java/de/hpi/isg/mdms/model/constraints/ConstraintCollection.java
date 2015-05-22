@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import de.hpi.isg.mdms.model.common.Described;
 import de.hpi.isg.mdms.model.common.Identifiable;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
 
@@ -16,7 +17,15 @@ import de.hpi.isg.mdms.model.targets.Target;
  */
 
 public interface ConstraintCollection extends Identifiable, Described {
+	
+    /**
+     * This functions returns the corresponding {@link de.hpi.isg.mdms.model.experiment.Experiment}.
+     * 
+     * @return the {@link de.hpi.isg.mdms.model.experiment.Experiment}
+     */
+    public Experiment getExperiment();
 
+	
     /**
      * This function returns all {@link Constraint}s of this collection.
      * 

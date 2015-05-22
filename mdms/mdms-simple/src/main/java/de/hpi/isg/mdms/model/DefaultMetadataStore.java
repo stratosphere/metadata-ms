@@ -14,10 +14,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -28,6 +31,10 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.DefaultAlgorithm;
+import de.hpi.isg.mdms.model.experiment.DefaultExperiment;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
@@ -100,6 +107,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     private final Collection<Schema> schemas;
 
+    private final Collection<Algorithm> algorithms;
+    
+    private final Collection<Experiment> experiments;
+    
     private final Collection<ConstraintCollection> constraintCollections;
 
     private final Int2ObjectMap<Target> allTargets;
@@ -123,6 +134,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection>());
         this.allTargets = new Int2ObjectOpenHashMap<>();
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
+        this.experiments = Collections.synchronizedList(new LinkedList<Experiment>());
+        this.algorithms = Collections.synchronizedList(new LinkedList<Algorithm>());
     }
 
     @Override
@@ -185,6 +198,17 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
     }
 
+    @Override
+    public int getUnusedAlgorithmId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+    }
+
+	@Override
+	public int getUnusedExperimentId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+	}
+
+    
     @Override
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.schemas.contains(schema));
@@ -263,6 +287,23 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         return constraintCollection;
     }
 
+	@Override
+	public ConstraintCollection createConstraintCollection(String description,
+			Experiment experiment, Target... scope) {
+        // Make sure that the given targets are actually compatible with this kind of metadata store.
+        for (Target target : scope) {
+            Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
+        }
+        ConstraintCollection constraintCollection = new DefaultConstraintCollection(this,
+                getUnusedConstraintCollectonId(),
+                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), experiment);
+        this.constraintCollections.add(constraintCollection);
+        experiment.add(constraintCollection);
+        return constraintCollection;
+	}
+
+    
+    
     @Override
     public IdUtils getIdUtils() {
         return this.idUtils;
@@ -317,5 +358,73 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         throw new UnsupportedOperationException("Not supported yet.");
         //
     }
+
+	@Override
+	public Algorithm createAlgorithm(String name) {
+		final int id = this.getUnusedAlgorithmId();
+        final Algorithm algorithm = new DefaultAlgorithm (id, name, new HashSet<Experiment>());
+        this.algorithms.add(algorithm);
+        return algorithm;
+	}
+
+	@Override
+	public Algorithm getAlgorithmById(int algorithmId) {
+		for (Algorithm algorithm : this.algorithms){
+			if (algorithm.getId() == algorithmId){
+				return algorithm;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Experiment getExperimentById(int experimentId) {
+		for (Experiment experiment : this.experiments){
+			if (experiment.getId() == experimentId){
+				return experiment;
+			}
+		}
+		return null;
+	}
+	
+	@Override
+	public Algorithm getAlgorithmByName(String name) {
+		for (Algorithm algorithm : algorithms){
+			if (algorithm.getName() == name){
+				return algorithm;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Collection<Algorithm> getAlgorithms() {
+		return this.algorithms;
+	}
+	
+	
+	@Override
+	public Experiment createExperiment(String description, Algorithm algorithm) {
+		final int id = this.getUnusedExperimentId();
+        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<ConstraintCollection>(), new HashMap<String, String>(), new HashSet<String>());
+        this.experiments.add(experiment);
+        algorithm.addExperiment(experiment);
+        return experiment;
+	}
+
+	@Override
+	public void removeAlgorithm(Algorithm algorithm) {
+		this.algorithms.remove(algorithm);
+	}
+
+	@Override
+	public void removeExperiment(Experiment experiment) {
+		this.experiments.remove(experiment);
+	}
+
+	@Override
+	public Collection<Experiment> getExperiments() {
+		return this.experiments;
+	}
 
 }

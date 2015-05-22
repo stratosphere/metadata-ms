@@ -15,8 +15,11 @@ import de.hpi.isg.mdms.domain.*;
 import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.MetadataStore;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -300,4 +303,52 @@ public class DefaultMetadataStoreTest {
      * store2 = MetadataStoreFactory.load(file); } catch (final MetadataStoreNotFoundException e) {
      * // TODO Auto-generated catch block e.printStackTrace(); } assertEquals(store1, store2); }
      */
+    
+    @Test
+    public void testAddingOfAlgorithm(){
+    	  final MetadataStore store1 = new DefaultMetadataStore();
+          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+          assertTrue(store1.getAlgorithms().contains(algorithm1));
+    }
+
+    @Test
+    public void testRetrievingOfAlgorithm(){
+    	  final MetadataStore store1 = new DefaultMetadataStore();
+          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+          assertTrue(store1.getAlgorithmById(algorithm1.getId()) == algorithm1);
+    }
+
+    @Test
+    public void testCreatingOfExperiment(){
+    	  final MetadataStore store1 = new DefaultMetadataStore();
+          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+          Experiment experiment = store1.createExperiment("experiment1", algorithm1);
+          assertTrue(store1.getExperiments().contains(experiment));
+    }
+
+    @Test
+    public void testRetrievingOfExperiment(){
+  	  final MetadataStore store1 = new DefaultMetadataStore();
+      final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+      Experiment experiment = store1.createExperiment("experiment1", algorithm1);
+      experiment.addParameter("key", "value");
+      assertTrue(store1.getExperimentById(experiment.getId()) == experiment);
+      assertTrue(store1.getExperimentById(experiment.getId()).getParameters().size() == 1);
+    }
+    
+    @Test
+    public void testAddConstraintCollectionToExperiment(){    	
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
+        store1.getSchemas().add(dummySchema1);
+        final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+        Experiment experiment = store1.createExperiment("experiment1", algorithm1);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        experiment.add(constraintCollection);
+        assertTrue(store1.getExperimentById(experiment.getId()).getConstraintCollections().size() == 1);
+
+
+    }
+
+    
 }

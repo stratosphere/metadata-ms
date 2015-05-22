@@ -6,6 +6,8 @@ import java.util.Collection;
 
 import de.hpi.isg.mdms.model.common.Observer;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
@@ -92,6 +94,21 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     int getUnusedSchemaId();
 
     /**
+     * Looks for an ID that can be assigned to a new algorithm.
+     *
+     * @return the unused algorithm ID
+     */
+    int getUnusedAlgorithmId();
+
+    /**
+     * Looks for an ID that can be assigned to a new experiment.
+     *
+     * @return the unused experiment ID
+     */
+    int getUnusedExperimentId();
+
+    
+    /**
      * Looks for an ID that can be assigned to a new table within the given schema.
      *
      * @param schema
@@ -108,11 +125,64 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     int getUnusedConstraintCollectonId();
 
     /**
+     * This method creates a new {@link Algorithm} that will also be added to this {@link MetadataStore}s
+     * collection of known {@link ConstraintCollection}s.
+     */
+    Algorithm createAlgorithm(String name);
+    
+    /**
+     * Retrieve an algorithm from the store if it exists for the given id
+     *
+     * @param algorithmId
+     * @return {@link Algorithm}
+     */
+    public Algorithm getAlgorithmById(int schemaId);
+
+    /**
+     * Retrieve an algorithm from the store if it exists for the given name
+     *
+     * @param algorithmName
+     * @return {@link Algorithm}
+     */
+    public Algorithm getAlgorithmByName(String name);
+    
+    
+    /**
+     * Get all knwon {@link Algorithms}s.
+     * 
+     * @return {@link Collection} of {@link Algorithm}s.
+     */
+    public Collection<Algorithm> getAlgorithms();
+
+    
+    /**
+     * Get all knwon {@link Experiment}s.
+     * 
+     * @return {@link Collection} of {@link Experiment}s.
+     */
+    public Collection<Experiment> getExperiments();
+
+    
+    /**
+     * This method creates a new {@link Experiment} that will also be added to this {@link MetadataStore}s
+     * collection of known {@link Experiment}s.
+     */
+    Experiment createExperiment(String description, Algorithm algorithm);
+    
+    /**
+     * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
+     * collection of known {@link ConstraintCollection}s.
+     */
+    ConstraintCollection createConstraintCollection(String description, Experiment experiment, Target... scope);
+
+    
+    /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
     ConstraintCollection createConstraintCollection(String description, Target... scope);
 
+    
     /**
      * Returns the {@link de.hpi.isg.mdms.model.util.IdUtils} of this store.
      * 
@@ -152,5 +222,34 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param constraintCollection
      */
     public void removeConstraintCollection(ConstraintCollection constraintCollection);
+
+    /**
+     * Removes an {@link Algorithm} and ALL child {@link Experiment} objects from the store. Also ALL
+     * {@link ConstraintCollection} connected to these {@link Experiment} and containing {@link de.hpi.isg.mdms.model.constraints.Constraint}s will be deleted. 
+     * 
+     * @param algorithm
+     *        the {@link Algorithm} to remove
+     */
+    public void removeAlgorithm(Algorithm algorithm);
+
+    
+    
+    /**
+     * Removes a {@link Experiment} and ALL child {@link ConstraintCollection} objects from the store. Also ALL
+     * containing {@link de.hpi.isg.mdms.model.constraints.Constraint}s will be deleted.
+     * 
+     * @param experiment
+     *        the {@link Experiment} to remove
+     */
+    public void removeExperiment(Experiment experiment);
+
+    
+    /**
+     * Retrieve an experiment from the store if it exists for the given id
+     *
+     * @param experimentId
+     * @return {@link Experiment}
+     */
+	public Experiment getExperimentById(int experimentId);
 
 }
