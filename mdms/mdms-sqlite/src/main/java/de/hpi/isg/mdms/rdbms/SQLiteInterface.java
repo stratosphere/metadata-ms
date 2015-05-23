@@ -4,12 +4,16 @@ import de.hpi.isg.mdms.db.DatabaseAccess;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
+import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
+import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -17,6 +21,7 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +41,8 @@ import java.util.Map.Entry;
 public class SQLiteInterface implements SQLInterface {
 
     public static final String[] tableNames = {"Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config"};
+            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config", "Experiment", "Algorithm",
+            "ExperimentParameter", "ExperimentException"};
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
 
@@ -62,6 +68,8 @@ public class SQLiteInterface implements SQLInterface {
     private SQLiteSchemaHandler schemaHandler;
 
     private SQLiteConstraintHandler constraintHandler;
+    
+    private SQLiteExperimentHandler experimentHandler;
 
     /**
      * Creates a new instance that operates on the given connection.
@@ -72,6 +80,7 @@ public class SQLiteInterface implements SQLInterface {
         this.databaseAccess = new DatabaseAccess(connection);
         this.schemaHandler = new SQLiteSchemaHandler(this.databaseAccess);
         this.constraintHandler = new SQLiteConstraintHandler(this);
+        this.experimentHandler = new SQLiteExperimentHandler(this);
 
     }
 
@@ -388,7 +397,7 @@ public class SQLiteInterface implements SQLInterface {
                 this.databaseAccess.getConnection().commit();
             }
 
-            this.loadTableNames();
+            this.loadTableNames(); 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -487,4 +496,75 @@ public class SQLiteInterface implements SQLInterface {
     public String toString() {
         return "SQLiteInterface[" + this.databaseAccess.getConnection().getClass() + "]";
     }
+
+	@Override
+	public Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm algorithm) {
+		return this.experimentHandler.getAllExperimentsForAlgorithm(algorithm);
+	}
+
+	@Override
+	public void addAlgorithm(RDBMSAlgorithm algorithm) {
+		this.experimentHandler.addAlgorithm(algorithm);
+	}
+
+	@Override
+	public void writeExperiment(RDBMSExperiment experiment) {
+		this.experimentHandler.writeExperiment(experiment);
+	}
+
+	@Override
+	public void addParameterToExperiment(RDBMSExperiment experiment, String key,
+			String value) {
+		this.experimentHandler.addParameterToExperiment(experiment, key, value);
+		
+	}
+
+	@Override
+	public void setExecutionTimeToExperiment(RDBMSExperiment experiment,
+			long executionTime) {
+		this.experimentHandler.setExecutionTimeToExperiment(experiment, executionTime);
+		
+	}
+
+	@Override
+	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(
+			RDBMSExperiment experiment) {
+		return this.constraintHandler.getAllConstraintCollectionsForExperiment(experiment);
+	}
+
+	@Override
+	public Algorithm getAlgorithmByID(int algorithmId) {
+		return this.experimentHandler.getAlgorithmFor(algorithmId);
+	}
+
+	@Override
+	public Experiment getExperimentById(int experimentId) {
+		return this.experimentHandler.getExperimentById(experimentId);
+	}
+
+	@Override
+	public void removeAlgorithm(Algorithm algorithm) {
+		this.experimentHandler.removeAlgorithm(algorithm);
+	}
+
+	@Override
+	public void removeExperiment(Experiment experiment) {
+		this.experimentHandler.removeExperiment(experiment);
+	}
+
+	@Override
+	public Collection<Algorithm> getAllAlgorithms() {
+		return this.experimentHandler.getAllAlgorithms();
+	}
+
+	@Override
+	public Collection<Experiment> getAllExperiments() {
+		return this.experimentHandler.getAllExperiments();
+	}
+
+	@Override
+	public Algorithm getAlgorithmByName(String name) {
+		return this.experimentHandler.getAlgorithmByName(name);
+	}
+
 }

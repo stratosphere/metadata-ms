@@ -3,12 +3,16 @@ package de.hpi.isg.mdms.rdbms;
 import de.hpi.isg.mdms.db.DatabaseAccess;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
+import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
+import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -18,6 +22,7 @@ import de.hpi.isg.mdms.model.targets.Target;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This interface describes common functionalities that a RDBMS-specifc interface for a {@link RDBMSMetadataStore} must
@@ -363,4 +368,98 @@ public interface SQLInterface {
     public static enum RDBMS {
         SQLITE
     }
+
+    /**
+     * Loads all experiments of an algorithm.
+     *
+     * @param the algorithm whose experiments should be loaded
+     * @return a collection of experiments
+     */
+	public Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm rdbmsAlgorithm);
+
+	
+	/**
+	 * Adds an algorithm to the database.
+	 * @param the algorithm that shall be added
+	 */
+	public void addAlgorithm(RDBMSAlgorithm algorithm);
+
+	
+	/**
+	 * Adds an experiment to the database.
+	 * @param the experiment that shall be added
+	 */
+	public void writeExperiment(RDBMSExperiment experiment);
+
+	/**
+	 * Adds a key-value-pair of parameters to an experiment.
+	 * @param the experiment for which the parameter shall be added.
+	 * @param key
+	 * @param value
+	 */
+	public void addParameterToExperiment(RDBMSExperiment experiment,
+			String key, String value);
+
+	/**
+	 * Adds the execution time to an experiment
+	 * @param the experiment for which the execution time shall be added
+	 * @param executionTime in ms
+	 */
+	public void setExecutionTimeToExperiment(RDBMSExperiment Experiment,
+			long executionTime);
+
+	/**
+     * Loads all constraint collections of an experiment.
+     *
+     * @param the experiment whose constraint collections shall be loaded
+     * @return a collection of constraint collections
+     */
+	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
+
+	/**
+	 * Return an algorithm by its id
+	 * @param algorithmId
+	 * @return algorithm
+	 */
+	public Algorithm getAlgorithmByID(int algorithmId);
+
+	/**
+	 * Return an experiment by its id
+	 * @param experimentId
+	 * @return experiment
+	 */
+	public Experiment getExperimentById(int experimentId);
+
+	/**
+	 * Removes an algorithm and the connected experiments
+	 * @param algorithm
+	 */
+	public void removeAlgorithm(Algorithm algorithm);
+
+	/**
+	 * Removes an experiment.
+	 * @param experiment
+	 */
+	public void removeExperiment(Experiment experiment);
+
+
+	/**
+	 * Returns all algorithms
+	 * @return collection of algorithms
+	 */
+	public Collection<Algorithm> getAllAlgorithms();
+
+	/**
+	 * Returns all experiments
+	 * @return collection of experiments
+	 */
+	public Collection<Experiment> getAllExperiments();
+
+	/**
+	 * Returns an algorithm by name
+	 * @param name of the algorithm
+	 * @return algorithm
+	 */
+	public Algorithm getAlgorithmByName(String name);
+	
 }

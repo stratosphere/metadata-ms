@@ -9,9 +9,11 @@ import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -284,6 +286,7 @@ public class SQLiteConstraintHandler {
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                                 ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
+        serializer.initializeTables();
     }
 
 
@@ -316,6 +319,26 @@ public class SQLiteConstraintHandler {
 
     }
 
+	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(Experiment experiment) {
+        try {
+            Set<ConstraintCollection> constraintCollections = new HashSet<>();
+
+            String sqlconstraintCollectionsForExperiment = String
+                    .format("SELECT constraintCollection.id as id from constraintCollection where constraintCollection.experimentId = %d;",
+                            experiment.getId());
+
+            ResultSet rs = databaseAccess.query(sqlconstraintCollectionsForExperiment, "constraintCollection");
+            while (rs.next()) {
+                constraintCollections.add(getConstraintCollectionById(rs.getInt("id")));
+            }
+            rs.close();
+            return constraintCollections;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+	}
+	
     public void initializeTables() {
         // init constraint types
         for (ConstraintSQLSerializer<? extends Constraint> serializer : this.constraintSerializers.values()) {

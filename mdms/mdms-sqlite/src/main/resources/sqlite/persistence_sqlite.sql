@@ -71,12 +71,49 @@ CREATE TABLE [Config]
 	PRIMARY KEY ([keyy])
 );
 
+CREATE TABLE [Algorithm]
+(
+	[id] integer NOT NULL,
+	[name] text,
+	PRIMARY KEY([id])
+);
+
+CREATE TABLE [Experiment]
+(
+	[id] integer NOT NULL,
+	[executionTime] integer,
+	[description] text,
+	[algorithmId] integer NOT NULL,
+	PRIMARY KEY ([id]),
+	FOREIGN KEY ([algorithmId])
+	REFERENCES [Algorithm] ([id])
+);
+
+CREATE TABLE [ExperimentParameter]
+(
+	[experimentId] integer NOT NULL,
+	[keyy] text,
+	[value] text,
+	FOREIGN KEY ([experimentId])
+	REFERENCES [Experiment] ([id])
+);
+
+CREATE TABLE [ExperimentException]
+(
+	[experimentId] integer NOT NULL,
+	[textt] text,
+	FOREIGN KEY ([experimentId])
+	REFERENCES [Experiment] ([id])
+);
 
 CREATE TABLE [ConstraintCollection]
 (
 	[id] integer NOT NULL,
+	[experimentId] integer,
 	[description] text,
-	PRIMARY KEY ([id])
+	PRIMARY KEY ([id]),
+	FOREIGN KEY([experimentId])
+	REFERENCES [Experiment] ([id])
 );
 
 

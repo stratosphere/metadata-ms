@@ -1,6 +1,8 @@
 package de.hpi.isg.mdms.domain;
 
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
+import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
+import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.AbstractRDBMSTarget;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.Location;
@@ -8,6 +10,8 @@ import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -18,6 +22,7 @@ import de.hpi.isg.mdms.domain.targets.RDBMSTable;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.rdbms.util.LocationCache;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -341,4 +346,83 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     public void setUseJournal(boolean isUseJournal) {
         this.sqlInterface.setUseJournal(isUseJournal);
     }
+
+	@Override
+	public int getUnusedAlgorithmId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+	}
+
+	@Override
+	public int getUnusedExperimentId() {
+        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+	}
+
+	@Override
+	public Algorithm createAlgorithm(String name) {
+		RDBMSAlgorithm algorithm = new RDBMSAlgorithm(getUnusedAlgorithmId(), name, getSQLInterface());
+		this.sqlInterface.addAlgorithm(algorithm);
+		return algorithm;
+	}
+
+	@Override
+	public Algorithm getAlgorithmById(int algorithmId) {
+		return this.sqlInterface.getAlgorithmByID(algorithmId);
+	}
+
+	@Override
+	public Collection<Algorithm> getAlgorithms() {
+		return this.sqlInterface.getAllAlgorithms();
+	}
+
+	@Override
+	public Collection<Experiment> getExperiments() {
+		return this.sqlInterface.getAllExperiments();
+	}
+
+	@Override
+	public Experiment createExperiment(String description, Algorithm algorithm) {
+		RDBMSExperiment experiment = new RDBMSExperiment(getUnusedExperimentId(), description, algorithm, this.sqlInterface);
+		this.sqlInterface.writeExperiment(experiment);
+		return experiment;
+	}
+
+	@Override
+	public ConstraintCollection createConstraintCollection(String description,
+			Experiment experiment, Target... scope) {
+        // Make sure that the given targets are actually compatible with this kind of metadata store.
+        for (Target target : scope) {
+            Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
+        }
+        ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
+                description, experiment,
+                new HashSet<Target>(Arrays.asList(scope)), getSQLInterface());
+
+        // Store the constraint collection in the DB.
+        this.sqlInterface.addConstraintCollection(constraintCollection);
+        for (Target target : constraintCollection.getScope()) {
+            this.sqlInterface.addScope(target, constraintCollection);
+        }
+
+        return constraintCollection;
+	}
+
+	@Override
+	public void removeAlgorithm(Algorithm algorithm) {
+		this.sqlInterface.removeAlgorithm(algorithm);
+	}
+
+	@Override
+	public void removeExperiment(Experiment experiment) {
+		this.sqlInterface.removeExperiment(experiment);
+	}
+
+	@Override
+	public Experiment getExperimentById(int experimentId) {
+		return this.sqlInterface.getExperimentById(experimentId);
+	}
+
+	@Override
+	public Algorithm getAlgorithmByName(String name) {
+		return this.sqlInterface.getAlgorithmByName(name);
+	}
 }

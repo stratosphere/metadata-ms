@@ -6,9 +6,11 @@ import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.common.AbstractIdentifiable;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,8 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     private Set<Integer> scopeIdSet;
 
     private String description;
+    
+    private Experiment experiment = null;
 
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
@@ -51,6 +55,16 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         this.description = description != null ? description : "";
     }
 
+    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface) {
+        super(id);
+        this.scope = scope;
+        this.scopeIdSet = rebuildScopeSet(scope);
+        this.sqlInterface = sqlInterface;
+        this.description = description != null ? description : "";
+        this.experiment = experiment;
+    }
+
+    
     private Set<Integer> rebuildScopeSet(Collection<Target> scope) {
         Set<Integer> set = new HashSet<>();
         for (Target t : scope) {
@@ -152,6 +166,11 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     public void setDescription(String description) {
         this.description = description;
     }
+
+	@Override
+	public Experiment getExperiment() {
+		return this.experiment;
+	}
 
     /*
      * @Override public boolean equals(Object obj) { ensureConstraintsLoaded(); if (obj instanceof
