@@ -2,6 +2,8 @@ package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
@@ -10,6 +12,7 @@ import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -498,5 +501,77 @@ public class RDBMSMetadataStoreTest {
 
         store1.removeSchema(dummySchema1);
         assertTrue(store1.getConstraintCollections().isEmpty());
+    }
+    
+    @Test
+    public void testAlgorithms(){
+        // setup metadataStore
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+
+        // create algorithm
+        final Algorithm algorithm = store1.createAlgorithm("algorithm1");
+        
+        Collection<Algorithm> loadedAlgorithms = store1.getAlgorithms();
+        assertTrue(loadedAlgorithms.size() == 1);
+        assertTrue(loadedAlgorithms.contains(algorithm));    	
+    }
+    
+    @Test
+    public void testExperimentsWithConstraintCollections() throws Exception{
+        // setup metadataStore
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        // setup schema
+        final Schema dummySchema1 = store1.addSchema("PDB", null, new DefaultLocation());
+
+        // create algorithm
+        final Algorithm algorithm = store1.createAlgorithm("algorithm1");
+        
+        //create experiment
+        final Experiment experiment = store1.createExperiment("description", algorithm);
+        
+        Collection<Experiment> loadedExperiments = store1.getExperiments();
+        assertTrue(loadedExperiments.size() == 1);
+        assertTrue(loadedExperiments.contains(experiment));
+        
+        //check for timestamp
+        assertTrue(loadedExperiments.iterator().next().getTimestamp() != null);
+        
+        //create constraintCollection
+        store1.createConstraintCollection(null, experiment, dummySchema1);
+
+        Collection<ConstraintCollection> loadedConstraintCollections = store1.getConstraintCollections();
+        assertTrue(loadedConstraintCollections.iterator().next().getExperiment().getId() == experiment.getId());
+    }
+    
+    @Test
+    public void testExperimentWithExecutionTime(){
+    	// setup metadataStore
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        // create algorithm
+        final Algorithm algorithm = store1.createAlgorithm("algorithm1");
+        
+        //create experiment
+        final Experiment experiment = store1.createExperiment("description", algorithm);
+   
+        //add execution time
+        experiment.setExecutionTime(12345);
+        
+        assertTrue(store1.getExperimentById(experiment.getId()).getExecutionTime() == 12345);
+        
+        //add parameter
+        experiment.addParameter("key1", "value1");
+        assertTrue(store1.getExperimentById(experiment.getId()).getParameters().isEmpty() == false);
+        assertTrue(store1.getExperimentById(experiment.getId()).getParameters().containsKey("key1"));
+        Collection<Experiment> loadedExperiments = store1.getExperiments();
+        assertTrue(loadedExperiments.iterator().next().getParameters().get("key1").equals("value1"));
+
+        //add annotation
+        
+        experiment.addAnnotation("exception", "exceptionName");
+        
+        loadedExperiments = store1.getExperiments();
+        assertTrue(loadedExperiments.iterator().next().getAnnotations().iterator().next().getTag().equals("exception"));
+        assertTrue(loadedExperiments.iterator().next().getAnnotations().iterator().next().getText().equals("exceptionName"));
+
     }
 }

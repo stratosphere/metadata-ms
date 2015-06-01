@@ -42,7 +42,7 @@ public class SQLiteInterface implements SQLInterface {
 
     public static final String[] tableNames = {"Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
             "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config", "Experiment", "Algorithm",
-            "ExperimentParameter", "ExperimentException"};
+            "ExperimentParameter", "Annotation"};
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
 
@@ -565,6 +565,13 @@ public class SQLiteInterface implements SQLInterface {
 	@Override
 	public Algorithm getAlgorithmByName(String name) {
 		return this.experimentHandler.getAlgorithmByName(name);
+	}
+
+	@Override
+	public void addAnnotation(RDBMSExperiment experiment, String tag,
+			String text) {
+		this.experimentHandler.addAnnotation(experiment, tag, text);
+		
 	}
 
 }

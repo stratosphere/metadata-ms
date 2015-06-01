@@ -32,6 +32,7 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Annotation;
 import de.hpi.isg.mdms.model.experiment.DefaultAlgorithm;
 import de.hpi.isg.mdms.model.experiment.DefaultExperiment;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -406,7 +407,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	@Override
 	public Experiment createExperiment(String description, Algorithm algorithm) {
 		final int id = this.getUnusedExperimentId();
-        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<ConstraintCollection>(), new HashMap<String, String>(), new HashSet<String>());
+        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<ConstraintCollection>(), new HashMap<String, String>(), new HashSet<Annotation>());
         this.experiments.add(experiment);
         algorithm.addExperiment(experiment);
         return experiment;

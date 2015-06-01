@@ -461,5 +461,14 @@ public interface SQLInterface {
 	 * @return algorithm
 	 */
 	public Algorithm getAlgorithmByName(String name);
+
+	/**
+	 * Adds an annotation to an experiment
+	 * @param rdbmsExperiment
+	 * @param tag specifying a category of the annotation
+	 * @param exception message
+	 */
+	public void addAnnotation(RDBMSExperiment rdbmsExperiment, String tag,
+			String text);
 	
 }

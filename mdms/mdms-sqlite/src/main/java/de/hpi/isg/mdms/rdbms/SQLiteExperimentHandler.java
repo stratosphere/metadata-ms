@@ -12,6 +12,9 @@ import java.util.Set;
 
 
 
+
+
+
 import de.hpi.isg.mdms.db.DatabaseAccess;
 import de.hpi.isg.mdms.db.PreparedStatementAdapter;
 import de.hpi.isg.mdms.db.query.DatabaseQuery;
@@ -23,6 +26,7 @@ import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
 import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Annotation;
 import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.util.LRUCache;
 
@@ -38,7 +42,7 @@ public class SQLiteExperimentHandler {
      * Encapsulates the DB connection to allow for lazy writes.
      */
     private final DatabaseAccess databaseAccess;
-
+ 
     /**
      * The {@link de.hpi.isg.mdms.rdbms.SQLiteInterface} for that this manager works.
      */
@@ -60,9 +64,9 @@ public class SQLiteExperimentHandler {
     private DatabaseWriter<Integer> deleteParameterWriter;
     private DatabaseQuery<Integer> parameterQuery;
     
-    private DatabaseWriter<Object[]> insertExceptionWriter;
-    private DatabaseWriter<Integer> deleteExceptionWriter;
-    private DatabaseQuery<Integer> exceptionQuery;
+    private DatabaseWriter<Object[]> insertAnnotationWriter;
+    private DatabaseWriter<Integer> deleteAnnotationWriter;
+    private DatabaseQuery<Integer> annotationQuery;
     
     private static final PreparedStatementBatchWriter.Factory<RDBMSAlgorithm> INSERT_ALGORITHM_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
@@ -91,15 +95,16 @@ public class SQLiteExperimentHandler {
 
         private static final PreparedStatementBatchWriter.Factory<RDBMSExperiment> INSERT_EXPERIMENT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO Experiment (id, description, executionTime, algorithmId) VALUES (?, ?, ?,?);",
+                        "INSERT INTO Experiment (id, description, timestamp, executionTime, algorithmId) VALUES (?, ?, ?,?,?);",
                         new PreparedStatementAdapter<RDBMSExperiment>() {
                             @Override
                             public void translateParameter(RDBMSExperiment parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters.getId());
                                 preparedStatement.setString(2, parameters.getDescription());
-                                preparedStatement.setInt(3, parameters.getExecutionTime().intValue());
-                                preparedStatement.setInt(4, parameters.getAlgorithm().getId());
+                                preparedStatement.setString(3, parameters.getTimestamp());
+                                preparedStatement.setInt(4, parameters.getExecutionTime().intValue());
+                                preparedStatement.setInt(5, parameters.getAlgorithm().getId());
                             }
                         },
                         "Experiment");
@@ -156,22 +161,23 @@ public class SQLiteExperimentHandler {
                             },
                             "ExperimentParameter");
 
-            private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_EXPERIMENT_EXCEPTIONS_WRITER_FACTORY =
+            private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_EXPERIMENT_ANNOTATION_WRITER_FACTORY =
                     new PreparedStatementBatchWriter.Factory<>(
-                            "INSERT INTO ExperimentException (experimentId, textt) VALUES (?, ?);",
+                            "INSERT INTO Annotation (experimentId, tag, textt) VALUES (?, ?, ?);",
                             new PreparedStatementAdapter<Object[]>() {
                                 @Override
                                 public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
                                         throws SQLException {
                                     preparedStatement.setInt(1, (Integer) parameters[0]);
                                     preparedStatement.setString(2, (String) parameters[1]);
+                                    preparedStatement.setString(3, (String) parameters[2]);
                                 }
                             },
-                            "ExperimentException");
+                            "Annotation");
 
-            private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_EXPERIMENT_EXCEPTIONS_WRITER_FACTORY =
+            private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_EXPERIMENT_ANNOTATION_WRITER_FACTORY =
                     new PreparedStatementBatchWriter.Factory<>(
-                            "DELETE FROM ExperimentException where experimentId=?;",
+                            "DELETE FROM Annotation where experimentId=?;",
                             new PreparedStatementAdapter<Integer>() {
                                 @Override
                                 public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
@@ -179,11 +185,12 @@ public class SQLiteExperimentHandler {
                                     preparedStatement.setInt(1, parameter);
                                 }
                             },
-                            "ExperimentException");
+                            "Annotation");
 
            private static final StrategyBasedPreparedQuery.Factory<Integer> EXPERIMENT_QUERY_FACTORY =
                     new StrategyBasedPreparedQuery.Factory<>(
-                            "SELECT experiment.id as id, experiment.executionTime as executionTime, experiment.description as description"
+                            "SELECT experiment.id as id, experiment.timestamp as timestamp, experiment.executionTime as executionTime,"
+                            + " experiment.algorithmId as algorithmId, experiment.description as description"
                                     + " from experiment"
                                     + " where experiment.id=?",
                             PreparedStatementAdapter.SINGLE_INT_ADAPTER,
@@ -213,20 +220,20 @@ public class SQLiteExperimentHandler {
                     
             private static final StrategyBasedPreparedQuery.Factory<Integer> PARAMETER_QUERY_FACTORY =
                     new StrategyBasedPreparedQuery.Factory<>(
-                            "SELECT experimentParameter.experimentId as experimentId, experimentParameter.keyy as keyy,"
-                            + " experimentParameter.value as value"
-                                    + " from experimentParameter"
-                                    + " where experimentParamter.experimentId=?",
+                            "SELECT ExperimentParameter.experimentId as experimentId, ExperimentParameter.keyy as keyy,"
+                            + " ExperimentParameter.value as value"
+                                    + " from ExperimentParameter"
+                                    + " where ExperimentParameter.experimentId=?",
                             PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                             "ExperimentParameter");
 
-                    private static final StrategyBasedPreparedQuery.Factory<Integer> EXCEPTION_QUERY_FACTORY =
+                    private static final StrategyBasedPreparedQuery.Factory<Integer> ANNOTATION_QUERY_FACTORY =
                             new StrategyBasedPreparedQuery.Factory<>(
-                                    "SELECT experimentException.experimentId as experimentId, experimentException.textt as textt"
-                                            + " from experimentException"
-                                            + " where experimetnException.experimentId=?",
+                                    "SELECT Annotation.experimentId as experimentId, Annotation.tag as tag, Annotation.textt as textt"
+                                            + " from Annotation"
+                                            + " where Annotation.experimentId=?",
                                     PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                                    "ExperimentException");
+                                    "Annotation");
                             
            private final static int CACHE_SIZE = 1000;
            
@@ -258,9 +265,9 @@ public class SQLiteExperimentHandler {
             this.insertParameterWriter = this.databaseAccess.createBatchWriter(INSERT_EXPERIMENT_PARAMETER_WRITER_FACTORY);
             this.deleteParameterWriter = this.databaseAccess.createBatchWriter(DELETE_EXPERIMENT_PARAMETER_WRITER_FACTORY);
             this.parameterQuery = this.databaseAccess.createQuery(PARAMETER_QUERY_FACTORY);
-            this.insertExceptionWriter = this.databaseAccess.createBatchWriter(INSERT_EXPERIMENT_EXCEPTIONS_WRITER_FACTORY);
-            this.deleteExceptionWriter = this.databaseAccess.createBatchWriter(DELETE_EXPERIMENT_EXCEPTIONS_WRITER_FACTORY);
-            this.exceptionQuery = this.databaseAccess.createQuery(EXCEPTION_QUERY_FACTORY);
+            this.insertAnnotationWriter = this.databaseAccess.createBatchWriter(INSERT_EXPERIMENT_ANNOTATION_WRITER_FACTORY);
+            this.deleteAnnotationWriter = this.databaseAccess.createBatchWriter(DELETE_EXPERIMENT_ANNOTATION_WRITER_FACTORY);
+            this.annotationQuery = this.databaseAccess.createQuery(ANNOTATION_QUERY_FACTORY);
             
         } catch (SQLException e) {
             throw new RuntimeException("Could not initialize writers.", e);
@@ -319,7 +326,8 @@ public class SQLiteExperimentHandler {
                         		rs.getLong("executionTime"),
                                 getAlgorithmFor(rs.getInt("algorithmId")),
                                 getParametersFor(rs.getInt("id")),
-                                getExceptions(rs.getInt("id")),
+                                getAnnotations(rs.getInt("id")),
+                                rs.getString("timestamp"),
                                 this.sqliteInterface));
                 return experimentCache.get(experimentId);
             }
@@ -356,22 +364,22 @@ public class SQLiteExperimentHandler {
 	}
 
 	/**
-	 * Retrieves the exceptions of an experiment
+	 * Retrieves the annotations of an experiment
 	 * @param id of the experiment
-	 * @return set of exception texts
+	 * @return set of annotations
 	 */
-	private Set<String> getExceptions(int experimentId) {
+	private Set<Annotation> getAnnotations(int experimentId) {
         Experiment cached = experimentCache.get(experimentId);
         if (cached != null) {
-            return new HashSet<String>(cached.getErrorsExceptions());
+            return new HashSet<Annotation>(cached.getAnnotations());
         }
 
-        try (ResultSet rs = this.exceptionQuery.execute(experimentId)) {
-        	Set<String> exceptions = new HashSet<String>(); 
+        try (ResultSet rs = this.annotationQuery.execute(experimentId)) {
+        	Set<Annotation> annotations = new HashSet<Annotation>(); 
             while (rs.next()) {
-            	exceptions.add(rs.getString("textt"));
+            	annotations.add(new Annotation(rs.getString("tag"), rs.getString("textt")));
             }
-             return exceptions;
+             return annotations;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -419,8 +427,8 @@ public class SQLiteExperimentHandler {
 			addParameterToExperiment(experiment, key, experiment.getParameters().get(key));
 		}
 		
-		for (String text : experiment.getErrorsExceptions()){
-			addExceptionToExperiment(experiment, text);
+		for (Annotation annotation : experiment.getAnnotations()){
+			addAnnotation(experiment, annotation.getTag(), annotation.getText());
 		}
 		
 	}
@@ -431,7 +439,8 @@ public class SQLiteExperimentHandler {
 		parameters[0] = experiment.getId();
 		parameters[1] = key;
 		parameters[2] = value;
-
+		experimentCache.remove(experiment.getId());
+		
 		try{
 			this.insertParameterWriter.write(parameters);			
 		} catch (SQLException e) {
@@ -439,13 +448,15 @@ public class SQLiteExperimentHandler {
 		}
 	}
 
-	public void addExceptionToExperiment(RDBMSExperiment experiment,
-			String text) {
-		Object[] parameters = new Object[2];
+	public void addAnnotation(RDBMSExperiment experiment,
+			String tag, String text) {
+		Object[] parameters = new Object[3];
 		parameters[0] = experiment.getId();
-		parameters[1] = text;
+		parameters[1] = tag;
+		parameters[2] = text;
+		experimentCache.remove(experiment.getId());
 		try{
-			this.insertExceptionWriter.write(parameters);			
+			this.insertAnnotationWriter.write(parameters);			
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -456,6 +467,9 @@ public class SQLiteExperimentHandler {
 		Object[] parameters = new Object[2];
 		parameters[0] = experiment.getId();
 		parameters[1] = executionTime;
+		
+		experimentCache.remove(experiment.getId());
+		
 		try{
 			this.updateExperimentWriter.write(parameters);			
 		} catch (SQLException e) {
@@ -484,8 +498,8 @@ public class SQLiteExperimentHandler {
         try {
             Collection<Experiment> experiments = new HashSet<>();
 
-            String sqlExperiments = "SELECT experiment.id as id, experiment.description as description"
-            		+ " experiment.algorithmId as algorithmId, experiment.executionTime as executionTime from experiment;";
+            String sqlExperiments = "SELECT experiment.id as id, experiment.description as description,"
+            		+ " experiment.algorithmId as algorithmId, experiment.timestamp as timestamp, experiment.executionTime as executionTime from experiment ;";
 
             ResultSet rs = databaseAccess.query(sqlExperiments, "experiment");
             while (rs.next()) {
@@ -495,7 +509,8 @@ public class SQLiteExperimentHandler {
                         		rs.getLong("executionTime"),
                                 getAlgorithmFor(rs.getInt("algorithmId")),
                                 getParametersFor(rs.getInt("id")),
-                                getExceptions(rs.getInt("id")),
+                                getAnnotations(rs.getInt("id")),
+                                rs.getString("timestamp"),
                                 this.sqliteInterface));
             }
             rs.close();
@@ -516,7 +531,7 @@ public class SQLiteExperimentHandler {
 	public void removeExperiment(Experiment experiment) {
 		try{
 			this.deleteExperimentWriter.write(experiment);
-			this.deleteExceptionWriter.write(experiment.getId());
+			this.deleteAnnotationWriter.write(experiment.getId());
 			this.deleteParameterWriter.write(experiment.getId());
 		}catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -542,6 +557,6 @@ public class SQLiteExperimentHandler {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-	}	
-
+	}
+	
 }

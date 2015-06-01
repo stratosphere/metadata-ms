@@ -1,5 +1,7 @@
 package de.hpi.isg.mdms.model.experiment;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -21,28 +23,30 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
  */
 
 public class DefaultExperiment extends AbstractIdentifiable implements Experiment{
-
+	
 	private static final long serialVersionUID = 5894427384713010467L;
 		private final Set<ConstraintCollection> constraintsCollections;
 	    private final Algorithm algorithm;
 	    private final Map<String, String> parameters;
-		private final Set<String> errors_exceptions;
+		private final Set<Annotation> annotations;
 	    
 	    private String description;
 	    private long executionTime;
+	    private String timestamp;
 	    
 	    @ExcludeHashCodeEquals
 	    private final DefaultMetadataStore metadataStore;
 
 	    
 	public DefaultExperiment(DefaultMetadataStore metadataStore, int id, Algorithm algorithm, Set<ConstraintCollection> constraintCollections,
-			Map<String, String> parameters, Set<String> errors_exceptions) {
+			Map<String, String> parameters, Set<Annotation> annotation) {
 		super(id);
 		this.metadataStore = metadataStore;
 		this.algorithm = algorithm;
 		this.constraintsCollections = constraintCollections;
 		this.parameters = parameters;
-		this.errors_exceptions = errors_exceptions;
+		this.annotations = annotation;
+		this.timestamp = new Timestamp(new java.util.Date().getTime()).toString();
 		
 	}
 
@@ -62,8 +66,8 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	}
 
 	@Override
-	public Collection<String> getErrorsExceptions() {
-		return Collections.unmodifiableCollection(this.errors_exceptions);
+	public Collection<Annotation> getAnnotations() {
+		return Collections.unmodifiableCollection(this.annotations);
 	}
 
 	@Override
@@ -100,6 +104,16 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	public void addParameter(String key, String value) {
 		this.parameters.put(key, value);
 		
+	}
+
+	@Override
+	public void addAnnotation(String tag, String text) {
+		this.annotations.add(new Annotation(tag, text));
+	}
+
+	@Override
+	public String getTimestamp() {
+		return this.timestamp;
 	}
 
 	

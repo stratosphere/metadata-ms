@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.domain.experiment;
 
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import de.hpi.isg.mdms.model.common.AbstractIdentifiable;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Annotation;
 import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 
@@ -27,22 +29,35 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	private  Set<ConstraintCollection> constraintCollections = new HashSet<ConstraintCollection>();
     private Algorithm algorithm;
     private Map<String, String> parameters = new HashMap<String, String>();
-	private Set<String> errors_exceptions = new HashSet<String>();
+	private Set<Annotation> annotations = new HashSet<Annotation>();
     
     private String description;
     private long executionTime;
+	private String timestamp;
     
     @ExcludeHashCodeEquals
     private final SQLInterface sqlInterface;
 
-	public RDBMSExperiment(int id, String description, Long executionTime, Algorithm algorithm, Map<String, String> parameters, Set<String> errors, SQLInterface sqlInterface) {
+	public RDBMSExperiment(int id, String description, Long executionTime, Algorithm algorithm, Map<String, String> parameters, Set<Annotation> annotations, String timestamp, SQLInterface sqlInterface) {
 		super(id);
 		this.description = description;
 		this.executionTime = executionTime;
 		this.algorithm = algorithm;
 		this.parameters = parameters;
-		this.errors_exceptions = errors;
+		this.annotations = annotations;
 		this.sqlInterface = sqlInterface;
+		this.timestamp = timestamp;
+	}
+    
+	public RDBMSExperiment(int id, String description, Long executionTime, Algorithm algorithm, Map<String, String> parameters, Set<Annotation> annotations, SQLInterface sqlInterface) {
+		super(id);
+		this.description = description;
+		this.executionTime = executionTime;
+		this.algorithm = algorithm;
+		this.parameters = parameters;
+		this.annotations = annotations;
+		this.sqlInterface = sqlInterface;
+		this.timestamp = new Timestamp(new java.util.Date().getTime()).toString();
 	}
 
 	public RDBMSExperiment(int id, String description, Long executionTime, Algorithm algorithm, SQLInterface sqlInterface) {
@@ -51,6 +66,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 		this.executionTime = executionTime;
 		this.algorithm = algorithm;
 		this.sqlInterface = sqlInterface;
+		this.timestamp = new Timestamp(new java.util.Date().getTime()).toString();
 	}	
 	
 	public RDBMSExperiment(int id, String description, Algorithm algorithm, SQLInterface sqlInterface) {
@@ -58,6 +74,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 		this.description = description;
 		this.algorithm = algorithm;
 		this.sqlInterface = sqlInterface;
+		this.timestamp = new Timestamp(new java.util.Date().getTime()).toString();
 	}
 
 	@Override
@@ -76,8 +93,8 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	}
 
 	@Override
-	public Collection<String> getErrorsExceptions() {
-		return Collections.unmodifiableCollection(this.errors_exceptions);
+	public Collection<Annotation> getAnnotations() {
+		return Collections.unmodifiableCollection(this.annotations);
 	}
 
 	@Override
@@ -125,6 +142,17 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	@Override
 	public MetadataStore getMetadataStore() {
 		return this.sqlInterface.getMetadataStore();
+	}
+
+	@Override
+	public void addAnnotation(String tag, String text) {
+		this.sqlInterface.addAnnotation(this, tag, text);
+		
+	}
+
+	@Override
+	public String getTimestamp() {
+		return this.timestamp;
 	}
 
 }

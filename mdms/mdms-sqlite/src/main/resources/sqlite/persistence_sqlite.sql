@@ -83,6 +83,7 @@ CREATE TABLE [Experiment]
 	[id] integer NOT NULL,
 	[executionTime] integer,
 	[description] text,
+	[timestamp] text,
 	[algorithmId] integer NOT NULL,
 	PRIMARY KEY ([id]),
 	FOREIGN KEY ([algorithmId])
@@ -98,9 +99,10 @@ CREATE TABLE [ExperimentParameter]
 	REFERENCES [Experiment] ([id])
 );
 
-CREATE TABLE [ExperimentException]
+CREATE TABLE [Annotation]
 (
 	[experimentId] integer NOT NULL,
+	[tag] text,
 	[textt] text,
 	FOREIGN KEY ([experimentId])
 	REFERENCES [Experiment] ([id])

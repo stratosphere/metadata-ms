@@ -19,7 +19,8 @@ public interface Experiment extends Identifiable, Described {
 
 	
     Map<String, String> getParameters();
-    Collection<String> getErrorsExceptions();
+    
+    Collection<Annotation> getAnnotations();
 	
     /**
      * This function returns the {@link Algorithm} of this experiment.
@@ -72,4 +73,16 @@ public interface Experiment extends Identifiable, Described {
      * @return the {@link de.hpi.isg.mdms.model.MetadataStore}.
      */
     public MetadataStore getMetadataStore();
+    
+    /**
+     * Adds an annotation to the existing Experiment
+     * @param annotation tag
+     * @parm annotation text
+     */
+	void addAnnotation(String tag, String text);
+	
+	/**
+	 * Returns the timestamp of the experiment
+	 */
+	String getTimestamp();
 }

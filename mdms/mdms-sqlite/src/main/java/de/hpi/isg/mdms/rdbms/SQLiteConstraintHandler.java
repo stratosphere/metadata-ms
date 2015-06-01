@@ -169,11 +169,11 @@ public class SQLiteConstraintHandler {
         try {
             // TODO: This seems not to be working (only a single constraint collection is returned.
             Collection<RDBMSConstraintCollection> constraintCollections = new LinkedList<>();
-            try (ResultSet rs = this.databaseAccess.query("SELECT id, description from ConstraintCollection;",
+            try (ResultSet rs = this.databaseAccess.query("SELECT id, description, experimentId from ConstraintCollection;",
                     "ConstraintCollection")) {
                 while (rs.next()) {
                     RDBMSConstraintCollection constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"),
-                            rs.getString("description"),
+                            rs.getString("description"), this.sqliteInterface.getExperimentById(rs.getInt("experimentId")),
                             this.sqliteInterface);
                     constraintCollections.add(constraintCollection);
                 }
@@ -194,10 +194,10 @@ public class SQLiteConstraintHandler {
         try {
             RDBMSConstraintCollection constraintCollection = null;
             String getConstraintCollectionByIdQuery =
-                    String.format("SELECT id, description from ConstraintCollection where id=%d;", id);
+                    String.format("SELECT id, description, experimentId from ConstraintCollection where id=%d;", id);
             try (ResultSet rs = this.databaseAccess.query(getConstraintCollectionByIdQuery, "ConstraintCollection")) {
                 while (rs.next()) {
-                    constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), rs.getString("description"),
+                    constraintCollection = new RDBMSConstraintCollection(rs.getInt("id"), rs.getString("description"), this.sqliteInterface.getExperimentById(rs.getInt("experimentId")),
                             this.sqliteInterface);
                 }
             }
@@ -234,10 +234,17 @@ public class SQLiteConstraintHandler {
 
     public void addConstraintCollection(ConstraintCollection constraintCollection) {
         try {
-            String sqlAddConstraintCollection = String.format(
-                    "INSERT INTO ConstraintCollection (id, description) VALUES (%d, '%s');",
-                    constraintCollection.getId(), constraintCollection.getDescription());
-            this.databaseAccess.executeSQL(sqlAddConstraintCollection, "ConstraintCollection");
+        	if (constraintCollection.getExperiment() == null) {
+                String sqlAddConstraintCollection = String.format(
+                        "INSERT INTO ConstraintCollection (id, description) VALUES (%d, '%s');",
+                        constraintCollection.getId(), constraintCollection.getDescription());
+                this.databaseAccess.executeSQL(sqlAddConstraintCollection, "ConstraintCollection");	
+        	} else {
+                String sqlAddConstraintCollection = String.format(
+                        "INSERT INTO ConstraintCollection (id, experimentId, description) VALUES (%d, %d, '%s');",
+                        constraintCollection.getId(), constraintCollection.getExperiment().getId(), constraintCollection.getDescription());
+                this.databaseAccess.executeSQL(sqlAddConstraintCollection, "ConstraintCollection");
+        	}
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

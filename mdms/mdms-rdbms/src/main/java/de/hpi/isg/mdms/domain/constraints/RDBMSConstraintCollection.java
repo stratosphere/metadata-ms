@@ -79,6 +79,14 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         this.description = description;
     }
 
+    public RDBMSConstraintCollection(int id, String description, Experiment experiment, SQLInterface sqlInterface) {
+        super(id);
+        this.sqlInterface = sqlInterface;
+        this.description = description;
+        this.experiment = experiment;
+    }
+
+    
     @Override
     public Collection<Constraint> getConstraints() {
         ensureConstraintsLoaded();
