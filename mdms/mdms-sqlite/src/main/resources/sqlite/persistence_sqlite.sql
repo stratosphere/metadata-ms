@@ -80,15 +80,6 @@ CREATE TABLE [ConstraintCollection]
 );
 
 
-CREATE TABLE [Constraintt]
-(
-	[id] integer NOT NULL,
-	[constraintCollectionId] integer NOT NULL,
-	PRIMARY KEY ([id]),
-	FOREIGN KEY ([constraintCollectionId])
-	REFERENCES [ConstraintCollection] ([id])
-);
-
 CREATE TABLE [LocationProperty]
 (
 	[locationId] integer NOT NULL,

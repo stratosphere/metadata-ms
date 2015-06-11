@@ -50,7 +50,7 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<Integer> insertInclusionDependencyWriter;
+        DatabaseWriter<int[]> insertInclusionDependencyWriter;
 
         DatabaseWriter<Integer> deleteInclusionDependencyWriter;
 
@@ -64,14 +64,15 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
 
         DatabaseQuery<Integer> queryINDPart;
 
-        private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId) VALUES (?);",
-                        new PreparedStatementAdapter<Integer>() {
+                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId) VALUES (?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
                             @Override
-                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, parameter);
+                                preparedStatement.setInt(1, parameters[0]);
+                                preparedStatement.setInt(2, parameters[1]);
                             }
                         },
                         tableName);
@@ -118,18 +119,16 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
 
         private static final StrategyBasedPreparedQuery.Factory<Void> INCLUSIONDEPENDENCY_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + ", constraintt where " + tableName
-                                + ".constraintId = constraintt.id;",
+                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
+                                + " from " + tableName + " ;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + ", constraintt where " + tableName
-                                + ".constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
+                                + " from " + tableName + " where " + tableName
+                                + ".constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -177,7 +176,7 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
 
             Validate.isTrue(inclusionDependency instanceof InclusionDependency);
             try {
-                insertInclusionDependencyWriter.write(constraintId);
+                insertInclusionDependencyWriter.write(new int[] {constraintId, inclusionDependency.getConstraintCollection().getId()});
 
                 for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
                     insertINDPartWriter.write(new int[] { constraintId,
@@ -251,9 +250,10 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
                 String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "	 [constraintCollectionId] integer NOT NULL,\n" +                        
                         "    PRIMARY KEY ([constraintId]),\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id])\n" +
+                        "	 FOREIGN KEY ([constraintCollectionId])" +
+                        "    REFERENCES [ConstraintCollection] ([id])"+
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createINDTable);
             }

@@ -57,7 +57,7 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + tableName
-                                + " (constraintId, distinctValueCount, columnId) VALUES (?, ?, ?);",
+                                + " (constraintId, constraintCollectionId, distinctValueCount, columnId) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -65,6 +65,7 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
+                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
@@ -84,20 +85,20 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
 
         private static final StrategyBasedPreparedQuery.Factory<Void> DISTINCTVALUECOUNT_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
+                        "SELECT DistinctValueCount.constraintId as id, DistinctValueCount.columnId as columnId,"
+                				+ " DistinctValueCount.constraintCollectionId as constraintCollectionId,"
                                 + " DistinctValueCount.distinctValueCount as distinctValueCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id;",
+                                + " DistinctValueCount.constraintCollectionId as constraintCollectionId"
+                                + " from DistinctValueCount;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> DISTINCTVALUECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, DistinctValueCount.columnId as columnId,"
+                        "SELECT DistinctValueCount.constraintId as id, DistinctValueCount.columnId as columnId,"
                                 + " DistinctValueCount.distinctValueCount as distinctValueCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from DistinctValueCount, constraintt where DistinctValueCount.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                				+ " DistinctValueCount.constraintCollectionId as constraintCollectionId"
+                                + " from DistinctValueCount where DistinctValueCount.constraintCollectionId =?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -125,7 +126,7 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
         public void serialize(Integer constraintId, Constraint distinctValueCount) {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
-                this.insertDistinctValueCountWriter.write(new int[] { constraintId,
+                this.insertDistinctValueCountWriter.write(new int[] { constraintId, distinctValueCount.getConstraintCollection().getId(),
                         ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
                                 .getTargetReference().getAllTargetIds().iterator().nextInt() });
 
@@ -177,12 +178,14 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "	 [constraintCollectionId] integer NOT NULL,\n" +
                         "    [columnId] integer NOT NULL,\n" +
                         "    [distinctValueCount] integer,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
                         "    FOREIGN KEY ([columnId])\n" +
-                        "    REFERENCES [Columnn] ([id])\n" +
+                        "    REFERENCES [Columnn] ([id]),\n" +
+                        "	 FOREIGN KEY ([constraintCollectionId])" +
+                        "    REFERENCES [ConstraintCollection] ([id])" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createTable);
             }

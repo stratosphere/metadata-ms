@@ -60,7 +60,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, dummy, columnId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, dummy, columnId) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -68,15 +68,14 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
+                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
 
         private static final PreparedStatementBatchWriter.Factory<Integer> REMOVE_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "DELETE FROM " + tableName + " WHERE constraintId IN (" +
-                                "SELECT id FROM constraintt WHERE constraintCollectionId = ?" +
-                                ");",
+                        "DELETE FROM " + tableName + " WHERE constraintCollectionId = ?;",
                         new PreparedStatementAdapter<Integer>() {
                             @Override
                             public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
@@ -88,18 +87,17 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final StrategyBasedPreparedQuery.Factory<Void> DUMMY_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from dummy, constraintt where dummy.constraintId = constraintt.id;",
+                        "SELECT dummy.constraintId as id, dummy.columnId as columnId, dummy.dummy as dummy,"
+                                + " dummy.constraintCollectionId as constraintCollectionId"
+                                + " from dummy;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> DUMMY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from dummy, constraintt where dummy.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT dummy.constraintId as id, dummy.columnId as columnId, dummy.dummy as dummy,"
+                                + " dummy.constraintCollectionId as constraintCollectionId"
+                                + " from dummy where dummy.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -127,7 +125,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
             Validate.isTrue(dummy instanceof NumberedDummyConstraint);
             try {
                 insertDummyWriter.write(new int[]{
-                        constraintId, ((NumberedDummyConstraint) dummy).getValue(), dummy
+                        constraintId, dummy.getConstraintCollection().getId(), ((NumberedDummyConstraint) dummy).getValue(), dummy
                         .getTargetReference()
                         .getAllTargetIds().iterator()
                         .nextInt()
@@ -181,10 +179,12 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [columnId] integer NOT NULL,\n" +
                         "    [dummy] integer,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId])\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id]),\n" +
                         "    FOREIGN KEY ([columnId])\n" +
                         "    REFERENCES [Columnn] ([id])\n" +
                         ");";

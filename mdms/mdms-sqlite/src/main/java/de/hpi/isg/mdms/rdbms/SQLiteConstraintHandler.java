@@ -31,31 +31,6 @@ public class SQLiteConstraintHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLiteConstraintHandler.class);
 
-    private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (?, ?);",
-                    new PreparedStatementAdapter<int[]>() {
-                        @Override
-                        public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters[0]);
-                            preparedStatement.setInt(2, parameters[1]);
-                        }
-                    },
-                    "Constraintt");
-
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Constraintt where constraintCollectionId=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "Constraintt");
-
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer<? extends Constraint>> constraintSerializers = new HashMap<>();
 
     /**
@@ -72,10 +47,6 @@ public class SQLiteConstraintHandler {
 
     private int currentConstraintIdMax = -1;
 
-    private DatabaseWriter<int[]> insertConstraintWriter;
-
-    private DatabaseWriter<Integer> deleteConstraintWriter;
-
     /**
      * Creates a new instance.
      *
@@ -84,15 +55,6 @@ public class SQLiteConstraintHandler {
     public SQLiteConstraintHandler(SQLiteInterface sqliteInterface) {
         this.sqliteInterface = sqliteInterface;
         this.databaseAccess = sqliteInterface.getDatabaseAccess();
-
-        // Initialize writers and queries.
-        try {
-            // Writers
-            this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
-            this.deleteConstraintWriter = this.databaseAccess.createBatchWriter(DELETE_CONSTRAINT_WRITER_FACTORY);
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not initialize writers.", e);
-        }
     }
 
     /**
@@ -118,11 +80,6 @@ public class SQLiteConstraintHandler {
 
         // for auto-increment id
         Integer constraintId = ++currentConstraintIdMax;
-        try {
-            this.insertConstraintWriter.write(new int[]{constraintId, constraint.getConstraintCollection().getId()});
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
 
         // Try to find an existing serializer for the constraint type.
         ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
@@ -148,11 +105,16 @@ public class SQLiteConstraintHandler {
 
         try {
             this.currentConstraintIdMax = 0;
-            try (ResultSet res = this.databaseAccess.query("SELECT MAX(id) from Constraintt;", "Constraintt")) {
-                while (res.next()) {
-                    this.currentConstraintIdMax = res.getInt("max(id)");
-                }
+            for (ConstraintSQLSerializer<? extends Constraint> serializer : constraintSerializers.values()){
+            	try (ResultSet res = this.databaseAccess.query("SELECT MAX(constraintId) from " + serializer.getTableNames().get(0) + ";", serializer.getTableNames().get(0))) {
+                    while (res.next()) {
+                    	if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
+                            this.currentConstraintIdMax = res.getInt("max(constraintId)");                    		
+                    	}
+                    }
+                }	
             }
+            
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -284,6 +246,7 @@ public class SQLiteConstraintHandler {
     public void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
                                                 ConstraintSQLSerializer<? extends Constraint> serializer) {
         constraintSerializers.put(clazz, serializer);
+        serializer.initializeTables();
     }
 
 
@@ -305,8 +268,6 @@ public class SQLiteConstraintHandler {
                     "DELETE from ConstraintCollection where id=%d;",
                     constraintCollection.getId());
             this.databaseAccess.executeSQL(sqlDeleteConstraintCollection, "ConstraintCollection");
-
-            this.deleteConstraintWriter.write(constraintCollection.getId());
 
             this.databaseAccess.flush();
 

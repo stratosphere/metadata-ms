@@ -56,14 +56,15 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_TUPLECOUNT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, tupleCount, tableId) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters[0]);
-                                preparedStatement.setInt(2, parameters[1]);
+                                preparedStatement.setInt(2, parameters[1]);                                
                                 preparedStatement.setInt(3, parameters[2]);
+                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
@@ -83,18 +84,17 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
         private static final StrategyBasedPreparedQuery.Factory<Void> TUPLECOUNT_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id;",
+                        "SELECT TupleCount.constraintId as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " TupleCount.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT TupleCount.constraintId as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " TupleCount.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount where TupleCount.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -123,7 +123,7 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
             Validate.isTrue(tupleCount instanceof TupleCount);
             try {
                 insertTupleCountWriter.write(new int[] {
-                        constraintId, ((TupleCount) tupleCount).getNumTuples(), tupleCount
+                        constraintId, tupleCount.getConstraintCollection().getId(), ((TupleCount) tupleCount).getNumTuples(), tupleCount
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });
@@ -176,12 +176,14 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [tableId] integer NOT NULL,\n" +
                         "    [tupleCount] integer,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
                         "    FOREIGN KEY ([tableId])\n" +
-                        "    REFERENCES [Tablee] ([id])\n" +
+                        "    REFERENCES [Tablee] ([id]),\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id])\n" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createTable);
             }

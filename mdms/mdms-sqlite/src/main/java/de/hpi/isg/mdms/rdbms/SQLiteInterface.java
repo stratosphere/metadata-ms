@@ -36,7 +36,7 @@ import java.util.Map.Entry;
 public class SQLiteInterface implements SQLInterface {
 
     public static final String[] tableNames = {"Target", "Schemaa", "Tablee", "Columnn", "ConstraintCollection",
-            "Constraintt", "Scope", "Location", "LocationProperty", "LocationType", "Config"};
+            "Scope", "Location", "LocationProperty", "LocationType", "Config"};
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLInterface.class);
 

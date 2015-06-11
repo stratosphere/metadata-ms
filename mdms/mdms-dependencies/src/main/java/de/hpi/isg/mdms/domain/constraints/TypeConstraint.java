@@ -56,14 +56,15 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
         private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TYPECONSTRAINT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, typee, columnId) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<Object[]>() {
                             @Override
                             public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, (Integer) parameters[0]);
-                                preparedStatement.setString(2, String.valueOf(parameters[1]));
-                                preparedStatement.setInt(3, (Integer) parameters[2]);
+                                preparedStatement.setInt(2, (Integer) parameters[1]);
+                                preparedStatement.setString(3, String.valueOf(parameters[2]));
+                                preparedStatement.setInt(4, (Integer) parameters[3]);
                             }
                         },
                         tableName);
@@ -83,18 +84,17 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
         private static final StrategyBasedPreparedQuery.Factory<Void> TYPECONSTRAINT_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from typee, constraintt where typee.constraintId = constraintt.id;",
+                        "SELECT typee.constraintId as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " typee.constraintCollectionId as constraintCollectionId"
+                                + " from typee;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> TYPECONSTRAINT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from typee, constraintt where typee.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT typee.constraintId as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " typee.constraintCollectionId as constraintCollectionId"
+                                + " from typee where typee.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -123,7 +123,7 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
                 insertTypeConstraintWriter.write(new Object[] {
-                        constraintId, ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
+                        constraintId, typeConstraint.getConstraintCollection().getId(), ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });
@@ -175,10 +175,12 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [columnId] integer NOT NULL,\n" +
                         "    [typee] text,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id]),\n" +
                         "    FOREIGN KEY ([columnId])\n" +
                         "    REFERENCES [Columnn] ([id])\n" +
                         ");";

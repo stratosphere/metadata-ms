@@ -60,7 +60,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintid, overlap, column1, column2) VALUES (?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintid, constraintCollectionId, overlap, column1, column2) VALUES (?, ?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameter, PreparedStatement preparedStatement)
@@ -69,6 +69,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                                 preparedStatement.setInt(2, parameter[1]);
                                 preparedStatement.setInt(3, parameter[2]);
                                 preparedStatement.setInt(4, parameter[3]);
+                                preparedStatement.setInt(5, parameter[4]);
                             }
                         },
                         tableName);
@@ -88,6 +89,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         private static final StrategyBasedPreparedQuery.Factory<Void> QUERY_ALL_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         ("SELECT %table%.constraintId AS constraintId, "
+                        		+ "%table%.constraintCollectionId AS constraintCollectionId,"
                                 + "%table%.column1 AS column1, "
                                 + "%table%.column2 AS column2, "
                                 + "%table%.overlap AS overlap "
@@ -98,12 +100,12 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         private static final StrategyBasedPreparedQuery.Factory<Integer> QUERY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         ("SELECT %table%.constraintId AS constraintId, "
+                        		+ "%table%.constraintCollectionId AS constraintCollectionId, "
                                 + "%table%.column1 AS column1, "
                                 + "%table%.column2 AS column2, "
                                 + "%table%.overlap AS overlap "
-                                + "FROM %table%, constraintt "
-                                + "WHERE %table%.constraintId = constraintt.id "
-                                + "AND constraintt.constraintCollectionId = ?;").replaceAll("%table%", tableName),
+                                + "FROM %table% "
+                                + "WHERE %table%.constraintCollectionId = ?;").replaceAll("%table%", tableName),
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -134,7 +136,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
             Validate.isTrue(constraint instanceof DistinctValueOverlap);
             DistinctValueOverlap dvo = (DistinctValueOverlap) constraint;
             try {
-                insertWriter.write(new int[] { constraintId, dvo.overlap, dvo.target.column1, dvo.target.column2 });
+                insertWriter.write(new int[] { constraintId, dvo.getConstraintCollection().getId(), dvo.overlap, dvo.target.column1, dvo.target.column2 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -182,16 +184,17 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                 String createINDTable = "CREATE TABLE [DistinctValueOverlap]"
                         + "("
                         + "    [constraintId] integer NOT NULL,"
+                        + "	   [constraintCollectionId] integer NOT NULL,\n"   
                         + "    [overlap] integer NOT NULL,"
                         + "    [column1] integer NOT NULL,"
                         + "    [column2] integer NOT NULL,"
                         + "    PRIMARY KEY ([constraintId]),"
                         + "    FOREIGN KEY ([column2])"
                         + "    REFERENCES [Columnn] ([id]),"
-                        + "    FOREIGN KEY ([constraintId])"
-                        + "    REFERENCES [Constraintt] ([id]),"
                         + "    FOREIGN KEY ([column1])"
-                        + "    REFERENCES [Columnn] ([id])"
+                        + "    REFERENCES [Columnn] ([id]),"
+                        + "	   FOREIGN KEY ([constraintCollectionId])"
+                        + "    REFERENCES [ConstraintCollection] ([id])"
                         + ");";
                 this.sqlInterface.executeCreateTableStatement(createINDTable);
             }
