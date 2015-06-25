@@ -76,10 +76,6 @@ public class SQLiteConstraintHandler {
      * @param constraint is a constraint that shall be written
      */
     public void writeConstraint(RDBMSConstraint constraint) {
-        ensureCurrentConstraintIdMaxInitialized();
-
-        // for auto-increment id
-        Integer constraintId = ++currentConstraintIdMax;
 
         // Try to find an existing serializer for the constraint type.
         ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
@@ -92,32 +88,7 @@ public class SQLiteConstraintHandler {
         }
 
         // Delegate the serialization.
-        serializer.serialize(constraintId, constraint);
-    }
-
-    /**
-     * Checks if {@link #currentConstraintIdMax} already has a valid value. If not, a valid value is set.
-     */
-    private void ensureCurrentConstraintIdMaxInitialized() {
-        if (this.currentConstraintIdMax != -1) {
-            return;
-        }
-
-        try {
-            this.currentConstraintIdMax = 0;
-            for (ConstraintSQLSerializer<? extends Constraint> serializer : constraintSerializers.values()){
-            	try (ResultSet res = this.databaseAccess.query("SELECT MAX(constraintId) from " + serializer.getTableNames().get(0) + ";", serializer.getTableNames().get(0))) {
-                    while (res.next()) {
-                    	if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
-                            this.currentConstraintIdMax = res.getInt("max(constraintId)");                    		
-                    	}
-                    }
-                }	
-            }
-            
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        serializer.serialize(constraint);
     }
 
     /**

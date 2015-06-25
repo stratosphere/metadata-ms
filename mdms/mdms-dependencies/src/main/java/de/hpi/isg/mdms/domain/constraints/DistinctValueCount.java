@@ -57,7 +57,7 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DISTINCTVALUECOUNT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + tableName
-                                + " (constraintId, constraintCollectionId, distinctValueCount, columnId) VALUES (?, ?, ?, ?);",
+                                + " (constraintCollectionId, distinctValueCount, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -65,7 +65,6 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
-                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
@@ -123,10 +122,10 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint distinctValueCount) {
+        public void serialize(Constraint distinctValueCount) {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
-                this.insertDistinctValueCountWriter.write(new int[] { constraintId, distinctValueCount.getConstraintCollection().getId(),
+                this.insertDistinctValueCountWriter.write(new int[] { distinctValueCount.getConstraintCollection().getId(),
                         ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
                                 .getTargetReference().getAllTargetIds().iterator().nextInt() });
 

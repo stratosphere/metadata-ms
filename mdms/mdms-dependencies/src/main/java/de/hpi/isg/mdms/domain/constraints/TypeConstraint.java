@@ -56,15 +56,14 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
         private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TYPECONSTRAINT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, typee, columnId) VALUES (?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, typee, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<Object[]>() {
                             @Override
                             public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, (Integer) parameters[0]);
-                                preparedStatement.setInt(2, (Integer) parameters[1]);
-                                preparedStatement.setString(3, String.valueOf(parameters[2]));
-                                preparedStatement.setInt(4, (Integer) parameters[3]);
+                                preparedStatement.setInt(1, (Integer) parameters[1]);
+                                preparedStatement.setString(2, String.valueOf(parameters[2]));
+                                preparedStatement.setInt(3, (Integer) parameters[3]);
                             }
                         },
                         tableName);
@@ -119,11 +118,11 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint typeConstraint) {
+        public void serialize(Constraint typeConstraint) {
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
                 insertTypeConstraintWriter.write(new Object[] {
-                        constraintId, typeConstraint.getConstraintCollection().getId(), ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
+                        typeConstraint.getConstraintCollection().getId(), ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });

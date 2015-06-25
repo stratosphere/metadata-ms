@@ -60,7 +60,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, dummy, columnId) VALUES (?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, dummy, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -68,7 +68,6 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);
                                 preparedStatement.setInt(3, parameters[2]);
-                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
@@ -121,16 +120,16 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint dummy) {
+        public void serialize(Constraint dummy) {
             Validate.isTrue(dummy instanceof NumberedDummyConstraint);
             try {
                 insertDummyWriter.write(new int[]{
-                        constraintId, dummy.getConstraintCollection().getId(), ((NumberedDummyConstraint) dummy).getValue(), dummy
+                        dummy.getConstraintCollection().getId(), ((NumberedDummyConstraint) dummy).getValue(), dummy
                         .getTargetReference()
                         .getAllTargetIds().iterator()
                         .nextInt()
                 });
-
+                
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

@@ -60,7 +60,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintid, constraintCollectionId, overlap, column1, column2) VALUES (?, ?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, overlap, column1, column2) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameter, PreparedStatement preparedStatement)
@@ -69,7 +69,6 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                                 preparedStatement.setInt(2, parameter[1]);
                                 preparedStatement.setInt(3, parameter[2]);
                                 preparedStatement.setInt(4, parameter[3]);
-                                preparedStatement.setInt(5, parameter[4]);
                             }
                         },
                         tableName);
@@ -131,12 +130,12 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint constraint) {
+        public void serialize(Constraint constraint) {
 
             Validate.isTrue(constraint instanceof DistinctValueOverlap);
             DistinctValueOverlap dvo = (DistinctValueOverlap) constraint;
             try {
-                insertWriter.write(new int[] { constraintId, dvo.getConstraintCollection().getId(), dvo.overlap, dvo.target.column1, dvo.target.column2 });
+                insertWriter.write(new int[] { dvo.getConstraintCollection().getId(), dvo.overlap, dvo.target.column1, dvo.target.column2 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

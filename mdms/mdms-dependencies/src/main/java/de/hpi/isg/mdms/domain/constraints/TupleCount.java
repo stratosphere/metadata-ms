@@ -56,7 +56,7 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_TUPLECOUNT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId, tupleCount, tableId) VALUES (?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, tupleCount, tableId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -64,7 +64,6 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
                                 preparedStatement.setInt(1, parameters[0]);
                                 preparedStatement.setInt(2, parameters[1]);                                
                                 preparedStatement.setInt(3, parameters[2]);
-                                preparedStatement.setInt(4, parameters[3]);
                             }
                         },
                         tableName);
@@ -119,11 +118,11 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint tupleCount) {
+        public void serialize(Constraint tupleCount) {
             Validate.isTrue(tupleCount instanceof TupleCount);
             try {
                 insertTupleCountWriter.write(new int[] {
-                        constraintId, tupleCount.getConstraintCollection().getId(), ((TupleCount) tupleCount).getNumTuples(), tupleCount
+                        tupleCount.getConstraintCollection().getId(), ((TupleCount) tupleCount).getNumTuples(), tupleCount
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });

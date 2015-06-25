@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.domain.util;
 
+
 import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 
@@ -34,7 +35,5 @@ public class SQLiteConstraintUtils {
         return sqliteInterface;
     }
 
-
-
-
 }
+

@@ -32,12 +32,10 @@ public interface ConstraintSQLSerializer<T extends Constraint> {
     /**
      * Serializes a constraint and stores it in the {@link RDBMSMetadataStore}.
      *
-     * @param constraintId
-     *        the integer id that shall be used
      * @param constraint
      *        the constraint to serialize
      */
-    void serialize(Integer constraintId, Constraint constraint);
+    void serialize(Constraint constraint);
 
     /**
      * Retrieves and deserializes all Constraints of a given {@link ConstraintCollection}. If the constraintCollection

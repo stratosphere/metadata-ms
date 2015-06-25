@@ -29,6 +29,7 @@ import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntList;
+
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -63,6 +64,7 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
         DatabaseQuery<Integer> queryInclusionDependenciesForConstraintCollection;
 
         DatabaseQuery<Integer> queryINDPart;
+		private int currentConstraintIdMax;
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
@@ -172,7 +174,11 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint inclusionDependency) {
+        public void serialize(Constraint inclusionDependency) {
+        	ensureCurrentConstraintIdMaxInitialized();
+        	
+        	// for auto-increment id
+        	Integer constraintId = ++currentConstraintIdMax;
 
             Validate.isTrue(inclusionDependency instanceof InclusionDependency);
             try {
@@ -292,6 +298,27 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
                 throw new RuntimeException(e);
             }
         }
+        
+        
+        private void ensureCurrentConstraintIdMaxInitialized() {
+            if (this.currentConstraintIdMax != -1) {
+                return;
+            }
+    
+            try {
+                this.currentConstraintIdMax = 0;
+                	try (ResultSet res = this.sqlInterface.getDatabaseAccess().query("SELECT MAX(constraintId) from " + getTableNames().get(0) + ";", getTableNames().get(0))) {
+                        while (res.next()) {
+                        	if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
+                                this.currentConstraintIdMax = res.getInt("max(constraintId)");                    		
+                        	}
+                        }
+                    }	
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
