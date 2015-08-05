@@ -23,7 +23,6 @@ import de.hpi.isg.mdms.model.targets.TargetReference;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -41,7 +40,7 @@ import java.util.*;
  * 
  * @author Sebastian Kruse
  */
-public class InclusionDependency extends AbstractConstraint implements RDBMSConstraint {
+public class InclusionDependency extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer<InclusionDependency> {
 
@@ -209,10 +208,8 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
                                 .getConstraintCollectionById(rsInclusionDependencies
                                         .getInt("constraintCollectionId"));
                     }
-                    inclusionDependencies
-                            .add(InclusionDependency.build(
-                                    getInclusionDependencyReferences(rsInclusionDependencies.getInt("id")),
-                                    constraintCollection));
+                    inclusionDependencies.add
+                        (new InclusionDependency(getInclusionDependencyReferences(rsInclusionDependencies.getInt("id"))));
 
                 }
                 rsInclusionDependencies.close();
@@ -350,25 +347,20 @@ public class InclusionDependency extends AbstractConstraint implements RDBMSCons
     private static final long serialVersionUID = -932394088609862495L;
     private InclusionDependency.Reference target;
 
-    public static InclusionDependency build(final InclusionDependency.Reference target,
-            ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
+    @Deprecated
+    public static InclusionDependency build(final InclusionDependency.Reference target) {
+        InclusionDependency inclusionDependency = new InclusionDependency(target);
         return inclusionDependency;
     }
 
     public static InclusionDependency buildAndAddToCollection(final InclusionDependency.Reference target,
             ConstraintCollection constraintCollection) {
-        InclusionDependency inclusionDependency = new InclusionDependency(target, constraintCollection);
+        InclusionDependency inclusionDependency = new InclusionDependency(target);
         constraintCollection.add(inclusionDependency);
         return inclusionDependency;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private InclusionDependency(final InclusionDependency.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+    public InclusionDependency(final InclusionDependency.Reference target) {
         if (target.dependentColumns.length != target.referencedColumns.length) {
             throw new IllegalArgumentException("Number of dependent columns must equal number of referenced columns!");
         }

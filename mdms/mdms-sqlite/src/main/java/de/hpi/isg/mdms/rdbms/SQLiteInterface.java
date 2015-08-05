@@ -180,6 +180,11 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<ConstraintCollection> getAllConstraintCollections() {
+//        try {
+//            flush();
+//        } catch (SQLException e) {
+//            throw new RuntimeException("Could not flush befort loading the constraint collections.", e);
+//        }
         Collection<RDBMSConstraintCollection> constraintCollections = this.constraintHandler.getAllConstraintCollections();
         for (RDBMSConstraintCollection constraintCollection : constraintCollections) {
             Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
@@ -282,12 +287,8 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void writeConstraint(Constraint constraint) {
-        this.constraintHandler.writeConstraint(constraint);
-    }
-
-    public void writeConstraint(RDBMSConstraint constraint) {
-        this.constraintHandler.writeConstraint(constraint);
+    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
+        this.constraintHandler.writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection) constraintCollection);
     }
 
     /**

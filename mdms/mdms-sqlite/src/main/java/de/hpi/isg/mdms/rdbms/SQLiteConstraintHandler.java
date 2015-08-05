@@ -15,11 +15,15 @@ import it.unimi.dsi.fastutil.ints.IntCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * This class takes care of serializing and deserializing constraints on a SQLite database.
@@ -99,13 +103,17 @@ public class SQLiteConstraintHandler {
      * Writes a constraint to the DB.
      *
      * @param constraint is an {@link de.hpi.isg.mdms.domain.constraints.RDBMSConstraint} that should be written
+     * @param constraintCollection to which the constraint belongs to;
+     *                             must be a {@link de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection}
      */
-    public void writeConstraint(Constraint constraint) {
+    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
         if (!(constraint instanceof RDBMSConstraint)) {
             throw new IllegalArgumentException("Not an RDBMSConstraint: " + constraint);
+        } else if (!(constraint instanceof RDBMSConstraintCollection)) {
+            throw new IllegalArgumentException("Not an RDBMSConstraintCollection: " + constraintCollection);
         }
 
-        writeConstraint((RDBMSConstraint) constraint);
+        writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection) constraintCollection);
     }
 
     /**
@@ -113,13 +121,13 @@ public class SQLiteConstraintHandler {
      *
      * @param constraint is a constraint that shall be written
      */
-    public void writeConstraint(RDBMSConstraint constraint) {
+    public void writeConstraint(RDBMSConstraint constraint, RDBMSConstraintCollection constraintCollection) {
         ensureCurrentConstraintIdMaxInitialized();
 
         // for auto-increment id
         Integer constraintId = ++currentConstraintIdMax;
         try {
-            this.insertConstraintWriter.write(new int[]{constraintId, constraint.getConstraintCollection().getId()});
+            this.insertConstraintWriter.write(new int[]{constraintId, constraintCollection.getId()});
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -216,7 +224,7 @@ public class SQLiteConstraintHandler {
             IntCollection ids = new IntArrayList();
             String sqlGetScope = String
                     .format("SELECT id from target, scope where scope.targetId = target.id and scope.constraintCollectionId=%d;",
-                            rdbmsConstraintCollection.getId());
+                        rdbmsConstraintCollection.getId());
             try (ResultSet rs = this.databaseAccess.query(sqlGetScope, "Target", "Scope")) {
                 while (rs.next()) {
                     ids.add(rs.getInt("id"));

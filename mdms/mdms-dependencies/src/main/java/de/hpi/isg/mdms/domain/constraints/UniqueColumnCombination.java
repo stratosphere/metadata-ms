@@ -24,7 +24,6 @@ import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
@@ -45,7 +44,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class UniqueColumnCombination extends AbstractConstraint implements RDBMSConstraint {
+public class UniqueColumnCombination extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class UniqueColumnCombinationSQLiteSerializer implements
             ConstraintSQLSerializer<UniqueColumnCombination> {
@@ -326,25 +325,22 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
     private static final long serialVersionUID = -932394088609862495L;
     private UniqueColumnCombination.Reference target;
 
+    @Deprecated
     public static UniqueColumnCombination build(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target);
         return uniqueColumnCombination;
     }
 
     public static UniqueColumnCombination buildAndAddToCollection(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private UniqueColumnCombination(final UniqueColumnCombination.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+
+    public UniqueColumnCombination(final UniqueColumnCombination.Reference target) {
         this.target = target;
     }
 

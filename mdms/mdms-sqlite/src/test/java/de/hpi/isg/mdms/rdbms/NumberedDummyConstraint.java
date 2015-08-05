@@ -23,7 +23,6 @@ import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntLists;
@@ -42,7 +41,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class NumberedDummyConstraint extends AbstractConstraint implements RDBMSConstraint {
+public class NumberedDummyConstraint extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class DummySQLiteSerializer implements ConstraintSQLSerializer<NumberedDummyConstraint> {
 
@@ -158,9 +157,9 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                     }
                     dummys
                             .add(NumberedDummyConstraint.build(
-                                    new NumberedDummyConstraint.Reference(this.sqlInterface.getColumnById(rsdummys
-                                            .getInt("columnId"))), constraintCollection,
-                                    rsdummys.getInt("dummy")));
+                                    new NumberedDummyConstraint.Reference(
+                                        this.sqlInterface.getColumnById(rsdummys.getInt("columnId"))),
+                                        rsdummys.getInt("dummy")));
                 }
                 rsdummys.close();
 
@@ -234,27 +233,21 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
     private Reference target;
 
-    /**
-     * @see de.hpi.isg.mdms.model.constraints.AbstractConstraint
-     */
-    private NumberedDummyConstraint(final Reference target,
-                                    final ConstraintCollection constraintCollection, int value) {
+    private NumberedDummyConstraint(final Reference target, int value) {
 
-        super(constraintCollection);
         this.target = target;
         this.value = value;
     }
 
-    public static NumberedDummyConstraint build(final Reference target, ConstraintCollection constraintCollection,
-            int numTuples) {
-        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, constraintCollection, numTuples);
+    public static NumberedDummyConstraint build(final Reference target, int numTuples) {
+        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, numTuples);
         return dummy;
     }
 
     public static NumberedDummyConstraint buildAndAddToCollection(final Reference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, constraintCollection, numTuples);
+        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, numTuples);
         constraintCollection.add(dummy);
         return dummy;
     }

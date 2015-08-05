@@ -17,12 +17,12 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -38,7 +38,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
+public class TupleCount extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer<TupleCount> {
 
@@ -211,27 +211,23 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
     private SingleTargetReference target;
 
-    /**
-     * @see AbstractConstraint
-     */
-    private TupleCount(final SingleTargetReference target,
-            final ConstraintCollection constraintCollection, int numTuples) {
+    public TupleCount(final SingleTargetReference target, int numTuples) {
 
-        super(constraintCollection);
         this.target = target;
         this.numTuples = numTuples;
     }
 
+    @Deprecated
     public static TupleCount build(final SingleTargetReference target, ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, numTuples);
         return tupleCount;
     }
 
     public static TupleCount buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, numTuples);
         constraintCollection.add(tupleCount);
         return tupleCount;
     }

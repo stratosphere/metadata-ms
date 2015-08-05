@@ -113,7 +113,7 @@ public class DefaultMetadataStoreTest {
                             List<Column> dependentColumns;
                             List<Column> referencedColumns;
                             if (column1 != column2 && random.nextInt(10 * loadFactorForCreateComplexSchemaTest) <= 0) {
-                                Constraint constraint = new TestConstraint(constraintCollection, column1, column2);
+                                Constraint constraint = new TestConstraint(column1, column2);
                                 constraintCollection.add(constraint);
                                 numInclusionDependencies++;
                                 if (numInclusionDependencies >= 3000 * loadFactorForCreateComplexSchemaTest) {
@@ -184,8 +184,7 @@ public class DefaultMetadataStoreTest {
 
         @SuppressWarnings("unused")
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeConstraint = new TestConstraint(mock(ConstraintCollection.class),
-                col, col);
+        final Constraint dummyTypeConstraint = new TestConstraint(col, col);
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
         constraintCollection.add(dummyTypeConstraint);

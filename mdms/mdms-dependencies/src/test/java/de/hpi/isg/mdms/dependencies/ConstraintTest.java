@@ -120,8 +120,8 @@ public class ConstraintTest {
         final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
         final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn.getId()), cC, 1);
-        final DistinctValueCount distinctValueCount2 = DistinctValueCount.build(
-                new SingleTargetReference(dummyColumn.getId()), cC, 1);
+        final DistinctValueCount distinctValueCount2 = new DistinctValueCount(
+                new SingleTargetReference(dummyColumn.getId()), 1);
 
         assertEquals(distinctValueCount2.getNumDistinctValues(), 1);
 
@@ -136,15 +136,14 @@ public class ConstraintTest {
         final Column dummyColumn2 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn2", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
-        final InclusionDependency ind1 = InclusionDependency.build(new InclusionDependency.Reference(new Column[] {
+        final InclusionDependency ind1 = new InclusionDependency(new InclusionDependency.Reference(new Column[] {
                 dummyColumn1,
                 dummyColumn2 },
-                new Column[] { dummyColumn2, dummyColumn1 }), cC);
-        final InclusionDependency ind2 = InclusionDependency.build(new InclusionDependency.Reference(new Column[] {
+                new Column[] { dummyColumn2, dummyColumn1 }));
+        final InclusionDependency ind2 = new InclusionDependency(new InclusionDependency.Reference(new Column[] {
                 dummyColumn1,
                 dummyColumn2 },
-                new Column[] { dummyColumn2, dummyColumn1 }), cC);
+                new Column[] { dummyColumn2, dummyColumn1 }));
 
         assertEquals(ind1.getArity(), 2);
 
@@ -161,11 +160,10 @@ public class ConstraintTest {
         final Column dummyColumn3 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn3", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
         @SuppressWarnings("unused")
-        final InclusionDependency ind1 = InclusionDependency.build(new InclusionDependency.Reference(
+        final InclusionDependency ind1 = new InclusionDependency(new InclusionDependency.Reference(
                 new Column[] { dummyColumn1 },
-                new Column[] { dummyColumn2, dummyColumn3 }), cC);
+                new Column[] { dummyColumn2, dummyColumn3 }));
     }
 
     @Test
