@@ -311,6 +311,16 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         }
 
         public Reference(final int[] dependentColumnIds, final int[] referencedColumnIds) {
+            // Sanity check: is the ordering of the IDs fulfilled?
+            for (int i = 1; i < dependentColumnIds.length; i++) {
+              if (dependentColumnIds[i - 1] < dependentColumnIds[i]) continue;
+              if (dependentColumnIds[i - 1] > dependentColumnIds[i]) {
+                throw new IllegalArgumentException("Dependent column IDs are not in ascending order: " + Arrays.toString(dependentColumnIds));
+              } else if (referencedColumnIds[i - 1] >= referencedColumnIds[i]){
+                throw new IllegalArgumentException("Referenced column IDs are not in ascending order on equal dependent columns: " +
+                    Arrays.toString(dependentColumnIds) + " < " + Arrays.toString(referencedColumnIds));
+              }
+            }
             this.dependentColumns = dependentColumnIds;
             this.referencedColumns = referencedColumnIds;
         }
@@ -379,6 +389,38 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
 
     public int getArity() {
         return this.getTargetReference().getDependentColumns().length;
+    }
+
+  /**
+   * Checks whether this inclusion dependency is implied by another inclusion dependency.
+   * @param that is the allegedly implying IND
+   * @return whether this IND is implied
+   */
+    public boolean isImpliedBy(InclusionDependency that) {
+      if (this.getArity() > that.getArity()) {
+        return false;
+      }
+
+      // Co-iterate the two INDs and make use of the sorting of the column IDs.
+      int thisI = 0, thatI = 0;
+      while (thisI < this.getArity() && thatI < that.getArity() && (this.getArity() - thisI <= that.getArity() - thatI)) {
+        int thisCol = this.getTargetReference().dependentColumns[thisI];
+        int thatCol = that.getTargetReference().dependentColumns[thatI];
+        if (thisCol == thatCol) {
+          thisCol = this.getTargetReference().referencedColumns[thisI];
+          thatCol = that.getTargetReference().referencedColumns[thatI];
+        }
+        if (thisCol == thatCol) {
+          thisI++;
+          thatI++;
+        } else if (thisCol > thatCol) {
+          thatI++;
+        } else {
+          return false;
+        }
+      }
+
+      return thisI == this.getArity();
     }
 
     @Override
