@@ -131,19 +131,20 @@ public class ConstraintTest {
     @Test
     public void testInclusionDependency() {
 
-        final Column dummyColumn1 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
+      MetadataStore metadataStore = new DefaultMetadataStore();
+      final Column dummyColumn1 = DefaultColumn.buildAndRegister(metadataStore, Mockito.mock(Table.class),
                 "dummyColumn1", null, Mockito.mock(Location.class));
-        final Column dummyColumn2 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
+        final Column dummyColumn2 = DefaultColumn.buildAndRegister(metadataStore, Mockito.mock(Table.class),
                 "dummyColumn2", null, Mockito.mock(Location.class));
 
-        final InclusionDependency ind1 = new InclusionDependency(new InclusionDependency.Reference(new Column[] {
+        final InclusionDependency ind1 = new InclusionDependency(InclusionDependency.Reference.sortAndBuild(new Column[]{
                 dummyColumn1,
-                dummyColumn2 },
-                new Column[] { dummyColumn2, dummyColumn1 }));
-        final InclusionDependency ind2 = new InclusionDependency(new InclusionDependency.Reference(new Column[] {
+                dummyColumn2},
+            new Column[]{dummyColumn2, dummyColumn1}));
+        final InclusionDependency ind2 = new InclusionDependency(InclusionDependency.Reference.sortAndBuild(new Column[]{
                 dummyColumn1,
-                dummyColumn2 },
-                new Column[] { dummyColumn2, dummyColumn1 }));
+                dummyColumn2},
+            new Column[]{dummyColumn2, dummyColumn1}));
 
         assertEquals(ind1.getArity(), 2);
 
@@ -160,6 +161,7 @@ public class ConstraintTest {
         final Column dummyColumn3 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn3", null, Mockito.mock(Location.class));
 
+        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
         @SuppressWarnings("unused")
         final InclusionDependency ind1 = new InclusionDependency(new InclusionDependency.Reference(
                 new Column[] { dummyColumn1 },

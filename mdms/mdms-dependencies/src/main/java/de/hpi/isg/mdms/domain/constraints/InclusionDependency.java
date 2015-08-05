@@ -17,13 +17,13 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
-import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
@@ -33,7 +33,11 @@ import org.apache.commons.lang3.Validate;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Constraint implementation for an n-ary inclusion dependency.
@@ -303,7 +307,43 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             return intArray;
         }
 
-        int[] dependentColumns;
+      /**
+       * Creates an IND reference and in doing so puts the column pairs in the right order.
+       *
+       * @param dependentColumns are the dependent columns in the IND
+       * @param referencedColumns are the referneced columns in the IND
+       * @return the canonical IND reference
+       */
+      public static Reference sortAndBuild(final Column[] dependentColumns, final Column[] referencedColumns) {
+        return sortAndBuild(toIntArray(dependentColumns), toIntArray(referencedColumns));
+      }
+
+      /**
+       * Creates an IND reference and in doing so puts the column pairs in the right order.
+       *
+       * @param dep are the dependent column IDs in the IND
+       * @param ref are the referneced column IDs in the IND
+       * @return the canonical IND reference
+       */
+        public static Reference sortAndBuild(int[] dep, int[] ref) {
+          for (int j = ref.length - 1; j > 0; j--) {
+            for (int i = j - 1; i >= 0; i--) {
+              if (dep[i] > dep[j] || (dep[i] == dep[j] && ref[i] > ref[j])) {
+                swap(dep, i, j);
+                swap(ref, i, j);
+              }
+            }
+          }
+          return new Reference(dep, ref);
+        }
+
+        private static void swap(int[] array, int i, int j) {
+          int temp = array[i];
+          array[i] = array[j];
+          array[j] = temp;
+        }
+
+      int[] dependentColumns;
         int[] referencedColumns;
 
         public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
@@ -324,6 +364,8 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             this.dependentColumns = dependentColumnIds;
             this.referencedColumns = referencedColumnIds;
         }
+
+
 
         @Override
         public IntCollection getAllTargetIds() {
@@ -347,7 +389,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             return this.referencedColumns;
         }
 
-        @Override
+      @Override
         public String toString() {
             return "Reference [dependentColumns=" + Arrays.toString(dependentColumns) + ", referencedColumns="
                     + Arrays.toString(referencedColumns) + "]";
