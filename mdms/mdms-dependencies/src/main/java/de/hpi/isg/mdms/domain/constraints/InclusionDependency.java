@@ -351,23 +351,39 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         }
 
         public Reference(final int[] dependentColumnIds, final int[] referencedColumnIds) {
-            // Sanity check: is the ordering of the IDs fulfilled?
-            for (int i = 1; i < dependentColumnIds.length; i++) {
-              if (dependentColumnIds[i - 1] < dependentColumnIds[i]) continue;
-              if (dependentColumnIds[i - 1] > dependentColumnIds[i]) {
-                throw new IllegalArgumentException("Dependent column IDs are not in ascending order: " + Arrays.toString(dependentColumnIds));
-              } else if (referencedColumnIds[i - 1] >= referencedColumnIds[i]){
-                throw new IllegalArgumentException("Referenced column IDs are not in ascending order on equal dependent columns: " +
-                    Arrays.toString(dependentColumnIds) + " < " + Arrays.toString(referencedColumnIds));
-              }
-            }
-            this.dependentColumns = dependentColumnIds;
-            this.referencedColumns = referencedColumnIds;
+          this.dependentColumns = dependentColumnIds;
+          this.referencedColumns = referencedColumnIds;
         }
 
+      /**
+       * Tests if this is a valid reference.
+       *
+       * @return whether it is a valid reference
+       */
+      public boolean isValid() {
+        // Referenced and dependent side existing and similar?
+        if (this.dependentColumns == null || this.referencedColumns == null || this.dependentColumns.length == 0
+            || this.dependentColumns.length != this.referencedColumns.length) {
+          return false;
+        }
+        // Is the ordering of the IDs fulfilled?
+        for (int i = 1; i < this.dependentColumns.length; i++) {
+          if (this.dependentColumns[i - 1] < this.dependentColumns[i]) continue;
+          if (this.dependentColumns[i - 1] > this.dependentColumns[i]) {
+//            throw new IllegalArgumentException("Dependent column IDs are not in ascending order: " + Arrays.toString(dependentColumnIds));
+            return false;
+          } else if (this.referencedColumns[i - 1] >= this.referencedColumns[i]){
+//            throw new IllegalArgumentException("Referenced column IDs are not in ascending order on equal dependent columns: " +
+//                Arrays.toString(dependentColumnIds) + " < " + Arrays.toString(referencedColumnIds));
+            return false;
+          }
+        }
+
+        return true;
+      }
 
 
-        @Override
+      @Override
         public IntCollection getAllTargetIds() {
             IntList allTargetIds = new IntArrayList(this.dependentColumns.length + this.referencedColumns.length);
             allTargetIds.addElements(0, this.dependentColumns);
