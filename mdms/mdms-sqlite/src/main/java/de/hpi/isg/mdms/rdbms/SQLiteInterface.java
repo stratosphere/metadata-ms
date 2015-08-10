@@ -488,6 +488,18 @@ public class SQLiteInterface implements SQLInterface {
     public String toString() {
         return "SQLiteInterface[" + this.databaseAccess.getConnection().getClass() + "]";
     }
+    
+    @Override
+    public String getDatabaseURL() {
+    	try {
+			return this.databaseAccess.getConnection().getMetaData().getURL();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+
+    }
+    
 
 	@Override
 	public void closeMetaDataStore() {

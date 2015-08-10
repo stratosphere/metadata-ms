@@ -368,4 +368,6 @@ public interface SQLInterface {
     public static enum RDBMS {
         SQLITE
     }
+
+	public String getDatabaseURL();
 }
