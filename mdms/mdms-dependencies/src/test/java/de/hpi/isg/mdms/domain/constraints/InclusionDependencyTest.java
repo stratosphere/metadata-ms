@@ -68,4 +68,15 @@ public class InclusionDependencyTest {
     }
   }
 
+  @Test
+  public void testIsTrivial() {
+    int[] cols1 = new int[] { 1, 2, 3};
+    int[] cols2 = new int[] { 2, 3, 1};
+    int[] cols3 = new int[0];
+
+    Assert.assertTrue(new InclusionDependency(new InclusionDependency.Reference(cols1, cols1)).isTrivial());
+    Assert.assertFalse(new InclusionDependency(new InclusionDependency.Reference(cols1, cols2)).isTrivial());
+    Assert.assertTrue(new InclusionDependency(new InclusionDependency.Reference(cols3, cols3)).isTrivial());
+  }
+
 }

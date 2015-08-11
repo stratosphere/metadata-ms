@@ -1,11 +1,11 @@
 /***********************************************************************************************************************
  * Copyright (C) 2014 by Sebastian Kruse
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -41,7 +41,7 @@ import java.util.List;
 
 /**
  * Constraint implementation for an n-ary inclusion dependency.
- * 
+ *
  * @author Sebastian Kruse
  */
 public class InclusionDependency extends AbstractHashCodeAndEquals implements RDBMSConstraint {
@@ -479,6 +479,14 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
       }
 
       return thisI == this.getArity();
+    }
+
+    /**
+     * Tests this inclusion dependency for triviality, i.e., whether the dependent and referenced sides are equal.
+     * @return whether this is a trivial inclusion dependency
+     */
+    public boolean isTrivial() {
+        return Arrays.equals(this.target.dependentColumns, this.target.referencedColumns);
     }
 
     @Override
