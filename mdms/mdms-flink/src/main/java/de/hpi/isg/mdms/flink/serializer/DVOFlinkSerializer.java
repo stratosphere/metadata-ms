@@ -14,17 +14,28 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 
 public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValueOverlap, Tuple3<Integer, Integer, Integer>> {
 
-	@Override
-	public DistinctValueOverlap buildAndAddToCollection(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection constraintCollection) {
-
-		DistinctValueOverlap constraint;
-			synchronized (constraintCollection) {
-		              constraint =  DistinctValueOverlap.buildAndAddToCollection(tuple.f0, 
-		                        new DistinctValueOverlap.Reference(tuple.f1, tuple.f2), constraintCollection);
+	private class AddOverlapCommand implements Runnable {
+		        
+		        private final int column1, column2, overlap;
+		        private final ConstraintCollection constraintCollection;
+		    
+		        public AddOverlapCommand(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection constraintCollection) {
+		            super();
+		            this.column1 = tuple.f0;
+		            this.column2 = tuple.f1;
+		            this.overlap = tuple.f2;
+		            this.constraintCollection = constraintCollection;
+		        }
+		        
+		        @Override
+		        public void run() {
+		            synchronized (this.constraintCollection) {
+		                DistinctValueOverlap.buildAndAddToCollection(this.overlap, 
+		                        new DistinctValueOverlap.Reference(this.column1, this.column2), this.constraintCollection);
 		            }
-		return constraint;
-    }
-
+		        }
+		        
+		    }
 
 	@Override
 	public DataSet<Tuple3<Integer, Integer, Integer>> getConstraintsFromCollection(
@@ -52,6 +63,12 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 		
 		return dbData;
 
+	}
+
+	@Override
+	public Runnable getAddRunnable(Tuple3<Integer, Integer, Integer> tuple,
+			ConstraintCollection constraintCollection) {
+		return new AddOverlapCommand(tuple, constraintCollection);
 	}
 
 }

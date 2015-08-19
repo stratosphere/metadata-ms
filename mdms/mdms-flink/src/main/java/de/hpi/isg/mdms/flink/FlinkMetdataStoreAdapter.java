@@ -1,12 +1,13 @@
 package de.hpi.isg.mdms.flink;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
+import org.apache.flink.api.java.io.RemoteCollectorConsumer;
+import org.apache.flink.api.java.io.RemoteCollectorImpl;
 import org.apache.flink.api.java.tuple.Tuple;
 
 import de.hpi.isg.mdms.flink.serializer.AbstractFlinkSerializer;
@@ -18,13 +19,17 @@ public class FlinkMetdataStoreAdapter implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
 
-	public static <T extends Tuple> void save(DataSet<T> constraints, ConstraintCollection constraintCollection, AbstractFlinkSerializer flinkSerializer){
-		List<Tuple> constraintsList = new ArrayList<Tuple>();
-		constraints.output(new LocalCollectionOutputFormat(constraintsList));
-		for (Tuple tuple: constraintsList){
-			flinkSerializer.buildAndAddToCollection(tuple, constraintCollection);
+	public static <T extends Tuple> void save(DataSet<T> constraints, final ConstraintCollection constraintCollection, final AbstractFlinkSerializer flinkSerializer){
+		
+		final ExecutorService executorService = Executors.newSingleThreadExecutor();
+		RemoteCollectorImpl.collectLocal(constraints, new RemoteCollectorConsumer<T>() {
+			
+			            @Override
+			            public void collect(T tuple) {
+			                executorService.execute(flinkSerializer.getAddRunnable(tuple, constraintCollection));
+			            }
+			        });
 		}
-	}
 
 	public static <T extends Tuple> DataSet<T> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,

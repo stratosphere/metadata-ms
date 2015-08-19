@@ -21,17 +21,35 @@ import de.hpi.isg.mdms.flink.SqLiteJDBCInputFormat;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 
-public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDependency, Tuple2<Integer, int[]>> {
+public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDependency, Tuple2<int[], Integer>> {
 
-	@Override
-	public FunctionalDependency buildAndAddToCollection(Tuple2<Integer, int[]> tuple, ConstraintCollection constraintCollection) {
+    private class AddFunctionalDependencyCommand implements Runnable {
 
-		throw new NotImplementedException();
+        private int[] lhs;
+		private Integer rhs;
+		private ConstraintCollection constraintCollection;
+
+		public AddFunctionalDependencyCommand(final Tuple2<int[], Integer> tuple, final ConstraintCollection constraintCollection) {
+            super();
+            this.lhs = tuple.f0;
+            this.rhs = tuple.f1;
+            this.constraintCollection = constraintCollection;
+        }
+
+        @Override
+        public void run() {
+        	synchronized(this.constraintCollection){
+        		final FunctionalDependency.Reference reference = new FunctionalDependency.Reference(
+                        rhs,
+                        lhs);
+                FunctionalDependency.buildAndAddToCollection(reference, this.constraintCollection);
+            }
+        }
     }
 
-
+	
 	@Override
-	public DataSet<Tuple2<Integer, int[]>> getConstraintsFromCollection(
+	public DataSet<Tuple2<int[], Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
 			ConstraintCollection datasourceCollection) {
@@ -45,7 +63,7 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
 		      SqLiteJDBCInputFormat.buildJDBCInputFormat()
 		                     .setDrivername("org.sqlite.JDBC")
 		                     .setDBUrl(rdbms.getSQLInterface().getDatabaseURL())
-		                     .setQuery("select FD.constraintId, rhs_col, lhs_col from FD, FD_LHS "
+		                     .setQuery("select FD.constraintId, lhs_col, rhs_col from FD, FD_LHS "
 		                     		+ "where FD.constraintId = FD_LHS.constraintId and FD.constraintId in "
 		                     		+ "(select id from Constraintt where constraintCollectionId = '" + datasourceCollection.getId() + "')")
 		                     .finish(),
@@ -53,31 +71,38 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
 		      new TupleTypeInfo<Tuple3<Integer, Integer, Integer>>(BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO)
 		    );
 
-		DataSet<Tuple2<Integer, int[]>> inds = dbData.groupBy(0)
+		DataSet<Tuple2<int[], Integer>> fds = dbData.groupBy(0)
 										.reduceGroup(new CreateFDs());
 		
-		return inds;
+		return fds;
 
 	}
 	
     @SuppressWarnings("serial")
-    private static final class CreateFDs implements GroupReduceFunction<Tuple3<Integer, Integer, Integer>, Tuple2<Integer, int[]>> {
+    private static final class CreateFDs implements GroupReduceFunction<Tuple3<Integer, Integer, Integer>, Tuple2<int[], Integer>> {
 
 		@Override
 		public void reduce(Iterable<Tuple3<Integer, Integer, Integer>> values,
-				Collector<Tuple2<Integer, int[]>> out) throws Exception {
+				Collector<Tuple2<int[], Integer>> out) throws Exception {
 
 			Integer rhs = null;
 			ArrayList<Integer> lhs = new ArrayList<Integer>();
 			for (Tuple3<Integer, Integer, Integer> tuple: values) {
-				rhs = tuple.f1;
-				lhs.add(tuple.f2);
+				lhs.add(tuple.f1);
+				rhs = tuple.f2;
 			}
-			out.collect(new Tuple2<Integer, int[]>(rhs,
-					ArrayUtils.toPrimitive(lhs.toArray(new Integer[0]))));
+			out.collect(new Tuple2<int[], Integer>(
+					ArrayUtils.toPrimitive(lhs.toArray(new Integer[0])),
+					rhs));
 		}
         
-    }    
+    }
+
+	@Override
+	public Runnable getAddRunnable(Tuple2<int[], Integer> tuple,
+			ConstraintCollection constraintCollection) {
+		return new AddFunctionalDependencyCommand(tuple, constraintCollection);
+	}    
     
 }
 

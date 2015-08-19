@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.flink.serializer;
 
+
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -15,17 +16,27 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 
 public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValueCount, Tuple2<Integer, Integer>> {
 
-	@Override
-	public DistinctValueCount buildAndAddToCollection(Tuple2<Integer, Integer> tuple, ConstraintCollection constraintCollection) {
-
-		DistinctValueCount constraint;
-			synchronized (constraintCollection) {
-		        constraint = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(tuple.f0),
-		                constraintCollection, tuple.f1);
+	private class AddDistinctValueCountCommand implements Runnable {
+		
+		        private int targetId;
+		        private int numDistinctValues;
+		        private ConstraintCollection constraintCollection;
+		
+		        public AddDistinctValueCountCommand(final Tuple2<Integer, Integer> tuple, final ConstraintCollection constraintCollection) {
+		            this.targetId = tuple.f0;
+		            this.numDistinctValues = tuple.f1;
+		            this.constraintCollection = constraintCollection;
+		        }
+		
+		        @Override
+		        public void run() {
+		            DistinctValueCount constraint;
+		                    synchronized (this.constraintCollection) {
+		                        constraint = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(this.targetId),
+		                                this.constraintCollection, this.numDistinctValues);
+		                    }
+		        }
 		    }
-			return constraint;
-    }
-
 
 	@Override
 	public DataSet<Tuple2<Integer, Integer>> getConstraintsFromCollection(
@@ -53,6 +64,12 @@ public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 		
 		return dbData;
 
+	}
+	
+	@Override
+	public Runnable getAddRunnable(Tuple2<Integer, Integer> tuple,
+			ConstraintCollection constraintCollection) {
+		return new AddDistinctValueCountCommand(tuple, constraintCollection);
 	}
 
 }

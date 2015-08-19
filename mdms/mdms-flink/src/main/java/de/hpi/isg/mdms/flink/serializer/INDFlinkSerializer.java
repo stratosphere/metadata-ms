@@ -21,21 +21,50 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 
 public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDependency, Tuple2<int[], int[]>> {
 
-	@Override
-	public InclusionDependency buildAndAddToCollection(Tuple2<int[], int[]> tuple, ConstraintCollection constraintCollection) {
+    private class AddInclusionDependencyCommand implements Runnable {
 
-		InclusionDependency constraint;
+        private int[] dependent;
+		private int[] referenced;
+		private ConstraintCollection constraintCollection;
 
-        final InclusionDependency.Reference reference = new InclusionDependency.Reference(
-                tuple.f0,
-                tuple.f1);
-		synchronized (constraintCollection) {
-			constraint = InclusionDependency.buildAndAddToCollection(reference, constraintCollection);
-	   }
-		return constraint;
+		public AddInclusionDependencyCommand(final Tuple2<int[], int[]> indTuple, final ConstraintCollection constraintCollection) {
+            super();
+            this.dependent = indTuple.f0;
+            this.referenced = indTuple.f1;
+            this.constraintCollection = constraintCollection;
+        }
+
+        @Override
+        public void run() {
+        	synchronized(this.constraintCollection){
+        		final InclusionDependency.Reference reference = new InclusionDependency.Reference(
+                        dependent,
+                        referenced);
+                InclusionDependency.buildAndAddToCollection(reference, this.constraintCollection);
+            }
+        }
     }
-
-
+	
+    
+    @SuppressWarnings("serial")
+        private static final class CreateINDs implements GroupReduceFunction<Tuple3<Integer, Integer, Integer>, Tuple2<int[], int[]>> {
+    
+    		@Override
+    		public void reduce(Iterable<Tuple3<Integer, Integer, Integer>> values,
+    				Collector<Tuple2<int[], int[]>> out) throws Exception {
+    
+    			ArrayList<Integer> dependent = new ArrayList<Integer>();
+    		ArrayList<Integer> referenced = new ArrayList<Integer>();
+    			for (Tuple3<Integer, Integer, Integer> tuple: values) {
+    				dependent.add(tuple.f1);
+    				referenced.add(tuple.f2);
+    			}
+    			out.collect(new Tuple2<int[], int[]>(ArrayUtils.toPrimitive(dependent.toArray(new Integer[0])),
+    					ArrayUtils.toPrimitive(referenced.toArray(new Integer[0]))));
+    		}
+            
+        }
+	
 	@Override
 	public DataSet<Tuple2<int[], int[]>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
@@ -65,34 +94,15 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
 		return inds;
 
 	}
+
+	@Override
+	public Runnable getAddRunnable(Tuple2<int[], int[]> tuple,
+			ConstraintCollection constraintCollection) {
+		return new AddInclusionDependencyCommand(tuple, constraintCollection);
+	}
 	
-    @SuppressWarnings("serial")
-    private static final class CreateINDs implements GroupReduceFunction<Tuple3<Integer, Integer, Integer>, Tuple2<int[], int[]>> {
-
-		@Override
-		public void reduce(Iterable<Tuple3<Integer, Integer, Integer>> values,
-				Collector<Tuple2<int[], int[]>> out) throws Exception {
-
-			ArrayList<Integer> dependent = new ArrayList<Integer>();
-			ArrayList<Integer> referenced = new ArrayList<Integer>();
-			for (Tuple3<Integer, Integer, Integer> tuple: values) {
-				dependent.add(tuple.f1);
-				referenced.add(tuple.f2);
-			}
-			out.collect(new Tuple2<int[], int[]>(ArrayUtils.toPrimitive(dependent.toArray(new Integer[0])),
-					ArrayUtils.toPrimitive(referenced.toArray(new Integer[0]))));
-		}
-        
-    }
-
-    public static void main(String[] args){
-    	ArrayList<Integer> dependent = new ArrayList<Integer>();
-    	dependent.add(1);
-    	dependent.add(3);
-    	int[] array = ArrayUtils.toPrimitive(dependent.toArray(new Integer[0]));
-    	System.out.println(array.length);
-    }
-    
+	
+	
     
 }
 
