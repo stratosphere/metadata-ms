@@ -1,12 +1,9 @@
 package de.hpi.isg.mdms.hadoop.cassandra;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import org.apache.cassandra.hadoop.cql3.CqlBulkOutputFormat;
-import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
-import org.apache.cassandra.thrift.Mutation;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -16,7 +13,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
  * This is a wrapper class to enable flink jobs to use the CqlBulkOutputFormat 
  * to write results via hadoop to cassandra.
  *
- *CqlBulkOutputFormat cannot be used directy since flink jobs cannot have outputs with the signature <Object, List<ByteBuffer>>,
+ *CqlBulkOutputFormat cannot be used directly since flink jobs cannot have outputs with the signature <Object, List<ByteBuffer>>,
  *since ByteBuffer and List are abstract types. 
  *
  */
@@ -29,9 +26,7 @@ public class CqlFlinkOutputFormat extends OutputFormat<String, ArrayList<Object>
 	    private CqlBulkOutputFormat bulkOutputFormat;
 
 		public CqlFlinkOutputFormat() {
-		super();
-		bulkOutputFormat = new CqlBulkOutputFormat();
-//		bulkOutputFormat = new BulkOutputFormat();
+			bulkOutputFormat = new CqlBulkOutputFormat();
 		}
 
 		@Override

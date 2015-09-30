@@ -43,12 +43,6 @@ implements org.apache.hadoop.mapred.RecordWriter<String,ArrayList<Object>>
     	bulkRecordWriter = new CqlBulkRecordWriter(context);
    }
 
-    
-	public void close(Reporter reporter) throws IOException {
-		bulkRecordWriter.close(reporter);
-		
-	}
-
 	@Override
 	public void write(String key, ArrayList<Object> values) throws IOException{
 		ArrayList<ByteBuffer> byteValues = new ArrayList<ByteBuffer>();
@@ -83,6 +77,12 @@ implements org.apache.hadoop.mapred.RecordWriter<String,ArrayList<Object>>
 	public void close(TaskAttemptContext context) throws IOException,
 			InterruptedException {
 		bulkRecordWriter.close(context);
+	}
+
+	@Override
+	public void close(Reporter reporter) throws IOException {
+		bulkRecordWriter.close(reporter);
+		
 	}
     
 }

@@ -27,8 +27,7 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- * The default implementation of the {@link MetadataStore} for storing the data inside of a RDBMS. The choice of
- * the underlying database is given through the use of an appropriate {@link de.hpi.isg.mdms.rdbms.SQLInterface}.
+ * The cassandra implementation of the {@link MetadataStore} for storing the data inside of a cassandra database.
  */
 
 public class CassaMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
@@ -73,11 +72,12 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     public static CassaMetadataStore createNewInstance(String host,
             Map<String, String> configuration) {
     	
-		cluster = Cluster.builder().addContactPoint(host)
+		cluster = Cluster.builder().addContactPoint(host).withPort(9042)
 				.withRetryPolicy(DefaultRetryPolicy.INSTANCE)
 				.withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
 				.build();
 
+		cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(3000);
 		for ( KeyspaceMetadata keyspace : cluster.getMetadata().getKeyspaces()) {
 			if (keyspace.getName().equals("metadatastore")){
 				LOGGER.warn("The metadata store will be overwritten.");
@@ -103,6 +103,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 				session.execute(statement);				
 			}
 		 } catch (IOException e) {
+			 System.out.println("exception");
 			e.printStackTrace();
 		}
 		session = cluster.connect("metadatastore");
@@ -124,10 +125,11 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     private CassaMetadataStore(String host) {
     	this.host = host;
-    	this.cluster = Cluster.builder().addContactPoint(host)
+    	this.cluster = Cluster.builder().addContactPoint(host).withPort(9042)
 				.withRetryPolicy(DefaultRetryPolicy.INSTANCE)
 				.withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
 				.build();
+    	this.cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(1000);
     	this.session = cluster.connect("metadatastore");
         this.idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
     }
@@ -299,8 +301,8 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
 	@Override
 	public void close() {
-		this.cluster.close();
-		this.session.close();
+		CassaMetadataStore.cluster.close();
+		CassaMetadataStore.session.close();
 
 		
 	}
