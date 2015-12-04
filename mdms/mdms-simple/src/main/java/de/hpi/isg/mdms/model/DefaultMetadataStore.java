@@ -1,44 +1,28 @@
 package de.hpi.isg.mdms.model;
 
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
+import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.constraints.DefaultConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.*;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.AbstractTarget;
 import de.hpi.isg.mdms.model.targets.DefaultSchema;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.targets.AbstractTarget;
-import de.hpi.isg.mdms.model.constraints.DefaultConstraintCollection;
+import de.hpi.isg.mdms.model.util.IdUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.model.experiment.Algorithm;
-import de.hpi.isg.mdms.model.experiment.Annotation;
-import de.hpi.isg.mdms.model.experiment.DefaultAlgorithm;
-import de.hpi.isg.mdms.model.experiment.DefaultExperiment;
-import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import java.io.*;
+import java.util.*;
 
 /**
  * The default in-memory implementation of the {@link de.hpi.isg.mdms.model.MetadataStore}.
@@ -425,7 +409,17 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
 	@Override
 	public Collection<Experiment> getExperiments() {
-		return this.experiments;
+        return this.experiments;
+    }
+
+    @Override
+	public void close() {
+		try {
+			this.flush();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
 	}
 
 }

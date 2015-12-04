@@ -24,12 +24,12 @@ import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntList;
+
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -45,7 +45,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class UniqueColumnCombination extends AbstractConstraint implements RDBMSConstraint {
+public class UniqueColumnCombination extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class UniqueColumnCombinationSQLiteSerializer implements
             ConstraintSQLSerializer<UniqueColumnCombination> {
@@ -55,7 +55,7 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
 
         private final SQLInterface sqlInterface;
 
-        DatabaseWriter<Integer> insertUniqueColumnCombinationWriter;
+        DatabaseWriter<int[]> insertUniqueColumnCombinationWriter;
 
         DatabaseWriter<Integer> deleteUniqueColumnCombinationWriter;
 
@@ -68,15 +68,17 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
         DatabaseQuery<Integer> queryUniqueColumnCombinationsForConstraintCollection;
 
         DatabaseQuery<Integer> queryUCCPart;
+		private int currentConstraintIdMax;
 
-        private static final PreparedStatementBatchWriter.Factory<Integer> INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY =
+        private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId) VALUES (?);",
-                        new PreparedStatementAdapter<Integer>() {
+                        "INSERT INTO " + tableName + " (constraintId, constraintCollectionId) VALUES (?, ?);",
+                        new PreparedStatementAdapter<int[]>() {
                             @Override
-                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
+                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
-                                preparedStatement.setInt(1, parameter);
+                                preparedStatement.setInt(1, parameters[0]);
+                                preparedStatement.setInt(2, parameters[1]);
                             }
                         },
                         tableName);
@@ -122,18 +124,15 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
 
         private static final StrategyBasedPreparedQuery.Factory<Void> UNIQECOLUMNCOMBINATION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + ", constraintt where " + tableName
-                                + ".constraintId = constraintt.id;",
+                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
+                                + " from " + tableName + ";",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> UNIQECOLUMNCOMBINATION_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + ", constraintt where " + tableName
-                                + ".constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
+                                + " from " + tableName + " where " + tableName + ".constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -177,11 +176,15 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint uniqueColumnCombination) {
+        public void serialize(Constraint uniqueColumnCombination, ConstraintCollection constraintCollection) {
 
             Validate.isTrue(uniqueColumnCombination instanceof UniqueColumnCombination);
+            
+            ensureCurrentConstraintIdMaxInitialized();
+            int constraintId = ++ currentConstraintIdMax;
+            
             try {
-                insertUniqueColumnCombinationWriter.write(constraintId);
+                insertUniqueColumnCombinationWriter.write(new int[]{constraintId, constraintCollection.getId()});
 
                 IntCollection targetIds = ((UniqueColumnCombination) uniqueColumnCombination).getTargetReference()
                         .getAllTargetIds();
@@ -252,9 +255,10 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
                 String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    PRIMARY KEY ([constraintId]),\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id])\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id])\n" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createINDTable);
             }
@@ -290,6 +294,26 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
                 throw new RuntimeException(e);
             }
         }
+                
+        private void ensureCurrentConstraintIdMaxInitialized() {
+            if (this.currentConstraintIdMax != -1) {
+                return;
+            }
+    
+            try {
+                this.currentConstraintIdMax = 0;
+                	try (ResultSet res = this.sqlInterface.getDatabaseAccess().query("SELECT MAX(constraintId) from " + getTableNames().get(0) + ";", getTableNames().get(0))) {
+                        while (res.next()) {
+                        	if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
+                                this.currentConstraintIdMax = res.getInt("max(constraintId)");                    		
+                        	}
+                        }
+                    }	
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
@@ -326,25 +350,22 @@ public class UniqueColumnCombination extends AbstractConstraint implements RDBMS
     private static final long serialVersionUID = -932394088609862495L;
     private UniqueColumnCombination.Reference target;
 
+    @Deprecated
     public static UniqueColumnCombination build(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target);
         return uniqueColumnCombination;
     }
 
     public static UniqueColumnCombination buildAndAddToCollection(final UniqueColumnCombination.Reference target,
             ConstraintCollection constraintCollection) {
-        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target, constraintCollection);
+        UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private UniqueColumnCombination(final UniqueColumnCombination.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+
+    public UniqueColumnCombination(final UniqueColumnCombination.Reference target) {
         this.target = target;
     }
 

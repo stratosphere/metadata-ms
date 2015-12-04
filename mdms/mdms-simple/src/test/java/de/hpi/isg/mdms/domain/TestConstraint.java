@@ -1,8 +1,8 @@
 package de.hpi.isg.mdms.domain;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
@@ -13,12 +13,11 @@ import it.unimi.dsi.fastutil.ints.IntCollection;
  * @author Sebastian
  * @since 05.03.2015.
  */
-public class TestConstraint extends AbstractConstraint {
+public class TestConstraint implements Constraint {
 
     private final TestReference reference;
 
-    public TestConstraint(ConstraintCollection constraintCollection, Column column1, Column column2) {
-        super(constraintCollection);
+    public TestConstraint(Column column1, Column column2) {
         this.reference = new TestReference(column1, column2);
     }
 

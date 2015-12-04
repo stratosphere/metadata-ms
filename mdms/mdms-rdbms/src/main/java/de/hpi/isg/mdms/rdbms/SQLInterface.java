@@ -36,7 +36,7 @@ public interface SQLInterface {
      * Initializes an empty {@link de.hpi.isg.mdms.model.MetadataStore}. All Tables are dropped first if they exist. Creates all base tables
      * of a {@link RDBMSMetadataStore} and all tables used by it's known {@link ConstraintSQLSerializer}s.
      */
-    public void initializeMetadataStore();
+    void initializeMetadataStore();
 
     /**
      * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table and uses the corresponding {@link ConstraintSQLSerializer} to
@@ -44,21 +44,21 @@ public interface SQLInterface {
      *
      * @param constraint should be written
      */
-    public void writeConstraint(Constraint constraint);
+    void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection);
 
     /**
      * Writes the given schema into the database.
      *
      * @param schema is the schema to be written
      */
-    public void addSchema(RDBMSSchema schema);
+    void addSchema(RDBMSSchema schema);
 
     /**
      * Returns all {@link de.hpi.isg.mdms.model.targets.Target}s from the underlying database.
      *
      * @return the targets
      */
-    public Collection<? extends Target> getAllTargets();
+    Collection<? extends Target> getAllTargets();
 
     /**
      * Checks whether there exists a schema element with the given ID.
@@ -67,21 +67,21 @@ public interface SQLInterface {
      * @return whether the schema element exists
      * @throws SQLException
      */
-    public boolean isTargetIdInUse(int id) throws SQLException;
+    boolean isTargetIdInUse(int id) throws SQLException;
 
     /**
      * Returns all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s stored in the {@link de.hpi.isg.mdms.model.MetadataStore}.
      *
      * @return the constraint collections
      */
-    public Collection<ConstraintCollection> getAllConstraintCollections();
+    Collection<ConstraintCollection> getAllConstraintCollections();
 
     /**
      * Adds a {@link ConstraintCollection} to the database.
      *
      * @param constraintCollection is the collection to be added
      */
-    public void addConstraintCollection(ConstraintCollection constraintCollection);
+    void addConstraintCollection(ConstraintCollection constraintCollection);
 
     /**
      * Loads all schemas from the database.
@@ -95,12 +95,12 @@ public interface SQLInterface {
      *
      * @return the metadata store
      */
-    public RDBMSMetadataStore getMetadataStore();
+    RDBMSMetadataStore getMetadataStore();
 
     /**
      * Setter for the {@link RDBMSMetadataStore} this {@link SQLInterface} takes care of.
      */
-    public void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
+    void setMetadataStore(RDBMSMetadataStore rdbmsMetadataStore);
 
     /**
      * Loads all tables for a schema.
@@ -108,7 +108,7 @@ public interface SQLInterface {
      * @param rdbmsSchema is the schema whose tables shall be loaded
      * @return the tables of the schema
      */
-    public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
+    Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
 
     /**
      * Adds a table to the given schema.
@@ -116,7 +116,7 @@ public interface SQLInterface {
      * @param newTable is the table to add to the schema
      * @param schema   is the schema to that the table should be added
      */
-    public void addTableToSchema(RDBMSTable newTable, Schema schema);
+    void addTableToSchema(RDBMSTable newTable, Schema schema);
 
     /**
      * Loads all columns for a table.
@@ -124,7 +124,7 @@ public interface SQLInterface {
      * @param rdbmsTable is the table whose columns should be loaded
      * @return the loaded columns
      */
-    public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable);
+    Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable);
 
     /**
      * Adds a column to a table.
@@ -132,7 +132,7 @@ public interface SQLInterface {
      * @param newColumn is the column that should be added
      * @param table     is the table to which the column should be added
      */
-    public void addColumnToTable(RDBMSColumn newColumn, Table table);
+    void addColumnToTable(RDBMSColumn newColumn, Table table);
 
     /**
      * This function ensures that all base tables needed by the {@link de.hpi.isg.mdms.model.MetadataStore} are existing.
@@ -147,7 +147,7 @@ public interface SQLInterface {
      * @param target to be added
      * @param constraintCollection to whose scope the target should be added
      */
-    public void addScope(Target target, ConstraintCollection constraintCollection);
+    void addScope(Target target, ConstraintCollection constraintCollection);
 
     /**
      * Returns a {@link java.util.Collection} of all {@link de.hpi.isg.mdms.model.constraints.Constraint}s in a
@@ -156,7 +156,7 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection is the collection whose content is requested
      * @return the constraints within the constraint collection
      */
-    public Collection<Constraint> getAllConstraintsForConstraintCollection(
+    Collection<Constraint> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection rdbmsConstraintCollection);
 
     /**
@@ -165,7 +165,7 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection holds the scope
      * @return the schema elements within the scope
      */
-    public Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
+    Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
 
     /**
      * Loads a column with the given ID.
@@ -173,7 +173,7 @@ public interface SQLInterface {
      * @param columnId is the ID of the column to load
      * @return the loaded column
      */
-    public Column getColumnById(int columnId);
+    Column getColumnById(int columnId);
 
     /**
      * Load a table with the given ID.
@@ -181,7 +181,7 @@ public interface SQLInterface {
      * @param tableId is the ID of the table to load
      * @return the loaded table
      */
-    public Table getTableById(int tableId);
+    Table getTableById(int tableId);
 
     /**
      * Load a schema with the given ID.
@@ -189,7 +189,7 @@ public interface SQLInterface {
      * @param schemaId is the ID of the schema to load
      * @return the loaded schema
      */
-    public Schema getSchemaById(int schemaId);
+    Schema getSchemaById(int schemaId);
 
     /**
      * Returns a {@link ConstraintCollection} for a given id, <code>null</code> if no such exists.
@@ -197,12 +197,12 @@ public interface SQLInterface {
      * @param id of the constraint collection
      * @return the constraint collection
      */
-    public ConstraintCollection getConstraintCollectionById(int id);
+    ConstraintCollection getConstraintCollectionById(int id);
 
     /**
      * Saves the configuration of a {@link de.hpi.isg.mdms.model.MetadataStore}.
      */
-    public void saveConfiguration();
+    void saveConfiguration();
 
     /**
      * Loads the {@link de.hpi.isg.mdms.model.MetadataStore} configuration from the database.
@@ -238,7 +238,7 @@ public interface SQLInterface {
      * @param tablename the name of the table whose existance shall be verified
      * @return whether the table exists
      */
-    public boolean tableExists(String tablename);
+    boolean tableExists(String tablename);
 
     /**
      * This function executes a given <code>create table</code> statement.
@@ -258,9 +258,9 @@ public interface SQLInterface {
     /**
      * Returns the {@link DatabaseAccess} object that is used by this {@link SQLInterface}.
      *
-     * @return
+     * @return the {@link DatabaseAccess} object that is used by this {@link SQLInterface}
      */
-    public DatabaseAccess getDatabaseAccess();
+    DatabaseAccess getDatabaseAccess();
 
     /**
      * Tries to load a schema with the given name.
@@ -269,7 +269,7 @@ public interface SQLInterface {
      * @return the loaded schema or {@code null} if there is no such schema
      * @throws NameAmbigousException if there are multiple schemata with the given name
      */
-    public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
+    Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
     /**
      * Loads the schemas with the given name
@@ -277,7 +277,7 @@ public interface SQLInterface {
      * @param schemaName is the name of the schema to be loaded
      * @return the loaded schemas
      */
-    public Collection<Schema> getSchemasByName(String schemaName);
+    Collection<Schema> getSchemasByName(String schemaName);
 
     /**
      * Loads the columns with the given name.
@@ -285,7 +285,7 @@ public interface SQLInterface {
      * @param columnName is the name of the columns to load
      * @return the loaded columns
      */
-    public Collection<Column> getColumnsByName(String columnName);
+    Collection<Column> getColumnsByName(String columnName);
 
     /**
      * Loads the column with the given name.
@@ -295,7 +295,7 @@ public interface SQLInterface {
      * @return the column or {@code null} if no such column exists
      * @throws NameAmbigousException if there is more than one such column within the given table
      */
-    public Column getColumnByName(String columnName, Table table) throws NameAmbigousException;
+    Column getColumnByName(String columnName, Table table) throws NameAmbigousException;
 
     /**
      * Loads the table with the given name.
@@ -304,7 +304,7 @@ public interface SQLInterface {
      * @return the loaded table or {@code null} if no such table exists
      * @throws NameAmbigousException if there is more than table with the given name
      */
-    public Table getTableByName(String tableName) throws NameAmbigousException;
+    Table getTableByName(String tableName) throws NameAmbigousException;
 
     /**
      * Loads the tables with the given name.
@@ -312,39 +312,39 @@ public interface SQLInterface {
      * @param tableName is the name of the table to be loaded
      * @return the loaded tables
      */
-    public Collection<Table> getTablesByName(String tableName);
+    Collection<Table> getTablesByName(String tableName);
 
     /**
      * Removes a schema from the database.
      *
      * @param schema shall be removed
      */
-    public void removeSchema(RDBMSSchema schema);
+    void removeSchema(RDBMSSchema schema);
 
     /**
      * Removes a column from the database.
      *
      * @param column should be removed
      */
-    public void removeColumn(RDBMSColumn column);
+    void removeColumn(RDBMSColumn column);
 
     /**
      * Removes a table from the database.
      *
      * @param table is the table that should be removed
      */
-    public void removeTable(RDBMSTable table);
+    void removeTable(RDBMSTable table);
 
     /**
      * Removes a {@link ConstraintCollection} and all included {@link Constraint}s.
      */
-    public void removeConstraintCollection(ConstraintCollection constraintCollection);
+    void removeConstraintCollection(ConstraintCollection constraintCollection);
 
     /**
      * @return all stored {@link Location} types
      * @throws java.sql.SQLException
      */
-    public Collection<String> getLocationClassNames() throws SQLException;
+    Collection<String> getLocationClassNames() throws SQLException;
 
     /**
      * Stores a given {@link Location} type.
@@ -352,7 +352,7 @@ public interface SQLInterface {
      * @param locationType is the type of a {@link Location} to be stored
      * @throws java.sql.SQLException
      */
-    public void storeLocationType(Class<? extends Location> locationType) throws SQLException;
+    void storeLocationType(Class<? extends Location> locationType) throws SQLException;
 
     /**
      * Set whether the underlying DB should use journaling. Note that this experimental feature should not affect
@@ -363,112 +363,118 @@ public interface SQLInterface {
     void setUseJournal(boolean isUseJournal);
 
     /**
+     * Closes the the connection to the underlying database.
+     */
+    void closeMetaDataStore();
+    
+    /**
      * An enumeration of DBs supported by default.
      */
-    public static enum RDBMS {
+    enum RDBMS {
         SQLITE
     }
 
     /**
      * Loads all experiments of an algorithm.
      *
-     * @param the algorithm whose experiments should be loaded
+     * @param rdbmsAlgorithm the algorithm whose experiments should be loaded
      * @return a collection of experiments
      */
-	public Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm rdbmsAlgorithm);
+	Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm rdbmsAlgorithm);
 
 	
 	/**
 	 * Adds an algorithm to the database.
-	 * @param the algorithm that shall be added
+	 * @param algorithm the algorithm that shall be added
 	 */
-	public void addAlgorithm(RDBMSAlgorithm algorithm);
+	void addAlgorithm(RDBMSAlgorithm algorithm);
 
 	
 	/**
 	 * Adds an experiment to the database.
-	 * @param the experiment that shall be added
+	 * @param experiment the experiment that shall be added
 	 */
-	public void writeExperiment(RDBMSExperiment experiment);
+	void writeExperiment(RDBMSExperiment experiment);
 
 	/**
 	 * Adds a key-value-pair of parameters to an experiment.
-	 * @param the experiment for which the parameter shall be added.
+	 * @param experiment the experiment for which the parameter shall be added.
 	 * @param key
 	 * @param value
 	 */
-	public void addParameterToExperiment(RDBMSExperiment experiment,
+	void addParameterToExperiment(RDBMSExperiment experiment,
 			String key, String value);
 
 	/**
 	 * Adds the execution time to an experiment
-	 * @param the experiment for which the execution time shall be added
+	 * @param experiment the experiment for which the execution time shall be added
 	 * @param executionTime in ms
 	 */
-	public void setExecutionTimeToExperiment(RDBMSExperiment Experiment,
+	void setExecutionTimeToExperiment(RDBMSExperiment experiment,
 			long executionTime);
 
 	/**
      * Loads all constraint collections of an experiment.
      *
-     * @param the experiment whose constraint collections shall be loaded
+     * @param experiment the experiment whose constraint collections shall be loaded
      * @return a collection of constraint collections
      */
-	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
+	Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
 
 	/**
 	 * Return an algorithm by its id
 	 * @param algorithmId
 	 * @return algorithm
 	 */
-	public Algorithm getAlgorithmByID(int algorithmId);
+	Algorithm getAlgorithmByID(int algorithmId);
 
 	/**
 	 * Return an experiment by its id
 	 * @param experimentId
 	 * @return experiment
 	 */
-	public Experiment getExperimentById(int experimentId);
+	Experiment getExperimentById(int experimentId);
 
 	/**
 	 * Removes an algorithm and the connected experiments
 	 * @param algorithm
 	 */
-	public void removeAlgorithm(Algorithm algorithm);
+	void removeAlgorithm(Algorithm algorithm);
 
 	/**
 	 * Removes an experiment.
 	 * @param experiment
 	 */
-	public void removeExperiment(Experiment experiment);
+	void removeExperiment(Experiment experiment);
 
 
 	/**
 	 * Returns all algorithms
 	 * @return collection of algorithms
 	 */
-	public Collection<Algorithm> getAllAlgorithms();
+	Collection<Algorithm> getAllAlgorithms();
 
 	/**
 	 * Returns all experiments
 	 * @return collection of experiments
 	 */
-	public Collection<Experiment> getAllExperiments();
+	Collection<Experiment> getAllExperiments();
 
 	/**
 	 * Returns an algorithm by name
 	 * @param name of the algorithm
 	 * @return algorithm
 	 */
-	public Algorithm getAlgorithmByName(String name);
+	Algorithm getAlgorithmByName(String name);
 
 	/**
 	 * Adds an annotation to an experiment
 	 * @param rdbmsExperiment
 	 * @param tag specifying a category of the annotation
-	 * @param exception message
+	 * @param text message
 	 */
-	public void addAnnotation(RDBMSExperiment rdbmsExperiment, String tag,
+	void addAnnotation(RDBMSExperiment rdbmsExperiment, String tag,
 			String text);
 	
+	String getDatabaseURL();
 }

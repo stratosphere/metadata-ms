@@ -1,9 +1,6 @@
 package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.db.DatabaseAccess;
-import de.hpi.isg.mdms.db.PreparedStatementAdapter;
-import de.hpi.isg.mdms.db.write.DatabaseWriter;
-import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
@@ -13,14 +10,12 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Statement;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 /**
@@ -32,31 +27,6 @@ import java.util.*;
 public class SQLiteConstraintHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SQLiteConstraintHandler.class);
-
-    private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Constraintt (id, constraintCollectionId) VALUES (?, ?);",
-                    new PreparedStatementAdapter<int[]>() {
-                        @Override
-                        public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameters[0]);
-                            preparedStatement.setInt(2, parameters[1]);
-                        }
-                    },
-                    "Constraintt");
-
-    private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_CONSTRAINT_WRITER_FACTORY =
-            new PreparedStatementBatchWriter.Factory<>(
-                    "DELETE from Constraintt where constraintCollectionId=?;",
-                    new PreparedStatementAdapter<Integer>() {
-                        @Override
-                        public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            preparedStatement.setInt(1, parameter);
-                        }
-                    },
-                    "Constraintt");
 
     private final Map<Class<? extends Constraint>, ConstraintSQLSerializer<? extends Constraint>> constraintSerializers = new HashMap<>();
 
@@ -74,10 +44,6 @@ public class SQLiteConstraintHandler {
 
     private int currentConstraintIdMax = -1;
 
-    private DatabaseWriter<int[]> insertConstraintWriter;
-
-    private DatabaseWriter<Integer> deleteConstraintWriter;
-
     /**
      * Creates a new instance.
      *
@@ -86,28 +52,23 @@ public class SQLiteConstraintHandler {
     public SQLiteConstraintHandler(SQLiteInterface sqliteInterface) {
         this.sqliteInterface = sqliteInterface;
         this.databaseAccess = sqliteInterface.getDatabaseAccess();
-
-        // Initialize writers and queries.
-        try {
-            // Writers
-            this.insertConstraintWriter = this.databaseAccess.createBatchWriter(INSERT_CONSTRAINT_WRITER_FACTORY);
-            this.deleteConstraintWriter = this.databaseAccess.createBatchWriter(DELETE_CONSTRAINT_WRITER_FACTORY);
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not initialize writers.", e);
-        }
     }
 
     /**
      * Writes a constraint to the DB.
      *
      * @param constraint is an {@link de.hpi.isg.mdms.domain.constraints.RDBMSConstraint} that should be written
+     * @param constraintCollection to which the constraint belongs to;
+     *                             must be a {@link de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection}
      */
-    public void writeConstraint(Constraint constraint) {
+    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
         if (!(constraint instanceof RDBMSConstraint)) {
             throw new IllegalArgumentException("Not an RDBMSConstraint: " + constraint);
+        } else if (!(constraint instanceof RDBMSConstraintCollection)) {
+            throw new IllegalArgumentException("Not an RDBMSConstraintCollection: " + constraintCollection);
         }
 
-        writeConstraint((RDBMSConstraint) constraint);
+        writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection) constraintCollection);
     }
 
     /**
@@ -115,49 +76,18 @@ public class SQLiteConstraintHandler {
      *
      * @param constraint is a constraint that shall be written
      */
-    public void writeConstraint(RDBMSConstraint constraint) {
-        ensureCurrentConstraintIdMaxInitialized();
-
-        // for auto-increment id
-        Integer constraintId = ++currentConstraintIdMax;
-        try {
-            this.insertConstraintWriter.write(new int[]{constraintId, constraint.getConstraintCollection().getId()});
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
+    public void writeConstraint(RDBMSConstraint constraint, RDBMSConstraintCollection constraintCollection) {
         // Try to find an existing serializer for the constraint type.
         ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
 
         // If there is no serializer, create a new one.
         if (serializer == null) {
             serializer = constraint.getConstraintSQLSerializer(this.sqliteInterface);
-            constraintSerializers.put(constraint.getClass(), serializer);
-            serializer.initializeTables();
+            registerConstraintSQLSerializer(constraint.getClass(), serializer);
         }
 
         // Delegate the serialization.
-        serializer.serialize(constraintId, constraint);
-    }
-
-    /**
-     * Checks if {@link #currentConstraintIdMax} already has a valid value. If not, a valid value is set.
-     */
-    private void ensureCurrentConstraintIdMaxInitialized() {
-        if (this.currentConstraintIdMax != -1) {
-            return;
-        }
-
-        try {
-            this.currentConstraintIdMax = 0;
-            try (ResultSet res = this.databaseAccess.query("SELECT MAX(id) from Constraintt;", "Constraintt")) {
-                while (res.next()) {
-                    this.currentConstraintIdMax = res.getInt("max(id)");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        serializer.serialize(constraint, constraintCollection);
     }
 
     /**
@@ -315,8 +245,6 @@ public class SQLiteConstraintHandler {
                     "DELETE from ConstraintCollection where id=%d;",
                     constraintCollection.getId());
             this.databaseAccess.executeSQL(sqlDeleteConstraintCollection, "ConstraintCollection");
-
-            this.deleteConstraintWriter.write(constraintCollection.getId());
 
             this.databaseAccess.flush();
 

@@ -15,7 +15,9 @@
         <module>mdms-util</module>
         <module>mdms-rdbms</module>
         <module>mdms-sqlite</module>
+        <module>mdms-cassandra</module>
         <module>mdms-dependencies</module>
+        <module>mdms-flink</module>
     </modules>
     <build>
         <plugins>

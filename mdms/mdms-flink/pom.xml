@@ -1,0 +1,41 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.hpi.isg</groupId>
+        <artifactId>mdms</artifactId>
+        <version>0.0.3-SNAPSHOT</version>
+    </parent>
+	<artifactId>mdms-flink</artifactId>
+	<dependencies>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-clients</artifactId>
+      <version>0.8.1</version>
+     <!-- <version>0.7-incubating-SNAPSHOT</version> -->
+   </dependency>
+   <dependency>
+       <groupId>org.apache.flink</groupId>
+       <artifactId>flink-java</artifactId>
+       <!-- <version>0.7-incubating-SNAPSHOT</version> -->
+       <version>0.8.1</version>
+   </dependency>
+    <dependency>
+          <groupId>de.hpi.isg</groupId>
+          <artifactId>mdms-model</artifactId>
+          <version>0.0.3-SNAPSHOT</version>
+     </dependency>
+    <dependency>
+          <groupId>de.hpi.isg</groupId>
+          <artifactId>mdms-dependencies</artifactId>
+          <version>0.0.3-SNAPSHOT</version>
+     </dependency>
+     <dependency>
+		<groupId>org.apache.flink</groupId>
+		<artifactId>flink-jdbc</artifactId>
+		<version>0.9.0</version>
+	</dependency>
+        	
+  </dependencies>
+</project>

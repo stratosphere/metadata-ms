@@ -544,7 +544,7 @@ public class RDBMSMetadataStoreTest {
     }
     
     @Test
-    public void testExperimentWithExecutionTime(){
+    public void testExperimentWithExecutionTime() throws Exception {
     	// setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
         // create algorithm
@@ -552,11 +552,13 @@ public class RDBMSMetadataStoreTest {
         
         //create experiment
         final Experiment experiment = store1.createExperiment("description", algorithm);
-   
+
+        // NB: Writer ordering seems to be errorneous, therefore we need to flush manually before the update.
+        store1.flush();
         //add execution time
         experiment.setExecutionTime(12345);
         
-        assertTrue(store1.getExperimentById(experiment.getId()).getExecutionTime() == 12345);
+        assertEquals(12345L, store1.getExperimentById(experiment.getId()).getExecutionTime().longValue());
         
         //add parameter
         experiment.addParameter("key1", "value1");

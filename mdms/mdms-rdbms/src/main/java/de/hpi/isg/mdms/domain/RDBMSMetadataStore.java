@@ -423,6 +423,16 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
 	@Override
 	public Algorithm getAlgorithmByName(String name) {
-		return this.sqlInterface.getAlgorithmByName(name);
+        return this.sqlInterface.getAlgorithmByName(name);
+    }
+
+    @Override
+	public void close() {
+		try {
+			sqlInterface.flush();
+			sqlInterface.closeMetaDataStore();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

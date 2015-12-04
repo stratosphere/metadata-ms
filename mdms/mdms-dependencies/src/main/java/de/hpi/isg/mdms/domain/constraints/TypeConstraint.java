@@ -5,18 +5,14 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
-import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
-import de.hpi.isg.mdms.rdbms.SQLInterface;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.model.util.IdUtils.IdTypes;
+import de.hpi.isg.mdms.model.targets.TargetReference;
+import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
+import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import it.unimi.dsi.fastutil.ints.IntIterator;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +28,7 @@ import java.util.List;
 /**
  * This class is a {@link de.hpi.isg.mdms.model.constraints.Constraint} representing the data type of a certain {@link Column}. {@link Column}.
  */
-public class TypeConstraint extends AbstractConstraint implements RDBMSConstraint {
+public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class);
 
@@ -56,7 +52,7 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
         private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TYPECONSTRAINT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, typee, columnId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, typee, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<Object[]>() {
                             @Override
                             public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
@@ -83,18 +79,17 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
         private static final StrategyBasedPreparedQuery.Factory<Void> TYPECONSTRAINT_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from typee, constraintt where typee.constraintId = constraintt.id;",
+                        "SELECT typee.constraintId as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " typee.constraintCollectionId as constraintCollectionId"
+                                + " from typee;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> TYPECONSTRAINT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, typee.columnId as columnId, typee.typee as typee,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from typee, constraintt where typee.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT typee.constraintId as id, typee.columnId as columnId, typee.typee as typee,"
+                                + " typee.constraintCollectionId as constraintCollectionId"
+                                + " from typee where typee.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -119,11 +114,11 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint typeConstraint) {
+        public void serialize(Constraint typeConstraint, ConstraintCollection constraintCollection) {
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
                 insertTypeConstraintWriter.write(new Object[] {
-                        constraintId, ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
+                        constraintCollection.getId(), ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });
@@ -151,9 +146,9 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
                                         .getInt("constraintCollectionId"));
                     }
                     typeConstraints
-                            .add(TypeConstraint.build(
+                            .add(new TypeConstraint(
                                     new SingleTargetReference(this.sqlInterface.getColumnById(rsTypeConstraints
-                                            .getInt("columnId")).getId()), constraintCollection,
+                                            .getInt("columnId")).getId()),
                                     TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 }
                 rsTypeConstraints.close();
@@ -175,10 +170,12 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [columnId] integer NOT NULL,\n" +
                         "    [typee] text,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id]),\n" +
                         "    FOREIGN KEY ([columnId])\n" +
                         "    REFERENCES [Columnn] ([id])\n" +
                         ");";
@@ -210,42 +207,23 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
     private final TargetReference target;
 
-    public static TypeConstraint build(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
-            TYPES type) {
-        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
+    @Deprecated
+    public static TypeConstraint build(final SingleTargetReference target, TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(target, type);
         return typeConstraint;
     }
 
     public static TypeConstraint buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             TYPES type) {
-        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
+        TypeConstraint typeConstraint = new TypeConstraint(target, type);
         constraintCollection.add(typeConstraint);
         return typeConstraint;
     }
 
-    private TypeConstraint(final SingleTargetReference target, ConstraintCollection constraintCollection,
-            TYPES type) {
-        super(constraintCollection);
+    public TypeConstraint(final SingleTargetReference target, TYPES type) {
         Validate.isTrue(target.getAllTargetIds().size() == 1);
-        MetadataStore metadataStore = constraintCollection.getMetadataStore();
-        if (metadataStore == null) {
-            LOGGER.warn(
-                    "Could not obtain a metadata store from {}, will not validate if type constraint points to column.",
-                    constraintCollection);
-        } else {
-            IdUtils idUtils = constraintCollection.getMetadataStore().getIdUtils();
-            for (IntIterator i = target.getAllTargetIds().iterator(); i.hasNext();) {
-                int targetId = i.nextInt();
-                IdTypes idType = idUtils.getIdType(targetId);
-                if (idType != IdTypes.COLUMN_ID) {
-                    throw new IllegalArgumentException(
-                            "TypeConstrains can only be defined on Columns. But target was of type "
-                                    + idType);
-                }
-            }
-        }
+
         this.type = type;
         this.target = target;
     }

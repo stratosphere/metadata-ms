@@ -24,7 +24,6 @@ import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import org.apache.commons.lang3.Validate;
@@ -42,7 +41,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class DistinctValueOverlap extends AbstractConstraint implements RDBMSConstraint {
+public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class DistinctValueOverlapSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueOverlap> {
 
@@ -60,7 +59,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintid, overlap, column1, column2) VALUES (?, ?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, overlap, column1, column2) VALUES (?, ?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameter, PreparedStatement preparedStatement)
@@ -88,6 +87,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         private static final StrategyBasedPreparedQuery.Factory<Void> QUERY_ALL_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         ("SELECT %table%.constraintId AS constraintId, "
+                        		+ "%table%.constraintCollectionId AS constraintCollectionId,"
                                 + "%table%.column1 AS column1, "
                                 + "%table%.column2 AS column2, "
                                 + "%table%.overlap AS overlap "
@@ -98,12 +98,12 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         private static final StrategyBasedPreparedQuery.Factory<Integer> QUERY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
                         ("SELECT %table%.constraintId AS constraintId, "
+                        		+ "%table%.constraintCollectionId AS constraintCollectionId, "
                                 + "%table%.column1 AS column1, "
                                 + "%table%.column2 AS column2, "
                                 + "%table%.overlap AS overlap "
-                                + "FROM %table%, constraintt "
-                                + "WHERE %table%.constraintId = constraintt.id "
-                                + "AND constraintt.constraintCollectionId = ?;").replaceAll("%table%", tableName),
+                                + "FROM %table% "
+                                + "WHERE %table%.constraintCollectionId = ?;").replaceAll("%table%", tableName),
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -129,12 +129,12 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint constraint) {
+        public void serialize(Constraint constraint, ConstraintCollection constraintCollection) {
 
             Validate.isTrue(constraint instanceof DistinctValueOverlap);
             DistinctValueOverlap dvo = (DistinctValueOverlap) constraint;
             try {
-                insertWriter.write(new int[] { constraintId, dvo.overlap, dvo.target.column1, dvo.target.column2 });
+                insertWriter.write(new int[] { constraintCollection.getId(), dvo.overlap, dvo.target.column1, dvo.target.column2 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -162,7 +162,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                     int overlap = rsDistinctValueOverlap.getInt("overlap");
                     Reference reference = new Reference(rsDistinctValueOverlap.getInt("column1"),
                             rsDistinctValueOverlap.getInt("column2"));
-                    constraints.add(DistinctValueOverlap.build(overlap, reference, constraintCollection));
+                    constraints.add(new DistinctValueOverlap(overlap, reference));
                 }
                 rsDistinctValueOverlap.close();
                 return constraints;
@@ -182,16 +182,17 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                 String createINDTable = "CREATE TABLE [DistinctValueOverlap]"
                         + "("
                         + "    [constraintId] integer NOT NULL,"
+                        + "	   [constraintCollectionId] integer NOT NULL,\n"   
                         + "    [overlap] integer NOT NULL,"
                         + "    [column1] integer NOT NULL,"
                         + "    [column2] integer NOT NULL,"
                         + "    PRIMARY KEY ([constraintId]),"
                         + "    FOREIGN KEY ([column2])"
                         + "    REFERENCES [Columnn] ([id]),"
-                        + "    FOREIGN KEY ([constraintId])"
-                        + "    REFERENCES [Constraintt] ([id]),"
                         + "    FOREIGN KEY ([column1])"
-                        + "    REFERENCES [Columnn] ([id])"
+                        + "    REFERENCES [Columnn] ([id]),"
+                        + "	   FOREIGN KEY ([constraintCollectionId])"
+                        + "    REFERENCES [ConstraintCollection] ([id])"
                         + ");";
                 this.sqlInterface.executeCreateTableStatement(createINDTable);
             }
@@ -249,25 +250,21 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
 
     private int overlap;
 
-    public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target,
-            ConstraintCollection constraintCollection) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target, constraintCollection);
+    @Deprecated
+    public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target) {
+        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
         return uniqueColumnCombination;
     }
 
     public static DistinctValueOverlap buildAndAddToCollection(final int overlap,
             final DistinctValueOverlap.Reference target, ConstraintCollection constraintCollection) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target, constraintCollection);
+        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+
+    public DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target) {
         this.overlap = overlap;
         this.target = target;
     }

@@ -17,12 +17,12 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -38,7 +38,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
+public class TupleCount extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class TupleCountSQLiteSerializer implements ConstraintSQLSerializer<TupleCount> {
 
@@ -56,13 +56,13 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_TUPLECOUNT_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, tupleCount, tableId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, tupleCount, tableId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
                                     throws SQLException {
                                 preparedStatement.setInt(1, parameters[0]);
-                                preparedStatement.setInt(2, parameters[1]);
+                                preparedStatement.setInt(2, parameters[1]);                                
                                 preparedStatement.setInt(3, parameters[2]);
                             }
                         },
@@ -83,18 +83,17 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
         private static final StrategyBasedPreparedQuery.Factory<Void> TUPLECOUNT_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id;",
+                        "SELECT TupleCount.constraintId as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " TupleCount.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> TUPLECOUNT_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from TupleCount, constraintt where TupleCount.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT TupleCount.constraintId as id, TupleCount.tableId as tableId, TupleCount.tupleCount as tupleCount,"
+                                + " TupleCount.constraintCollectionId as constraintCollectionId"
+                                + " from TupleCount where TupleCount.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -119,11 +118,11 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint tupleCount) {
+        public void serialize(Constraint tupleCount, ConstraintCollection constraintCollection) {
             Validate.isTrue(tupleCount instanceof TupleCount);
             try {
                 insertTupleCountWriter.write(new int[] {
-                        constraintId, ((TupleCount) tupleCount).getNumTuples(), tupleCount
+                        constraintCollection.getId(), ((TupleCount) tupleCount).getNumTuples(), tupleCount
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });
@@ -176,12 +175,14 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [tableId] integer NOT NULL,\n" +
                         "    [tupleCount] integer,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId]),\n" +
                         "    FOREIGN KEY ([tableId])\n" +
-                        "    REFERENCES [Tablee] ([id])\n" +
+                        "    REFERENCES [Tablee] ([id]),\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id])\n" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createTable);
             }
@@ -211,27 +212,23 @@ public class TupleCount extends AbstractConstraint implements RDBMSConstraint {
 
     private SingleTargetReference target;
 
-    /**
-     * @see AbstractConstraint
-     */
-    private TupleCount(final SingleTargetReference target,
-            final ConstraintCollection constraintCollection, int numTuples) {
+    public TupleCount(final SingleTargetReference target, int numTuples) {
 
-        super(constraintCollection);
         this.target = target;
         this.numTuples = numTuples;
     }
 
+    @Deprecated
     public static TupleCount build(final SingleTargetReference target, ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, numTuples);
         return tupleCount;
     }
 
     public static TupleCount buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, constraintCollection, numTuples);
+        TupleCount tupleCount = new TupleCount(target, numTuples);
         constraintCollection.add(tupleCount);
         return tupleCount;
     }

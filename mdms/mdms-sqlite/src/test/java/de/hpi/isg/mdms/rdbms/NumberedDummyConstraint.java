@@ -23,7 +23,6 @@ import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntLists;
@@ -42,7 +41,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class NumberedDummyConstraint extends AbstractConstraint implements RDBMSConstraint {
+public class NumberedDummyConstraint extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class DummySQLiteSerializer implements ConstraintSQLSerializer<NumberedDummyConstraint> {
 
@@ -60,7 +59,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "INSERT INTO " + tableName + " (constraintId, dummy, columnId) VALUES (?, ?, ?);",
+                        "INSERT INTO " + tableName + " (constraintCollectionId, dummy, columnId) VALUES (?, ?, ?);",
                         new PreparedStatementAdapter<int[]>() {
                             @Override
                             public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
@@ -74,9 +73,7 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final PreparedStatementBatchWriter.Factory<Integer> REMOVE_DUMMY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
-                        "DELETE FROM " + tableName + " WHERE constraintId IN (" +
-                                "SELECT id FROM constraintt WHERE constraintCollectionId = ?" +
-                                ");",
+                        "DELETE FROM " + tableName + " WHERE constraintCollectionId = ?;",
                         new PreparedStatementAdapter<Integer>() {
                             @Override
                             public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
@@ -88,18 +85,17 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
         private static final StrategyBasedPreparedQuery.Factory<Void> DUMMY_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from dummy, constraintt where dummy.constraintId = constraintt.id;",
+                        "SELECT dummy.constraintId as id, dummy.columnId as columnId, dummy.dummy as dummy,"
+                                + " dummy.constraintCollectionId as constraintCollectionId"
+                                + " from dummy;",
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> DUMMY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT constraintt.id as id, dummy.columnId as columnId, dummy.dummy as dummy,"
-                                + " constraintt.constraintCollectionId as constraintCollectionId"
-                                + " from dummy, constraintt where dummy.constraintId = constraintt.id"
-                                + " and constraintt.constraintCollectionId=?;",
+                        "SELECT dummy.constraintId as id, dummy.columnId as columnId, dummy.dummy as dummy,"
+                                + " dummy.constraintCollectionId as constraintCollectionId"
+                                + " from dummy where dummy.constraintCollectionId=?;",
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
 
@@ -123,16 +119,16 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
         }
 
         @Override
-        public void serialize(Integer constraintId, Constraint dummy) {
+        public void serialize(Constraint dummy, ConstraintCollection constraintCollection) {
             Validate.isTrue(dummy instanceof NumberedDummyConstraint);
             try {
                 insertDummyWriter.write(new int[]{
-                        constraintId, ((NumberedDummyConstraint) dummy).getValue(), dummy
+                        constraintCollection.getId(), ((NumberedDummyConstraint) dummy).getValue(), dummy
                         .getTargetReference()
                         .getAllTargetIds().iterator()
                         .nextInt()
                 });
-
+                
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -158,9 +154,9 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                     }
                     dummys
                             .add(NumberedDummyConstraint.build(
-                                    new NumberedDummyConstraint.Reference(this.sqlInterface.getColumnById(rsdummys
-                                            .getInt("columnId"))), constraintCollection,
-                                    rsdummys.getInt("dummy")));
+                                    new NumberedDummyConstraint.Reference(
+                                        this.sqlInterface.getColumnById(rsdummys.getInt("columnId"))),
+                                        rsdummys.getInt("dummy")));
                 }
                 rsdummys.close();
 
@@ -181,10 +177,12 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
                 String createTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
+                        "    [constraintCollectionId] integer NOT NULL,\n" +
                         "    [columnId] integer NOT NULL,\n" +
                         "    [dummy] integer,\n" +
-                        "    FOREIGN KEY ([constraintId])\n" +
-                        "    REFERENCES [Constraintt] ([id]),\n" +
+                        "    PRIMARY KEY ([constraintId])\n" +
+                        "    FOREIGN KEY ([constraintCollectionId])\n" +
+                        "    REFERENCES [ConstraintCollection] ([id]),\n" +
                         "    FOREIGN KEY ([columnId])\n" +
                         "    REFERENCES [Columnn] ([id])\n" +
                         ");";
@@ -234,27 +232,21 @@ public class NumberedDummyConstraint extends AbstractConstraint implements RDBMS
 
     private Reference target;
 
-    /**
-     * @see de.hpi.isg.mdms.model.constraints.AbstractConstraint
-     */
-    private NumberedDummyConstraint(final Reference target,
-                                    final ConstraintCollection constraintCollection, int value) {
+    private NumberedDummyConstraint(final Reference target, int value) {
 
-        super(constraintCollection);
         this.target = target;
         this.value = value;
     }
 
-    public static NumberedDummyConstraint build(final Reference target, ConstraintCollection constraintCollection,
-            int numTuples) {
-        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, constraintCollection, numTuples);
+    public static NumberedDummyConstraint build(final Reference target, int numTuples) {
+        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, numTuples);
         return dummy;
     }
 
     public static NumberedDummyConstraint buildAndAddToCollection(final Reference target,
             ConstraintCollection constraintCollection,
             int numTuples) {
-        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, constraintCollection, numTuples);
+        NumberedDummyConstraint dummy = new NumberedDummyConstraint(target, numTuples);
         constraintCollection.add(dummy);
         return dummy;
     }

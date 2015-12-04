@@ -320,7 +320,7 @@ public class SQLiteExperimentHandler {
 
         try (ResultSet rs = this.experimentQuery.execute(experimentId)) {
             while (rs.next()) {
-            	experimentCache.put(experimentId, new
+                experimentCache.put(experimentId, new
                         RDBMSExperiment(rs.getInt("id"),
                                 rs.getString("description"),
                         		rs.getLong("executionTime"),
@@ -329,12 +329,11 @@ public class SQLiteExperimentHandler {
                                 getAnnotations(rs.getInt("id")),
                                 rs.getString("timestamp"),
                                 this.sqliteInterface));
-                return experimentCache.get(experimentId);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-		return null;
+        return experimentCache.get(experimentId);
 	}
 
 

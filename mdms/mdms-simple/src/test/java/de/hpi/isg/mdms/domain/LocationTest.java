@@ -46,10 +46,10 @@ public class LocationTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testDefaultLocationGetIfExistsFails() {
+    public void testDefaultLocationGetFails() {
         final DefaultLocation location1 = new DefaultLocation();
 
-        location1.getIfExists(Location.PATH);
+        location1.get(Location.PATH);
     }
 
 }
