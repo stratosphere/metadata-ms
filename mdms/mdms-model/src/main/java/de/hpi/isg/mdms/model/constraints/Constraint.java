@@ -15,34 +15,27 @@ import java.util.Map;
  *
  */
 public interface Constraint extends Serializable {
-    public enum BASIC_STATS {
+    enum BASIC_STATS {
         TYPE
     }
 
-    public enum STRING_STATS {
+    enum STRING_STATS {
         MIN_STRING, MAX_STRING, MIN_LENGTH, MAX_LENGTH, AVG_LENGTH, DISTINCT_COUNT
     };
 
-    public enum INTEGER_STATS {
+    enum INTEGER_STATS {
         MIN_INTEGER, MAX_INTEGER, AVG_INTEGER
     };
 
-    public enum DECIMAL_STATS {
+    enum DECIMAL_STATS {
         MIN_DECIMAL, MAX_DECIMAL, AVG_DECIMAL
     };
-
-    /**
-     * This functions returns the corresponding {@link ConstraintCollection}.
-     * 
-     * @return the {@link ConstraintCollection}
-     */
-    public ConstraintCollection getConstraintCollection();
 
     /**
      * This function returns the {@link de.hpi.isg.mdms.model.targets.TargetReference} including all {@link de.hpi.isg.mdms.model.targets.Target}(s) of this constraint.
      * 
      * @return the {@link de.hpi.isg.mdms.model.targets.TargetReference}
      */
-    public TargetReference getTargetReference();
+    TargetReference getTargetReference();
 
 }

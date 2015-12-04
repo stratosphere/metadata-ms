@@ -5,13 +5,13 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.model.util.IdUtils.IdTypes;
@@ -28,13 +28,12 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 /**
  * This class is a {@link de.hpi.isg.mdms.model.constraints.Constraint} representing the pattern of a certain {@link Column}. {@link Column}.
  */
-public class PatternConstraint extends AbstractConstraint implements RDBMSConstraint {
+public class PatternConstraint extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PatternConstraint.class);
 
@@ -272,42 +271,25 @@ public class PatternConstraint extends AbstractConstraint implements RDBMSConstr
 
     private final TargetReference target;
 
+    @Deprecated
     public static PatternConstraint build(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             HashMap<String, Integer> patterns) {
-        PatternConstraint patternConstraint = new PatternConstraint(target, constraintCollection, patterns);
+        PatternConstraint patternConstraint = new PatternConstraint(target, patterns);
         return patternConstraint;
     }
 
     public static PatternConstraint buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             HashMap<String, Integer> patterns) {
-        PatternConstraint patternConstraint = new PatternConstraint(target, constraintCollection, patterns);
+        PatternConstraint patternConstraint = new PatternConstraint(target, patterns);
         constraintCollection.add(patternConstraint);
         return patternConstraint;
     }
 
-    private PatternConstraint(final SingleTargetReference target, ConstraintCollection constraintCollection,
-            HashMap<String, Integer> patterns) {
-        super(constraintCollection);
+    public PatternConstraint(final SingleTargetReference target, HashMap<String, Integer> patterns) {
         Validate.isTrue(target.getAllTargetIds().size() == 1);
-        MetadataStore metadataStore = constraintCollection.getMetadataStore();
-        if (metadataStore == null) {
-            LOGGER.warn(
-                    "Could not obtain a metadata store from {}, will not validate if type constraint points to column.",
-                    constraintCollection);
-        } else {
-            IdUtils idUtils = constraintCollection.getMetadataStore().getIdUtils();
-            for (IntIterator i = target.getAllTargetIds().iterator(); i.hasNext();) {
-                int targetId = i.nextInt();
-                IdTypes idType = idUtils.getIdType(targetId);
-                if (idType != IdTypes.COLUMN_ID) {
-                    throw new IllegalArgumentException(
-                            "PatternConstraints can only be defined on Columns. But target was of type "
-                                    + idType);
-                }
-            }
-        }
+
         this.patterns = patterns;
         this.target = target;
     }

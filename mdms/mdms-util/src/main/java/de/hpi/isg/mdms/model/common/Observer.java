@@ -10,7 +10,7 @@ public interface Observer<T> {
      * 
      * @return
      */
-    public int generateRandomId();
+    int generateRandomId();
 
     /**
      * This method is called by objects that want to be registered by the {@link Observer}.
@@ -18,5 +18,5 @@ public interface Observer<T> {
      * @param t
      *        to register
      */
-    public void registerTargetObject(T t);
+    void registerTargetObject(T t);
 }
