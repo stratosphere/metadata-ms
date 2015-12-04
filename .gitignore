@@ -3,6 +3,7 @@ target/
 
 # IDEA
 *.iml
+.idea/
 
 # eclipse
 .settings
