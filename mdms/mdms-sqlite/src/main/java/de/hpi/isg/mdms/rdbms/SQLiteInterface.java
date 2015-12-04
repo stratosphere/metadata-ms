@@ -17,6 +17,7 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,6 +180,11 @@ public class SQLiteInterface implements SQLInterface {
     @Override
     @SuppressWarnings("unchecked")
     public Collection<ConstraintCollection> getAllConstraintCollections() {
+//        try {
+//            flush();
+//        } catch (SQLException e) {
+//            throw new RuntimeException("Could not flush befort loading the constraint collections.", e);
+//        }
         Collection<RDBMSConstraintCollection> constraintCollections = this.constraintHandler.getAllConstraintCollections();
         for (RDBMSConstraintCollection constraintCollection : constraintCollections) {
             Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
@@ -281,12 +287,8 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void writeConstraint(Constraint constraint) {
-        this.constraintHandler.writeConstraint(constraint);
-    }
-
-    public void writeConstraint(RDBMSConstraint constraint) {
-        this.constraintHandler.writeConstraint(constraint);
+    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
+        this.constraintHandler.writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection) constraintCollection);
     }
 
     /**
@@ -487,4 +489,25 @@ public class SQLiteInterface implements SQLInterface {
     public String toString() {
         return "SQLiteInterface[" + this.databaseAccess.getConnection().getClass() + "]";
     }
+    
+    @Override
+    public String getDatabaseURL() {
+    	try {
+			return this.databaseAccess.getConnection().getMetaData().getURL();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+
+    }
+    
+
+	@Override
+	public void closeMetaDataStore() {
+		try {
+			this.databaseAccess.close();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

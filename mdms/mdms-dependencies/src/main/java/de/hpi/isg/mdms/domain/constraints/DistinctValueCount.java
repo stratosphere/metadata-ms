@@ -17,12 +17,12 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import org.apache.commons.lang3.Validate;
 
 import java.sql.PreparedStatement;
@@ -38,7 +38,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class DistinctValueCount extends AbstractConstraint implements RDBMSConstraint {
+public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class DistinctValueCountSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueCount> {
 
@@ -122,10 +122,10 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
         }
 
         @Override
-        public void serialize(Constraint distinctValueCount) {
+        public void serialize(Constraint distinctValueCount, ConstraintCollection constraintCollection) {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
-                this.insertDistinctValueCountWriter.write(new int[] { distinctValueCount.getConstraintCollection().getId(),
+                this.insertDistinctValueCountWriter.write(new int[] { constraintCollection.getId(),
                         ((DistinctValueCount) distinctValueCount).getNumDistinctValues(), distinctValueCount
                                 .getTargetReference().getAllTargetIds().iterator().nextInt() });
 
@@ -154,10 +154,9 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
                                         .getInt("constraintCollectionId"));
                     }
                     distinctValueCounts
-                            .add(DistinctValueCount.build(
-                                    new SingleTargetReference(rsDistinctValueCounts.getInt("columnId")),
-                                    constraintCollection,
-                                    rsDistinctValueCounts.getInt("distinctValueCount")));
+                            .add(new DistinctValueCount(
+                                new SingleTargetReference(rsDistinctValueCounts.getInt("columnId")),
+                                rsDistinctValueCounts.getInt("distinctValueCount")));
                 }
                 rsDistinctValueCounts.close();
                 return distinctValueCounts;
@@ -215,30 +214,23 @@ public class DistinctValueCount extends AbstractConstraint implements RDBMSConst
 
     private SingleTargetReference target;
 
-    /**
-     * @see AbstractConstraint
-     */
-    public DistinctValueCount(final SingleTargetReference target,
-            final ConstraintCollection constraintCollection, int numDistinctValues) {
+    public DistinctValueCount(final SingleTargetReference target, int numDistinctValues) {
 
-        super(constraintCollection);
         this.target = target;
         this.numDistinctValues = numDistinctValues;
     }
 
+    @Deprecated
     public static DistinctValueCount build(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
-            int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
-                numDistinctValues);
+           int numDistinctValues) {
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, numDistinctValues);
         return distinctValueCount;
     }
 
     public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, constraintCollection,
-                numDistinctValues);
+        DistinctValueCount distinctValueCount = new DistinctValueCount(target, numDistinctValues);
         constraintCollection.add(distinctValueCount);
         return distinctValueCount;
     }

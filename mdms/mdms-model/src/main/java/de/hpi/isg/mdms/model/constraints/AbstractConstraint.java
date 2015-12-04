@@ -22,9 +22,4 @@ public abstract class AbstractConstraint extends AbstractHashCodeAndEquals imple
         this.constraintCollection = constraintCollection;
     }
 
-    @Override
-    public ConstraintCollection getConstraintCollection() {
-        return constraintCollection;
-    }
-    
 }

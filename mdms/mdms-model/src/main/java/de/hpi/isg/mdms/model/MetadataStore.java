@@ -27,7 +27,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param location
      * @return the newly created {@link de.hpi.isg.mdms.model.targets.Schema}
      */
-    public Schema addSchema(String name, String description, Location location);
+    Schema addSchema(String name, String description, Location location);
 
     /**
      * Checks whether this store includes a {@link Target} with that id.
@@ -35,14 +35,14 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param id
      * @return true if target with id is contained, else false.
      */
-    public boolean hasTargetWithId(int id);
+    boolean hasTargetWithId(int id);
 
     /**
      * Returns a {@link Collection} of all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      * 
      * @return all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    public Collection<ConstraintCollection> getConstraintCollections();
+    Collection<ConstraintCollection> getConstraintCollections();
 
     /**
      * Returns a particular {@link ConstraintCollection} with the given id.
@@ -50,7 +50,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param id
      * @return the {@link ConstraintCollection} with the given id, <code>null</code> if no exists with given id.
      */
-    public ConstraintCollection getConstraintCollection(int id);
+    ConstraintCollection getConstraintCollection(int id);
 
     /**
      * Retrieve a schema from the store if it exists, throws {@link NameAmbigousException} if there are more than one
@@ -59,7 +59,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schemaName
      * @return
      */
-    public Schema getSchemaByName(String schemaName) throws NameAmbigousException;
+    Schema getSchemaByName(String schemaName) throws NameAmbigousException;
 
     /**
      * Retrieve a {@link Collection} of schemas from the store for the given name
@@ -67,7 +67,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schemaName
      * @return
      */
-    public Collection<Schema> getSchemasByName(String schemaName);
+    Collection<Schema> getSchemasByName(String schemaName);
 
     /**
      * Retrieve a schema from the store if it exists for the given id
@@ -75,14 +75,14 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schemaId
      * @return
      */
-    public Schema getSchemaById(int schemaId);
+    Schema getSchemaById(int schemaId);
 
     /**
      * Get all knwon {@link Schema}s.
      * 
      * @return
      */
-    public Collection<Schema> getSchemas();
+    Collection<Schema> getSchemas();
 
     /**
      * Looks for an ID that can be assigned to a new schema.
@@ -126,7 +126,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @throws IOException
      * @deprecated Not all MetadataStores support saving to a path, so rather use {@link #flush()}.
      */
-    public void save(String path) throws IOException;
+    void save(String path) throws IOException;
 
     /**
      * Saves any pending changes in the metadata store.
@@ -134,7 +134,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @throws Exception
      *         if the saving fails
      */
-    public void flush() throws Exception;
+    void flush() throws Exception;
 
     /**
      * Removes a {@link Schema} and ALL child {@link Target} objects from the store. Also ALL
@@ -144,13 +144,18 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schema
      *        the {@link Schema} to remove
      */
-    public void removeSchema(Schema schema);
+    void removeSchema(Schema schema);
 
     /**
      * Removes the {@link ConstraintCollection} from the store as well as all {@link de.hpi.isg.mdms.model.constraints.Constraint}.
      * 
      * @param constraintCollection
      */
-    public void removeConstraintCollection(ConstraintCollection constraintCollection);
+    void removeConstraintCollection(ConstraintCollection constraintCollection);
+    
+    /**
+     * Closes the MetadataStore.
+     */
+    void close();
 
 }

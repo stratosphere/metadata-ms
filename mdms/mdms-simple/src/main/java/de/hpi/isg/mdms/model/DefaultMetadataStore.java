@@ -318,4 +318,14 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         //
     }
 
+	@Override
+	public void close() {
+		try {
+			this.flush();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
 }

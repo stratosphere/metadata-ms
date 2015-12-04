@@ -23,6 +23,8 @@ public class SQLiteConstraintUtils {
                 new DistinctValueCount.DistinctValueCountSQLiteSerializer(sqliteInterface));
         sqliteInterface.registerConstraintSQLSerializer(InclusionDependency.class,
                 new InclusionDependency.InclusionDependencySQLiteSerializer(sqliteInterface));
+        sqliteInterface.registerConstraintSQLSerializer(FunctionalDependency.class,
+                new FunctionalDependency.FunctionalDependencySQLiteSerializer(sqliteInterface));
         sqliteInterface.registerConstraintSQLSerializer(TupleCount.class, new TupleCount.TupleCountSQLiteSerializer(
                 sqliteInterface));
         sqliteInterface.registerConstraintSQLSerializer(TypeConstraint.class,
