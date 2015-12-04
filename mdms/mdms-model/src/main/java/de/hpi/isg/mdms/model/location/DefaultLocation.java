@@ -42,16 +42,16 @@ public class DefaultLocation extends AbstractHashCodeAndEquals implements Locati
 
     @Override
     public String getIfExists(String propertyKey) {
-        if (!this.properties.containsKey(propertyKey)) {
-            throw new IllegalArgumentException(
-                    String.format("No property associated with %s in %s.", propertyKey, this));
-        }
-        return get(propertyKey);
+        return this.properties.get(propertyKey);
     }
 
     @Override
     public String get(String propertyKey) {
-        return this.properties.get(propertyKey);
+        if (!this.properties.containsKey(propertyKey)) {
+            throw new IllegalArgumentException(
+                    String.format("No property associated with %s in %s.", propertyKey, this));
+        }
+        return getIfExists(propertyKey);
     }
 
     @Override

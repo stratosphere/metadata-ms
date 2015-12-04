@@ -121,7 +121,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         }
 
         // Write the constraint.
-        this.sqlInterface.writeConstraint(constraint);
+        this.sqlInterface.writeConstraint(constraint, this);
     }
 
     private boolean targetInScope(int targetId) {

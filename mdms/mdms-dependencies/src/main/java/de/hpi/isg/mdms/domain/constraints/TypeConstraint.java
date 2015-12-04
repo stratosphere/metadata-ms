@@ -5,13 +5,13 @@ import de.hpi.isg.mdms.db.query.DatabaseQuery;
 import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.TargetReference;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.model.util.IdUtils.IdTypes;
@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * This class is a {@link de.hpi.isg.mdms.model.constraints.Constraint} representing the data type of a certain {@link Column}. {@link Column}.
  */
-public class TypeConstraint extends AbstractConstraint implements RDBMSConstraint {
+public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class);
 
@@ -151,9 +151,9 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
                                         .getInt("constraintCollectionId"));
                     }
                     typeConstraints
-                            .add(TypeConstraint.build(
+                            .add(new TypeConstraint(
                                     new SingleTargetReference(this.sqlInterface.getColumnById(rsTypeConstraints
-                                            .getInt("columnId")).getId()), constraintCollection,
+                                            .getInt("columnId")).getId()),
                                     TYPES.valueOf(rsTypeConstraints.getString("typee"))));
                 }
                 rsTypeConstraints.close();
@@ -210,42 +210,23 @@ public class TypeConstraint extends AbstractConstraint implements RDBMSConstrain
 
     private final TargetReference target;
 
-    public static TypeConstraint build(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
-            TYPES type) {
-        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
+    @Deprecated
+    public static TypeConstraint build(final SingleTargetReference target, TYPES type) {
+        TypeConstraint typeConstraint = new TypeConstraint(target, type);
         return typeConstraint;
     }
 
     public static TypeConstraint buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
             TYPES type) {
-        TypeConstraint typeConstraint = new TypeConstraint(target, constraintCollection, type);
+        TypeConstraint typeConstraint = new TypeConstraint(target, type);
         constraintCollection.add(typeConstraint);
         return typeConstraint;
     }
 
-    private TypeConstraint(final SingleTargetReference target, ConstraintCollection constraintCollection,
-            TYPES type) {
-        super(constraintCollection);
+    public TypeConstraint(final SingleTargetReference target, TYPES type) {
         Validate.isTrue(target.getAllTargetIds().size() == 1);
-        MetadataStore metadataStore = constraintCollection.getMetadataStore();
-        if (metadataStore == null) {
-            LOGGER.warn(
-                    "Could not obtain a metadata store from {}, will not validate if type constraint points to column.",
-                    constraintCollection);
-        } else {
-            IdUtils idUtils = constraintCollection.getMetadataStore().getIdUtils();
-            for (IntIterator i = target.getAllTargetIds().iterator(); i.hasNext();) {
-                int targetId = i.nextInt();
-                IdTypes idType = idUtils.getIdType(targetId);
-                if (idType != IdTypes.COLUMN_ID) {
-                    throw new IllegalArgumentException(
-                            "TypeConstrains can only be defined on Columns. But target was of type "
-                                    + idType);
-                }
-            }
-        }
+
         this.type = type;
         this.target = target;
     }

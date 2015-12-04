@@ -25,7 +25,6 @@ import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
@@ -46,7 +45,7 @@ import java.util.List;
  * Constraint implementation for a functional dependency.
  * 
  */
-public class FunctionalDependency extends AbstractConstraint implements RDBMSConstraint {
+public class FunctionalDependency extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class FunctionalDependencySQLiteSerializer implements
             ConstraintSQLSerializer<FunctionalDependency> {
@@ -215,9 +214,8 @@ public class FunctionalDependency extends AbstractConstraint implements RDBMSCon
                                         .getInt("constraintCollectionId"));
                     }
                     functionDependencies
-                            .add(FunctionalDependency.build(
-                                    getFunctionalDependencyReferences(rsFunctionalDependencies.getInt("id")),
-                                    constraintCollection));
+                            .add(new FunctionalDependency(
+                                    getFunctionalDependencyReferences(rsFunctionalDependencies.getInt("id"))));
 
                 }
                 rsFunctionalDependencies.close();
@@ -348,25 +346,23 @@ public class FunctionalDependency extends AbstractConstraint implements RDBMSCon
     private static final long serialVersionUID = -932394088609862495L;
     private FunctionalDependency.Reference target;
 
-    public static FunctionalDependency build(final FunctionalDependency.Reference target,
-            ConstraintCollection constraintCollection) {
-        FunctionalDependency functionalDependency = new FunctionalDependency(target, constraintCollection);
+  /**
+   * @deprecated use {@link #FunctionalDependency} instead
+   */
+    public static FunctionalDependency build(final FunctionalDependency.Reference target) {
+        FunctionalDependency functionalDependency = new FunctionalDependency(target);
         return functionalDependency;
     }
 
     public static FunctionalDependency buildAndAddToCollection(final FunctionalDependency.Reference target,
             ConstraintCollection constraintCollection) {
-        FunctionalDependency functionalDependency = new FunctionalDependency(target, constraintCollection);
+        FunctionalDependency functionalDependency = new FunctionalDependency(target);
         constraintCollection.add(functionalDependency);
         return functionalDependency;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private FunctionalDependency(final FunctionalDependency.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+
+    public FunctionalDependency(final FunctionalDependency.Reference target) {
         this.target = target;
     }
 

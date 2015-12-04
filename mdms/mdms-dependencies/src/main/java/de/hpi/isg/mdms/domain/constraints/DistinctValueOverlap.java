@@ -24,7 +24,6 @@ import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.model.constraints.AbstractConstraint;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import org.apache.commons.lang3.Validate;
@@ -42,7 +41,7 @@ import java.util.List;
  * 
  * @author Sebastian Kruse
  */
-public class DistinctValueOverlap extends AbstractConstraint implements RDBMSConstraint {
+public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
     public static class DistinctValueOverlapSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueOverlap> {
 
@@ -162,7 +161,7 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
                     int overlap = rsDistinctValueOverlap.getInt("overlap");
                     Reference reference = new Reference(rsDistinctValueOverlap.getInt("column1"),
                             rsDistinctValueOverlap.getInt("column2"));
-                    constraints.add(DistinctValueOverlap.build(overlap, reference, constraintCollection));
+                    constraints.add(new DistinctValueOverlap(overlap, reference));
                 }
                 rsDistinctValueOverlap.close();
                 return constraints;
@@ -249,25 +248,21 @@ public class DistinctValueOverlap extends AbstractConstraint implements RDBMSCon
 
     private int overlap;
 
-    public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target,
-            ConstraintCollection constraintCollection) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target, constraintCollection);
+    @Deprecated
+    public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target) {
+        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
         return uniqueColumnCombination;
     }
 
     public static DistinctValueOverlap buildAndAddToCollection(final int overlap,
             final DistinctValueOverlap.Reference target, ConstraintCollection constraintCollection) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target, constraintCollection);
+        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;
     }
 
-    /**
-     * @see AbstractConstraint
-     */
-    private DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target,
-            ConstraintCollection constraintCollection) {
-        super(constraintCollection);
+
+    public DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target) {
         this.overlap = overlap;
         this.target = target;
     }
