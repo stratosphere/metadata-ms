@@ -32,10 +32,6 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeConstraint.class);
 
-    public enum TYPES {
-        STRING, INTEGER, DECIMAL
-    };
-
     public static class TypeConstraintSQLiteSerializer implements ConstraintSQLSerializer<TypeConstraint> {
 
         private final static String tableName = "Typee";
@@ -118,7 +114,7 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
             Validate.isTrue(typeConstraint instanceof TypeConstraint);
             try {
                 insertTypeConstraintWriter.write(new Object[] {
-                        constraintCollection.getId(), ((TypeConstraint) typeConstraint).getType().name(), typeConstraint
+                        constraintCollection.getId(), ((TypeConstraint) typeConstraint).getType(), typeConstraint
                                 .getTargetReference()
                                 .getAllTargetIds().iterator().nextInt()
                 });
@@ -149,7 +145,7 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
                             .add(new TypeConstraint(
                                     new SingleTargetReference(this.sqlInterface.getColumnById(rsTypeConstraints
                                             .getInt("columnId")).getId()),
-                                    TYPES.valueOf(rsTypeConstraints.getString("typee"))));
+                                    rsTypeConstraints.getString("typee")));
                 }
                 rsTypeConstraints.close();
 
@@ -203,25 +199,25 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
 
     private static final long serialVersionUID = 3194245498846860560L;
 
-    private final TYPES type;
+    private final String type;
 
     private final TargetReference target;
 
     @Deprecated
-    public static TypeConstraint build(final SingleTargetReference target, TYPES type) {
+    public static TypeConstraint build(final SingleTargetReference target, String type) {
         TypeConstraint typeConstraint = new TypeConstraint(target, type);
         return typeConstraint;
     }
 
     public static TypeConstraint buildAndAddToCollection(final SingleTargetReference target,
             ConstraintCollection constraintCollection,
-            TYPES type) {
+            String type) {
         TypeConstraint typeConstraint = new TypeConstraint(target, type);
         constraintCollection.add(typeConstraint);
         return typeConstraint;
     }
 
-    public TypeConstraint(final SingleTargetReference target, TYPES type) {
+    public TypeConstraint(final SingleTargetReference target, String type) {
         Validate.isTrue(target.getAllTargetIds().size() == 1);
 
         this.type = type;
@@ -238,7 +234,7 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
         return target;
     }
 
-    public TYPES getType() {
+    public String getType() {
         return type;
     }
 

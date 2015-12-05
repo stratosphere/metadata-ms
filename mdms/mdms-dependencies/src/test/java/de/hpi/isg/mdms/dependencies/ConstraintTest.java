@@ -1,36 +1,23 @@
 package de.hpi.isg.mdms.dependencies;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import java.util.Collection;
-
+import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.exceptions.NotAllTargetsInStoreException;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.common.Observer;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.targets.*;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import de.hpi.isg.mdms.model.common.Observer;
-import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
-import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
-import de.hpi.isg.mdms.domain.constraints.TupleCount;
-import de.hpi.isg.mdms.domain.constraints.TypeConstraint;
-import de.hpi.isg.mdms.domain.constraints.TypeConstraint.TYPES;
-import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
-import de.hpi.isg.mdms.model.DefaultMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
-import de.hpi.isg.mdms.model.location.DefaultLocation;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.model.targets.DefaultColumn;
-import de.hpi.isg.mdms.model.targets.DefaultSchema;
-import de.hpi.isg.mdms.model.targets.DefaultTable;
-import de.hpi.isg.mdms.exceptions.NotAllTargetsInStoreException;
 import org.mockito.Mockito;
+
+import java.util.Collection;
+
+import static org.junit.Assert.assertEquals;
 
 public class ConstraintTest {
 
@@ -44,7 +31,7 @@ public class ConstraintTest {
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn.getId()),
-                Mockito.mock(ConstraintCollection.class), TYPES.STRING);
+                Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         ((Collection<Constraint>) constraintCollection.getConstraints()).add(dummyTypeContraint);
@@ -60,7 +47,7 @@ public class ConstraintTest {
 
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummySchema.getId()),
                 Mockito.mock(ConstraintCollection.class),
-                TYPES.STRING);
+                "VARCHAR");
 
     }
 
@@ -75,7 +62,7 @@ public class ConstraintTest {
 
         TypeConstraint.buildAndAddToCollection(new SingleTargetReference(dummyTable.getId()),
                 Mockito.mock(ConstraintCollection.class),
-                TYPES.STRING);
+                "VARCHAR");
 
     }
 
@@ -87,9 +74,9 @@ public class ConstraintTest {
 
         final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
         final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(dummyColumn.getId()), cC, TYPES.STRING);
+                new SingleTargetReference(dummyColumn.getId()), cC, "VARCHAR");
         final Constraint dummyTypeContraint2 = TypeConstraint.buildAndAddToCollection(
-                new SingleTargetReference(dummyColumn.getId()), cC, TYPES.STRING);
+                new SingleTargetReference(dummyColumn.getId()), cC, "VARCHAR");
 
         Assert.assertEquals(dummyTypeContraint1, dummyTypeContraint2);
     }
@@ -199,7 +186,7 @@ public class ConstraintTest {
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn.getId()),
-                Mockito.mock(ConstraintCollection.class), TYPES.STRING);
+                Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
         ConstraintCollection constraintCollection = store.createConstraintCollection(null);
         constraintCollection.add(dummyTypeContraint);
@@ -215,7 +202,7 @@ public class ConstraintTest {
 
         final Constraint dummyTypeContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn.getId()),
-                Mockito.mock(ConstraintCollection.class), TYPES.STRING);
+                Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
         ConstraintCollection constraintCollection = store2.createConstraintCollection(null);
         constraintCollection.add(dummyTypeContraint);

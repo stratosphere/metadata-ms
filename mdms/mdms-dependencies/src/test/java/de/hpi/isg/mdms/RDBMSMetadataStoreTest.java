@@ -1,17 +1,15 @@
 package de.hpi.isg.mdms;
 
-import de.hpi.isg.mdms.domain.constraints.*;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.domain.constraints.TypeConstraint.TYPES;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
+import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import org.junit.After;
 import org.junit.Before;
@@ -19,13 +17,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class RDBMSMetadataStoreTest {
 
@@ -103,7 +102,7 @@ public class RDBMSMetadataStoreTest {
 
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
         final TypeConstraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
-                dummyColumn.getId()), constraintCollection, TypeConstraint.TYPES.STRING);
+                dummyColumn.getId()), constraintCollection, "VARCHAR");
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -338,7 +337,7 @@ public class RDBMSMetadataStoreTest {
         TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
-                TYPES.STRING);
+                "VARCHAR");
 
         DistinctValueCount.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),
@@ -378,7 +377,7 @@ public class RDBMSMetadataStoreTest {
         TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),
                 dummyConstraintCollection,
-                TYPES.STRING);
+                "VARCHAR");
 
         DistinctValueCount.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),
