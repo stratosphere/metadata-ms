@@ -119,7 +119,7 @@ public class DatabaseAccess implements AutoCloseable {
 		}
 	}
 
-	public <TWriter extends BatchWriter<?>> TWriter createBatchWriter(DatabaseWriter.Factory<TWriter> factory)
+	public <TWriter extends BatchWriter<TData>, TData> TWriter createBatchWriter(DatabaseWriter.Factory<TWriter> factory)
 			throws SQLException {
 
 		TWriter writer = factory.createWriter(this);
