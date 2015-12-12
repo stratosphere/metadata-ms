@@ -40,6 +40,7 @@ public class NumberColumnStatistics implements RDBMSConstraint {
 
     /**
      * Create a new instance.
+     *
      * @param columnId the ID of the column that is to be described by the new instance
      */
     public NumberColumnStatistics(int columnId) {
@@ -54,11 +55,7 @@ public class NumberColumnStatistics implements RDBMSConstraint {
     @Override
     public ConstraintSQLSerializer<NumberColumnStatistics> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            try {
-                return new SQLiteSerializer((SQLiteInterface) sqlInterface);
-            } catch (SQLException e) {
-                throw new RuntimeException("Could not create serializer.", e);
-            }
+            return new SQLiteSerializer((SQLiteInterface) sqlInterface);
         }
         throw new RuntimeException("No serializer available for " + sqlInterface);
     }
@@ -98,7 +95,7 @@ public class NumberColumnStatistics implements RDBMSConstraint {
     /**
      * SQLite serializer for {@link NumberColumnStatistics}.
      */
-    private static class SQLiteSerializer implements ConstraintSQLSerializer<NumberColumnStatistics> {
+    public static class SQLiteSerializer implements ConstraintSQLSerializer<NumberColumnStatistics> {
 
         /**
          * Name of the SQL table to store the {@link NumberColumnStatistics} instances.
@@ -128,9 +125,13 @@ public class NumberColumnStatistics implements RDBMSConstraint {
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
-        private SQLiteSerializer(SQLiteInterface sqLiteInterface) throws SQLException {
+        public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
-            this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            try {
+                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -170,7 +171,7 @@ public class NumberColumnStatistics implements RDBMSConstraint {
             }
             NumberColumnStatistics columnStatistics = (NumberColumnStatistics) constraint;
             try {
-                this.insertWriter.write(new Object[] {
+                this.insertWriter.write(new Object[]{
                         constraintCollection.getId(),
                         columnStatistics.getTargetReference().getTargetId(),
                         columnStatistics.getMaxValue(),

@@ -41,11 +41,7 @@ public class TextColumnStatistics implements RDBMSConstraint {
     @Override
     public ConstraintSQLSerializer<TextColumnStatistics> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            try {
-                return new SQLiteSerializer((SQLiteInterface) sqlInterface);
-            } catch (SQLException e) {
-                throw new RuntimeException("Could not create serializer.", e);
-            }
+            return new SQLiteSerializer((SQLiteInterface) sqlInterface);
         }
         throw new RuntimeException("No serializer available for " + sqlInterface);
     }
@@ -93,7 +89,7 @@ public class TextColumnStatistics implements RDBMSConstraint {
     /**
      * SQLite serializer for {@link TextColumnStatistics}.
      */
-    private static class SQLiteSerializer implements ConstraintSQLSerializer<TextColumnStatistics> {
+    public static class SQLiteSerializer implements ConstraintSQLSerializer<TextColumnStatistics> {
 
         /**
          * Name of the SQL table to store the {@link TextColumnStatistics} instances.
@@ -120,9 +116,13 @@ public class TextColumnStatistics implements RDBMSConstraint {
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
-        private SQLiteSerializer(SQLiteInterface sqLiteInterface) throws SQLException {
+        public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
-            this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            try {
+                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -163,7 +163,7 @@ public class TextColumnStatistics implements RDBMSConstraint {
             }
             TextColumnStatistics columnStatistics = (TextColumnStatistics) constraint;
             try {
-                this.insertWriter.write(new Object[] {
+                this.insertWriter.write(new Object[]{
                         constraintCollection.getId(),
                         columnStatistics.getTargetReference().getTargetId(),
                         columnStatistics.getMaxValue(),

@@ -33,6 +33,13 @@ public class SQLiteConstraintUtils {
                 UniqueColumnCombination.UniqueColumnCombinationSQLiteSerializer(sqliteInterface));
         sqliteInterface.registerConstraintSQLSerializer(DistinctValueOverlap.class, new
                 DistinctValueOverlap.DistinctValueOverlapSQLiteSerializer(sqliteInterface));
+        sqliteInterface.registerConstraintSQLSerializer(ColumnStatistics.class,
+                new ColumnStatistics.SQLiteSerializer(sqliteInterface));
+        sqliteInterface.registerConstraintSQLSerializer(TextColumnStatistics.class,
+                new TextColumnStatistics.SQLiteSerializer(sqliteInterface));
+        sqliteInterface.registerConstraintSQLSerializer(NumberColumnStatistics.class,
+                new NumberColumnStatistics.SQLiteSerializer(sqliteInterface));
+
 
         return sqliteInterface;
     }

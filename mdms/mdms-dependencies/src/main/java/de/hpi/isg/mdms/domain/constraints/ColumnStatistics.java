@@ -42,11 +42,7 @@ public class ColumnStatistics implements RDBMSConstraint {
     @Override
     public ConstraintSQLSerializer<ColumnStatistics> getConstraintSQLSerializer(SQLInterface sqlInterface) {
         if (sqlInterface instanceof SQLiteInterface) {
-            try {
-                return new SQLiteSerializer((SQLiteInterface) sqlInterface);
-            } catch (SQLException e) {
-                throw new RuntimeException("Could not create serializer.", e);
-            }
+            return new SQLiteSerializer((SQLiteInterface) sqlInterface);
         }
         throw new RuntimeException("No serializer available for " + sqlInterface);
     }
@@ -94,7 +90,7 @@ public class ColumnStatistics implements RDBMSConstraint {
     /**
      * SQLite serializer for {@link ColumnStatistics}.
      */
-    private static class SQLiteSerializer implements ConstraintSQLSerializer<ColumnStatistics> {
+    public static class SQLiteSerializer implements ConstraintSQLSerializer<ColumnStatistics> {
 
         /**
          * Name of the SQL table to store the {@link ColumnStatistics} instances.
@@ -138,9 +134,13 @@ public class ColumnStatistics implements RDBMSConstraint {
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
-        private SQLiteSerializer(SQLiteInterface sqLiteInterface) throws SQLException {
+        public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
-            this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            try {
+                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override

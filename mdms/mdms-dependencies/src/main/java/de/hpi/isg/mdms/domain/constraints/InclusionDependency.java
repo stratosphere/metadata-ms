@@ -1,11 +1,11 @@
 /***********************************************************************************************************************
  * Copyright (C) 2014 by Sebastian Kruse
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -28,17 +28,13 @@ import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntList;
-
 import org.apache.commons.lang3.Validate;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Constraint implementation for an n-ary inclusion dependency.
@@ -46,6 +42,8 @@ import java.util.List;
  * @author Sebastian Kruse
  */
 public class InclusionDependency extends AbstractHashCodeAndEquals implements RDBMSConstraint {
+
+    private static final Pattern UIND_PATTERN = Pattern.compile("\\[(\\d+),(\\d+)\\]");
 
     public static class InclusionDependencySQLiteSerializer implements ConstraintSQLSerializer<InclusionDependency> {
 
@@ -66,46 +64,32 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
 
         DatabaseQuery<Integer> queryInclusionDependenciesForConstraintCollection;
 
-        DatabaseQuery<Integer> queryINDPart;
-		private int currentConstraintIdMax;
+        //        DatabaseQuery<Integer> queryINDPart;
+        private int currentConstraintIdMax;
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + tableName + " (constraintId, constraintCollectionId) VALUES (?, ?);",
-                        new PreparedStatementAdapter<int[]>() {
-                            @Override
-                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
-                                    throws SQLException {
-                                preparedStatement.setInt(1, parameters[0]);
-                                preparedStatement.setInt(2, parameters[1]);
-                            }
+                        (parameters, preparedStatement) -> {
+                            preparedStatement.setInt(1, parameters[0]);
+                            preparedStatement.setInt(2, parameters[1]);
                         },
                         tableName);
 
         private static final PreparedStatementBatchWriter.Factory<Integer> DELETE_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "DELETE from " + tableName + " where constraintId=?;",
-                        new PreparedStatementAdapter<Integer>() {
-                            @Override
-                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                    throws SQLException {
-                                preparedStatement.setInt(1, parameter);
-                            }
-                        },
+                        (parameter, preparedStatement) -> preparedStatement.setInt(1, parameter),
                         tableName);
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INDPART_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
                         "INSERT INTO " + referenceTableName
                                 + " (constraintId, lhs, rhs) VALUES (?, ?, ?);",
-                        new PreparedStatementAdapter<int[]>() {
-                            @Override
-                            public void translateParameter(int[] parameters, PreparedStatement preparedStatement)
-                                    throws SQLException {
-                                preparedStatement.setInt(1, parameters[0]);
-                                preparedStatement.setInt(2, parameters[1]);
-                                preparedStatement.setInt(3, parameters[2]);
-                            }
+                        (parameters, preparedStatement) -> {
+                            preparedStatement.setInt(1, parameters[0]);
+                            preparedStatement.setInt(2, parameters[1]);
+                            preparedStatement.setInt(3, parameters[2]);
                         },
                         referenceTableName);
 
@@ -113,37 +97,31 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
                 new PreparedStatementBatchWriter.Factory<>(
                         "DELETE from " + referenceTableName
                                 + " where constraintId=?;",
-                        new PreparedStatementAdapter<Integer>() {
-                            @Override
-                            public void translateParameter(Integer parameter, PreparedStatement preparedStatement)
-                                    throws SQLException {
-                                preparedStatement.setInt(1, parameter);
-                            }
-                        },
+                        (parameter, preparedStatement) -> preparedStatement.setInt(1, parameter),
                         referenceTableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Void> INCLUSIONDEPENDENCY_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + " ;",
+                        String.format("SELECT %1$s.constraintId as id, " +
+                                "%1$s.constraintCollectionId as constraintCollectionId, " +
+                                "group_concat('['||lhs||','||rhs||']', ',') as uinds " +
+                                "FROM %1$s, %2$s " +
+                                "WHERE %1$s.constraintId = %2$s.constraintId " +
+                                "GROUP BY %1$s.constraintId, %1$s.constraintCollectionId;", tableName, referenceTableName),
                         PreparedStatementAdapter.VOID_ADAPTER,
                         tableName);
 
         private static final StrategyBasedPreparedQuery.Factory<Integer> INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY =
                 new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT " + tableName + ".constraintId as id, " + tableName + ".constraintCollectionId as constraintCollectionId"
-                                + " from " + tableName + " where " + tableName
-                                + ".constraintCollectionId=?;",
+                        String.format("SELECT %1$s.constraintId as id, " +
+                                "%1$s.constraintCollectionId as constraintCollectionId, " +
+                                "group_concat('['||lhs||','||rhs||']', ',') as uinds " +
+                                "FROM %1$s, %2$s " +
+                                "WHERE %1$s.constraintId = %2$s.constraintId " +
+                                "AND %1$s.constraintCollectionId = ?" +
+                                "GROUP BY %1$s.constraintId, %1$s.constraintCollectionId;", tableName, referenceTableName),
                         PreparedStatementAdapter.SINGLE_INT_ADAPTER,
                         tableName);
-
-        private static final StrategyBasedPreparedQuery.Factory<Integer> INDPART_QUERY_FACTORY =
-                new StrategyBasedPreparedQuery.Factory<>(
-                        "SELECT lhs, rhs "
-                                + "from " + referenceTableName + " "
-                                + "where " + referenceTableName + ".constraintId = ?;",
-                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
-                        referenceTableName);
 
         public InclusionDependencySQLiteSerializer(SQLInterface sqlInterface) {
             this.sqlInterface = sqlInterface;
@@ -168,9 +146,6 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
                         .createQuery(
                                 INCLUSIONDEPENDENCY_FOR_CONSTRAINTCOLLECTION_QUERY_FACTORY);
 
-                this.queryINDPart = sqlInterface.getDatabaseAccess()
-                        .createQuery(
-                                INDPART_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -178,21 +153,21 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
 
         @Override
         public void serialize(Constraint inclusionDependency, ConstraintCollection constraintCollection) {
-        	ensureCurrentConstraintIdMaxInitialized();
-        	
-        	// for auto-increment id
-        	Integer constraintId = ++currentConstraintIdMax;
+            ensureCurrentConstraintIdMaxInitialized();
+
+            // for auto-increment id
+            Integer constraintId = ++currentConstraintIdMax;
 
             Validate.isTrue(inclusionDependency instanceof InclusionDependency);
             try {
-                insertInclusionDependencyWriter.write(new int[] {constraintId, constraintCollection.getId()});
+                insertInclusionDependencyWriter.write(new int[]{constraintId, constraintCollection.getId()});
 
                 for (int i = 0; i < ((InclusionDependency) inclusionDependency).getArity(); i++) {
-                    insertINDPartWriter.write(new int[] { constraintId,
+                    insertINDPartWriter.write(new int[]{constraintId,
                             ((InclusionDependency) inclusionDependency).getTargetReference()
                                     .getDependentColumns()[i],
                             ((InclusionDependency) inclusionDependency).getTargetReference()
-                                    .getReferencedColumns()[i] });
+                                    .getReferencedColumns()[i]});
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -210,15 +185,15 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             try {
                 ResultSet rsInclusionDependencies = retrieveConstraintCollection ?
                         queryInclusionDependencies.execute(null) : queryInclusionDependenciesForConstraintCollection
-                                .execute(constraintCollection.getId());
+                        .execute(constraintCollection.getId());
                 while (rsInclusionDependencies.next()) {
                     if (retrieveConstraintCollection) {
                         constraintCollection = (RDBMSConstraintCollection) this.sqlInterface
                                 .getConstraintCollectionById(rsInclusionDependencies
                                         .getInt("constraintCollectionId"));
                     }
-                    inclusionDependencies.add
-                        (new InclusionDependency(getInclusionDependencyReferences(rsInclusionDependencies.getInt("id"))));
+                    final Reference reference = parseInclusionDependencyReferences(rsInclusionDependencies.getString("uinds"));
+                    inclusionDependencies.add(new InclusionDependency(reference));
 
                 }
                 rsInclusionDependencies.close();
@@ -229,21 +204,22 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             }
         }
 
-        public Reference getInclusionDependencyReferences(int id) {
-            List<Column> lhs = new ArrayList<>();
-            List<Column> rhs = new ArrayList<>();
-            try {
-                try (ResultSet rs = this.queryINDPart.execute(id);) {
-                    while (rs.next()) {
-                        lhs.add(this.sqlInterface.getColumnById(rs.getInt("lhs")));
-                        rhs.add(this.sqlInterface.getColumnById(rs.getInt("rhs")));
-                    }
-                }
-                return new Reference(lhs.toArray(new Column[lhs.size()]), rhs.toArray(new Column[rhs.size()]));
-            } catch (SQLException e)
-            {
-                throw new RuntimeException(e);
+        private Reference parseInclusionDependencyReferences(String code) {
+            final Matcher matcher = UIND_PATTERN.matcher(code);
+            List<int[]> uinds = new ArrayList<>(5);
+            while (matcher.find()) {
+                uinds.add(new int[]{
+                        Integer.parseInt(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))
+                });
             }
+            int[] dep = new int[uinds.size()];
+            int[] ref = new int[uinds.size()];
+            for (int i = 0; i < uinds.size(); i++) {
+                dep[i] = uinds.get(i)[0];
+                ref[i] = uinds.get(i)[1];
+            }
+            return InclusionDependency.Reference.sortAndBuild(dep, ref);
         }
 
         @Override
@@ -257,10 +233,10 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
                 String createINDTable = "CREATE TABLE [" + tableName + "]\n" +
                         "(\n" +
                         "    [constraintId] integer NOT NULL,\n" +
-                        "	 [constraintCollectionId] integer NOT NULL,\n" +                        
+                        "	 [constraintCollectionId] integer NOT NULL,\n" +
                         "    PRIMARY KEY ([constraintId]),\n" +
                         "	 FOREIGN KEY ([constraintCollectionId])" +
-                        "    REFERENCES [ConstraintCollection] ([id])"+
+                        "    REFERENCES [ConstraintCollection] ([id])" +
                         ");";
                 this.sqlInterface.executeCreateTableStatement(createINDTable);
             }
@@ -299,22 +275,22 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
                 throw new RuntimeException(e);
             }
         }
-        
-        
+
+
         private void ensureCurrentConstraintIdMaxInitialized() {
             if (this.currentConstraintIdMax != -1) {
                 return;
             }
-    
+
             try {
                 this.currentConstraintIdMax = 0;
-                	try (ResultSet res = this.sqlInterface.getDatabaseAccess().query("SELECT MAX(constraintId) from " + getTableNames().get(0) + ";", getTableNames().get(0))) {
-                        while (res.next()) {
-                        	if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
-                                this.currentConstraintIdMax = res.getInt("max(constraintId)");                    		
-                        	}
+                try (ResultSet res = this.sqlInterface.getDatabaseAccess().query("SELECT MAX(constraintId) from " + getTableNames().get(0) + ";", getTableNames().get(0))) {
+                    while (res.next()) {
+                        if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
+                            this.currentConstraintIdMax = res.getInt("max(constraintId)");
                         }
-                    }	
+                    }
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -334,43 +310,43 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             return intArray;
         }
 
-      /**
-       * Creates an IND reference and in doing so puts the column pairs in the right order.
-       *
-       * @param dependentColumns are the dependent columns in the IND
-       * @param referencedColumns are the referneced columns in the IND
-       * @return the canonical IND reference
-       */
-      public static Reference sortAndBuild(final Column[] dependentColumns, final Column[] referencedColumns) {
-        return sortAndBuild(toIntArray(dependentColumns), toIntArray(referencedColumns));
-      }
+        /**
+         * Creates an IND reference and in doing so puts the column pairs in the right order.
+         *
+         * @param dependentColumns  are the dependent columns in the IND
+         * @param referencedColumns are the referneced columns in the IND
+         * @return the canonical IND reference
+         */
+        public static Reference sortAndBuild(final Column[] dependentColumns, final Column[] referencedColumns) {
+            return sortAndBuild(toIntArray(dependentColumns), toIntArray(referencedColumns));
+        }
 
-      /**
-       * Creates an IND reference and in doing so puts the column pairs in the right order.
-       *
-       * @param dep are the dependent column IDs in the IND
-       * @param ref are the referneced column IDs in the IND
-       * @return the canonical IND reference
-       */
+        /**
+         * Creates an IND reference and in doing so puts the column pairs in the right order.
+         *
+         * @param dep are the dependent column IDs in the IND
+         * @param ref are the referneced column IDs in the IND
+         * @return the canonical IND reference
+         */
         public static Reference sortAndBuild(int[] dep, int[] ref) {
-          for (int j = ref.length - 1; j > 0; j--) {
-            for (int i = j - 1; i >= 0; i--) {
-              if (dep[i] > dep[j] || (dep[i] == dep[j] && ref[i] > ref[j])) {
-                swap(dep, i, j);
-                swap(ref, i, j);
-              }
+            for (int j = ref.length - 1; j > 0; j--) {
+                for (int i = j - 1; i >= 0; i--) {
+                    if (dep[i] > dep[j] || (dep[i] == dep[j] && ref[i] > ref[j])) {
+                        swap(dep, i, j);
+                        swap(ref, i, j);
+                    }
+                }
             }
-          }
-          return new Reference(dep, ref);
+            return new Reference(dep, ref);
         }
 
         private static void swap(int[] array, int i, int j) {
-          int temp = array[i];
-          array[i] = array[j];
-          array[j] = temp;
+            int temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
         }
 
-      int[] dependentColumns;
+        int[] dependentColumns;
         int[] referencedColumns;
 
         public Reference(final Column[] dependentColumns, final Column[] referencedColumns) {
@@ -378,39 +354,39 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         }
 
         public Reference(final int[] dependentColumnIds, final int[] referencedColumnIds) {
-          this.dependentColumns = dependentColumnIds;
-          this.referencedColumns = referencedColumnIds;
+            this.dependentColumns = dependentColumnIds;
+            this.referencedColumns = referencedColumnIds;
         }
 
-      /**
-       * Tests if this is a valid reference.
-       *
-       * @return whether it is a valid reference
-       */
-      public boolean isValid() {
-        // Referenced and dependent side existing and similar?
-        if (this.dependentColumns == null || this.referencedColumns == null || this.dependentColumns.length == 0
-            || this.dependentColumns.length != this.referencedColumns.length) {
-          return false;
-        }
-        // Is the ordering of the IDs fulfilled?
-        for (int i = 1; i < this.dependentColumns.length; i++) {
-          if (this.dependentColumns[i - 1] < this.dependentColumns[i]) continue;
-          if (this.dependentColumns[i - 1] > this.dependentColumns[i]) {
+        /**
+         * Tests if this is a valid reference.
+         *
+         * @return whether it is a valid reference
+         */
+        public boolean isValid() {
+            // Referenced and dependent side existing and similar?
+            if (this.dependentColumns == null || this.referencedColumns == null || this.dependentColumns.length == 0
+                    || this.dependentColumns.length != this.referencedColumns.length) {
+                return false;
+            }
+            // Is the ordering of the IDs fulfilled?
+            for (int i = 1; i < this.dependentColumns.length; i++) {
+                if (this.dependentColumns[i - 1] < this.dependentColumns[i]) continue;
+                if (this.dependentColumns[i - 1] > this.dependentColumns[i]) {
 //            throw new IllegalArgumentException("Dependent column IDs are not in ascending order: " + Arrays.toString(dependentColumnIds));
-            return false;
-          } else if (this.referencedColumns[i - 1] >= this.referencedColumns[i]){
+                    return false;
+                } else if (this.referencedColumns[i - 1] >= this.referencedColumns[i]) {
 //            throw new IllegalArgumentException("Referenced column IDs are not in ascending order on equal dependent columns: " +
 //                Arrays.toString(dependentColumnIds) + " < " + Arrays.toString(referencedColumnIds));
-            return false;
-          }
+                    return false;
+                }
+            }
+
+            return true;
         }
 
-        return true;
-      }
 
-
-      @Override
+        @Override
         public IntCollection getAllTargetIds() {
             IntList allTargetIds = new IntArrayList(this.dependentColumns.length + this.referencedColumns.length);
             allTargetIds.addElements(0, this.dependentColumns);
@@ -432,7 +408,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
             return this.referencedColumns;
         }
 
-      @Override
+        @Override
         public String toString() {
             return "Reference [dependentColumns=" + Arrays.toString(dependentColumns) + ", referencedColumns="
                     + Arrays.toString(referencedColumns) + "]";
@@ -449,7 +425,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
     }
 
     public static InclusionDependency buildAndAddToCollection(final InclusionDependency.Reference target,
-            ConstraintCollection constraintCollection) {
+                                                              ConstraintCollection constraintCollection) {
         InclusionDependency inclusionDependency = new InclusionDependency(target);
         constraintCollection.add(inclusionDependency);
         return inclusionDependency;
@@ -476,40 +452,42 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         return this.getTargetReference().getDependentColumns().length;
     }
 
-  /**
-   * Checks whether this inclusion dependency is implied by another inclusion dependency.
-   * @param that is the allegedly implying IND
-   * @return whether this IND is implied
-   */
+    /**
+     * Checks whether this inclusion dependency is implied by another inclusion dependency.
+     *
+     * @param that is the allegedly implying IND
+     * @return whether this IND is implied
+     */
     public boolean isImpliedBy(InclusionDependency that) {
-      if (this.getArity() > that.getArity()) {
-        return false;
-      }
-
-      // Co-iterate the two INDs and make use of the sorting of the column IDs.
-      int thisI = 0, thatI = 0;
-      while (thisI < this.getArity() && thatI < that.getArity() && (this.getArity() - thisI <= that.getArity() - thatI)) {
-        int thisCol = this.getTargetReference().dependentColumns[thisI];
-        int thatCol = that.getTargetReference().dependentColumns[thatI];
-        if (thisCol == thatCol) {
-          thisCol = this.getTargetReference().referencedColumns[thisI];
-          thatCol = that.getTargetReference().referencedColumns[thatI];
+        if (this.getArity() > that.getArity()) {
+            return false;
         }
-        if (thisCol == thatCol) {
-          thisI++;
-          thatI++;
-        } else if (thisCol > thatCol) {
-          thatI++;
-        } else {
-          return false;
-        }
-      }
 
-      return thisI == this.getArity();
+        // Co-iterate the two INDs and make use of the sorting of the column IDs.
+        int thisI = 0, thatI = 0;
+        while (thisI < this.getArity() && thatI < that.getArity() && (this.getArity() - thisI <= that.getArity() - thatI)) {
+            int thisCol = this.getTargetReference().dependentColumns[thisI];
+            int thatCol = that.getTargetReference().dependentColumns[thatI];
+            if (thisCol == thatCol) {
+                thisCol = this.getTargetReference().referencedColumns[thisI];
+                thatCol = that.getTargetReference().referencedColumns[thatI];
+            }
+            if (thisCol == thatCol) {
+                thisI++;
+                thatI++;
+            } else if (thisCol > thatCol) {
+                thatI++;
+            } else {
+                return false;
+            }
+        }
+
+        return thisI == this.getArity();
     }
 
     /**
      * Tests this inclusion dependency for triviality, i.e., whether the dependent and referenced sides are equal.
+     *
      * @return whether this is a trivial inclusion dependency
      */
     public boolean isTrivial() {
