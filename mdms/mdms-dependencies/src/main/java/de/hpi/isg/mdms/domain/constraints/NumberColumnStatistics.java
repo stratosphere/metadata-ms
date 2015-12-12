@@ -1,5 +1,9 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.db.DatabaseAccess;
+import de.hpi.isg.mdms.db.PreparedStatementAdapter;
+import de.hpi.isg.mdms.db.query.DatabaseQuery;
+import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -7,11 +11,16 @@ import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+
+import static de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils.getNullableDouble;
+
 
 /**
  * This constraint class encapsulates string-specific single column statistics.
@@ -121,14 +130,36 @@ public class NumberColumnStatistics implements RDBMSConstraint {
                         },
                         TABLE_NAME);
 
+        private static final StrategyBasedPreparedQuery.Factory<Void> LOAD_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, minValue, maxValue, average, stdDev " +
+                                "FROM %1$s;", TABLE_NAME),
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        TABLE_NAME);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, minValue, maxValue, average, stdDev " +
+                                "FROM %1$s " +
+                                "WHERE constraintCollectionId = ?;", TABLE_NAME),
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        TABLE_NAME);
+
         private final SQLiteInterface sqLiteInterface;
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
+        private final DatabaseQuery<Void> loadQuery;
+
+        private final DatabaseQuery<Integer> loadConstraintCollectionQuery;
+
         public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
             try {
-                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+                final DatabaseAccess dba = this.sqLiteInterface.getDatabaseAccess();
+                this.insertWriter = dba.createBatchWriter(INSERT_WRITER_FACTORY);
+                this.loadQuery = dba.createQuery(LOAD_QUERY_FACTORY);
+                this.loadConstraintCollectionQuery = dba.createQuery(LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -185,10 +216,30 @@ public class NumberColumnStatistics implements RDBMSConstraint {
         }
 
         @Override
-        public Collection<NumberColumnStatistics> deserializeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
-            // todo
-            throw new RuntimeException("Not implemented.");
+        public Collection<NumberColumnStatistics> deserializeConstraintsOfConstraintCollection(
+                ConstraintCollection constraintCollection) {
+
+            Collection<NumberColumnStatistics> constraints = new LinkedList<>();
+            try (ResultSet resultSet = constraintCollection == null ?
+                    this.loadQuery.execute(null) :
+                    this.loadConstraintCollectionQuery.execute(constraintCollection.getId())) {
+
+                while (resultSet.next()) {
+                    final NumberColumnStatistics constraint = new NumberColumnStatistics(resultSet.getInt("columnId"));
+                    constraint.setMinValue(getNullableDouble(resultSet, "minValue", Double.NaN));
+                    constraint.setMaxValue(getNullableDouble(resultSet, "maxValue", Double.NaN));
+                    constraint.setAverage(getNullableDouble(resultSet, "average", Double.NaN));
+                    constraint.setStandardDeviation(getNullableDouble(resultSet, "stdDev", Double.NaN));
+                    constraints.add(constraint);
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not load constraint collection.", e);
+            }
+            return constraints;
         }
+
+
 
         @Override
         public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {

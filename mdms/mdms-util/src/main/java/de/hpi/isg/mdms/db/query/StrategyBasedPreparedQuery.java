@@ -37,7 +37,7 @@ public class StrategyBasedPreparedQuery<T> extends PreparedQuery<T> {
 
 		@Override
 		public StrategyBasedPreparedQuery<TElement> createQuery(DatabaseAccess databaseAccess) {
-			return new StrategyBasedPreparedQuery<TElement>(databaseAccess,
+			return new StrategyBasedPreparedQuery<>(databaseAccess,
 					this.sqlStatement, this.adapter, this.queriedTables);
 		}
 

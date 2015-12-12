@@ -1,5 +1,9 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.db.DatabaseAccess;
+import de.hpi.isg.mdms.db.PreparedStatementAdapter;
+import de.hpi.isg.mdms.db.query.DatabaseQuery;
+import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -7,9 +11,11 @@ import de.hpi.isg.mdms.rdbms.ConstraintSQLSerializer;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -112,14 +118,37 @@ public class TextColumnStatistics implements RDBMSConstraint {
                         },
                         TABLE_NAME);
 
+        private static final StrategyBasedPreparedQuery.Factory<Void> LOAD_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, minValue, maxValue, shortestValue, longestValue, subtype " +
+                                "FROM %1$s;", TABLE_NAME),
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        TABLE_NAME);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, minValue, maxValue, shortestValue, longestValue, subtype " +
+                                "FROM %1$s " +
+                                "WHERE constraintCollectionId = ?;", TABLE_NAME),
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        TABLE_NAME);
+
+
         private final SQLiteInterface sqLiteInterface;
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
+        private final DatabaseQuery<Void> loadQuery;
+
+        private final DatabaseQuery<Integer> loadConstraintCollectionQuery;
+
         public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
             try {
-                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+                final DatabaseAccess dba = this.sqLiteInterface.getDatabaseAccess();
+                this.insertWriter = dba.createBatchWriter(INSERT_WRITER_FACTORY);
+                this.loadQuery = dba.createQuery(LOAD_QUERY_FACTORY);
+                this.loadConstraintCollectionQuery = dba.createQuery(LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -178,9 +207,28 @@ public class TextColumnStatistics implements RDBMSConstraint {
         }
 
         @Override
-        public Collection<TextColumnStatistics> deserializeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
-            // todo
-            throw new RuntimeException("Not implemented.");
+        public Collection<TextColumnStatistics> deserializeConstraintsOfConstraintCollection(
+                ConstraintCollection constraintCollection) {
+
+            Collection<TextColumnStatistics> constraints = new LinkedList<>();
+            try (ResultSet resultSet = constraintCollection == null ?
+                    this.loadQuery.execute(null) :
+                    this.loadConstraintCollectionQuery.execute(constraintCollection.getId())) {
+
+                while (resultSet.next()) {
+                    final TextColumnStatistics constraint = new TextColumnStatistics(resultSet.getInt("columnId"));
+                    constraint.setMinValue(resultSet.getString("minValue"));
+                    constraint.setMaxValue(resultSet.getString("maxValue"));
+                    constraint.setShortestValue(resultSet.getString("shortestValue"));
+                    constraint.setLongestValue(resultSet.getString("longestValue"));
+                    constraint.setSubtype(resultSet.getString("subtype"));
+                    constraints.add(constraint);
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not load constraint collection.", e);
+            }
+            return constraints;
         }
 
         @Override

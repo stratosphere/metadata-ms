@@ -1,5 +1,9 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.db.DatabaseAccess;
+import de.hpi.isg.mdms.db.PreparedStatementAdapter;
+import de.hpi.isg.mdms.db.query.DatabaseQuery;
+import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -9,12 +13,14 @@ import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils.getNullableDouble;
+import static de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils.getNullableInt;
 
 /**
  * This constraint class encapsulates various general single column statistics.
@@ -130,14 +136,37 @@ public class ColumnStatistics implements RDBMSConstraint {
                         },
                         TABLE_NAME);
 
+        private static final StrategyBasedPreparedQuery.Factory<Void> LOAD_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, nulls, fillStatus, distinctValues, uniqueness, topKValues " +
+                                "FROM %1$s;", TABLE_NAME),
+                        PreparedStatementAdapter.VOID_ADAPTER,
+                        TABLE_NAME);
+
+        private static final StrategyBasedPreparedQuery.Factory<Integer> LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY =
+                new StrategyBasedPreparedQuery.Factory<>(
+                        String.format("SELECT columnId, nulls, fillStatus, distinctValues, uniqueness, topKValues " +
+                                "FROM %1$s " +
+                                "WHERE constraintCollectionId = ?;", TABLE_NAME),
+                        PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                        TABLE_NAME);
+
+
         private final SQLiteInterface sqLiteInterface;
 
         private final PreparedStatementBatchWriter<Object[]> insertWriter;
 
+        private final DatabaseQuery<Void> loadQuery;
+
+        private final DatabaseQuery<Integer> loadConstraintCollectionQuery;
+
         public SQLiteSerializer(SQLiteInterface sqLiteInterface) {
             this.sqLiteInterface = sqLiteInterface;
             try {
-                this.insertWriter = this.sqLiteInterface.getDatabaseAccess().createBatchWriter(INSERT_WRITER_FACTORY);
+                final DatabaseAccess dba = this.sqLiteInterface.getDatabaseAccess();
+                this.insertWriter = dba.createBatchWriter(INSERT_WRITER_FACTORY);
+                this.loadQuery = dba.createQuery(LOAD_QUERY_FACTORY);
+                this.loadConstraintCollectionQuery = dba.createQuery(LOAD_CONSTRAINTCOLLECTION_QUERY_FACTORY);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -197,8 +226,26 @@ public class ColumnStatistics implements RDBMSConstraint {
 
         @Override
         public Collection<ColumnStatistics> deserializeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
-            // todo
-            throw new RuntimeException("Not implemented.");
+
+            Collection<ColumnStatistics> constraints = new LinkedList<>();
+            try (ResultSet resultSet = constraintCollection == null ?
+                    this.loadQuery.execute(null) :
+                    this.loadConstraintCollectionQuery.execute(constraintCollection.getId())) {
+
+                while (resultSet.next()) {
+                    final ColumnStatistics constraint = new ColumnStatistics(resultSet.getInt("columnId"));
+                    constraint.setNumNulls(getNullableInt(resultSet, "nulls", -1));
+                    constraint.setFillStatus(getNullableDouble(resultSet, "fillStatus", Double.NaN));
+                    constraint.setNumDistinctValues(getNullableInt(resultSet, "distinctValues", -1));
+                    constraint.setUniqueness(getNullableDouble(resultSet, "uniqueness", Double.NaN));
+                    constraint.setTopKFrequentValues(parseTopKFrequentValues(resultSet.getString("topKValues")));
+                    constraints.add(constraint);
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException("Could not load constraint collection.", e);
+            }
+            return constraints;
         }
 
         @Override
@@ -226,6 +273,25 @@ public class ColumnStatistics implements RDBMSConstraint {
                     .collect(Collectors.toList());
             final String topKJsonString = new JSONArray(topKEntryList).toString();
             return topKJsonString;
+        }
+
+        /**
+         * Parses a JSON string that has been created by {@link #toJSONString(List)}
+         *
+         * @param jsonString the JSON encoded string
+         * @return the top k frequent values that have been encoded or {@code null} if the input is {@code null} or
+         * empty
+         */
+        private static List<ValueOccurrence> parseTopKFrequentValues(String jsonString) {
+            if (jsonString == null || jsonString.isEmpty()) return null;
+
+            final JSONArray jsonArray = new JSONArray(jsonString);
+            final List<ValueOccurrence> valueOccurrences = new ArrayList<>(jsonArray.length());
+            for (int i = 0; i < jsonArray.length(); i++) {
+                final JSONObject jsonObject = jsonArray.getJSONObject(i);
+                valueOccurrences.add(new ValueOccurrence(jsonObject.getString("value"), jsonObject.getLong("count")));
+            }
+            return valueOccurrences;
         }
     }
 
