@@ -53,7 +53,7 @@ public class FunctionalDependency extends AbstractHashCodeAndEquals implements R
         private final static String lhsTableName = "FD_LHS";
 
         /** Keeps track of the maximum used {@code constraintId} in the database. */
-        private int currentConstraintIdMax;
+        private int currentConstraintIdMax = -1;
 
         private final SQLInterface sqlInterface;
 

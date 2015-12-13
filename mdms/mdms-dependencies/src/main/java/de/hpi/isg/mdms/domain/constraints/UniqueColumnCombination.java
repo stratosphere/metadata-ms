@@ -68,7 +68,8 @@ public class UniqueColumnCombination extends AbstractHashCodeAndEquals implement
         DatabaseQuery<Integer> queryUniqueColumnCombinationsForConstraintCollection;
 
         DatabaseQuery<Integer> queryUCCPart;
-		private int currentConstraintIdMax;
+
+		private int currentConstraintIdMax = -1;
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_UNIQECOLUMNCOMBINATION_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(

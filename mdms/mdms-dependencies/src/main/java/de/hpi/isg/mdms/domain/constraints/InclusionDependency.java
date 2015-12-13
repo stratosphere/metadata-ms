@@ -65,7 +65,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         DatabaseQuery<Integer> queryInclusionDependenciesForConstraintCollection;
 
         //        DatabaseQuery<Integer> queryINDPart;
-        private int currentConstraintIdMax;
+        private int currentConstraintIdMax = -1;
 
         private static final PreparedStatementBatchWriter.Factory<int[]> INSERT_INCLUSIONDEPENDENCY_WRITER_FACTORY =
                 new PreparedStatementBatchWriter.Factory<>(
