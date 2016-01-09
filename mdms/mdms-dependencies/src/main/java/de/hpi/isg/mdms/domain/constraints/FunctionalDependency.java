@@ -210,8 +210,8 @@ public class FunctionalDependency extends AbstractHashCodeAndEquals implements R
                 try (ResultSet res = this.sqlInterface.getDatabaseAccess()
                         .query("SELECT MAX(id) from " + tableName + ";", tableName)) {
                     while (res.next()) {
-                        if (this.currentConstraintIdMax < res.getInt("max(constraintId)")) {
-                            this.currentConstraintIdMax = res.getInt("max(constraintId)");
+                        if (this.currentConstraintIdMax < res.getInt("max(id)")) {
+                            this.currentConstraintIdMax = res.getInt("max(id)");
                         }
                     }
                 }
