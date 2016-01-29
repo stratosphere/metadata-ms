@@ -79,6 +79,16 @@
             <artifactId>mdms-dependencies</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-clients</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-flink</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
 
 
     </dependencies>
