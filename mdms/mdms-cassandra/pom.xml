@@ -1,148 +1,120 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-  <parent>
-	<artifactId>mdms</artifactId>
-	<groupId>de.hpi.isg</groupId>
-	<version>0.0.3-SNAPSHOT</version>
-  </parent>
+    <parent>
+        <artifactId>mdms</artifactId>
+        <groupId>de.hpi.isg</groupId>
+        <version>0.0.3-SNAPSHOT</version>
+    </parent>
 
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>mdms-cassandra</artifactId>
+    <artifactId>mdms-cassandra</artifactId>
 
-  <properties>
-    <mdms.version>0.0.3-SNAPSHOT</mdms.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <properties>
+        <mdms.version>0.0.3-SNAPSHOT</mdms.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-  <dependencies>
-  	<dependency>
-		<groupId>com.datastax.cassandra</groupId>
-		<artifactId>cassandra-driver-core</artifactId>
-		<version>2.1.5</version>
-	</dependency>
-	<dependency>
-		<groupId>org.apache.cassandra</groupId>
-		<artifactId>cassandra-all</artifactId>
-		<version>2.1.8</version>
-	</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>2.1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>2.1.8</version>
+        </dependency>
 
-	<dependency>
-		<groupId>com.google.guava</groupId>
-		<artifactId>guava</artifactId>
-		<version>16.0</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.beust</groupId>
-	    <artifactId>jcommander</artifactId>
-	    <version>1.48</version>
-	</dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-hadoop-compatibility</artifactId>
-			<version>0.9.0</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-hadoop-compatibility</artifactId>
+        </dependency>
 
-  		<dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-clients</artifactId>
-                <version>0.9.0</version>
-                <!-- <version>0.7-incubating-SNAPSHOT</version> -->
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <scope>test</scope>
-                <version>4.11</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-java</artifactId>
-                <!-- <version>0.7-incubating-SNAPSHOT</version> -->
-                <version>0.9.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-scala</artifactId>
-                <version>0.9.0</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-model</artifactId>
-                <version>${mdms.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-simple</artifactId>
-                <version>${mdms.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-rdbms</artifactId>
-                <version>${mdms.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-sqlite</artifactId>
-                <version>${mdms.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-dependencies</artifactId>
-                <version>${mdms.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>sodap-flink</artifactId>
-                <version>0.0.2-SNAPSHOT</version>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-clients</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-scala</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-model</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-simple</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-rdbms</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-sqlite</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-dependencies</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
 
-            <dependency>
-                <groupId>jdk.tools</groupId>
-                <artifactId>jdk.tools</artifactId>
-                <version>1.7</version>
-                <scope>system</scope>
-                <systemPath>${JAVA_HOME}/lib/tools.jar</systemPath>
-            </dependency>
-            <!-- Java 1.6 dependency seems to be introduced by Flink and is actually
-                not a problem for Maven. <systemPath>C:/Program Files/Java/jdk1.6.0_38/lib/tools.jar</systemPath> -->
-  			
-  	</dependencies>
-  	<build>
-	  <plugins>
-		   <plugin>
-	            <groupId>org.apache.maven.plugins</groupId>
-	            <artifactId>maven-compiler-plugin</artifactId>
-	            <version>2.4</version>
-	            <configuration>
-	                <source>1.7</source>
-	                <target>1.7</target>
-	            </configuration>
-	        </plugin>
-	        
-	        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>2.5.4</version>
-            <configuration>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
 
-            </configuration>
-            <executions>
-                <execution>
-                    <id>assemble-all</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>single</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-	  </plugins>
-  	</build>
-  	
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.5.4</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>assemble-all</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

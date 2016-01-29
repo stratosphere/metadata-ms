@@ -72,6 +72,13 @@
                 <version>3.0</version>
             </dependency>
             <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>18.0</version>
+            </dependency>
+
+            <!-- Flink dependencies -->
+            <dependency>
                 <groupId>org.apache.flink</groupId>
                 <artifactId>flink-clients</artifactId>
                 <version>${flink.version}</version>
@@ -97,15 +104,17 @@
                 <version>${flink.version}</version>
             </dependency>
             <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-model</artifactId>
-                <version>0.0.3-SNAPSHOT</version>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-hadoop-compatibility</artifactId>
+                <version>${flink.version}</version>
             </dependency>
             <dependency>
-                <groupId>de.hpi.isg</groupId>
-                <artifactId>mdms-dependencies</artifactId>
-                <version>0.0.3-SNAPSHOT</version>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-scala</artifactId>
+                <version>${flink.version}</version>
             </dependency>
+
+
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
