@@ -41,8 +41,12 @@ import de.hpi.isg.mdms.flink.serializer.DVOFlinkSerializer;
 import de.hpi.isg.mdms.flink.serializer.FDFlinkSerializer;
 import de.hpi.isg.mdms.flink.serializer.INDFlinkSerializer;
 import de.hpi.isg.mdms.flink.serializer.UCCFlinkSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlinkRetrieveConstraintTest {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private File testDb;
     private Connection connection;
@@ -53,6 +57,8 @@ public class FlinkRetrieveConstraintTest {
 
     @Before
     public void setUp() {
+        this.logger.info("setUp() started.");
+
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();

@@ -23,15 +23,15 @@ public interface Schema extends Target {
      *        is the location of the table
      * @return the added table
      */
-    public Table addTable(MetadataStore metadataStore, String name, String description, Location location);
+    Table addTable(MetadataStore metadataStore, String name, String description, Location location);
 
-    public Table getTableByName(String name) throws NameAmbigousException;
+    Table getTableByName(String name) throws NameAmbigousException;
 
-    public Collection<Table> getTablesByName(String name);
+    Collection<Table> getTablesByName(String name);
 
-    public Table getTableById(int id);
+    Table getTableById(int id);
 
-    public Collection<Table> getTables();
+    Collection<Table> getTables();
 
     /**
      * Searches for a {@link Column} inside all of its known {@link Table}s.
