@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import static org.junit.Assert.*;
@@ -38,20 +39,16 @@ public class FlinkWriteConstraintTest {
     private ConstraintCollection dummyConstraintCollection;
 
     @Before
-    public void setUp() {
+    public void setUp() throws ClassNotFoundException, SQLException {
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
-        } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
+
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
 
         this.store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
@@ -75,9 +72,9 @@ public class FlinkWriteConstraintTest {
     @Test
     public void testDistinctValueCount() throws Exception {
 
-        ArrayList<Tuple2<Integer, Integer>> dvcs = new ArrayList<Tuple2<Integer, Integer>>();
-        dvcs.add(new Tuple2<Integer, Integer>(col1.getId(), 1));
-        dvcs.add(new Tuple2<Integer, Integer>(col2.getId(), 2));
+        ArrayList<Tuple2<Integer, Integer>> dvcs = new ArrayList<>();
+        dvcs.add(new Tuple2<>(col1.getId(), 1));
+        dvcs.add(new Tuple2<>(col2.getId(), 2));
 
         //flink job
         ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();

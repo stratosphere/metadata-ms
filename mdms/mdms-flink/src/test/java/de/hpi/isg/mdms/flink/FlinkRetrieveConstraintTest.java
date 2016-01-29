@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,13 +38,13 @@ public class FlinkRetrieveConstraintTest {
 
     private File testDb;
     private Connection connection;
-	private MetadataStore store;
-	private Column col1;
-	private Column col2;
-	private ConstraintCollection dummyConstraintCollection;
+    private MetadataStore store;
+    private Column col1;
+    private Column col2;
+    private ConstraintCollection dummyConstraintCollection;
 
     @Before
-    public void setUp() {
+    public void setUp() throws ClassNotFoundException, SQLException {
         this.logger.info("setUp() started.");
 
         try {
@@ -52,138 +53,133 @@ public class FlinkRetrieveConstraintTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
-        } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
 
-        this.store =  RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
-        
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
+
+        this.store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+
         final Schema dummySchema1 = store.addSchema("PDB", null, new DefaultLocation());
         col1 = dummySchema1.addTable(store, "table1", null, new DefaultLocation()).addColumn(store,
                 "foo", null, 1);
         col2 = dummySchema1.addTable(store, "table1", null, new DefaultLocation()).addColumn(store,
                 "bar", null, 2);
 
-       dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
-        
+        dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
+
     }
 
     @After
     public void tearDown() {
-            store.close();
-            this.testDb.delete();
-    }    
-    
+        store.close();
+        this.testDb.delete();
+    }
+
     @Test
     public void testDistinctValueCount() throws Exception {
-        
+
         //write dvcs to database
         DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(this.col1.getId()),
-                    this.dummyConstraintCollection, 1);
+                this.dummyConstraintCollection, 1);
 
         DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(this.col2.getId()),
                 this.dummyConstraintCollection, 3);
 
         this.store.flush();
-        
+
         //flink job
-    	ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-    	DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVCFlinkSerializer());
-        
+        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVCFlinkSerializer());
+
         List<Tuple2<Integer, Integer>> outData = new ArrayList<Tuple2<Integer, Integer>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
         env.execute("Distinct Value Count Reading");
-        
+
         assertTrue(outData.size() == 2);
     }
 
     @Test
     public void testDistinctValueOverlap() throws Exception {
-    	
-    	DistinctValueOverlap.Reference reference = new DistinctValueOverlap.Reference(this.col1.getId(), this.col2.getId());
-    	DistinctValueOverlap.buildAndAddToCollection(2, reference, dummyConstraintCollection);
-    	this.store.flush();
-    	
+
+        DistinctValueOverlap.Reference reference = new DistinctValueOverlap.Reference(this.col1.getId(), this.col2.getId());
+        DistinctValueOverlap.buildAndAddToCollection(2, reference, dummyConstraintCollection);
+        this.store.flush();
+
         //flink job
-    	ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-    	DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVOFlinkSerializer());
-        
+        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVOFlinkSerializer());
+
         List<Tuple3<Integer, Integer, Integer>> outData = new ArrayList<Tuple3<Integer, Integer, Integer>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
         env.execute("Distinct Value Overlap Reading");
-        
+
         assertTrue(outData.size() == 1);
     }
 
-    
-    
+
     @Test
     public void testInclusionDependency() throws Exception {
 
-    	int[] referenced = {col1.getId()};
-    	int[] dependent = {col2.getId()};
-    	InclusionDependency.Reference reference = new InclusionDependency.Reference(dependent, referenced);
-    	InclusionDependency.buildAndAddToCollection(reference, this.dummyConstraintCollection);
-    	this.store.flush();
-    	
-    	 //flink job
-    	ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-    	DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new INDFlinkSerializer());
-        
+        int[] referenced = {col1.getId()};
+        int[] dependent = {col2.getId()};
+        InclusionDependency.Reference reference = new InclusionDependency.Reference(dependent, referenced);
+        InclusionDependency.buildAndAddToCollection(reference, this.dummyConstraintCollection);
+        this.store.flush();
+
+        //flink job
+        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new INDFlinkSerializer());
+
         List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
         env.execute("Inclusion Dependency Reading");
-        
-        assertTrue(outData.size() == 1);    	
+
+        assertTrue(outData.size() == 1);
     }
-    
+
     @Test
     public void testUniqueColumnCombination() throws Exception {
 
-    	int[] columns = {col1.getId()};
-    	UniqueColumnCombination.buildAndAddToCollection(new UniqueColumnCombination.Reference(columns), this.dummyConstraintCollection);
-    	this.store.flush();
-    	
-   	 //flink job
-    	ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-    	DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new UCCFlinkSerializer());
-       
-       List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
-       constraints.output(new LocalCollectionOutputFormat(outData));
+        int[] columns = {col1.getId()};
+        UniqueColumnCombination.buildAndAddToCollection(new UniqueColumnCombination.Reference(columns), this.dummyConstraintCollection);
+        this.store.flush();
 
-       env.execute("Unique Column Combination Reading");
-       
-       assertTrue(outData.size() == 1);    	
-      
+        //flink job
+        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new UCCFlinkSerializer());
+
+        List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
+        constraints.output(new LocalCollectionOutputFormat(outData));
+
+        env.execute("Unique Column Combination Reading");
+
+        assertTrue(outData.size() == 1);
+
     }
-    
+
     @Test
     public void testFunctionalDependency() throws Exception {
 
-    	int[] lhs = {col1.getId()};
-    	int rhs = col2.getId();
-    	FunctionalDependency.Reference reference = new FunctionalDependency.Reference(rhs, lhs);
-    	FunctionalDependency.buildAndAddToCollection(reference, this.dummyConstraintCollection);
-    	this.store.flush();
-    	
-      	 //flink job
-       	ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-       	DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new FDFlinkSerializer());
-          
-          List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
-          constraints.output(new LocalCollectionOutputFormat(outData));
+        int[] lhs = {col1.getId()};
+        int rhs = col2.getId();
+        FunctionalDependency.Reference reference = new FunctionalDependency.Reference(rhs, lhs);
+        FunctionalDependency.buildAndAddToCollection(reference, this.dummyConstraintCollection);
+        this.store.flush();
 
-          env.execute("Functional Dependency Reading");
-          
-          assertTrue(outData.size() == 1);    	
-    	
+        //flink job
+        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new FDFlinkSerializer());
+
+        List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
+        constraints.output(new LocalCollectionOutputFormat(outData));
+
+        env.execute("Functional Dependency Reading");
+
+        assertTrue(outData.size() == 1);
+
     }
 
 
