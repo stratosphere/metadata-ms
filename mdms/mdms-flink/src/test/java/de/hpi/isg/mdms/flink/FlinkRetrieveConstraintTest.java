@@ -1,19 +1,15 @@
 package de.hpi.isg.mdms.flink;
 
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.List;
-
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.flink.serializer.*;
 import de.hpi.isg.mdms.model.MetadataStore;
-
-import org.apache.flink.api.common.functions.MapFunction;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
@@ -23,26 +19,17 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
-import de.hpi.isg.mdms.domain.constraints.DistinctValueOverlap;
-import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
-import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
-import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
-import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
-import de.hpi.isg.mdms.model.location.DefaultLocation;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.flink.FlinkMetdataStoreAdapter;
-import de.hpi.isg.mdms.flink.serializer.DVCFlinkSerializer;
-import de.hpi.isg.mdms.flink.serializer.DVOFlinkSerializer;
-import de.hpi.isg.mdms.flink.serializer.FDFlinkSerializer;
-import de.hpi.isg.mdms.flink.serializer.INDFlinkSerializer;
-import de.hpi.isg.mdms.flink.serializer.UCCFlinkSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
 
 public class FlinkRetrieveConstraintTest {
 

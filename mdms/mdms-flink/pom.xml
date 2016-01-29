@@ -48,11 +48,6 @@
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-clients</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-util</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
