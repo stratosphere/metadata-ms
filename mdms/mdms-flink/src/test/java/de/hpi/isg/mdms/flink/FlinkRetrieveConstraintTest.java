@@ -16,6 +16,8 @@ import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +44,7 @@ public class FlinkRetrieveConstraintTest {
     private Column col1;
     private Column col2;
     private ConstraintCollection dummyConstraintCollection;
+    private ExecutionEnvironment flinkExecutionEnvironment;
 
     @Before
     public void setUp() throws ClassNotFoundException, SQLException {
@@ -67,10 +70,15 @@ public class FlinkRetrieveConstraintTest {
 
         dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
 
+        Configuration configuration = new Configuration();
+        configuration.setInteger(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, 128);
+        configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, 1);
+        this.flinkExecutionEnvironment = ExecutionEnvironment.createLocalEnvironment(configuration);
     }
 
     @After
     public void tearDown() {
+        this.flinkExecutionEnvironment = null;
         store.close();
         this.testDb.delete();
     }
@@ -88,13 +96,16 @@ public class FlinkRetrieveConstraintTest {
         this.store.flush();
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVCFlinkSerializer());
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(
+                this.flinkExecutionEnvironment,
+                this.store,
+                this.dummyConstraintCollection,
+                new DVCFlinkSerializer());
 
-        List<Tuple2<Integer, Integer>> outData = new ArrayList<Tuple2<Integer, Integer>>();
+        List<Tuple2<Integer, Integer>> outData = new ArrayList<>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
-        env.execute("Distinct Value Count Reading");
+        this.flinkExecutionEnvironment.execute("Distinct Value Count Reading");
 
         assertTrue(outData.size() == 2);
     }
@@ -107,13 +118,16 @@ public class FlinkRetrieveConstraintTest {
         this.store.flush();
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new DVOFlinkSerializer());
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(
+                this.flinkExecutionEnvironment,
+                this.store,
+                this.dummyConstraintCollection,
+                new DVOFlinkSerializer());
 
         List<Tuple3<Integer, Integer, Integer>> outData = new ArrayList<Tuple3<Integer, Integer, Integer>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
-        env.execute("Distinct Value Overlap Reading");
+        this.flinkExecutionEnvironment.execute("Distinct Value Overlap Reading");
 
         assertTrue(outData.size() == 1);
     }
@@ -129,13 +143,16 @@ public class FlinkRetrieveConstraintTest {
         this.store.flush();
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new INDFlinkSerializer());
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(
+                this.flinkExecutionEnvironment,
+                this.store,
+                this.dummyConstraintCollection,
+                new INDFlinkSerializer());
 
         List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
-        env.execute("Inclusion Dependency Reading");
+        this.flinkExecutionEnvironment.execute("Inclusion Dependency Reading");
 
         assertTrue(outData.size() == 1);
     }
@@ -148,13 +165,16 @@ public class FlinkRetrieveConstraintTest {
         this.store.flush();
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new UCCFlinkSerializer());
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(
+                this.flinkExecutionEnvironment,
+                this.store,
+                this.dummyConstraintCollection,
+                new UCCFlinkSerializer());
 
         List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
-        env.execute("Unique Column Combination Reading");
+        this.flinkExecutionEnvironment.execute("Unique Column Combination Reading");
 
         assertTrue(outData.size() == 1);
 
@@ -170,13 +190,16 @@ public class FlinkRetrieveConstraintTest {
         this.store.flush();
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(env, this.store, this.dummyConstraintCollection, new FDFlinkSerializer());
+        DataSet<Tuple> constraints = FlinkMetdataStoreAdapter.getConstraintsFromCollection(
+                this.flinkExecutionEnvironment,
+                this.store,
+                this.dummyConstraintCollection,
+                new FDFlinkSerializer());
 
         List<Tuple2<int[], int[]>> outData = new ArrayList<Tuple2<int[], int[]>>();
         constraints.output(new LocalCollectionOutputFormat(outData));
 
-        env.execute("Functional Dependency Reading");
+        this.flinkExecutionEnvironment.execute("Functional Dependency Reading");
 
         assertTrue(outData.size() == 1);
 

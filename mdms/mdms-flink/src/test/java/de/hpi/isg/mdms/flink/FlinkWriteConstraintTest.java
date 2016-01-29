@@ -15,6 +15,8 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +39,7 @@ public class FlinkWriteConstraintTest {
     private Column col1;
     private Column col2;
     private ConstraintCollection dummyConstraintCollection;
+    private ExecutionEnvironment flinkExecutionEnvironment;
 
     @Before
     public void setUp() throws ClassNotFoundException, SQLException {
@@ -60,10 +63,16 @@ public class FlinkWriteConstraintTest {
 
         dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
 
+        Configuration configuration = new Configuration();
+        configuration.setInteger(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, 128);
+        configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, 1);
+        this.flinkExecutionEnvironment = ExecutionEnvironment.createLocalEnvironment(configuration);
+
     }
 
     @After
     public void tearDown() {
+        this.flinkExecutionEnvironment = null;
         store.close();
         this.testDb.delete();
     }
@@ -77,11 +86,10 @@ public class FlinkWriteConstraintTest {
         dvcs.add(new Tuple2<>(col2.getId(), 2));
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple2<Integer, Integer>> distinctValueCounts = env.fromCollection(dvcs);
+        DataSet<Tuple2<Integer, Integer>> distinctValueCounts = this.flinkExecutionEnvironment.fromCollection(dvcs);
         FlinkMetdataStoreAdapter.save(distinctValueCounts, dummyConstraintCollection, new DVCFlinkSerializer());
 
-        env.execute("Distinct Value Count Writing");
+        this.flinkExecutionEnvironment.execute("Distinct Value Count Writing");
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollection(dummyConstraintCollection.getId()).getConstraints().size() == dvcs.size());
@@ -91,16 +99,15 @@ public class FlinkWriteConstraintTest {
     @Test
     public void testDistinctValueOverlap() throws Exception {
 
-        ArrayList<Tuple3<Integer, Integer, Integer>> dvos = new ArrayList<Tuple3<Integer, Integer, Integer>>();
-        dvos.add(new Tuple3<Integer, Integer, Integer>(col1.getId(), col2.getId(), 2));
+        ArrayList<Tuple3<Integer, Integer, Integer>> dvos = new ArrayList<>();
+        dvos.add(new Tuple3<>(col1.getId(), col2.getId(), 2));
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
-        DataSet<Tuple3<Integer, Integer, Integer>> distinctValueOverlaps = env.fromCollection(dvos);
+        DataSet<Tuple3<Integer, Integer, Integer>> distinctValueOverlaps = this.flinkExecutionEnvironment.fromCollection(dvos);
 
         FlinkMetdataStoreAdapter.save(distinctValueOverlaps, dummyConstraintCollection, new DVOFlinkSerializer());
 
-        env.execute("Distinct Value Overlap Writing");
+        this.flinkExecutionEnvironment.execute("Distinct Value Overlap Writing");
 
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
@@ -118,12 +125,11 @@ public class FlinkWriteConstraintTest {
         inds.add(new Tuple2<>(dependent, referenced));
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        DataSet<Tuple2<int[], int[]>> inclusionDependencies = env.fromCollection(inds);
+        DataSet<Tuple2<int[], int[]>> inclusionDependencies = this.flinkExecutionEnvironment.fromCollection(inds);
 
         FlinkMetdataStoreAdapter.save(inclusionDependencies, dummyConstraintCollection, new INDFlinkSerializer());
 
-        env.execute("IND Writing");
+        this.flinkExecutionEnvironment.execute("IND Writing");
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollections().iterator().next().getConstraints().size() == inds.size());
@@ -140,16 +146,15 @@ public class FlinkWriteConstraintTest {
     public void testUniqueColumnCombination() throws Exception {
 
         int[] columns = {col1.getId()};
-        ArrayList<Tuple1<int[]>> uccs = new ArrayList<Tuple1<int[]>>();
-        uccs.add(new Tuple1<int[]>(columns));
+        ArrayList<Tuple1<int[]>> uccs = new ArrayList<>();
+        uccs.add(new Tuple1<>(columns));
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        DataSet<Tuple1<int[]>> uniqueColumnCombinations = env.fromCollection(uccs);
+        DataSet<Tuple1<int[]>> uniqueColumnCombinations = this.flinkExecutionEnvironment.fromCollection(uccs);
 
         FlinkMetdataStoreAdapter.save(uniqueColumnCombinations, dummyConstraintCollection, new UCCFlinkSerializer());
 
-        env.execute("UCC Writing");
+        this.flinkExecutionEnvironment.execute("UCC Writing");
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollections().iterator().next().getConstraints().size() == uccs.size());
@@ -161,18 +166,17 @@ public class FlinkWriteConstraintTest {
     @Test
     public void testFunctionalDependency() throws Exception {
 
-        ArrayList<Tuple2<int[], Integer>> fds = new ArrayList<Tuple2<int[], Integer>>();
+        ArrayList<Tuple2<int[], Integer>> fds = new ArrayList<>();
         int[] referenced = {col1.getId()};
         int dependent = col2.getId();
-        fds.add(new Tuple2<int[], Integer>(referenced, dependent));
+        fds.add(new Tuple2<>(referenced, dependent));
 
         //flink job
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        DataSet<Tuple2<int[], Integer>> functionalDependencies = env.fromCollection(fds);
+        DataSet<Tuple2<int[], Integer>> functionalDependencies = this.flinkExecutionEnvironment.fromCollection(fds);
 
         FlinkMetdataStoreAdapter.save(functionalDependencies, dummyConstraintCollection, new FDFlinkSerializer());
 
-        env.execute("FD Writing");
+        this.flinkExecutionEnvironment.execute("FD Writing");
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollections().iterator().next().getConstraints().size() == fds.size());
