@@ -46,8 +46,6 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
     private static final String SCHEMA_ID_RESULT_KEY = "schemaId";
 
-    private Parameters parameters;
-
     /**
      * Creates a new instance.
      *
