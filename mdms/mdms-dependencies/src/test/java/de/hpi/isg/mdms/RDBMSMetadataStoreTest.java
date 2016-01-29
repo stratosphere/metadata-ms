@@ -34,20 +34,15 @@ public class RDBMSMetadataStoreTest {
     private Connection connection;
 
     @Before
-    public void setUp() {
+    public void setUp() throws ClassNotFoundException, SQLException {
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
-        } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
 
         // RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
     }
@@ -163,7 +158,7 @@ public class RDBMSMetadataStoreTest {
 
         final InclusionDependency dummyContraint = InclusionDependency.buildAndAddToCollection(
                 new InclusionDependency.Reference(
-                        new Column[] { dummyColumn1 }, new Column[] { dummyColumn2 }), constraintCollection);
+                        new Column[]{dummyColumn1}, new Column[]{dummyColumn2}), constraintCollection);
 
         constraintCollection.add(dummyContraint);
 
@@ -194,7 +189,7 @@ public class RDBMSMetadataStoreTest {
 
         final UniqueColumnCombination dummyContraint = UniqueColumnCombination.buildAndAddToCollection(
                 new UniqueColumnCombination.Reference(
-                        new int[] { dummyColumn1.getId(), dummyColumn2.getId() }), constraintCollection);
+                        new int[]{dummyColumn1.getId(), dummyColumn2.getId()}), constraintCollection);
 
         constraintCollection.add(dummyContraint);
 
@@ -345,14 +340,14 @@ public class RDBMSMetadataStoreTest {
                 1);
 
         InclusionDependency.buildAndAddToCollection(new
-                InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
+                InclusionDependency.Reference(new Column[]{col1}, new Column[]{col2}), dummyConstraintCollection);
 
         TupleCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyTable1.getId()),
+                        dummyTable1.getId()),
                 dummyConstraintCollection, 1);
 
         UniqueColumnCombination.buildAndAddToCollection(new
-                UniqueColumnCombination.Reference(new int[] { col1.getId() }), dummyConstraintCollection);
+                UniqueColumnCombination.Reference(new int[]{col1.getId()}), dummyConstraintCollection);
 
         DistinctValueOverlap
                 .buildAndAddToCollection(1, new
@@ -385,15 +380,15 @@ public class RDBMSMetadataStoreTest {
                 1);
 
         InclusionDependency.buildAndAddToCollection(new
-                InclusionDependency.Reference(new Column[] { col1 }, new Column[] { col2 }), dummyConstraintCollection);
+                InclusionDependency.Reference(new Column[]{col1}, new Column[]{col2}), dummyConstraintCollection);
 
         TupleCount.buildAndAddToCollection(new SingleTargetReference(
-                dummyTable1.getId()),
+                        dummyTable1.getId()),
                 dummyConstraintCollection, 1);
 
         DistinctValueOverlap
                 .buildAndAddToCollection(1, new
-                        DistinctValueOverlap.Reference(1, 2),
+                                DistinctValueOverlap.Reference(1, 2),
                         dummyConstraintCollection);
 
         /*

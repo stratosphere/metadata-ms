@@ -4,9 +4,9 @@ import de.hpi.isg.mdms.db.DatabaseAccess;
 import de.hpi.isg.mdms.db.PreparedStatementAdapter;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class DatabaseAccessTest {
                     "Target");
 
     @Before
-    public void setUp() {
+    public void setUp() throws ClassNotFoundException, SQLException {
         try {
             this.testDb = File.createTempFile("test", ".db");
             this.testDb.deleteOnExit();
@@ -49,14 +49,9 @@ public class DatabaseAccessTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
 
-        } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
         RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
     }
@@ -76,7 +71,7 @@ public class DatabaseAccessTest {
 
         try {
             DatabaseWriter<Object[]> insertTargetWriter = dbAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
-            insertTargetWriter.write(new Object[] {
+            insertTargetWriter.write(new Object[]{
                     mock(Target.class), 1
             });
             dbAccess.close();
