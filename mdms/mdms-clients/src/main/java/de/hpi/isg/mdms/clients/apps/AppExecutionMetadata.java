@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.apps;
+package de.hpi.isg.mdms.clients.apps;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,9 +11,9 @@ public class AppExecutionMetadata {
 
     private final Map<String, Object> customData = new HashMap<>();
 
-    private boolean isProgramSuccess = false;
+    private boolean isAppSuccess = false;
 
-    private String[] parameters;
+    private Object parameters;
 
 
 
@@ -38,19 +38,19 @@ public class AppExecutionMetadata {
         return Collections.unmodifiableMap(this.customData);
     }
 
-    public boolean isProgramSuccess() {
-        return this.isProgramSuccess;
+    public boolean isAppSuccess() {
+        return this.isAppSuccess;
     }
 
-    public String[] getParameters() {
+    public Object getParameters() {
         return this.parameters;
     }
 
-    public void setIsProgramSuccess(boolean isProgramSuccess) {
-        this.isProgramSuccess = isProgramSuccess;
+    public void setAppSuccess(boolean isAppSuccess) {
+        this.isAppSuccess = isAppSuccess;
     }
 
-    public void setParameters(String[] parameters) {
+    public void setParameters(Object parameters) {
         this.parameters = parameters;
     }
 }
