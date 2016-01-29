@@ -2,9 +2,9 @@ language: java
 jdk: oraclejdk8
 
 notifications:
-	email:
-		on_success: change
-		on_failure: change
+  email:
+    on_success: change
+    on_failure: change
 
 install: true
 script: cd mdms && mvn clean install
