@@ -12,6 +12,12 @@
  **********************************************************************************************************************/
 package de.hpi.isg.mdms.flink.parameters;
 
+import com.beust.jcommander.Parameter;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,15 +25,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.flink.api.java.ExecutionEnvironment;
-
-import com.beust.jcommander.Parameter;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
-
 /**
- * This class contains parameters that are necessary or useful for Stratosphere programs.
+ * This class contains parameters that are necessary or useful for Flink programs.
  * 
  * @author Sebastian Kruse
  */

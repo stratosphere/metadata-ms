@@ -1,6 +1,8 @@
 package de.hpi.isg.mdms.flink.util;
 
 
+import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.core.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +27,8 @@ public class FileUtils {
      * Ensures that the given path points to an empty directory.
      *
      * @param parentPath is the location in which the empty directory is to be enforced
-     * @param name is the name of the empty directory to be enforced
-     * @param fs   is the {@link FileSystem} for the path or <tt>null</tt>
+     * @param name       is the name of the empty directory to be enforced
+     * @param fs         is the {@link FileSystem} for the path or <tt>null</tt>
      * @return the path of the empty directory
      * @throws IOException
      */
@@ -75,5 +77,16 @@ public class FileUtils {
         return fs;
     }
 
-
+    /**
+     * Removes the given file or directory.
+     *
+     * @param file      is the file or directory to remove
+     * @param recursive tells whether the recursive removal shall be applied to directories
+     * @return whether the deletion was successful
+     * @throws IOException
+     */
+    public static boolean remove(final Path file, final boolean recursive) throws IOException {
+        final FileSystem fs = file.getFileSystem();
+        return fs.delete(file, recursive);
+    }
 }
