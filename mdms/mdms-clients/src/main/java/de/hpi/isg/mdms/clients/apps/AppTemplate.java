@@ -28,7 +28,7 @@ public abstract class AppTemplate<TParameters> {
     /**
      * Logger customized to the actually instantiated subclass.
      */
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /** Keeps track of the start time of the program. */
     protected long appStartTime;

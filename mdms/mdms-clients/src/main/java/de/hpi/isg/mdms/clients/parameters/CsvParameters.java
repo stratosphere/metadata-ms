@@ -4,7 +4,7 @@ import com.beust.jcommander.Parameter;
 
 public class CsvParameters {
 
-    public static final char NO_QUOTE_CHAR = 0;
+    public static final char NO_QUOTE_CHAR = '\0';
 
     @Parameter(names = { "--field-separator" }, description = "the delimiter of fields in each line of the output (and input) file (semicolon, comma, tab)")
     public String fieldSeparatorName = "semicolon";

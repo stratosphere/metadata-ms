@@ -11,11 +11,11 @@ import org.apache.flink.api.java.tuple.Tuple;
 
 public interface AbstractFlinkSerializer<T extends Constraint, F extends Tuple> {
 	
-    public abstract DataSet<F> getConstraintsFromCollection(
+    DataSet<F> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
 			ConstraintCollection datasourceCollection);
     
-	public abstract Runnable getAddRunnable(F tuple, ConstraintCollection constraintCollection);
+	Runnable getAddRunnable(F tuple, ConstraintCollection constraintCollection);
 	
 }

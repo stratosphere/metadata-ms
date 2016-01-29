@@ -72,7 +72,11 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
     protected void prepareAppLogic() throws Exception {
         super.prepareAppLogic();
 
-        this.metadataStore = MetadataStoreUtil.loadMetadataStore(getMetadataStoreParameters());
+        this.metadataStore = loadMetadataStore();
+    }
+
+    protected MetadataStore loadMetadataStore() {
+        return MetadataStoreUtil.loadMetadataStore(getMetadataStoreParameters());
     }
 
     @Override
@@ -80,6 +84,7 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
         super.onExit();
 
         if (getMetadataStoreParameters().isForceQuit) {
+            this.logger.info("Forcing application to quit...");
             System.exit(0);
         }
     }
