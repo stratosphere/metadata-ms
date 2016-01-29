@@ -90,8 +90,9 @@
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
-
     </dependencies>
+
+    <!-- I don't know what the following configuration is required for.
     <build>
         <plugins>
             <plugin>
@@ -126,5 +127,6 @@
             </plugin>
         </plugins>
     </build>
+    -->
 
 </project>
