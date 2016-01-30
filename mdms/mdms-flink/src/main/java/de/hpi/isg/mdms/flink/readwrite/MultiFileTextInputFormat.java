@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
-package de.hpi.isg.mdms.flink.functions;
+package de.hpi.isg.mdms.flink.readwrite;
 
 import de.hpi.isg.mdms.Encoding;
 import de.hpi.isg.mdms.flink.util.FileUtils;

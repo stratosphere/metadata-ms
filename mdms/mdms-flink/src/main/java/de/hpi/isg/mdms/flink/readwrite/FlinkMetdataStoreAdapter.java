@@ -1,11 +1,10 @@
-package de.hpi.isg.mdms.flink;
+package de.hpi.isg.mdms.flink.readwrite;
 
 import de.hpi.isg.mdms.flink.serializer.AbstractFlinkSerializer;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.RemoteCollectorImpl;
 import org.apache.flink.api.java.tuple.Tuple;
 
 import java.io.Serializable;
@@ -20,7 +19,9 @@ public class FlinkMetdataStoreAdapter implements Serializable {
     /**
      * @deprecated Don't use this method unless thread leaks are acceptable (e.g., in short-lived apps).
      */
-    public static <T extends Tuple> void saveAsync(DataSet<T> constraints, final ConstraintCollection constraintCollection, final AbstractFlinkSerializer flinkSerializer) {
+    public static <T extends Tuple> void saveAsync(DataSet<T> constraints,
+                                                   final ConstraintCollection constraintCollection,
+                                                   final AbstractFlinkSerializer flinkSerializer) {
 
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         RemoteCollectorImpl.collectLocal(constraints, tuple -> {
@@ -31,7 +32,9 @@ public class FlinkMetdataStoreAdapter implements Serializable {
     /**
      * @deprecated Don't use this method unless thread leaks are acceptable (e.g., in short-lived apps).
      */
-    public static <T extends Tuple> void save(DataSet<T> constraints, final ConstraintCollection constraintCollection, final AbstractFlinkSerializer flinkSerializer) {
+    public static <T extends Tuple> void save(DataSet<T> constraints,
+                                              final ConstraintCollection constraintCollection,
+                                              final AbstractFlinkSerializer flinkSerializer) {
 
         RemoteCollectorImpl.collectLocal(constraints, tuple -> {
             synchronized (flinkSerializer) {

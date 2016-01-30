@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.flink;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.flink.readwrite.FlinkMetdataStoreAdapter;
 import de.hpi.isg.mdms.flink.serializer.*;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;

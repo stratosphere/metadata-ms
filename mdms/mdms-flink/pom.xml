@@ -9,6 +9,11 @@
     </parent>
     <artifactId>mdms-flink</artifactId>
 
+    <description>
+        This module provides utilities to operate an MDMS with Apache Flink. These utilities include, amongst
+        others, support to cope with CSV files, read and write metadata, and metadata operators.
+    </description>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -35,7 +40,7 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-model</artifactId>

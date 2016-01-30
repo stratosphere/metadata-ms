@@ -4,7 +4,6 @@ package de.hpi.isg.mdms.flink.serializer;
 import java.util.ArrayList;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.java.DataSet;
@@ -16,8 +15,7 @@ import org.apache.flink.util.Collector;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
-import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
-import de.hpi.isg.mdms.flink.SqLiteJDBCInputFormat;
+import de.hpi.isg.mdms.flink.readwrite.SqLiteJDBCInputFormat;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 

@@ -75,8 +75,8 @@ public class FlinkParameters {
                     throw new IllegalStateException("Please specify the degree of parallelism to launch a minicluster.");
                 }
                 Configuration config = createConfiguration();
-                config.setInteger(ConfigConstants.LOCAL_INSTANCE_MANAGER_NUMBER_TASK_MANAGER,
-                        config.getInteger(ConfigConstants.LOCAL_INSTANCE_MANAGER_NUMBER_TASK_MANAGER, this.degreeOfParallelism));
+                config.setInteger(ConfigConstants.LOCAL_NUMBER_TASK_MANAGER,
+                        config.getInteger(ConfigConstants.LOCAL_NUMBER_TASK_MANAGER, this.degreeOfParallelism));
                 config.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS,
                         config.getInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, 1));
 //                config.setInteger(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, 8);
@@ -87,7 +87,7 @@ public class FlinkParameters {
                 config.setInteger("taskmanager.net.client.numThreads", 1);
 
                 cluster = new LocalFlinkMiniCluster(config, false);
-                int jmPort = cluster.getJobManagerRPCPort();
+                int jmPort = cluster.getLeaderRPCPort();
                 env = ExecutionEnvironment.createRemoteEnvironment("localhost", jmPort);
 
             } else if (this.remoteExecutor.equals("local")) {
@@ -144,7 +144,7 @@ public class FlinkParameters {
     }
 
     public void closeMiniClusterIfExists() {
-        if (this.cluster != null && !this.cluster.getConfiguration().getBoolean("keep-running", false)) {
+        if (this.cluster != null && !this.createConfiguration().getBoolean("keep-running", false)) {
             this.cluster.shutdown();
         }
     }

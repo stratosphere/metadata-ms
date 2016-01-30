@@ -10,7 +10,7 @@ import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
 import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
-import de.hpi.isg.mdms.flink.SqLiteJDBCInputFormat;
+import de.hpi.isg.mdms.flink.readwrite.SqLiteJDBCInputFormat;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 

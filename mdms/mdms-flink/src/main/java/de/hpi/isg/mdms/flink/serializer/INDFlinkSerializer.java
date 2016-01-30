@@ -15,7 +15,7 @@ import org.apache.flink.util.Collector;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
-import de.hpi.isg.mdms.flink.SqLiteJDBCInputFormat;
+import de.hpi.isg.mdms.flink.readwrite.SqLiteJDBCInputFormat;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 
