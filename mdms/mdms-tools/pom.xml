@@ -13,6 +13,24 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.metanome</groupId>
+            <artifactId>algorithm_integration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.metanome</groupId>
+            <artifactId>algorithm_helper</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.metanome</groupId>
+            <artifactId>backend</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-model</artifactId>
             <version>0.0.3-SNAPSHOT</version>

@@ -11,8 +11,20 @@
         <tag>HEAD</tag>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <repository><!-- Metanome -->
+            <id>sonatype-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+    </repositories>
+
     <properties>
         <flink.version>0.10.1</flink.version>
+        <metanome.version>0.0.2-SNAPSHOT</metanome.version>
     </properties>
 
     <modules>
@@ -81,6 +93,27 @@
                 <groupId>com.github.mpkorstanje</groupId>
                 <artifactId>simmetrics-core</artifactId>
                 <version>4.0.1</version>
+            </dependency>
+
+            <!-- Metanome dependencies -->
+            <dependency>
+                <groupId>de.metanome</groupId>
+                <artifactId>algorithm_integration</artifactId>
+                <version>${metanome.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.metanome</groupId>
+                <artifactId>algorithm_helper</artifactId>
+                <version>${metanome.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>de.metanome</groupId>
+                <artifactId>backend</artifactId>
+                <version>${metanome.version}</version>
+                <scope>compile</scope>
             </dependency>
 
             <!-- Flink dependencies -->
