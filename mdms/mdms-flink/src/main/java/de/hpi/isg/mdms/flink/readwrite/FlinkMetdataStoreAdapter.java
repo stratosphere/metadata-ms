@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.flink;
+package de.hpi.isg.mdms.flink.readwrite;
 
 import de.hpi.isg.mdms.flink.serializer.AbstractFlinkSerializer;
 import de.hpi.isg.mdms.model.MetadataStore;

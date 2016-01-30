@@ -16,7 +16,7 @@ import de.hpi.isg.mdms.Encoding;
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.flink.data.Tuple;
 import de.hpi.isg.mdms.flink.functions.FilterIncompleteTuples;
-import de.hpi.isg.mdms.flink.functions.MultiFileTextInputFormat;
+import de.hpi.isg.mdms.flink.readwrite.MultiFileTextInputFormat;
 import de.hpi.isg.mdms.flink.functions.ParseCsvRows;
 import de.hpi.isg.mdms.flink.functions.SplitCsvRows;
 import de.hpi.isg.mdms.flink.util.FileUtils;

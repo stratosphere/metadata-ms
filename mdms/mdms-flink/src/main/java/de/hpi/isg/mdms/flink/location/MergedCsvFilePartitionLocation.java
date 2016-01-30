@@ -14,7 +14,7 @@ package de.hpi.isg.mdms.flink.location;
 
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.flink.data.Tuple;
-import de.hpi.isg.mdms.flink.functions.MultiFileTextInputFormat;
+import de.hpi.isg.mdms.flink.readwrite.MultiFileTextInputFormat;
 import de.hpi.isg.mdms.flink.functions.ParseCsvRows;
 import de.hpi.isg.mdms.flink.functions.SplitMergedCsvRows;
 import de.hpi.isg.mdms.flink.util.CsvParser;

@@ -1,13 +1,11 @@
-package de.hpi.isg.mdms.flink;
+package de.hpi.isg.mdms.flink.readwrite;
 
 import java.io.IOException;
 
 import org.apache.flink.api.java.io.jdbc.JDBCInputFormat;
-import org.apache.flink.api.java.io.jdbc.JDBCInputFormat.JDBCInputFormatBuilder;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.io.InputSplit;
 
-	 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -15,16 +13,12 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-	 import org.apache.flink.api.common.io.NonParallelInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 	 import org.apache.flink.api.common.io.DefaultInputSplitAssigner;
-import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.io.statistics.BaseStatistics;
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.GenericInputSplit;
-import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.io.InputSplitAssigner;
 import org.apache.flink.types.NullValue;
 
