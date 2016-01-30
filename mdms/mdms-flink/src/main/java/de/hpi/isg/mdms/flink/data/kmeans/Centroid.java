@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.flink.data;
+package de.hpi.isg.mdms.flink.data.kmeans;
 
 /**
  * A centroid of a cluster, basically a datapoint.

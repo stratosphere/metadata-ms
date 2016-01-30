@@ -1,6 +1,6 @@
 package de.hpi.isg.mdms.flink.functions.kmeans;
 
-import de.hpi.isg.mdms.flink.data.DataPoint;
+import de.hpi.isg.mdms.flink.data.kmeans.DataPoint;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple3;

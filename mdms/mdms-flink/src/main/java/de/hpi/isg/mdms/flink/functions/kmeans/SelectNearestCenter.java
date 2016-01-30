@@ -1,7 +1,7 @@
 package de.hpi.isg.mdms.flink.functions.kmeans;
 
-import de.hpi.isg.mdms.flink.data.Centroid;
-import de.hpi.isg.mdms.flink.data.DataPoint;
+import de.hpi.isg.mdms.flink.data.kmeans.Centroid;
+import de.hpi.isg.mdms.flink.data.kmeans.DataPoint;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;

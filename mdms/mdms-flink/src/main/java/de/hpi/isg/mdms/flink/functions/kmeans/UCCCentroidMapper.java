@@ -1,8 +1,8 @@
 package de.hpi.isg.mdms.flink.functions.kmeans;
 
-import de.hpi.isg.mdms.flink.data.Centroid;
-import de.hpi.isg.mdms.flink.data.UCCCentroid;
-import de.hpi.isg.mdms.flink.data.UCCDataPoint;
+import de.hpi.isg.mdms.flink.data.kmeans.Centroid;
+import de.hpi.isg.mdms.flink.data.kmeans.UCCCentroid;
+import de.hpi.isg.mdms.flink.data.kmeans.UCCDataPoint;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple1;
 

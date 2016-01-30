@@ -2,8 +2,8 @@
 package de.hpi.isg.mdms.flink.apps;
 
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
-import de.hpi.isg.mdms.flink.data.UCCCentroid;
-import de.hpi.isg.mdms.flink.data.UCCDataPoint;
+import de.hpi.isg.mdms.flink.data.kmeans.UCCCentroid;
+import de.hpi.isg.mdms.flink.data.kmeans.UCCDataPoint;
 import de.hpi.isg.mdms.flink.functions.kmeans.CentroidMapper;
 import de.hpi.isg.mdms.flink.functions.kmeans.RetrieveColumnNames;
 import de.hpi.isg.mdms.flink.functions.kmeans.UCCCentroidMapper;
@@ -34,15 +34,15 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Susanne Buelow
  */
-public class ClusterUCCsApp extends KmeansAppTemplate<Tuple1<int[]>, UCCDataPoint, UCCCentroid> {
+public class KmeansUccsApp extends KmeansAppTemplate<Tuple1<int[]>, UCCDataPoint, UCCCentroid> {
 
     public static void main(final String[] args) throws Exception {
         KmeansAppTemplate.Parameters parameters = new KmeansAppTemplate.Parameters();
         JCommanderParser.parseCommandLineAndExitOnError(parameters, args);
-        new ClusterUCCsApp(parameters).run();
+        new KmeansUccsApp(parameters).run();
     }
 
-    public ClusterUCCsApp(final KmeansAppTemplate.Parameters parameters) {
+    public KmeansUccsApp(final KmeansAppTemplate.Parameters parameters) {
         super(parameters);
     }
 

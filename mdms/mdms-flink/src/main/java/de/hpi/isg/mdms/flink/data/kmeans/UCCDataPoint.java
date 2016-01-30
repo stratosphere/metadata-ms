@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.flink.data;
+package de.hpi.isg.mdms.flink.data.kmeans;
 
 import org.apache.flink.api.java.tuple.Tuple1;
 

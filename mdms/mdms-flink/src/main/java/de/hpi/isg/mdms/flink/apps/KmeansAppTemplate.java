@@ -4,8 +4,8 @@ package de.hpi.isg.mdms.flink.apps;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.flink.data.Centroid;
-import de.hpi.isg.mdms.flink.data.DataPoint;
+import de.hpi.isg.mdms.flink.data.kmeans.Centroid;
+import de.hpi.isg.mdms.flink.data.kmeans.DataPoint;
 import de.hpi.isg.mdms.flink.functions.kmeans.*;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -34,7 +34,7 @@ import java.util.List;
  * - a DataPoint class that provide functions add and div to calculate cluster centroids
  * - a Centroid class that provides a getSimilarity function
  * <p>
- * See {@link ClusterUCCsApp} for an example.
+ * See {@link KmeansUccsApp} for an example.
  *
  * @author Susanne
  */

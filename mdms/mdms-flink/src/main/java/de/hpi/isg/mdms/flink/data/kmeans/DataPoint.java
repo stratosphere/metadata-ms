@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.flink.data;
+package de.hpi.isg.mdms.flink.data.kmeans;
 
 /**
  * A data point with an id and a some data.
