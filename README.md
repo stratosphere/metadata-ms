@@ -16,6 +16,7 @@ This is where the Metadata Management System (MDMS for short) comes into play. I
 - [x] Primary/foreign key classifiers
 - [ ] Query language *(SQL and CQL are usable of course)*
 - [ ] Integration with Metanome *(results can be imported, but algorithms cannot be triggered)*
+- [x] Provide a CLI as most basic MDMS operator
 - [ ] Frontend
 
 ## Project overview
@@ -34,3 +35,4 @@ This is where the Metadata Management System (MDMS for short) comes into play. I
   * `mdms-tools`: basic MDMS applications, such as importing a schema from CSV files into a metadata store
   * `mdms-java`: Java-based utilities for MDMS applications
   * `mdms-flink`: Flink-based utilites for MDMS applications (complementary to `mdms-java`)
+  * `mdms-cli`: CLI-based client to operate the metadata store
