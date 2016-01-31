@@ -39,6 +39,7 @@
         <module>mdms-tools</module>
         <module>mdms-clients</module>
         <module>mdms-java</module>
+        <module>mdms-cli</module>
     </modules>
 
     <build>
