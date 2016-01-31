@@ -15,6 +15,7 @@ This is where the Metadata Management System (MDMS for short) comes into play. I
 - [x] Data mining operators: K-Means, Apriori
 - [x] Primary/foreign key classifiers
 - [ ] Query language *(SQL and CQL are usable of course)*
+- [ ] Integration with Metanome *(results can be imported, but algorithms cannot be triggered)*
 - [ ] Frontend
 
 ## Project overview
