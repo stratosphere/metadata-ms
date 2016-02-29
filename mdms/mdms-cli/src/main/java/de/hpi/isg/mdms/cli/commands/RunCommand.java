@@ -11,6 +11,7 @@ import de.hpi.isg.mdms.cli.variables.StringValue;
 import de.hpi.isg.mdms.clients.apps.AppExecutionMetadata;
 import de.hpi.isg.mdms.clients.apps.AppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import java.io.PrintStream;
@@ -118,11 +119,16 @@ public class RunCommand implements Command {
 
     @Override
     public String getShortDescription() {
-        return null;
+        return "Executes an app, such as: "  + StringUtils.join(Arrays.asList(
+                de.hpi.isg.mdms.tools.apps.CreateMetadataStoreApp.class.getCanonicalName(),
+                de.hpi.isg.mdms.tools.apps.CreateSchemaForCsvFilesApp.class.getCanonicalName(),
+                de.hpi.isg.mdms.tools.apps.MetanomeDependencyImportApp.class.getCanonicalName(),
+                de.hpi.isg.mdms.tools.apps.MetanomeStatisticsImportApp.class.getCanonicalName()
+        ), "; ");
     }
 
     @Override
     public String getUsage() {
-        return null;
+        return "run <app class> <app arguments>";
     }
 }

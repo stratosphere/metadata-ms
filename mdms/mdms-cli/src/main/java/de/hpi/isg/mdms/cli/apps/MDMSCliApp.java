@@ -69,7 +69,8 @@ public class MDMSCliApp implements Runnable {
             try {
                 commandLine = readCommand();
             } catch (Exception e) {
-                logger.error("Reading the command line failed.", e);
+                this.printer.println("Reading the command line failed.");
+                e.printStackTrace(this.printer);
                 continue;
             }
             // Pass empty lines.
@@ -88,10 +89,11 @@ public class MDMSCliApp implements Runnable {
 
                 returnValue = command.execute(commandLine, this.reader, this.printer, this.sessionContext);
             } catch (CliException e) {
-                logger.error("Command execution failed.", e);
+                this.printer.format("Command execution failed: %s\n", e.getMessage());
                 returnValue = e;
             } catch (Throwable e) {
-                logger.error("Command execution failed.", e);
+                this.printer.println("Command execution failed.");
+                e.printStackTrace(this.printer);
                 returnValue = new CliException("Command execution failed.", e);
             }
 
@@ -102,10 +104,7 @@ public class MDMSCliApp implements Runnable {
             }
 
             this.sessionContext.setReturnValue(returnValue);
-            this.printer.println(returnValue);
-            if (returnValue.isException()) {
-                ((Exception) returnValue).printStackTrace(this.printer);
-            }
+            this.printer.format("$return=%s\n", returnValue);
         }
     }
 

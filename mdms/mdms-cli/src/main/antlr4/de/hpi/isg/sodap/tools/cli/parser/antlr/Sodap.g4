@@ -29,14 +29,10 @@ numberArg
 
 stringArg
   : STRING
+  | IDENTIFIER
+  | WORD
   ;
 
-
-literal
-  : number
-  | string
-  | json
-  ;
 
 number
   : NUMBER

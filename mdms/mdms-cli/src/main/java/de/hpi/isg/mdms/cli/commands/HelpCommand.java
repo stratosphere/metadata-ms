@@ -26,9 +26,21 @@ public class HelpCommand implements Command {
     public ContextObject execute(CommandLine commandLine, LinewiseReader reader, PrintStream printer,
                                  SessionContext ctx) throws CliException {
         if (commandLine.getArguments().isEmpty()) {
+            printer.println("MDMS CLI");
+            printer.println("========");
+            printer.println();
+            printer.println("This is a small command-line utility to operate the MDMS.");
+            printer.println();
+            printer.println("Syntax:");
+            printer.println("* command <args>*");
+            printer.println("* strings:         unquoted, \"quoted\"");
+            printer.println("* numbers:         42");
+            printer.println("* variable values: $toplevel, ${toplevel.nested}");
+            printer.println("* variables:       *toplevel, *{toplevel.nested}");
+            printer.println();
             printer.println("Available commands:");
             for (Map.Entry<String, Command> commandEntry : ctx.getCommands().entrySet()) {
-                printer.format(" %-10s %s\n", commandEntry.getKey(), commandEntry.getValue().getShortDescription());
+                printer.format("* %-10s %s\n", commandEntry.getKey(), commandEntry.getValue().getShortDescription());
             }
         } else {
             final ContextObject args1 = commandLine.getArguments().get(0);

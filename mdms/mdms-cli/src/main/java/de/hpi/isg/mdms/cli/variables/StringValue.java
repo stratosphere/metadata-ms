@@ -4,6 +4,7 @@ package de.hpi.isg.mdms.cli.variables;
 import de.hpi.isg.mdms.cli.exceptions.CliException;
 import it.unimi.dsi.fastutil.chars.Char2CharMap;
 import it.unimi.dsi.fastutil.chars.Char2CharOpenHashMap;
+import org.apache.commons.lang3.Validate;
 
 import java.util.regex.Pattern;
 
@@ -129,10 +130,10 @@ public class StringValue extends ContextValue<String> {
      * @see #escape(CharSequence)
      */
     public static String parse(CharSequence str, Namespace namespace) throws CliException {
-        StringBuilder sb = new StringBuilder(str.length() - 2);
-        assert str.charAt(0) == '"';
+        boolean isQuotedString = str.charAt(0) == '"';
+        StringBuilder sb = new StringBuilder(isQuotedString ? str.length() - 2 : 0);
         int len = str.length();
-        for (int i = 1; i < len - 1; i++) {
+        for (int i = isQuotedString ? 1 : 0; i < (isQuotedString ? len - 1 : len); i++) {
             char c = str.charAt(i);
             if (c == '\\') {
                 // Handle escape characters.
@@ -165,7 +166,7 @@ public class StringValue extends ContextValue<String> {
                 sb.append(c);
             }
         }
-        assert str.charAt(len - 1) == '"';
+        Validate.isTrue(!isQuotedString || str.charAt(len - 1) == '"');
         return sb.toString();
     }
 
