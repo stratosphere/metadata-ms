@@ -25,7 +25,7 @@ public class HelpCommand implements Command {
     @Override
     public ContextObject execute(CommandLine commandLine, LinewiseReader reader, PrintStream printer,
                                  SessionContext ctx) throws CliException {
-        if (commandLine.getArguments().size() == 1) {
+        if (commandLine.getArguments().isEmpty()) {
             printer.println("Available commands:");
             for (Map.Entry<String, Command> commandEntry : ctx.getCommands().entrySet()) {
                 printer.format(" %-10s %s\n", commandEntry.getKey(), commandEntry.getValue().getShortDescription());
