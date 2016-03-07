@@ -1,0 +1,45 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+    <id>with-dependencies</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>target</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <useTransitiveFiltering>true</useTransitiveFiltering>
+            <unpack>false</unpack>
+        </dependencySet>
+    </dependencySets>
+<!--     <fileSets>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>mdms-*/**/*.jar</include>
+            </includes>
+        </fileSet>
+    </fileSets> -->
+    <moduleSets>
+        <moduleSet>
+            <useAllReactorProjects>true</useAllReactorProjects>
+            <binaries>
+                <outputDirectory>.</outputDirectory>
+                <unpack>false</unpack>
+            </binaries>
+            <!-- <includes> -->
+                <sources>
+                    <fileSets>
+                      <fileSet>
+                        <directory>mdms-*</directory>
+                      </fileSet>
+                    </fileSets>
+                </sources>
+                <!-- <include>de.hpi.isg:*</include> -->
+            <!-- </includes> -->
+        </moduleSet>
+    </moduleSets>
+
+</assembly>
