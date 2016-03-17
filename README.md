@@ -2,6 +2,8 @@
 
 **Status:** [![Build Status](https://travis-ci.org/stratosphere/metadata-ms.svg?branch=master)](https://travis-ci.org/stratosphere/metadata-ms)
 
+<img align="right" src="https://docs.google.com/drawings/d/11U_bsJZnpXqPbYCDtqNUuZEdmRhf4JwLE4sl5svq3eQ/pub?w=500" alt="Architecture overview">
+
 Metadata of relational datasets (e.g., column statistics and inclusion dependencies) are useful for data-oriented tasks, such as query processing, data mining, and data integration. Data profiling techniques (as for instance provided by [Metanome](http://www.metanome.de)) determine such metadata for a given dataset. However, once the metadata have been acquired, they need to be further processed. In particular, it is highly beneficial to integrate and combine the different types of metadata and allow to explore them interactively.
 
 This is where the Metadata Management System (MDMS for short) comes into play. It allows to store metadata in various persistence layers (Java serialization, SQLite, and Cassandra as of now), thereby integrating the different types of metadata. Moreover, MDMS is supposed to complement this persistence layer with an analytical layer, which is to expose a query language and provide various data mining operators to explore the metadata.
