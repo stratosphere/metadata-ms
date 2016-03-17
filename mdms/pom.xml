@@ -41,6 +41,7 @@
         <module>mdms-java</module>
         <module>mdms-cli</module>
         <module>mdms-distro</module>
+        <module>mdms-analytics</module>
     </modules>
 
     <build>
