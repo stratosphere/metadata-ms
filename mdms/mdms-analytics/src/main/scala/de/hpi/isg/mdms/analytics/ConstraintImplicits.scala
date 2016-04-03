@@ -7,6 +7,10 @@ object ConstraintImplicits {
 
   implicit class ConstraintCollectionQueryObject(constraintCollection: ConstraintCollection) {
 
+    private def constraintsIter: Iterable[Constraint] = {
+      constraintCollection.getConstraints.asScala
+    }
+
     def count: Int = {
       constraintCollection.getConstraints.size
     }
@@ -15,8 +19,13 @@ object ConstraintImplicits {
       constraintCollection.constraintsIter.filter(_.getClass == constraintClass)
     }
 
-    def constraintsIter: Iterable[Constraint] = {
-      constraintCollection.getConstraints.asScala
+    def groupByType: Map[Class[_ <: Constraint], Iterable[Constraint]] = {
+      constraintCollection.group(_.getClass)
     }
+
+    def group[K](groupFunc: Constraint => K): Map[K, Iterable[Constraint]] = {
+      constraintCollection.constraintsIter.groupBy(groupFunc)
+    }
+
   }
 }
