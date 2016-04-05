@@ -1,13 +1,14 @@
 package de.hpi.isg.mdms.analytics
 
-import scala.collection.JavaConverters._
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
+
+import scala.collection.JavaConverters._
 
 object ConstraintImplicits {
 
   implicit class ConstraintCollectionQueryObject(constraintCollection: ConstraintCollection) {
 
-    private def constraintsIter: Iterable[Constraint] = {
+    def constraintsIter: Iterable[Constraint] = {
       constraintCollection.getConstraints.asScala
     }
 
