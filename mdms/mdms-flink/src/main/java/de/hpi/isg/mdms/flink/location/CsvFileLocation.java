@@ -149,7 +149,8 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
 
                 Object2IntMap<String> pathIds = collectPathIds(tables, metadataStore.getIdUtils());
                 String inputPath = FileUtils.findCommonParent(pathIds.keySet());
-                final MultiFileTextInputFormat.ListBasedFileIdRetriever fileIdRetriever = new MultiFileTextInputFormat.ListBasedFileIdRetriever(pathIds);
+                final MultiFileTextInputFormat.ListBasedFileIdRetriever fileIdRetriever =
+                        new MultiFileTextInputFormat.ListBasedFileIdRetriever(pathIds);
                 MultiFileTextInputFormat inputFormat;
                 inputFormat = new MultiFileTextInputFormat(fileIdRetriever, fileIdRetriever, null);
                 inputFormat.setEncoding(encoding);
@@ -222,7 +223,7 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
         for (Table table : tables) {
             CsvParameters csvParameters = ((AbstractCsvLocation) table.getLocation()).getCsvParameters();
             Encoding encoding = ((AbstractCsvLocation) table.getLocation()).getEncoding();
-            CollectionUtils.putIntoList(tablesByCsvParameters, new Tuple2(csvParameters, encoding), table);
+            CollectionUtils.putIntoList(tablesByCsvParameters, new Tuple2<>(csvParameters, encoding), table);
         }
         return tablesByCsvParameters;
     }
