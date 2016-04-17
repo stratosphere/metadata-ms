@@ -27,9 +27,8 @@ public class ParsePlainCsvRows implements MapFunction<String, String[]> {
 
     private final ArrayHeap<String> arrayHeap = new ArrayHeap<>(String.class);
 
-    public ParsePlainCsvRows(final char fieldSeparator, final char quoteChar) {
-
-        this.parser = new CsvParser(fieldSeparator, quoteChar);
+    public ParsePlainCsvRows(final char fieldSeparator, final char quoteChar, String nullString) {
+        this.parser = new CsvParser(fieldSeparator, quoteChar, nullString);
     }
 
     @Override

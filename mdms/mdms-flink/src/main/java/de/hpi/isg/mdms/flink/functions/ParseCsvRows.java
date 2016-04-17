@@ -30,8 +30,8 @@ public class ParseCsvRows implements MapFunction<Tuple2<Integer, String>, Tuple>
 
     private final ArrayHeap<String> arrayHeap = new ArrayHeap<>(String.class);
 
-    public ParseCsvRows(final char fieldSeparator, final char quoteChar) {
-        this.parser = new CsvParser(fieldSeparator, quoteChar);
+    public ParseCsvRows(final char fieldSeparator, final char quoteChar, String nullString) {
+        this.parser = new CsvParser(fieldSeparator, quoteChar, nullString);
     }
 
     @Override

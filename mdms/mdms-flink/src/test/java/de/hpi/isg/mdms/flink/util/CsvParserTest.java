@@ -29,7 +29,7 @@ public class CsvParserTest {
     public void testSimpleParsing() throws Exception {
         String line;
 
-        final CsvParser parser = new CsvParser(',', '\"');
+        final CsvParser parser = new CsvParser(',', '\"', null);
 
         line = "\"a\","
                 + "\"bba\","
@@ -48,7 +48,7 @@ public class CsvParserTest {
         List<String> expectation;
         List<String> result;
 
-        final CsvParser parser = new CsvParser(',', '\0');
+        final CsvParser parser = new CsvParser(',', '\0', null);
 
         line = "1,2,3,4";
         expectation = Arrays.asList("1,2,3,4".split(","));
@@ -69,7 +69,7 @@ public class CsvParserTest {
     @Test
     public void splittingEasyLinesShouldWork() throws Exception {
 
-        CsvParser parser = new CsvParser(';', '"');
+        CsvParser parser = new CsvParser(';', '"', null);
 
         // "Hello";;"World;";"";!;
         String testRow = "\"Hello\";;\"World;\";\"\";!;\"\"";
@@ -82,7 +82,7 @@ public class CsvParserTest {
     // TODO: @Test
     public void pendingSeparatorsShouldSpawnField() throws Exception {
         
-        CsvParser parser = new CsvParser(';', '"');
+        CsvParser parser = new CsvParser(';', '"', null);
         
         // "Hello";;"World;";"";!;
         String testRow = "\"Hello\";;\"World;\";\"\";!;";
@@ -94,7 +94,7 @@ public class CsvParserTest {
     
     @Test
     public void twoConsequentQuotesShouldBeEscaped() throws Exception {
-        CsvParser parser = new CsvParser(';', '"');
+        CsvParser parser = new CsvParser(';', '"', null);
         
         // "Hello ""World""";""";""";"""World""";"""";"""""";"";""
         String testRow = "\"Hello \"\"World\"\"\";"

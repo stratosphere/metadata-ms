@@ -44,8 +44,8 @@ public class SplitMergedCsvRows extends RichFlatMapFunction<Tuple2<Integer, Stri
 	 * @param quoteChar
 	 *            is the character that is used to quote fields (although unquoted fields are allowed as well)
 	 */
-	public SplitMergedCsvRows(final char fieldSeparator, final char quoteChar) {
-		this(fieldSeparator, quoteChar, -1, true);
+	public SplitMergedCsvRows(final char fieldSeparator, final char quoteChar, String nullString) {
+		this(fieldSeparator, quoteChar, -1, nullString, true);
 	}
 
 	/**
@@ -61,9 +61,9 @@ public class SplitMergedCsvRows extends RichFlatMapFunction<Tuple2<Integer, Stri
 	 *            tells whether empty fields will be forwarded by this operator or supressed
 	 */
 	public SplitMergedCsvRows(final char fieldSeparator, final char quoteChar, final int lenientPolicy,
-							  boolean isSupressingEmptyFields) {
+							  String nullString, boolean isSupressingEmptyFields) {
 
-		this(fieldSeparator, quoteChar, lenientPolicy, isSupressingEmptyFields, null, null);
+		this(fieldSeparator, quoteChar, lenientPolicy, nullString, isSupressingEmptyFields, null, null);
 	}
 
 	/**
@@ -83,9 +83,10 @@ public class SplitMergedCsvRows extends RichFlatMapFunction<Tuple2<Integer, Stri
 	 * 
 	 */
 	public SplitMergedCsvRows(final char fieldSeparator, final char quoteChar, final int lenientPolicy,
+							  String nullString,
 							  boolean isSupressingEmptyFields, Int2IntMap idDictionary, IdUtils idUtils) {
 
-		this.csvRowParser = new CsvParser(fieldSeparator, quoteChar, -1, lenientPolicy);
+		this.csvRowParser = new CsvParser(fieldSeparator, quoteChar, nullString, -1, lenientPolicy);
 		this.isSupressingEmptyFields = isSupressingEmptyFields;
 		this.lenientPolicy = lenientPolicy;
 

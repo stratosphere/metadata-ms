@@ -76,7 +76,7 @@ public class CsvUtils {
             return 0;
         }
 
-        CsvParser csvParser = new CsvParser(fieldDelimiter, quoteChar);
+        CsvParser csvParser = new CsvParser(fieldDelimiter, quoteChar, null);
         try {
             return csvParser.parse(line).size();
         } catch (Exception e) {

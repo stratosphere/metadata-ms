@@ -36,9 +36,10 @@ public class CsvParameters {
      * @param fieldSeparatorChar is a character for separating fields in a CSV file.
      * @param quoteChar is a single or double quote or {@link #NO_QUOTE_CHAR}.
      */
-    public CsvParameters(char fieldSeparatorChar, char quoteChar) {
+    public CsvParameters(char fieldSeparatorChar, char quoteChar, String nullString) {
 		this.fieldSeparatorChar = fieldSeparatorChar;
 		this.quoteChar = quoteChar;
+		this.nullString = nullString;
 		this.isInitialized = true;
 	}
 
@@ -119,7 +120,9 @@ public class CsvParameters {
 
 	@Override
 	public String toString() {
-		return "CsvParameters [separator=" + getFieldSeparatorChar() + "quote=" + getQuoteChar() + "]";
+		return "CsvParameters[separator=" + getFieldSeparatorChar() +
+				", quote=" + getQuoteChar() +
+				(this.getNullString() == null ? "" : (", null=" + this.getNullString())) + "]";
 	}
 	
 	

@@ -86,7 +86,7 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
                 inputFormat.setFilePath(inputPath);
 //                inputFormat.setRecordDetector(new CsvRecordStateMachine(csvParameters.getFieldSeparatorChar(),
 //                        csvParameters.getQuoteChar(), '\n', encoding.getCharset()));
-                source = env.createInput(inputFormat);
+                source = env.createInput(inputFormat).name(String.format("CSV files (%d tables)", tables.size()));
 
                 // if (this.parameters.sampleRows > 0) {
                 // source = source.filter(new SampleWithHashes<Tuple2<Integer, String>>(this.parameters.sampleRows,
@@ -113,15 +113,16 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
                         null,
                         -1,
                         -1, // this.parameters.maxColumns,
+                        csvParameters.getNullString(),
                         !isAllowingEmptyFields // !this.parameters.isAllowingEmptyFields
                 );
                 // }
 
-                final DataSet<Tuple2<Integer, String>> cells = source.flatMap(splitRowsFunction);
+                final DataSet<Tuple2<Integer, String>> cells = source.flatMap(splitRowsFunction).name("Split rows");
                 cellDataSets.add(cells);
             }
 
-            return PlanBuildingUtils.union(cellDataSets);
+            return PlanBuildingUtils.union(cellDataSets, "Union cells");
         }
 
     }
@@ -131,8 +132,10 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
         static final TupleDataSourceBuilder INSTANCE = new TupleDataSourceBuilder();
 
         @Override
-        public DataSet<Tuple> buildDataSource(ExecutionEnvironment env, Collection<Table> allTables,
-                                              MetadataStore metadataStore, boolean isAllowingEmptyFields) {
+        public DataSet<Tuple> buildDataSource(ExecutionEnvironment env,
+                                              Collection<Table> allTables,
+                                              MetadataStore metadataStore,
+                                              boolean isAllowingEmptyFields) {
 
             // Allocate a list to collect the data sinks.
             Collection<DataSet<Tuple>> tupleDataSets = new LinkedList<>();
@@ -158,7 +161,7 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
                 // TODO: Enable as needed.
                 // inputFormat.setRecordDetector(new CsvRecordStateMachine(csvParameters.getFieldSeparatorChar(),
 //                        csvParameters.getQuoteChar(), '\n', encoding.getCharset()));
-                source = env.createInput(inputFormat);
+                source = env.createInput(inputFormat).name(String.format("CSV files (%d tables)", tables.size()));
 
                 // if (this.parameters.sampleRows > 0) {
                 // source = source.filter(new SampleWithHashes<Tuple2<Integer, String>>(this.parameters.sampleRows,
@@ -181,17 +184,18 @@ public class CsvFileLocation extends AbstractCsvLocation implements CellLocation
                 // } else {
                 parseRows = new ParseCsvRows(
                         csvParameters.getFieldSeparatorChar(),
-                        csvParameters.getQuoteChar()
+                        csvParameters.getQuoteChar(),
+                        csvParameters.getNullString()
                 );
                 // }
 
-                final DataSet<Tuple> tuples = source.map(parseRows);
+                final DataSet<Tuple> tuples = source.map(parseRows).name("Parse rows");
                 tupleDataSets.add(tuples);
             }
 
-            DataSet<Tuple> tuples = PlanBuildingUtils.union(tupleDataSets);
+            DataSet<Tuple> tuples = PlanBuildingUtils.union(tupleDataSets, "Union tables");
             if (!isAllowingEmptyFields) {
-                tuples = tuples.filter(new FilterIncompleteTuples());
+                tuples = tuples.filter(new FilterIncompleteTuples()).name("Filter incomplete tuples");
             }
 
             return tuples;
