@@ -46,10 +46,12 @@ class HalfJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](
   }
 }
 
+
 class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Iterable[(A, B)]) {
 
-  def groupBy[K](keyFunc: (A) => K): Iterable[(K, Iterable[(A, B)])] = {
-    joined.groupBy { case (a, b) => keyFunc(a) }.toList
+  def groupBy[K](keyFunc: (A, B) => K): GroupedJoinedConstraintCollection[A, B, K] = {
+    val grouped = joined.groupBy { case (a, b) => keyFunc(a, b) }.toList
+    new GroupedJoinedConstraintCollection[A, B, K](grouped)
   }
 
   def count: Int = {
@@ -68,5 +70,20 @@ class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Itera
     val reversed = joined.map { case (a, b) => (b, a) }
     new JoinedConstraintCollection(reversed)
   }
+}
 
+
+class GroupedJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: Iterable[(K, Iterable[(A, B)])]) {
+  
+  def count: Int = {
+    grouped.size
+  }
+
+  def sum: Int = {
+    grouped.map { case (_, joins) => joins.size }.sum
+  }
+
+  def average: Double = {
+    sum / count
+  }
 }

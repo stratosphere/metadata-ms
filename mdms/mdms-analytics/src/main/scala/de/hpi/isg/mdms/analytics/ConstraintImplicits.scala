@@ -47,6 +47,7 @@ object ConstraintImplicits {
 
   }
 
+
   implicit class ConstraintIterable(constraints: Iterable[_ <: Constraint]) {
 
     def join[A <: Constraint, B <: Constraint](other: ConstraintCollection): UnJoinedConstraintCollection[A, B] = {
