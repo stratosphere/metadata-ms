@@ -4,6 +4,17 @@ import de.hpi.isg.mdms.model.constraints.Constraint
 
 /**
   * @author Lawrence Benson
+  *
+  * Contains all intermediate and final objects required for JOINs on [[de.hpi.isg.mdms.model.constraints.ConstraintCollection]].
+  *
+  * Step by step JOIN representation:
+  * ConstraintCollections are converted to [[Iterable]][([[de.hpi.isg.mdms.model.constraints.Constraint]], [[de.hpi.isg.mdms.model.constraints.Constraint]])
+  * ConstraintCollection JOIN ConstraintCollection => [[UnJoinedConstraintCollection]]
+  * UnJoinedConstraintCollection .where() => [[HalfJoinedConstraintCollection]]
+  * HalfJoinedConstraintCollection .equals() => [[JoinedConstraintCollection]]
+  *
+  * Additionally:
+  * JoinedConstraintCollection .groupBy => [[GroupedConstraintCollection]]
   */
 
 class UnJoinedConstraintCollection[A <: Constraint, B <: Constraint](lhs: Iterable[A], rhs: Iterable[B]) {
@@ -49,9 +60,9 @@ class HalfJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](
 
 class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Iterable[(A, B)]) {
 
-  def groupBy[K](keyFunc: (A, B) => K): GroupedJoinedConstraintCollection[A, B, K] = {
+  def groupBy[K](keyFunc: (A, B) => K): GroupedConstraintCollection[A, B, K] = {
     val grouped = joined.groupBy { case (a, b) => keyFunc(a, b) }.toList
-    new GroupedJoinedConstraintCollection[A, B, K](grouped)
+    new GroupedConstraintCollection[A, B, K](grouped)
   }
 
   def count: Int = {
@@ -73,8 +84,10 @@ class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Itera
 }
 
 
-class GroupedJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: Iterable[(K, Iterable[(A, B)])]) {
-  
+class GroupedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: Iterable[(K, Iterable[(A, B)])]) {
+
+  private type Group = Iterable[(A, B)]
+
   def count: Int = {
     grouped.size
   }
@@ -84,6 +97,19 @@ class GroupedJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](gro
   }
 
   def average: Double = {
-    sum / count
+    // toDouble to ensure floating point division
+    sum.toDouble / count
+  }
+
+  def fold[T](zeroValue: T)(operator: (T, (A, B)) => T): Iterable[(K, T)] = {
+    grouped.map { case (key, group) =>
+      (key, group.foldLeft[T](zeroValue)(operator))
+    }
+  }
+
+  def reduce[T >: (A,B)](operator: (T, (A, B)) => T): Iterable[(K, T)] = {
+    grouped.map { case (key, group) =>
+      (key, group.reduceLeft[T](operator))
+    }
   }
 }

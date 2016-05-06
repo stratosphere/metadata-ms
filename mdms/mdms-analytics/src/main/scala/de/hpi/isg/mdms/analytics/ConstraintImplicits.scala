@@ -6,8 +6,9 @@ import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 /**
   * @author Lawrence Benson
+  *
+  * Represents all implicit methods on [[ConstraintCollection]] for analytical purposes.
   */
-
 
 object ConstraintImplicits {
 
