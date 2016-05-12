@@ -57,7 +57,19 @@
             <artifactId>play_2.11</artifactId>
             <version>2.5.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.11</artifactId>
+            <version>2.2.6</version>
+        </dependency>
 
+        <!-- Required only for testing -->
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-distro</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>

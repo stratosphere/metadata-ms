@@ -30,7 +30,7 @@ object ConstraintImplicits {
       constraintCollection.constraintsIter.map(_.asInstanceOf[A])
     }
 
-    def groupByType: Map[Class[_ <: Constraint], Iterable[Constraint]] = {
+    def groupByType(): Map[Class[_ <: Constraint], Iterable[Constraint]] = {
       constraintCollection.group(_.getClass)
     }
 
