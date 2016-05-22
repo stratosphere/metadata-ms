@@ -48,6 +48,24 @@ object ConstraintImplicits {
 
   }
 
+  implicit class ConstraintCollectionIterable(collections: java.util.Collection[ConstraintCollection]) {
+
+    // TODO: Add all constraints with correct description tag
+    private val nameMapping = Map("FD" -> "FD", "IND" -> "IND", "UCC" -> "UCC", "CS" -> "column statistics")
+
+    def getCollectionByName(name: String): Option[ConstraintCollection] = {
+      if (!nameMapping.contains(name)) {
+        throw new NoSuchElementException(s"No ConstraintCollection with that identifier! Choose from ${nameMapping.keys}")
+      }
+      collections.asScala.find(_.getDescription.contains(nameMapping(name)))
+    }
+
+    // TODO: Handle empty collections
+    //    def getCollectionByType[A <: Constraint](constraintClass: Class[A]): Option[ConstraintCollection] = {
+    //      collections.asScala.find(_.constraintsIter.head.getClass == constraintClass)
+    //    }
+  }
+
 
   implicit class ConstraintIterable(constraints: Iterable[_ <: Constraint]) {
 

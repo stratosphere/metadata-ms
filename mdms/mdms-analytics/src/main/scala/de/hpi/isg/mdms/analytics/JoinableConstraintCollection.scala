@@ -60,7 +60,7 @@ class HalfJoinedConstraintCollection[A <: Constraint, B <: Constraint, K](
 
 class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Iterable[(A, B)]) {
 
-  def groupBy[K](keyFunc: (A, B) => K): GroupedConstraintCollection[A, B, K] = {
+  def groupBy[K](keyFunc: ((A, B)) => K): GroupedConstraintCollection[A, B, K] = {
     val grouped = joined.groupBy { case (a, b) => keyFunc(a, b) }.toList
     new GroupedConstraintCollection[A, B, K](grouped)
   }

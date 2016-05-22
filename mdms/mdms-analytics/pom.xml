@@ -14,6 +14,7 @@
 
     <properties>
         <scala.version>2.11.7</scala.version>
+        <mdms-version>0.0.3-SNAPSHOT</mdms-version>
     </properties>
 
     <build>
@@ -45,7 +46,22 @@
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-model</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>${mdms-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-dependencies</artifactId>
+            <version>${mdms-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-clients</artifactId>
+            <version>${mdms-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-flink</artifactId>
+            <version>${mdms-version}</version>
         </dependency>
         <dependency>
             <groupId>io.continuum.bokeh</groupId>
@@ -67,7 +83,7 @@
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-distro</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>${mdms-version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
