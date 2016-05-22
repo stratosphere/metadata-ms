@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.analytics
+package de.hpi.isg.mdms.analytics.visualization
 
 import java.io.StringWriter
 

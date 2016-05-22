@@ -86,8 +86,8 @@ class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Itera
     joined
   }
 
-  def where(selectFunc: ((A, B)) => Boolean): JoinedConstraintCollection[A, B] = {
-    new JoinedConstraintCollection(joined.filter(selectFunc))
+  def where(whereFunc: ((A, B)) => Boolean): JoinedConstraintCollection[A, B] = {
+    new JoinedConstraintCollection(joined.filter(whereFunc))
   }
 }
 
@@ -119,5 +119,13 @@ class GroupedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: 
     grouped.map { case (key, group) =>
       (key, group.reduceLeft[T](operator))
     }
+  }
+
+  def selectAll(): Iterable[(K, Iterable[(A, B)])] = {
+    grouped
+  }
+
+  def where(whereFunc: ((K, Group)) => Boolean): GroupedConstraintCollection[A, B, K] = {
+    new GroupedConstraintCollection(grouped.filter(whereFunc))
   }
 }

@@ -141,7 +141,7 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     val css = csCollection.asType[ColumnStatistics]
 
     val firstTuple = (inds.head, css.head)
-    val secondTuple = (inds.head, css.tail.head)
+    val secondTuple = (inds.head, css.last)
 
     val expected = List(firstTuple, secondTuple)
     assert(joined == expected)
