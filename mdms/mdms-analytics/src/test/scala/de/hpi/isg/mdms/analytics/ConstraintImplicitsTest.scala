@@ -6,7 +6,7 @@ import java.sql.DriverManager
 import de.hpi.isg.mdms.analytics.ConstraintImplicits.ConstraintCollectionQueryObject
 import de.hpi.isg.mdms.analytics.util.TestUtil
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore
-import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InMemoryConstraintCollection, InclusionDependency}
+import de.hpi.isg.mdms.domain.constraints.{InclusionDependency, ColumnStatistics}
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
 import de.hpi.isg.mdms.model.location.DefaultLocation
 import de.hpi.isg.mdms.model.targets.Schema
@@ -83,9 +83,143 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
 
   test("groupByType should return correct groups") {
     constraintCollection.add(new ColumnStatistics(0))
+    constraintCollection.add(new ColumnStatistics(1))
     val grouped = constraintCollection.groupByType()
     val expected = Map(classOf[InclusionDependency] -> List(constraintCollection.constraintsIter.head),
-      classOf[ColumnStatistics] -> List(constraintCollection.constraintsIter.tail.head))
+      classOf[ColumnStatistics] -> constraintCollection.constraintsIter.tail)
     assert(grouped == expected)
+  }
+
+  test("Join reached all intermediate representations") {
+    val (indCollection, csCollection) = TestUtil.basicINDJoinCSSetup(store, schema)
+
+    val unJoined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
+    assert(unJoined.isInstanceOf[UnJoinedConstraintCollection[InclusionDependency, ColumnStatistics]])
+
+    val halfJoined = unJoined.where(_.getTargetReference.getReferencedColumns.head)
+    assert(halfJoined.isInstanceOf[HalfJoinedConstraintCollection[InclusionDependency, ColumnStatistics, Int]])
+
+    val fullyJoined = halfJoined.equalsKey(_.getTargetReference.getTargetId)
+    assert(fullyJoined.isInstanceOf[JoinedConstraintCollection[InclusionDependency, ColumnStatistics]])
+
+    val joined = fullyJoined.selectAll()
+    assert(joined.isInstanceOf[Iterable[(InclusionDependency, ColumnStatistics)]])
+  }
+
+  test("Basic join works") {
+    val (indCollection, csCollection) = TestUtil.basicINDJoinCSSetup(store, schema)
+
+    val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getTargetId)
+      .selectAll()
+
+    val ind = indCollection.asType[InclusionDependency].head
+    val cs = csCollection.asType[ColumnStatistics].head
+    val expected = List((ind, cs))
+    assert(joined == expected)
+
+    val otherJoined = csCollection.join[ColumnStatistics, InclusionDependency](indCollection)
+      .where(_.getTargetReference.getTargetId)
+      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .selectAll()
+
+    val otherExpected = List((cs, ind))
+    assert(otherJoined == otherExpected)
+  }
+
+  test("Join matched multiple right sides") {
+    val (indCollection, csCollection) = TestUtil.basicINDJoinCSSetup(store, schema)
+    csCollection.add(new ColumnStatistics(0))
+
+    val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getTargetId)
+      .selectAll()
+
+    val inds = indCollection.asType[InclusionDependency]
+    val css = csCollection.asType[ColumnStatistics]
+
+    val firstTuple = (inds.head, css.head)
+    val secondTuple = (inds.head, css.tail.head)
+
+    val expected = List(firstTuple, secondTuple)
+    assert(joined == expected)
+  }
+
+  test("Empty collections should return empty joins") {
+    val empty1 = TestUtil.emptyConstraintCollection(store, schema)
+    val empty2 = TestUtil.emptyConstraintCollection(store, schema)
+
+    val joined = empty1.join[InclusionDependency, InclusionDependency](empty2)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .selectAll()
+
+    assert(joined.isEmpty)
+  }
+
+  test("Empty and non-empty collections should return empty join") {
+    val empty = TestUtil.emptyConstraintCollection(store, schema)
+    val nonEmpty = TestUtil.emptyConstraintCollection(store, schema)
+    TestUtil.addDummyInclusionDependency(nonEmpty)
+
+    val emptyJoinedFull = empty.join[InclusionDependency, InclusionDependency](nonEmpty)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .selectAll()
+
+    assert(emptyJoinedFull.isEmpty)
+
+    val fullJoinedEmpty = nonEmpty.join[InclusionDependency, InclusionDependency](empty)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .selectAll()
+
+    assert(fullJoinedEmpty.isEmpty)
+  }
+
+  test("Multiple entry collections should join correctly") {
+    val indCollection = TestUtil.emptyConstraintCollection(store, schema)
+    val ind01 = TestUtil.addInclusionDependency(Array(0), Array(1), indCollection)
+    val ind10 = TestUtil.addInclusionDependency(Array(1), Array(0), indCollection)
+    val ind02 = TestUtil.addInclusionDependency(Array(0), Array(2), indCollection)
+    val ind24 = TestUtil.addInclusionDependency(Array(2), Array(4), indCollection)
+
+    val csCollection = TestUtil.emptyConstraintCollection(store, schema)
+    val cs0 = new ColumnStatistics(0)
+    val cs1 = new ColumnStatistics(1)
+    val cs2 = new ColumnStatistics(2)
+    val cs3 = new ColumnStatistics(3)
+    csCollection.add(cs0)
+    csCollection.add(cs1)
+    csCollection.add(cs2)
+    csCollection.add(cs3)
+
+    val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getTargetId)
+      .selectAll()
+
+    val expected = List((ind01, cs1), (ind10, cs0), (ind02, cs2))
+
+    assert(joined == expected)
+  }
+
+  test("Where on joined set returns only wanted entries") {
+    val (indCollection, csCollection) = TestUtil.basicINDJoinCSSetup(store, schema)
+    val ind23 = TestUtil.addInclusionDependency(Array(2), Array(3), indCollection)
+
+    val cs3 = new ColumnStatistics(3)
+    csCollection.add(cs3)
+
+    val fullyJoined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
+      .where(_.getTargetReference.getReferencedColumns.head)
+      .equalsKey(_.getTargetReference.getTargetId)
+
+    val filtered = fullyJoined.where(_._2.getTargetReference.getTargetId == 3).selectAll()
+    val expected = List((ind23, cs3))
+
+    assert(filtered == expected)
   }
 }
