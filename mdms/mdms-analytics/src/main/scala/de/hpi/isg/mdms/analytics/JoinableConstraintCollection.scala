@@ -81,6 +81,14 @@ class JoinedConstraintCollection[A <: Constraint, B <: Constraint](joined: Itera
     val reversed = joined.map { case (a, b) => (b, a) }
     new JoinedConstraintCollection(reversed)
   }
+
+  def selectAll(): Iterable[(A, B)] = {
+    joined
+  }
+
+  def where(selectFunc: ((A, B)) => Boolean): JoinedConstraintCollection[A, B] = {
+    new JoinedConstraintCollection(joined.filter(selectFunc))
+  }
 }
 
 
