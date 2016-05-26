@@ -121,7 +121,7 @@ class GroupedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: 
     }
   }
 
-  def selectAll(): Iterable[(K, Iterable[(A, B)])] = {
+  def selectAll(): Iterable[(K, Group)] = {
     grouped
   }
 
