@@ -8,15 +8,15 @@ import io.continuum.bokeh._
 
 import scala.math.floor
 import scala.reflect.runtime.universe.TypeTag
+import scala.xml.XML
 
 
 object Chart {
 
   var renderingConf: RenderingConf = UninitializedRenderingConfig
 
-  def initialize(renderConf: RenderingConf): String = {
+  def initialize(renderConf: RenderingConf): Unit = {
     renderingConf = renderConf
-    initBokeh
   }
 
   def createHistogram(plotData: Map[String, Double]): Plot = {
@@ -49,31 +49,19 @@ object Chart {
     createHistogram(data)
   }
 
-
-  /*
-   * https://github.com/bokeh/bokeh-scala/issues/24
-   * Workaround until version 0.8
-   * Call from jupyter with display.html(initBokeh)
-  */
-  def initBokeh: String = {
-    val resources = Resources.default
-    val fragment = new HTMLFragment(scala.xml.NodeSeq.Empty, resources.styles, resources.scripts)
-    val writer = new java.io.StringWriter()
-    scala.xml.XML.write(writer, <div> {  fragment.preamble } </div>, "UTF-8", xmlDecl=false, doctype=null)
-
-    writer.toString
-  }
-
   /*
    * https://github.com/bokeh/bokeh-scala/issues/24
    * Workaround until version 0.8
    * Call from jupyter with display.html(getBokehPlot(plot))
   */
   def getBokehPlot(plot: Plot): String = {
-    renderingConf.checkInitialization
-    val writer = new StringWriter()
+    //    renderingConf.checkInitialization
+    val resources = Resources.default
+    val fragment = new HTMLFragment(scala.xml.NodeSeq.Empty, resources.styles, resources.scripts)
     val document = new Document(plot)
-    scala.xml.XML.write(writer, document.fragment.html(0), "UTF-8", xmlDecl=false, doctype=null)
+    val writer = new StringWriter()
+    XML.write(writer, <div> { fragment.preamble } </div>, "UTF-8", xmlDecl=false, doctype=null)
+    XML.write(writer, document.fragment.html(0), "UTF-8", xmlDecl=false, doctype=null)
 
     writer.toString
   }
