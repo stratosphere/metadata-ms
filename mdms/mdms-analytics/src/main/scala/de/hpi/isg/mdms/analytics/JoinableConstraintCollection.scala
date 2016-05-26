@@ -101,7 +101,7 @@ class GroupedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: 
   }
 
   def sum: Int = {
-    grouped.map { case (_, joins) => joins.size }.sum
+    sizePerKey.map(x => x._2).sum
   }
 
   def average: Double = {
@@ -119,6 +119,10 @@ class GroupedConstraintCollection[A <: Constraint, B <: Constraint, K](grouped: 
     grouped.map { case (key, group) =>
       (key, group.reduceLeft[T](operator))
     }
+  }
+
+  def sizePerKey: Iterable[(K, Int)] = {
+    grouped.map { case (key, group) => (key, group.size) }
   }
 
   def selectAll(): Iterable[(K, Group)] = {
