@@ -11,7 +11,6 @@
 
     <artifactId>mdms-analytics</artifactId>
 
-
     <properties>
         <scala.version>2.11.7</scala.version>
         <mdms-version>0.0.3-SNAPSHOT</mdms-version>
@@ -78,24 +77,6 @@
             <artifactId>scalatest_2.11</artifactId>
             <version>2.2.6</version>
         </dependency>
-
-        <!-- Required only for testing -->
-        <dependency>
-            <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-distro</artifactId>
-            <version>${mdms-version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.scala-lang.modules</groupId>
-                <artifactId>scala-parser-combinators_2.11</artifactId>
-                <version>1.0.4</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
 </project>

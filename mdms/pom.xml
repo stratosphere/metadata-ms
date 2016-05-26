@@ -210,6 +210,13 @@
                 <artifactId>jcommander</artifactId>
                 <version>1.48</version>
             </dependency>
+
+            <!-- Required for scala modules, does't build otherwise -->
+            <dependency>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-parser-combinators_2.11</artifactId>
+                <version>1.0.4</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
