@@ -44,9 +44,13 @@ object HTMLTable {
   }
 
   def fromCollectionTuple[A <: Constraint: TypeTag, B <: Constraint: TypeTag](collection: Iterable[(A, B)]): Elem = {
-    val data = collection.map { case (a, b) => List(a, b) }
     val head = List(genericConstraintName[A], genericConstraintName[B])
-    newTable(data, Some(head))
+    fromTuples(collection, Some(head))
+  }
+
+  def fromTuples(tuples: Iterable[(Any, Any)], head: Option[Iterable[Any]]): Elem = {
+    val data = tuples.map { case (a, b) => List(a, b) }
+    newTable(data, head)
   }
 
   def newTable(data: Iterable[Iterable[Any]], head: Option[Iterable[Any]] = None): Elem = {

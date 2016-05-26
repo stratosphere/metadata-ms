@@ -2,12 +2,22 @@ package de.hpi.isg.mdms.analytics.visualization
 
 import java.io.StringWriter
 
+import de.hpi.isg.mdms.analytics.GroupedConstraintCollection
+import de.hpi.isg.mdms.model.constraints.Constraint
 import io.continuum.bokeh._
 
 import scala.math.floor
+import scala.reflect.runtime.universe.TypeTag
 
 
-object Visualization {
+object Chart {
+
+  var renderingConf: RenderingConf = UninitializedRenderingConfig
+
+  def initialize(renderConf: RenderingConf): String = {
+    renderingConf = renderConf
+    initBokeh
+  }
 
   def createHistogram(plotData: Map[String, Double]): Plot = {
     val data = new DataSource(plotData)
@@ -27,6 +37,16 @@ object Visualization {
     val renderer = new GlyphRenderer().data_source(data).glyph(line)
 
     getPlot(xdr, ydr, renderer)
+  }
+
+  def histogramFromGroupedJoin[A <: Constraint: TypeTag, B <: Constraint: TypeTag, K <: Any](grouped: GroupedConstraintCollection[A, B, K]): Plot = {
+    val data = grouped.sizePerKey.map { case (key, size) => (key, size.toDouble)}
+    histogramFromTuples(data)
+  }
+
+  def histogramFromTuples(tuples: Iterable[(Any, Double)]): Plot = {
+    val data = tuples.map { case (a, b) => (a.toString, b) }.toMap
+    createHistogram(data)
   }
 
 
@@ -50,6 +70,7 @@ object Visualization {
    * Call from jupyter with display.html(getBokehPlot(plot))
   */
   def getBokehPlot(plot: Plot): String = {
+    renderingConf.checkInitialization
     val writer = new StringWriter()
     val document = new Document(plot)
     scala.xml.XML.write(writer, document.fragment.html(0), "UTF-8", xmlDecl=false, doctype=null)
