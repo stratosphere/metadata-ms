@@ -91,11 +91,11 @@ public class CsvParserTest {
         
         Assert.assertEquals(expectedResult, result);
     }
-    
+
     @Test
     public void twoConsequentQuotesShouldBeEscaped() throws Exception {
         CsvParser parser = new CsvParser(';', '"', null);
-        
+
         // "Hello ""World""";""";""";"""World""";"""";"""""";"";""
         String testRow = "\"Hello \"\"World\"\"\";"
                 + "\"\"\";\"\"\";"
@@ -105,8 +105,30 @@ public class CsvParserTest {
                 + "\"\";"
                 + "\"\"";
         List<String> expectedResult = Arrays.asList("Hello \"World\"", "\";\"", "\"World\"", "\"", "\"\"", "", "");
-        List<String> result = parser.parse(testRow); 
-        
+        List<String> result = parser.parse(testRow);
+
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void emptyNullStringShouldWork() throws Exception {
+        CsvParser parser = new CsvParser(';', '"', "");
+
+        String testRow = "null;\"\";;\"\"";
+        List<String> expectedResult = Arrays.asList("null", null, null, null);
+        List<String> result = parser.parse(testRow);
+
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void nonEmptyNullStringShouldWork() throws Exception {
+        CsvParser parser = new CsvParser(';', '"', "\\N");
+
+        String testRow = "null;\"\\N\";\\N";
+        List<String> expectedResult = Arrays.asList("null", null, null);
+        List<String> result = parser.parse(testRow);
+
         Assert.assertEquals(expectedResult, result);
     }
 
