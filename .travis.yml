@@ -7,4 +7,6 @@ notifications:
     on_failure: change
 
 install: true
-script: cd mdms && mvn clean install
+before_script:
+  - echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" >> ~/.mavenrc
+script: cd mdms && mvn clean verify

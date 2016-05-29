@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.util.CollectionUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.util.*;
@@ -49,6 +50,10 @@ public class PlanBuildingUtils {
 	}
 
 	public static <T> DataSet<T> union(final Collection<DataSet<T>> dataSets) {
+		return union(dataSets, null);
+	}
+
+	public static <T> DataSet<T> union(final Collection<DataSet<T>> dataSets, String name) {
 		Validate.notNull(dataSets);
 		Validate.notEmpty(dataSets);
 		Validate.noNullElements(dataSets);
@@ -58,7 +63,11 @@ public class PlanBuildingUtils {
 			if (unionedDataSets == null) {
 				unionedDataSets = dataSet;
 			} else {
-				unionedDataSets = unionedDataSets.union(dataSet);
+				final UnionOperator<T> union = unionedDataSets.union(dataSet);
+				if (name != null) {
+					union.name(name);
+				}
+				unionedDataSets = union;
 			}
 		}
 		return unionedDataSets;
@@ -89,7 +98,7 @@ public class PlanBuildingUtils {
 		}
 
 		// Union all diferent datasets.
-		return union(dataSets);
+		return union(dataSets, "Union cells");
 	}
 	
 	/**
@@ -111,7 +120,7 @@ public class PlanBuildingUtils {
 	 * @return
 	 */
 	public static DataSet<Tuple> buildTupleDataSet(ExecutionEnvironment env, Collection<Table> tables,
-												   MetadataStore metadataStore, boolean isSuppressEmptyFields) {
+												   MetadataStore metadataStore, boolean isAllowingEmptyFields) {
 	    
 	    // Partition tables by their DataSourceBuilder.
 	    Map<DataSourceBuilder<Table, ? extends TupleLocation, Tuple>, List<Table>> tablesByDataSourceBuilder = new HashMap<>();
@@ -131,7 +140,7 @@ public class PlanBuildingUtils {
 	        tablesByDataSourceBuilder.entrySet()) {
 	        
 	        DataSourceBuilder<Table, ? extends TupleLocation, Tuple> dataSourceBuilder = entry.getKey();
-	        DataSet<Tuple> dataSet = dataSourceBuilder.buildDataSource(env, entry.getValue(), metadataStore, !isSuppressEmptyFields);
+	        DataSet<Tuple> dataSet = dataSourceBuilder.buildDataSource(env, entry.getValue(), metadataStore, isAllowingEmptyFields);
 	        dataSets.add(dataSet);
 	    }
 	    

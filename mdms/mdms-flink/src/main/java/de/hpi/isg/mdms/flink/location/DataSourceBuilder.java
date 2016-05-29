@@ -29,6 +29,8 @@ import java.util.Collection;
 public interface DataSourceBuilder<TTarget extends Target, TLocation extends Location, DataSetElement> {
 
 	DataSet<DataSetElement> buildDataSource(ExecutionEnvironment env,
-											Collection<TTarget> targets, MetadataStore metadataStore, boolean isAllowingEmptyFields);
+											Collection<TTarget> targets,
+											MetadataStore metadataStore,
+											boolean isAllowingEmptyFields);
 
 }

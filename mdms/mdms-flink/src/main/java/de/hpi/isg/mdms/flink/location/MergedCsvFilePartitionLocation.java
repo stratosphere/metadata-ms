@@ -77,8 +77,10 @@ public class MergedCsvFilePartitionLocation extends DefaultLocation implements C
         static final CellDataSourceBuilder INSTANCE = new CellDataSourceBuilder();
 
         @Override
-        public DataSet<Tuple2<Integer, String>> buildDataSource(ExecutionEnvironment env, Collection<Table> allTables,
-                                                                MetadataStore metadataStore, boolean isAllowingEmptyFields) {
+        public DataSet<Tuple2<Integer, String>> buildDataSource(ExecutionEnvironment env,
+                                                                Collection<Table> allTables,
+                                                                MetadataStore metadataStore,
+                                                                boolean isAllowingEmptyFields) {
 
             Map<Path, List<Table>> tablesByCsvParameters = partitionTablesByFile(allTables);
             Collection<DataSet<Tuple2<Integer, String>>> cellDataSets = new LinkedList<>();
@@ -130,6 +132,7 @@ public class MergedCsvFilePartitionLocation extends DefaultLocation implements C
                         csvParameters.getFieldSeparatorChar(),
                         csvParameters.getQuoteChar(),
                         CsvParser.WARN_ON_ILLEGAL_LINES,
+                        csvParameters.getNullString(),
                         !isAllowingEmptyFields,
                         idDictionary,
                         metadataStore.getIdUtils()
@@ -218,7 +221,7 @@ public class MergedCsvFilePartitionLocation extends DefaultLocation implements C
 
                 Int2IntMap idDictionary = createIdDictionary(tables, metadataStore.getIdUtils());
                 DataSet<Tuple> tuples = source
-                        .map(new ParseCsvRows(csvParameters.getFieldSeparatorChar(), csvParameters.getQuoteChar()))
+                        .map(new ParseCsvRows(csvParameters.getFieldSeparatorChar(), csvParameters.getQuoteChar(), csvParameters.getNullString()))
                         .map(new EscapeMCSVTuple(idDictionary));
 
                 tupleDataSets.add(tuples);

@@ -34,6 +34,8 @@ public class CsvParser implements Serializable {
 
     private final char quoteChar;
 
+    private final String nullString;
+
     private int numExpectedFields;
 
     private final int lenientPolicy;
@@ -45,9 +47,10 @@ public class CsvParser implements Serializable {
      *
      * @param fieldSeparator is the character that separates fields
      * @param quoteChar      is the character that is used to quote fields (although unquoted fields are allowed as well)
+     * @param nullString     is the representation of null values or {@code null} if none
      */
-    public CsvParser(final char fieldSeparator, final char quoteChar) {
-        this(fieldSeparator, quoteChar, -1, -1);
+    public CsvParser(final char fieldSeparator, final char quoteChar, final String nullString) {
+        this(fieldSeparator, quoteChar, nullString, -1, -1);
     }
 
     /**
@@ -59,11 +62,12 @@ public class CsvParser implements Serializable {
      * @param lenientPolicy     defines how to react if the number of expected fields is not met by a row (see
      *                          {@link #FAIL_ON_ILLEGAL_LINES}, {@link #FAIL_ON_OVERLONG_LINES}, {@link #WARN_ON_ILLEGAL_LINES})
      */
-    public CsvParser(final char fieldSeparator, final char quoteChar, final int numExpectedFields,
+    public CsvParser(final char fieldSeparator, final char quoteChar, final String nullString, final int numExpectedFields,
                      final int lenientPolicy) {
 
         this.fieldSeparator = fieldSeparator;
         this.quoteChar = quoteChar;
+        this.nullString = nullString;
         this.numExpectedFields = numExpectedFields;
         this.lenientPolicy = lenientPolicy;
         this.tokens = new ArrayList<>();
@@ -83,6 +87,15 @@ public class CsvParser implements Serializable {
         int scanOffset = 0;
         while (scanOffset <= row.length()) {
             scanOffset = readNextField(row, scanOffset);
+
+            // Check if we have a null value.
+            if (this.nullString != null) {
+                final int lastIndex = this.tokens.size() - 1;
+                String lastToken = this.tokens.get(lastIndex);
+                if (this.nullString.equals(lastToken)) {
+                    this.tokens.set(lastIndex, null);
+                }
+            }
         }
 
         // Make sanity check if we found the expected number of fields.
@@ -114,7 +127,7 @@ public class CsvParser implements Serializable {
     private int readNextField(final String row, int scanOffset) {
 
         if (row.length() == scanOffset) {
-            this.tokens.add(null);
+            this.tokens.add("");
             return scanOffset + 1;
         }
 
@@ -195,7 +208,7 @@ public class CsvParser implements Serializable {
             }
             this.tokens.add(field);
         } else {
-            this.tokens.add(null);
+            this.tokens.add("");
         }
 
         scanOffset++;

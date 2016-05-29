@@ -109,7 +109,7 @@ public class CreateSchemaForMcsvFileApp extends CsvAppTemplate<CreateSchemaForMc
                 .readTextFile(inputFilePath)
                 // FIXME: null because we need actual input files
                 .map(new ParsePlainCsvRows(getCsvParameters().getFieldSeparatorChar(), getCsvParameters()
-                        .getQuoteChar()))
+                        .getQuoteChar(), this.getCsvParameters().getNullString()))
                 .map(new CountFields())
                 .groupBy(0)
                 .max(1).andSum(2)
@@ -120,7 +120,7 @@ public class CreateSchemaForMcsvFileApp extends CsvAppTemplate<CreateSchemaForMc
         if (this.parameters.idInputFile != null) {
             DataSet<Tuple2<Integer, String>> tableNames = this.executionEnvironment
                     .readTextFile(this.parameters.idInputFile)
-                    .map(new ParsePlainCsvRows(getCsvParameters().getFieldSeparatorChar(), getCsvParameters().getQuoteChar()))
+                    .map(new ParsePlainCsvRows(getCsvParameters().getFieldSeparatorChar(), getCsvParameters().getQuoteChar(), this.getCsvParameters().getNullString()))
                     .map(new ExtractTableIds());
 
             DataSet<Tuple3<Integer, Integer, String>> result = numAttributesDataSet
@@ -145,6 +145,7 @@ public class CreateSchemaForMcsvFileApp extends CsvAppTemplate<CreateSchemaForMc
         schemaLocation.setPath(inputFilePath);
         schemaLocation.setFieldSeparator(getCsvParameters().getFieldSeparatorChar());
         schemaLocation.setQuoteChar(getCsvParameters().getQuoteChar());
+        schemaLocation.setNullString(this.parameters.csvParameters.getNullString());
         String description = String.format("created from %s (%s)", this.parameters.inputFile, DateFormat.getInstance().format(new Date()));
         this.schema = this.metadataStore.addSchema(schemaName, description, schemaLocation);
         logger.debug("added schema {} with ID {}", schema.getName(), schema.getId());

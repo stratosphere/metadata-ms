@@ -25,7 +25,7 @@ import java.util.LinkedList;
  * @author Sebastian Kruse
  */
 @SuppressWarnings("serial")
-abstract public class AbstractCsvLocation extends FileLocation {
+public abstract class AbstractCsvLocation extends FileLocation {
 
     public static final String SEPARATOR = "SEPARATOR";
 
@@ -34,6 +34,8 @@ abstract public class AbstractCsvLocation extends FileLocation {
     public static final String HAS_HEADER = "HEADER";
 
     public static final String ENCODING = "ENC";
+
+    public static final String NULL_STRING = "NULLSTR";
 
     public static final char NO_QUOTE_CHAR = CsvParameters.NO_QUOTE_CHAR;
 
@@ -98,8 +100,20 @@ abstract public class AbstractCsvLocation extends FileLocation {
         }
     }
 
+    public void setNullString(String nullString) {
+        if (nullString == null) {
+            this.delete(NULL_STRING);
+        } else {
+            this.set(NULL_STRING, nullString);
+        }
+    }
+
+    public String getNullString() {
+        return getIfExists(NULL_STRING);
+    }
+
     public CsvParameters getCsvParameters() {
-    	return new CsvParameters(getFieldSeparator(), getQuoteChar());
+    	return new CsvParameters(getFieldSeparator(), getQuoteChar(), getNullString());
     }
     
     @Override
@@ -109,6 +123,7 @@ abstract public class AbstractCsvLocation extends FileLocation {
         allPropertyKeys.add(SEPARATOR);
         allPropertyKeys.add(ENCODING);
         allPropertyKeys.add(HAS_HEADER);
+        allPropertyKeys.add(NULL_STRING);
         return allPropertyKeys;
     }
     
@@ -119,6 +134,7 @@ abstract public class AbstractCsvLocation extends FileLocation {
         propertyKeys.add(SEPARATOR);
         propertyKeys.add(ENCODING);
         propertyKeys.add(HAS_HEADER);
+        propertyKeys.add(NULL_STRING);
         return propertyKeys;
     }
 }

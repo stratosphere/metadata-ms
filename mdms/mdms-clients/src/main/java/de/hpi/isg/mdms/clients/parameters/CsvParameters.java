@@ -2,6 +2,8 @@ package de.hpi.isg.mdms.clients.parameters;
 
 import com.beust.jcommander.Parameter;
 
+import java.util.Objects;
+
 public class CsvParameters {
 
     public static final char NO_QUOTE_CHAR = '\0';
@@ -11,6 +13,9 @@ public class CsvParameters {
 
     @Parameter(names = { "--quote-char" }, description = "the quote of fields in each line of the input (and output) file (none, single, double)")
     public String quoteCharName = "double";
+
+	@Parameter(names = { "--null-string"}, description = "string representation of null", required = false)
+	public String nullString = null;
     
     private boolean isInitialized;
     
@@ -31,9 +36,10 @@ public class CsvParameters {
      * @param fieldSeparatorChar is a character for separating fields in a CSV file.
      * @param quoteChar is a single or double quote or {@link #NO_QUOTE_CHAR}.
      */
-    public CsvParameters(char fieldSeparatorChar, char quoteChar) {
+    public CsvParameters(char fieldSeparatorChar, char quoteChar, String nullString) {
 		this.fieldSeparatorChar = fieldSeparatorChar;
 		this.quoteChar = quoteChar;
+		this.nullString = nullString;
 		this.isInitialized = true;
 	}
 
@@ -82,12 +88,17 @@ public class CsvParameters {
     	return this.quoteChar;
     }
 
+	public String getNullString() {
+		return this.nullString;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + getFieldSeparatorChar();
 		result = prime * result + getQuoteChar();
+		result = prime * result + Objects.hashCode(this.nullString);
 		return result;
 	}
 
@@ -109,7 +120,9 @@ public class CsvParameters {
 
 	@Override
 	public String toString() {
-		return "CsvParameters [separator=" + getFieldSeparatorChar() + "quote=" + getQuoteChar() + "]";
+		return "CsvParameters[separator=" + getFieldSeparatorChar() +
+				", quote=" + getQuoteChar() +
+				(this.getNullString() == null ? "" : (", null=" + this.getNullString())) + "]";
 	}
 	
 	

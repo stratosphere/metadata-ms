@@ -40,9 +40,19 @@
         <module>mdms-clients</module>
         <module>mdms-java</module>
         <module>mdms-cli</module>
+        <module>mdms-distro</module>
+        <module>mdms-analytics</module>
     </modules>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -199,6 +209,13 @@
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
                 <version>1.48</version>
+            </dependency>
+
+            <!-- Required for scala modules, does't build otherwise -->
+            <dependency>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-parser-combinators_2.11</artifactId>
+                <version>1.0.4</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

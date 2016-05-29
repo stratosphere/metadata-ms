@@ -17,7 +17,6 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.clients.util.MetadataStoreUtil;
 import de.hpi.isg.mdms.flink.location.AbstractCsvLocation;
 import de.hpi.isg.mdms.flink.location.CsvFileLocation;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
@@ -29,7 +28,6 @@ import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.tools.util.CsvUtils;
 import org.apache.flink.core.fs.Path;
-import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -82,6 +80,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
             tableLocation.setQuoteChar(this.parameters.csvParameters.getQuoteChar());
             tableLocation.setEncoding(this.fileEncodings.get(path));
             tableLocation.setHasHeader((this.parameters.hasHeader).equalsIgnoreCase("true"));
+            tableLocation.setNullString(this.parameters.csvParameters.getNullString());
             final Table table = schema.addTable(this.metadataStore, tableName, "", tableLocation);
             logger.info("added table {} with ID {}", table.getName(), table.getId());
             String[] columnNames = new String[0];

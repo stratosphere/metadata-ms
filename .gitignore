@@ -9,3 +9,7 @@ target/
 .settings
 .classpath
 .project
+
+# MacOS
+.DS_Store
+._.*

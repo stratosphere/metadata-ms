@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * This function splits a given CSV row into its fields. The given first integer field will be offset by the field
  * index.
- * 
+ *
  * @author Sebastian Kruse
  */
 public class SplitCsvRows extends RichFlatMapFunction<Tuple2<Integer, String>, Tuple2<Integer, String>> {
@@ -25,26 +25,30 @@ public class SplitCsvRows extends RichFlatMapFunction<Tuple2<Integer, String>, T
 
     private final int maxFields;
 
-    private final boolean isSupressingEmptyFields;
+    private final String nullString;
+
+    private final boolean isSupressingEmptyCells;
 
     private final CsvParser csvParser;
 
     /**
      * Creates a new instance without checks of the number of fields in the rows and limitation of used fields but with
      * supressing of empty fields.
-     * 
+     *
      * @param fieldSeparator
      *        is the character that separates fields
      * @param quoteChar
      *        is the character that is used to quote fields (although unquoted fields are allowed as well)
+     * @param nullString
+     *        the {@link String} representation of null values or {@code null} if none
      */
-    public SplitCsvRows(final char fieldSeparator, final char quoteChar) {
-        this(fieldSeparator, quoteChar, null, -1, true);
+    public SplitCsvRows(final char fieldSeparator, final char quoteChar, String nullString) {
+        this(fieldSeparator, quoteChar, null, -1, nullString, true);
     }
 
     /**
      * Creates a new instance without limitation of used fields.
-     * 
+     *
      * @param fieldSeparator
      *        is the character that separates fields
      * @param quoteChar
@@ -53,17 +57,19 @@ public class SplitCsvRows extends RichFlatMapFunction<Tuple2<Integer, String>, T
      *        is a mapping of file IDs to the number of expected fields contained within each row of the respective file
      * @param lenientPolicy
      *        describes the behavior of the parser on illegal number of fields in a row
-     * @param isSupressingEmptyStrings
-     *        tells whether empty fields will be forwarded by this operator or supressed
+     * @param nullString
+     *        the {@link String} representation of null values or {@code null} if none
+     * @param isSupressingEmptyCells
+     *        tells whether null fields will be forwarded by this operator or supressed
      */
     public SplitCsvRows(final char fieldSeparator, final char quoteChar, final Int2IntMap numFieldsPerFile,
-                        final int lenientPolicy, boolean isSupressingEmptyStrings) {
-        this(fieldSeparator, quoteChar, numFieldsPerFile, lenientPolicy, -1, isSupressingEmptyStrings);
+                        final int lenientPolicy, final String nullString, boolean isSupressingEmptyCells) {
+        this(fieldSeparator, quoteChar, numFieldsPerFile, lenientPolicy, -1, nullString, isSupressingEmptyCells);
     }
 
     /**
      * Creates a new instance without limitation of used fields.
-     * 
+     *
      * @param fieldSeparator
      *        is the character that separates fields
      * @param quoteChar
@@ -72,19 +78,23 @@ public class SplitCsvRows extends RichFlatMapFunction<Tuple2<Integer, String>, T
      *        is a mapping of file IDs to the number of expected fields contained within each row of the respective file
      * @param lenientPolicy
      *        describes the behavior of the parser on illegal number of fields in a row
-     * @param isSupressingEmptyFields
-     *        tells whether empty fields will be forwarded by this operator or supressed
+     * @param isSupressingEmptyCells
+     *        tells whether null fields will be forwarded by this operator or supressed
+     * @param nullString
+     *        the {@link String} representation of null values or {@code null} if none
      * @param maxColumns
      *        is the maximum number of fields to extract from each line (the checkings still apply, though; always the
      *        first fields will be taken)
      */
     public SplitCsvRows(final char fieldSeparator, final char quoteChar, final Int2IntMap numFieldsPerFile,
-                        final int lenientPolicy, final int maxColumns, boolean isSupressingEmptyFields) {
+                        final int lenientPolicy, final int maxColumns, final String nullString,
+                        boolean isSupressingEmptyCells) {
 
-        this.csvParser = new CsvParser(fieldSeparator, quoteChar, -1, lenientPolicy);
+        this.csvParser = new CsvParser(fieldSeparator, quoteChar, nullString, -1, lenientPolicy);
         this.numFieldsPerFile = numFieldsPerFile;
         this.maxFields = maxColumns;
-        this.isSupressingEmptyFields = isSupressingEmptyFields;
+        this.nullString = nullString;
+        this.isSupressingEmptyCells = isSupressingEmptyCells && this.nullString != null;
     }
 
     @Override
@@ -113,11 +123,11 @@ public class SplitCsvRows extends RichFlatMapFunction<Tuple2<Integer, String>, T
         for (Iterator<String> i = fields.iterator(); i.hasNext() && numFieldsToRead > 0; numFieldsToRead--) {
             String field = i.next();
             if (field == null) {
-                if (this.isSupressingEmptyFields) {
+                if (this.isSupressingEmptyCells) {
                     this.outputTuple.f0++;
                     continue;
                 } else {
-                    field = "";
+                    field = "\1";
                 }
             }
             this.outputTuple.f1 = field;
