@@ -13,7 +13,7 @@ import scala.xml.XML
 
 object Chart {
 
-  var renderingConf: RenderingConf = UninitializedRenderingConfig
+  private var renderingConf: RenderingConf = UninitializedRenderingConfig
 
   def initialize(renderConf: RenderingConf): Unit = {
     renderingConf = renderConf

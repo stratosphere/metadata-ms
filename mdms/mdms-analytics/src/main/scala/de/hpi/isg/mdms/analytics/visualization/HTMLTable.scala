@@ -11,7 +11,7 @@ import scala.xml.Elem
 
 object HTMLTable {
 
-  var renderingConf: RenderingConf = UninitializedRenderingConfig
+  private var renderingConf: RenderingConf = UninitializedRenderingConfig
 
   val baseTable = <table style="border: 1px solid black; border-collapse: collapse;"/>
   val emptyTable = createEmptyTable()
