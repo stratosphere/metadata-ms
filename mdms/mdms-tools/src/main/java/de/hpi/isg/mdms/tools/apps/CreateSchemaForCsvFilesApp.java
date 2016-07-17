@@ -32,6 +32,7 @@ import org.apache.flink.core.fs.Path;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -51,6 +52,26 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
      */
     public CreateSchemaForCsvFilesApp(final CreateSchemaForCsvFilesApp.Parameters parameters) {
         super(parameters);
+    }
+
+    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
+                                      String fieldSeparator, String quoteChar, String hasHeader) throws Exception {
+
+        CreateSchemaForCsvFilesApp.Parameters parameters = new CreateSchemaForCsvFilesApp.Parameters();
+
+        List<String> inputFiles = new ArrayList<>();
+        inputFiles.add(fileLocation);
+        parameters.inputFiles = inputFiles;
+
+        parameters.schemaName = schemaName;
+        parameters.hasHeader = hasHeader;
+        parameters.csvParameters.fieldSeparatorName = fieldSeparator;
+        parameters.csvParameters.quoteCharName = quoteChar;
+
+        CreateSchemaForCsvFilesApp app = new CreateSchemaForCsvFilesApp(parameters);
+        app.metadataStore = mds;
+
+        app.run();
     }
 
     @Override

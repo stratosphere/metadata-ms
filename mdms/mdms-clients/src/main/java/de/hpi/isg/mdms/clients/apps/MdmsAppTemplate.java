@@ -72,7 +72,9 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
     protected void prepareAppLogic() throws Exception {
         super.prepareAppLogic();
 
-        this.metadataStore = loadMetadataStore();
+        if (this.metadataStore == null) {
+            this.metadataStore = loadMetadataStore();
+        }
     }
 
     protected MetadataStore loadMetadataStore() {
