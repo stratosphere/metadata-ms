@@ -19,6 +19,9 @@ object Chart {
     renderingConf = renderConf
   }
 
+  val colorGen = new scala.util.Random
+  val colors = Color.values.toArray
+
   def createHistogram(plotData: Map[String, Double]): Plot = {
     val data = new DataSource(plotData)
     val xdr = new FactorRange().factors(data.x)
@@ -26,7 +29,7 @@ object Chart {
     val bar = new Rect().x(data.xPositions).y('yOffset).fill_color(Color.Red).width(1).height('y)
     val renderer = new GlyphRenderer().data_source(data).glyph(bar)
 
-    getPlot(xdr, ydr, renderer)
+    getPlot(xdr, ydr, List(renderer))
   }
 
   def createLineGraph(plotData: Map[String, Double]): Plot = {
@@ -36,7 +39,38 @@ object Chart {
     val line = new Line().x(data.xPositions).y(data.y).line_color(Color.Blue)
     val renderer = new GlyphRenderer().data_source(data).glyph(line)
 
-    getPlot(xdr, ydr, renderer)
+    getPlot(xdr, ydr, List(renderer))
+  }
+
+  def createScatterPlot(plotData: Seq[(Double, Double, Double)]*): Plot = {
+    val groupedData = plotData.flatMap { group =>
+      val color = generateRandomColor()
+      group.map { case (x, y, r) =>
+        ScatterPoint(x, y, r, color)
+      }
+    }
+
+//    val data = new ColumnDataSource()
+//      .addColumn('x, groupedData.map(_.x))
+//      .addColumn('y, groupedData.map(_.y))
+
+    val xdr = new DataRange1d()
+    val ydr = new DataRange1d()
+
+
+//    val plot = new Plot().x_range(xdr).y_range(ydr)
+
+    val glyphRenderers = buildScatterGlyphs(groupedData)
+    getPlot(xdr, ydr, glyphRenderers, classOf[LinearAxis])
+
+//    val xaxis = new LinearAxis().plot(plot).location(Location.Below)
+//    val yaxis = new LinearAxis().plot(plot).location(Location.Left)
+//
+//    plot.below <<= (xaxis :: _)
+//    plot.left <<= (yaxis :: _)
+//
+//    plot.renderers := List(xaxis, yaxis) ++ glyphRenderers
+//    plot
   }
 
   def histogramFromGroupedJoin[A <: Constraint: TypeTag, B <: Constraint: TypeTag, K <: Any](grouped: GroupedConstraintCollection[A, B, K]): Plot = {
@@ -61,25 +95,42 @@ object Chart {
     val document = new Document(plot)
     val writer = new StringWriter()
     XML.write(writer, <div> { fragment.preamble } </div>, "UTF-8", xmlDecl=false, doctype=null)
-    XML.write(writer, document.fragment.html(0), "UTF-8", xmlDecl=false, doctype=null)
+    XML.write(writer, document.fragment.html.head, "UTF-8", xmlDecl=false, doctype=null)
 
     writer.toString
   }
 
 
   private def getPlot(xRange: Range, yRange: Range,
-                      renderer: Renderer, xAxisType: Class[_ <: Axis] = classOf[CategoricalAxis]): Plot = {
+                      renderers: Seq[Renderer], xAxisType: Class[_ <: Axis] = classOf[CategoricalAxis]): Plot = {
 
     val plot = new Plot().x_range(xRange).y_range(yRange)
     val xAxis = xAxisType.newInstance.plot(plot).location(Location.Below)
     val yAxis = new LinearAxis().plot(plot).location(Location.Left)
     plot.below <<= (xAxis :: _)
     plot.left <<= (yAxis :: _)
-    plot.renderers := List(xAxis, yAxis, renderer)
+    plot.renderers := List(xAxis, yAxis) ++ renderers
 
     plot
   }
+
+  private def generateRandomColor(): Color = {
+    val index = colorGen.nextInt(colors.length)
+    colors(index)
+  }
+
+  def buildScatterGlyphs(points: Seq[ScatterPoint]): Seq[GlyphRenderer] = {
+    val source = new ColumnDataSource()
+      .addColumn('x, points.map(_.x))
+      .addColumn('y, points.map(_.y))
+
+    points.map { point =>
+      val circle = new Circle().x(point.x).y(point.y).radius(point.r, SpatialUnits.Data).fill_color(point.color)
+      new GlyphRenderer().data_source(source).glyph(circle)
+    }
+  }
 }
+
 
 private[analytics] class DataSource(plotData: Map[String, Double]) extends ColumnDataSource {
   val dataList = plotData.toList
@@ -90,3 +141,5 @@ private[analytics] class DataSource(plotData: Map[String, Double]) extends Colum
   val xPositions = column(1.0 to dataList.length by 1.0)
   val yOffset = column(values.map(value => floor(value / 2)))
 }
+
+private case class ScatterPoint(x: Double, y: Double, r: Double, color: Color)

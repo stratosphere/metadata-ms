@@ -57,7 +57,15 @@ object ConstraintImplicits {
       if (!nameMapping.contains(name)) {
         throw new NoSuchElementException(s"No ConstraintCollection with that identifier! Choose from ${nameMapping.keys}")
       }
-      collections.asScala.find(_.getDescription.contains(nameMapping(name)))
+      val fullName = nameMapping(name)
+      collections.asScala.find { coll =>
+        val description = coll.getDescription
+        if (description != null) {
+          description.contains(fullName)
+        } else {
+          false
+        }
+      }
     }
 
     // TODO: Handle empty collections
