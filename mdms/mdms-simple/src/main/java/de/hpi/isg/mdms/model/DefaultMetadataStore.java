@@ -268,6 +268,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         ConstraintCollection constraintCollection = new DefaultConstraintCollection(this,
                 getUnusedConstraintCollectonId(),
                 new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)));
+        constraintCollection.setDescription(description);
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
     }
