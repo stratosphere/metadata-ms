@@ -1,8 +1,7 @@
 package de.hpi.isg.mdms.model.targets;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Validate;
 
@@ -88,22 +87,37 @@ public class DefaultTable extends AbstractTarget implements Table {
 
     @Override
     public Column getColumnByName(String name) throws NameAmbigousException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+        List<Column> columns = this.columns
+                .stream()
+                .filter(column -> column.getName().equals(name))
+                .collect(Collectors.toList());
+
+        if (columns.isEmpty()) {
+            throw new NoSuchElementException("No Column found with the name " + name);
+        } else if (columns.size() == 1) {
+            return columns.get(0);
+        } else {
+            throw new NameAmbigousException(columns.size() + " Columns found with the name " + name);
+        }
     }
 
     @Override
     public Collection<Column> getColumnsByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+        return this.columns
+                .stream()
+                .filter(column -> column.getName().equals(name))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Column getColumnById(int id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+        for (Column column : this.columns) {
+            if (column.getId() == id) {
+                return column;
+            }
+        }
+
+        throw new NoSuchElementException("No Column found with the id " + id);
     }
+
 }

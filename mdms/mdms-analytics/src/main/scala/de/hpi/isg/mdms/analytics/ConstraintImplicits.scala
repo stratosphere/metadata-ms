@@ -53,12 +53,12 @@ object ConstraintImplicits {
     // TODO: Add all constraints with correct description tag
     private val nameMapping = Map("FD" -> "FD", "IND" -> "IND", "UCC" -> "UCC", "CS" -> "column statistics")
 
-    def getCollectionByName(name: String): Option[ConstraintCollection] = {
+    def getCollectionByName(name: String): ConstraintCollection = {
       if (!nameMapping.contains(name)) {
         throw new NoSuchElementException(s"No ConstraintCollection with that identifier! Choose from ${nameMapping.keys}")
       }
       val fullName = nameMapping(name)
-      collections.asScala.find { coll =>
+      val collectionOpt = collections.asScala.find { coll =>
         val description = coll.getDescription
         if (description != null) {
           description.contains(fullName)
@@ -66,6 +66,8 @@ object ConstraintImplicits {
           false
         }
       }
+
+      collectionOpt.getOrElse(throw new NoSuchElementException(s"No ConstraintCollection found with the id $name"))
     }
 
     // TODO: Handle empty collections

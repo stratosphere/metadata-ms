@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The default in-memory implementation of the {@link de.hpi.isg.mdms.model.MetadataStore}.
@@ -321,14 +322,21 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<Schema> getSchemasByName(String schemaName) {
-        // TODO Implement method.
-        throw new UnsupportedOperationException("Not supported yet.");
+        return this.schemas
+                .stream()
+                .filter(schema -> schema.getName().equals(schemaName))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Schema getSchemaById(int schemaId) {
-        // TODO Implement method.
-        throw new UnsupportedOperationException("Not supported yet.");
+        for (Schema schema : this.schemas) {
+            if (schema.getId() == schemaId) {
+                return schema;
+            }
+        }
+
+        throw new NoSuchElementException("No Schema found with the id " + schemaId);
     }
 
     @Override
