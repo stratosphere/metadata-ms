@@ -10,18 +10,31 @@ import scala.math.floor
 import scala.reflect.runtime.universe.TypeTag
 import scala.xml.XML
 
-
+/**
+  * Handles all chart related functionality. Needs to be initialized with a RenderingConfig before usage.
+  * Currently, bokeh-scala is used. It seems overly complicated for this simple use case, however,
+  * there are not many suitable alternatives.
+  */
 object Chart {
 
   private var renderingConf: RenderingConf = UninitializedRenderingConfig
+  val colorGen = new scala.util.Random
+  val colors = Color.values.toArray
 
+  /**
+    * Initializes the Chart object.
+    * @param renderConf RenderingConfig object to initialize with
+    */
   def initialize(renderConf: RenderingConf): Unit = {
     renderingConf = renderConf
   }
 
-  val colorGen = new scala.util.Random
-  val colors = Color.values.toArray
 
+  /**
+    * Creates a histogram with String Keys and Double values.
+    * @param plotData Map of string keys and double values
+    * @return Plot object to be rendered
+    */
   def createHistogram(plotData: Map[String, Double]): Plot = {
     val data = new DataSource(plotData)
     val xdr = new FactorRange().factors(data.x)
@@ -32,6 +45,11 @@ object Chart {
     getPlot(xdr, ydr, List(renderer))
   }
 
+  /**
+    * Creates a line graph with String Keys and Double values.
+    * @param plotData Map of string keys and double values
+    * @return Plot object to be rendered
+    */
   def createLineGraph(plotData: Map[String, Double]): Plot = {
     val data = new DataSource(plotData)
     val xdr = new FactorRange().factors(data.x)
@@ -42,6 +60,11 @@ object Chart {
     getPlot(xdr, ydr, List(renderer))
   }
 
+  /**
+    * Creates a line graph with String Keys and Double values.
+    * @param plotData Arbitrary sequences of (x, y, radius) tuples. Each sequence represents a unique color group
+    * @return Plot object to be rendered
+    */
   def createScatterPlot(plotData: Seq[(Double, Double, Double)]*): Plot = {
     val groupedData = plotData.flatMap { group =>
       val color = generateRandomColor()
@@ -50,46 +73,44 @@ object Chart {
       }
     }
 
-//    val data = new ColumnDataSource()
-//      .addColumn('x, groupedData.map(_.x))
-//      .addColumn('y, groupedData.map(_.y))
-
     val xdr = new DataRange1d()
     val ydr = new DataRange1d()
 
-
-//    val plot = new Plot().x_range(xdr).y_range(ydr)
-
     val glyphRenderers = buildScatterGlyphs(groupedData)
     getPlot(xdr, ydr, glyphRenderers, classOf[LinearAxis])
-
-//    val xaxis = new LinearAxis().plot(plot).location(Location.Below)
-//    val yaxis = new LinearAxis().plot(plot).location(Location.Left)
-//
-//    plot.below <<= (xaxis :: _)
-//    plot.left <<= (yaxis :: _)
-//
-//    plot.renderers := List(xaxis, yaxis) ++ glyphRenderers
-//    plot
   }
 
+
+  /**
+    * Helper function to create a histogram from a GroupedJoin object.
+    * @param grouped The GroupedJoin object to render
+    * @return Plot object to render
+    */
   def histogramFromGroupedJoin[A <: Constraint: TypeTag, B <: Constraint: TypeTag, K <: Any](grouped: GroupedConstraintCollection[A, B, K]): Plot = {
-    val data = grouped.sizePerKey.map { case (key, size) => (key, size.toDouble)}
+    val data = grouped.sizePerKey().map { case (key, size) => (key, size.toDouble)}
     histogramFromTuples(data)
   }
 
+  /**
+    * Helper function to create a histogram from a tuples.
+    * @param tuples The key-value tuples to render
+    * @return Plot object to render
+    */
   def histogramFromTuples(tuples: Iterable[(Any, Double)]): Plot = {
     val data = tuples.map { case (a, b) => (a.toString, b) }.toMap
     createHistogram(data)
   }
 
-  /*
+  /**
    * https://github.com/bokeh/bokeh-scala/issues/24
    * Workaround until version 0.8
    * Call from jupyter with display.html(getBokehPlot(plot))
+    *
+    * Creates the renderable Javascript object to display in HTML.
+    * @return Displayable plot object
   */
   def getBokehPlot(plot: Plot): String = {
-    //    renderingConf.checkInitialization
+    renderingConf.checkInitialization()
     val resources = Resources.default
     val fragment = new HTMLFragment(scala.xml.NodeSeq.Empty, resources.styles, resources.scripts)
     val document = new Document(plot)
@@ -99,7 +120,6 @@ object Chart {
 
     writer.toString
   }
-
 
   private def getPlot(xRange: Range, yRange: Range,
                       renderers: Seq[Renderer], xAxisType: Class[_ <: Axis] = classOf[CategoricalAxis]): Plot = {
