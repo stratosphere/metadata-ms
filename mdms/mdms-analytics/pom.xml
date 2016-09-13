@@ -63,6 +63,11 @@
             <version>${mdms-version}</version>
         </dependency>
         <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-tools</artifactId>
+            <version>${mdms-version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.continuum.bokeh</groupId>
             <artifactId>bokeh_2.11</artifactId>
             <version>0.7</version>

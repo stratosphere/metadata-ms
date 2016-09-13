@@ -6,6 +6,7 @@ import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +45,8 @@ public abstract class AbstractResultReader<T> implements ResultReader {
             } catch (Exception e) {
                 throw new RuntimeException("Could not parse " + resultFile, e);
             }
+        } else {
+            throw new RuntimeException("Could not find file at " + resultFile.getAbsolutePath());
         }
     }
 

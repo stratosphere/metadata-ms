@@ -194,11 +194,13 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
                 <version>1.7.7</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>1.7.13</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -211,7 +213,7 @@
                 <version>1.48</version>
             </dependency>
 
-            <!-- Required for scala modules, does't build otherwise -->
+            <!-- Required for scala modules, doesn't build otherwise -->
             <dependency>
                 <groupId>org.scala-lang.modules</groupId>
                 <artifactId>scala-parser-combinators_2.11</artifactId>

@@ -1,10 +1,7 @@
 package de.hpi.isg.mdms.model.targets;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Validate;
 
@@ -96,15 +93,20 @@ public class DefaultSchema extends AbstractTarget implements Schema {
 
     @Override
     public Collection<Table> getTablesByName(String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+        return this.tables
+                .stream()
+                .filter(table -> table.getName().equals(name))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Table getTableById(int id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Not supported yet.");
-        // return null;
+        for (Table table : this.tables) {
+            if (table.getId() == id) {
+                return table;
+            }
+        }
+
+        throw new NoSuchElementException("No Table found with the id " + id);
     }
 }

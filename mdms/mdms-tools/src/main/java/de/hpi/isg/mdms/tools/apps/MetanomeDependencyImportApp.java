@@ -5,11 +5,13 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
+import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
 import de.hpi.isg.mdms.tools.metanome.reader.*;
 import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,6 +23,21 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
     public MetanomeDependencyImportApp(MetanomeDependencyImportApp.Parameters parameters) {
         super(parameters);
+    }
+
+    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
+                                      String type) throws Exception {
+
+        MetanomeDependencyImportApp.Parameters parameters = new MetanomeDependencyImportApp.Parameters();
+
+        parameters.resultFiles.add(fileLocation);
+        parameters.dependencyType = type;
+        parameters.schemaName = schemaName;
+
+        MetanomeDependencyImportApp app = new MetanomeDependencyImportApp(parameters);
+        app.metadataStore = mds;
+
+        app.run();
     }
 
     public static void main(String[] args) throws Exception {

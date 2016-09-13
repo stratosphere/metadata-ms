@@ -6,6 +6,7 @@ import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -51,6 +52,21 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
 
     public MetanomeStatisticsImportApp(MetanomeStatisticsImportApp.Parameters parameters) {
         super(parameters);
+    }
+
+    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName) throws Exception {
+
+        MetanomeStatisticsImportApp.Parameters parameters = new MetanomeStatisticsImportApp.Parameters();
+
+        List<String> inputFiles = new ArrayList<>();
+        inputFiles.add(fileLocation);
+        parameters.inputDirectories = inputFiles;
+        parameters.schemaName = schemaName;
+
+        MetanomeStatisticsImportApp app = new MetanomeStatisticsImportApp(parameters);
+        app.metadataStore = mds;
+
+        app.run();
     }
 
     @Override
