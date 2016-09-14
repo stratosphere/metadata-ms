@@ -6,10 +6,58 @@
     <version>0.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>Metadata Management System</name>
+    <description>The Metadata Management System (MDMS for short) is a utility to collect, analyze, and visualize metadata of relational databases.</description>
+    <url>https://www.github.com/stratosphere/metadata-ms</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Sebastian Kruse</name>
+            <email>sebastian.kruse@hpi.de</email>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
+        <developer>
+            <name>Fabian Tschirschnitz</name>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
+        <developer>
+            <name>Susanne Bühlow</name>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
+        <developer>
+            <name>Lawrence Benson</name>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
+    </developers>
+
     <scm>
-        <developerConnection>scm:git:https://hpi.de/naumann/git/kruse</developerConnection>
-        <tag>HEAD</tag>
+        <connection>scm:git:git://github.com/stratosphere/metadata-ms.git</connection>
+        <developerConnection>scm:git:https://github.com/stratosphere/metadata-ms.git</developerConnection>
+        <url>https://www.github.com/stratosphere/metadata-ms</url>
     </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <repositories>
         <repository>
