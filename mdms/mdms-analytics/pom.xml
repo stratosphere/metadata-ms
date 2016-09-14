@@ -11,11 +11,6 @@
 
     <artifactId>mdms-analytics</artifactId>
 
-    <properties>
-        <scala.version>2.11.7</scala.version>
-        <mdms-version>0.0.3-SNAPSHOT</mdms-version>
-    </properties>
-
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
@@ -40,46 +35,36 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.7</version>
+            <version>${scala.version}</version>
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-model</artifactId>
-            <version>${mdms-version}</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-dependencies</artifactId>
-            <version>${mdms-version}</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-clients</artifactId>
-            <version>${mdms-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-flink</artifactId>
-            <version>${mdms-version}</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-tools</artifactId>
-            <version>${mdms-version}</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.continuum.bokeh</groupId>
-            <artifactId>bokeh_2.11</artifactId>
+            <artifactId>bokeh_${scala.major.version}</artifactId>
             <version>0.7</version>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play_2.11</artifactId>
-            <version>2.5.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
+            <artifactId>scalatest_${scala.major.version}</artifactId>
             <version>2.2.6</version>
         </dependency>
     </dependencies>
