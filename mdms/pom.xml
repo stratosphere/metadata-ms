@@ -75,6 +75,7 @@
         <metanome.version>0.0.2-SNAPSHOT</metanome.version>
         <scala.version>2.11.8</scala.version>
         <scala.major.version>2.11</scala.major.version>
+        <rheem.version>0.2.0</rheem.version>
     </properties>
 
     <modules>
@@ -90,7 +91,7 @@
         <module>mdms-clients</module>
         <module>mdms-java</module>
         <module>mdms-cli</module>
-        <module>mdms-distro</module>
+        <!--<module>mdms-distro</module>-->
         <module>mdms-analytics</module>
     </modules>
 
@@ -214,6 +215,27 @@
                 <version>${flink.version}</version>
             </dependency>
 
+            <!-- Rheem -->
+            <dependency>
+                <groupId>org.qcri.rheem</groupId>
+                <artifactId>rheem-core</artifactId>
+                <version>${rheem.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.qcri.rheem</groupId>
+                <artifactId>rheem-api</artifactId>
+                <version>${rheem.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.qcri.rheem</groupId>
+                <artifactId>rheem-basic</artifactId>
+                <version>${rheem.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.qcri.rheem</groupId>
+                <artifactId>rheem-java</artifactId>
+                <version>${rheem.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
