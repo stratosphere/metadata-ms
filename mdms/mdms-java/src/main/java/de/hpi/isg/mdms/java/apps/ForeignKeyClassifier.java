@@ -131,7 +131,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 ));
         // Set up the classifiers.
 //        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
-        this.partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, dvcCollection));
+        this.partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, statsCollection));
 //        this.partialClassifiers.add(new CoverageClassifier(1d, 0.75d, 0.4d, dvcCollection));
 //        this.partialClassifiers.add(new DependentAndReferencedClassifier(1d, 2));
 //        this.partialClassifiers.add(new MultiDependentClassifier(1d, 2));
