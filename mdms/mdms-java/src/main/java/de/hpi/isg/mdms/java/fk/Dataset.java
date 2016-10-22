@@ -42,6 +42,18 @@ public class Dataset {
         return featureValueDistribution;
     }
 
+    public long getNumOfClasses() {
+        return numOfClasses;
+    }
+
+    public long getNumOfInstance() {
+        return numOfInstance;
+    }
+
+    public List<Feature> getFeatures() {
+        return features;
+    }
+
     /**
      * Calculate the statistics information of this dataset, i.e., number of classes and instances in this dataset.
      */
