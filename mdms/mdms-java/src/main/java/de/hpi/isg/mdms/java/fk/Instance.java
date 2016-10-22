@@ -39,6 +39,10 @@ public class Instance {
         return fkCandidate;
     }
 
+    public Result getIsForeignKey() {
+        return isForeignKey;
+    }
+
     /**
      * Possible results of a partial foreign key classifier.
      */
