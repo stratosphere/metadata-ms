@@ -1,6 +1,10 @@
 package de.hpi.isg.mdms.java.fk.ml.classifier;
 
 import de.hpi.isg.mdms.java.fk.Dataset;
+import de.hpi.isg.mdms.java.fk.Instance;
+import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+
+import java.util.Map;
 
 abstract public class AbstractClassifier {
 
@@ -10,5 +14,5 @@ abstract public class AbstractClassifier {
 
     abstract public void train();
 
-    abstract public void predict();
+    abstract public Map<UnaryForeignKeyCandidate, Instance.Result> predict();
 }
