@@ -135,33 +135,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         ClassificationSet::getForeignKeyCandidate,
                         Function.identity()
                 ));
-        // Set up the classifiers.
-////        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
-//        this.partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, dvcCollection));
-////        this.partialClassifiers.add(new CoverageClassifier(1d, 0.75d, 0.4d, dvcCollection));
-////        this.partialClassifiers.add(new DependentAndReferencedClassifier(1d, 2));
-////        this.partialClassifiers.add(new MultiDependentClassifier(1d, 2));
-////        this.partialClassifiers.add(new MultiReferencedClassifier(1d, 2));
-////        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.95, 0.5));
-//        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.9, 0.5));
-//        this.partialClassifiers.add(new ValueDiffClassifier(Double.NaN, statsCollection, 0.01, 0.3));
-////        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.75, 0.5));
-//        double tndWeight = 1.5d / 3;
-//        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 3, this.metadataStore));
-//        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 5, this.metadataStore));
-//        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 7, this.metadataStore));
-//        double srtnWeight = 1.5d / 6;
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 5, this.metadataStore));
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 7, this.metadataStore));
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 9, this.metadataStore));
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 11, this.metadataStore));
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 13, this.metadataStore));
-//        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 15, this.metadataStore));
-////        this.partialClassifiers.add(new NoReferencingPKClassifier(10d, uccCollection));
-//        // ...
-//
-//        // Run classifiers.
-//        this.partialClassifiers.forEach(classifier -> classifier.classify(fkCandidateClassificationSet.values()));
 
         List<Instance> dataset = relevantInds.stream()
                 .flatMap(this::splitIntoUnaryForeignKeyCandidates)
@@ -170,7 +143,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .collect(Collectors.toList());
 
         this.features.add(new CoverageFeature(statsCollection));
-        this.features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
+//        this.features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
 
         Dataset ds = new Dataset(dataset, features);
         ds.buildDatasetStatistics();

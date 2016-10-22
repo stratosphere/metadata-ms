@@ -53,6 +53,7 @@ public class Dataset {
     }
 
     public void buildFeatureValueDistribution() {
+        features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
         features.forEach(feature -> feature.calculateFeatureValueDistribution(this));
     }
 }
