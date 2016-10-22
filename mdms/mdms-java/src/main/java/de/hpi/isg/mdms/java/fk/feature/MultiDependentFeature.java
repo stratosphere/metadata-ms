@@ -19,6 +19,8 @@ public class MultiDependentFeature extends Feature{
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
+        featureName = MULTI_DEPENDENT_FEATURE_NAME;
+
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumDependentOccurrences = new Int2IntOpenHashMap();
         columnNumDependentOccurrences.defaultReturnValue(0);

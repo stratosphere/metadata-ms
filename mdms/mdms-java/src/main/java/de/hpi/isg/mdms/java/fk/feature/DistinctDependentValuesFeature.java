@@ -22,6 +22,8 @@ public class DistinctDependentValuesFeature extends Feature {
     private final Int2LongMap distinctValues;
 
     public DistinctDependentValuesFeature(ConstraintCollection columnStatsConstraintCollection) {
+        featureName = DISTINCT_DEPENDENT_VALUES_FEATURE_NAME;
+
         // Initialize the distinct value counts.
         this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()
                 .filter(constraint -> constraint instanceof ColumnStatistics).count());

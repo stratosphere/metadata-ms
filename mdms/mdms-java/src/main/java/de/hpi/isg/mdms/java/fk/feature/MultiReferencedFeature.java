@@ -15,6 +15,8 @@ public class MultiReferencedFeature extends Feature {
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
+        featureName = MULTI_REFERENCED_FEATURE_NAME;
+
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
         columnNumReferences.defaultReturnValue(0);

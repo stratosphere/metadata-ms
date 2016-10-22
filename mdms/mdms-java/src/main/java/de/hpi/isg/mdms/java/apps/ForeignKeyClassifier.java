@@ -17,8 +17,7 @@ import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.fk.classifiers.*;
-import de.hpi.isg.mdms.java.fk.feature.CoverageFeature;
-import de.hpi.isg.mdms.java.fk.feature.Feature;
+import de.hpi.isg.mdms.java.fk.feature.*;
 import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -145,6 +144,10 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .collect(Collectors.toList());
 
         this.features.add(new CoverageFeature(statsCollection));
+        this.features.add(new DependentAndReferencedFeature());
+        this.features.add(new DistinctDependentValuesFeature(statsCollection));
+        this.features.add(new MultiDependentFeature());
+        this.features.add(new MultiReferencedFeature());
 //        this.features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
 
         Dataset ds = new Dataset(dataset, features);

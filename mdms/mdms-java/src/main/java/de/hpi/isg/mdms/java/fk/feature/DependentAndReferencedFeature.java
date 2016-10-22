@@ -12,12 +12,13 @@ import java.util.Collection;
  * Created by jianghm on 2016/10/18.
  */
 public class DependentAndReferencedFeature extends Feature {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "DependentAndReferenced";
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
+        featureName = DEPENDENT_AND_REFERENCED_FEATURE_NAME;
+
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
         columnNumReferences.defaultReturnValue(0);
