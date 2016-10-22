@@ -6,8 +6,6 @@ import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
-import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +40,6 @@ public class CoverageFeature extends Feature {
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
-
         for (Instance instance : instanceCollection) {
             int depColumnId = instance.getForeignKeyCandidate().getDependentColumnId();
             int refColumnId = instance.getForeignKeyCandidate().getReferencedColumnId();
