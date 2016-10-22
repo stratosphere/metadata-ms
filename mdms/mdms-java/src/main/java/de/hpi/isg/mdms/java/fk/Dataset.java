@@ -26,21 +26,24 @@ public class Dataset {
      */
     List<Feature> features;
 
-    private Map<String, Map<Object, Double>> featureValueDistribution;
+//    /**
+//     * Store the value distribution in each feature, in the form of <FeatureName, <Value, Count>>
+//     */
+//    private Map<String, Map<Object, Double>> featureValueDistribution;
 
     public Dataset(List<Instance> dataset, List<Feature> features) {
         this.dataset = dataset;
         this.features = features;
-        featureValueDistribution = new HashMap<>();
+//        featureValueDistribution = new HashMap<>();
     }
 
     public List<Instance> getDataset() {
         return dataset;
     }
 
-    public Map<String, Map<Object, Double>> getFeatureValueDistribution() {
-        return featureValueDistribution;
-    }
+//    public Map<String, Map<Object, Double>> getFeatureValueDistribution() {
+//        return featureValueDistribution;
+//    }
 
     public long getNumOfClasses() {
         return numOfClasses;
@@ -66,6 +69,6 @@ public class Dataset {
 
     public void buildFeatureValueDistribution() {
         features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
-        features.forEach(feature -> feature.calculateFeatureValueDistribution(this));
+//        features.forEach(feature -> feature.calculateFeatureValueDistribution(this));
     }
 }

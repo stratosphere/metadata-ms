@@ -19,6 +19,8 @@ import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.fk.classifiers.*;
 import de.hpi.isg.mdms.java.fk.feature.CoverageFeature;
 import de.hpi.isg.mdms.java.fk.feature.Feature;
+import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
+import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -148,6 +150,9 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         Dataset ds = new Dataset(dataset, features);
         ds.buildDatasetStatistics();
         ds.buildFeatureValueDistribution();
+
+        AbstractClassifier classifier = new NaiveBayes(ds);
+        classifier.train();
 
 
         // Calculate the score for all the inclusion dependencies.

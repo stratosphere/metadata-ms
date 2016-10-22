@@ -33,7 +33,10 @@ abstract public class Feature {
      */
     protected long missingCount;
 
+    public String getFeatureName() {
+        return featureName;
+    }
+
     abstract public void calcualteFeatureValue(Collection<Instance> instanceCollection);
 
-    abstract public void calculateFeatureValueDistribution(Dataset dataset);
 }
