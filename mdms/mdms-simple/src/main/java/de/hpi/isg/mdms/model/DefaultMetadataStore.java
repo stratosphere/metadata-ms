@@ -257,7 +257,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public ConstraintCollection getConstraintCollection(int id) {
-        throw new UnsupportedOperationException("Implement me!");
+        for (ConstraintCollection constraintCollection : this.constraintCollections) {
+            if (constraintCollection.getId() == id) return constraintCollection;
+        }
+        return null;
     }
 
     @Override
