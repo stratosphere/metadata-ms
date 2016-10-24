@@ -12,6 +12,14 @@ abstract public class AbstractClassifier {
 
     protected Dataset testset;
 
+    public void setTrainingset(Dataset trainingset) {
+        this.trainingset = trainingset;
+    }
+
+    public void setTestset(Dataset testset) {
+        this.testset = testset;
+    }
+
     abstract public void train();
 
     abstract public Map<UnaryForeignKeyCandidate, Instance.Result> predict();

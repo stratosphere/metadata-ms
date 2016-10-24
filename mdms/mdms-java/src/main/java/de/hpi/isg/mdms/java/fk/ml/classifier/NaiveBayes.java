@@ -27,8 +27,8 @@ public class NaiveBayes extends AbstractClassifier {
 
     private Map<Instance.Result, List<Instance>> instancesByClasses;
 
-    public NaiveBayes(Dataset dataset) {
-        this.trainingset = dataset;
+    public NaiveBayes() {
+//        this.trainingset = dataset;
         priorProbability = new HashMap<>();
 //        likelyhoods = new ArrayList<>();
         likelyhoods = new HashMap<>();

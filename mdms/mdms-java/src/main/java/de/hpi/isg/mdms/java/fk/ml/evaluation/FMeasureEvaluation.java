@@ -7,36 +7,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class FMeasureEvaluation {
+public class FMeasureEvaluation extends ClassifierEvaluation{
 
-    protected Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth;
-
-    protected Map<UnaryForeignKeyCandidate, Instance.Result> predicted;
 
     private Instance.Result evaluatedLabel;
 
     private double beta;
+
+    private double fscore;
 
     public FMeasureEvaluation(Instance.Result evaluatedLabel, double beta) {
         this.evaluatedLabel = evaluatedLabel;
         this.beta = beta;
     }
 
-    public void setGroundTruth(Map<UnaryForeignKeyCandidate, Instance.Result> groundTruth) {
-        this.groundTruth = groundTruth;
+    @Override
+    public void evaluate() {
+        if (!checkIndentity()) return;
+
+        fscore(beta);
     }
 
-    public void setPredicted(Map<UnaryForeignKeyCandidate, Instance.Result> predicted) {
-        this.predicted = predicted;
+    @Override
+    public Object getEvaluation() {
+        return this.fscore;
     }
 
-    public double evaluate() {
-        if (!checkIndentity()) return 0.0;
-
-        return fscore(beta);
-    }
-
-    public double precision() {
+    private double precision() {
         List<UnaryForeignKeyCandidate> predictedPositive = predicted.entrySet().stream()
                 .filter(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getValue()==evaluatedLabel)
                 .map(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getKey())
@@ -48,7 +45,7 @@ public class FMeasureEvaluation {
         return (double)truePositive / (double)predictedPositive.size();
     }
 
-    public double recall() {
+    private double recall() {
         List<UnaryForeignKeyCandidate> actualPositive = groundTruth.entrySet().stream()
                 .filter(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getValue()==evaluatedLabel)
                 .map(unaryForeignKeyCandidateResultEntry -> unaryForeignKeyCandidateResultEntry.getKey())
@@ -60,12 +57,11 @@ public class FMeasureEvaluation {
         return (double)truePositive / (double)actualPositive.size();
     }
 
-    public double fscore(double beta) {
+    private void fscore(double beta) {
         double precision = precision();
         double recall = recall();
-        return (1+Math.pow(beta, 2.0))*precision*recall/(Math.pow(beta, 2.0)*precision+recall);
+        fscore = (1+Math.pow(beta, 2.0))*precision*recall/(Math.pow(beta, 2.0)*precision+recall);
     }
-
 
     private boolean checkIndentity() {
         if (groundTruth.size()!=predicted.size()) return false;

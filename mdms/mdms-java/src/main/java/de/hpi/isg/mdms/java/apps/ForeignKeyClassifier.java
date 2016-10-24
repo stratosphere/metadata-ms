@@ -20,6 +20,8 @@ import de.hpi.isg.mdms.java.fk.classifiers.*;
 import de.hpi.isg.mdms.java.fk.feature.*;
 import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -154,8 +156,17 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         ds.buildDatasetStatistics();
         ds.buildFeatureValueDistribution();
 
-        AbstractClassifier classifier = new NaiveBayes(ds);
+        AbstractClassifier classifier = new NaiveBayes();
+        classifier.setTrainingset(ds);
+        classifier.setTestset(ds);
         classifier.train();
+        Map<UnaryForeignKeyCandidate, Instance.Result> predicted = classifier.predict();
+
+        ClassifierEvaluation evaluation = new FMeasureEvaluation(Instance.Result.FOREIGN_KEY, 1.0);
+        evaluation.setGroundTruth(predicted);
+        evaluation.setPredicted(predicted);
+        evaluation.evaluate();
+        double fscore = (double) evaluation.getEvaluation();
 
 //        // Set up the classifiers.
 ////        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
