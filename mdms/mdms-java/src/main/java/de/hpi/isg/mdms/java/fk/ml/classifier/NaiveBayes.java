@@ -22,15 +22,12 @@ public class NaiveBayes extends AbstractClassifier {
     /**
      * Indicate the likelyhoods, i.e. p(x|c)
      */
-//    private List<FeatureValue> likelyhoods;
     private Map<String, Map<Instance.Result, Map<Object, Double>>> likelyhoods;
 
     private Map<Instance.Result, List<Instance>> instancesByClasses;
 
     public NaiveBayes() {
-//        this.trainingset = dataset;
         priorProbability = new HashMap<>();
-//        likelyhoods = new ArrayList<>();
         likelyhoods = new HashMap<>();
     }
 
@@ -67,7 +64,6 @@ public class NaiveBayes extends AbstractClassifier {
                     featureValueByClass.put(entry.getKey(), partialfeatureValue);
                     likelyhoods.put(featureName, featureValueByClass);
                 }
-//                likelyhoods.add(new FeatureValue(featureName, entry.getKey(), partialfeatureValue));
             });
         });
     }
@@ -81,55 +77,38 @@ public class NaiveBayes extends AbstractClassifier {
     }
 
     @Override
-    public Map<UnaryForeignKeyCandidate, Instance.Result> predict() {
+    public void predict() {
         Map<UnaryForeignKeyCandidate, Instance.Result> predicted = new HashMap<>();
-        testset.getDataset().stream().forEach(instance -> {
-            double max = 0.0;
+        testset.getDataset().forEach(instance -> {
+            double max = Double.NEGATIVE_INFINITY;
             Instance.Result maxResult = Instance.Result.UNKNOWN;
             for (Instance.Result label : Instance.Result.values()) {
-                double result = 1.0;
+                if (label.equals(Instance.Result.UNKNOWN)) continue;
+                double result = 0.0;
                 for (String feature : instance.getFeatureVector().keySet()) {
                     if (likelyhoods.get(feature).get(label)
                             .containsKey(instance.getFeatureVector().get(feature))) {
-                        result *= likelyhoods.get(feature).get(label)
-                                .get(instance.getFeatureVector().get(feature));
+                        result += Math.log(likelyhoods.get(feature).get(label).get(instance.getFeatureVector().get(feature)));
                     } else {
-                        result *= (1.0 / instancesByClasses.get(label).size() + likelyhoods.get(feature).get(label).size());
+                        result += Math.log(1.0 / (instancesByClasses.get(label).size() + likelyhoods.get(feature).get(label).size()));
                     }
                 }
+                result += Math.log(priorProbability.get(label));
                 if (result > max) {
                     max = result;
                     maxResult = label;
                 }
             }
-            predicted.putIfAbsent(instance.getForeignKeyCandidate(), maxResult);
+            instance.setIsForeignKey(maxResult);
+//            predicted.putIfAbsent(instance.getForeignKeyCandidate(), maxResult);
         });
-        return predicted;
     }
 
-//    public class FeatureValue {
-//        private String featureName;
-//
-//        private Instance.Result label;
-//
-//        private Map<Object, Double> valueCount;
-//
-//        public FeatureValue(String featureName, Instance.Result label, Map<Object, Double> valueCount) {
-//            this.featureName = featureName;
-//            this.label = label;
-//            this.valueCount = valueCount;
-//        }
-//
-//        public String getFeatureName() {
-//            return featureName;
-//        }
-//
-//        public Instance.Result getLabel() {
-//            return label;
-//        }
-//
-//        public Map<Object, Double> getValueCount() {
-//            return valueCount;
-//        }
-//    }
+    public Map<Instance.Result, Double> getPriorProbability() {
+        return priorProbability;
+    }
+
+    public Map<String, Map<Instance.Result, Map<Object, Double>>> getLikelyhoods() {
+        return likelyhoods;
+    }
 }

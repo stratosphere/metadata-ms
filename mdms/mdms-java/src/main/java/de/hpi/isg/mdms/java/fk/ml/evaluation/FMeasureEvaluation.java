@@ -4,7 +4,6 @@ import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FMeasureEvaluation extends ClassifierEvaluation{

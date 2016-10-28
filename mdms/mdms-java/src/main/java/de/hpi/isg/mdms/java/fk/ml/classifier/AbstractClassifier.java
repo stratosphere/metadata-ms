@@ -4,6 +4,7 @@ import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 
+import java.util.List;
 import java.util.Map;
 
 abstract public class AbstractClassifier {
@@ -20,7 +21,15 @@ abstract public class AbstractClassifier {
         this.testset = testset;
     }
 
+    public Dataset getTrainingset() {
+        return trainingset;
+    }
+
+    public Dataset getTestset() {
+        return testset;
+    }
+
     abstract public void train();
 
-    abstract public Map<UnaryForeignKeyCandidate, Instance.Result> predict();
+    abstract public void predict();
 }

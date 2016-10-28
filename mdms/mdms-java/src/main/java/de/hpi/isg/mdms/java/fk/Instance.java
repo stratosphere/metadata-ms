@@ -43,6 +43,10 @@ public class Instance {
         return isForeignKey;
     }
 
+    public void setIsForeignKey(Result isForeignKey) {
+        this.isForeignKey = isForeignKey;
+    }
+
     /**
      * Possible results of a partial foreign key classifier.
      */

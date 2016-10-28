@@ -139,7 +139,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         Function.identity()
                 ));
 
-        List<Instance> dataset = relevantInds.stream()
+        List<Instance> instances = relevantInds.stream()
                 .flatMap(this::splitIntoUnaryForeignKeyCandidates)
                 .distinct()
                 .map(Instance::new)
@@ -150,23 +150,23 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         this.features.add(new DistinctDependentValuesFeature(statsCollection));
         this.features.add(new MultiDependentFeature());
         this.features.add(new MultiReferencedFeature());
-//        this.features.stream().forEach(feature -> feature.calcualteFeatureValue(dataset));
+//        this.features.stream().forEach(feature -> feature.calcualteFeatureValue(instances));
 
-        Dataset ds = new Dataset(dataset, features);
-        ds.buildDatasetStatistics();
-        ds.buildFeatureValueDistribution();
+        Dataset dataset = new Dataset(instances, features);
+        dataset.buildDatasetStatistics();
+        dataset.buildFeatureValueDistribution();
 
         AbstractClassifier classifier = new NaiveBayes();
-        classifier.setTrainingset(ds);
-        classifier.setTestset(ds);
+        classifier.setTrainingset(dataset);
+        classifier.setTestset(dataset);
         classifier.train();
-        Map<UnaryForeignKeyCandidate, Instance.Result> predicted = classifier.predict();
+        classifier.predict();
 
-        ClassifierEvaluation evaluation = new FMeasureEvaluation(Instance.Result.FOREIGN_KEY, 1.0);
-        evaluation.setGroundTruth(predicted);
-        evaluation.setPredicted(predicted);
-        evaluation.evaluate();
-        double fscore = (double) evaluation.getEvaluation();
+//        ClassifierEvaluation evaluation = new FMeasureEvaluation(Instance.Result.FOREIGN_KEY, 1.0);
+//        evaluation.setGroundTruth(predicted);
+//        evaluation.setPredicted(predicted);
+//        evaluation.evaluate();
+//        double fscore = (double) evaluation.getEvaluation();
 
 //        // Set up the classifiers.
 ////        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
