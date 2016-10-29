@@ -8,6 +8,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Represent a dataset holding a list of <code>Instance</code>.
+ * @author Lan Jiang
+ */
 public class Dataset {
 
     List<Instance> dataset;

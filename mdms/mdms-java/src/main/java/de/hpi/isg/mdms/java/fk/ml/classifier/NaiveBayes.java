@@ -7,10 +7,13 @@ import de.hpi.isg.mdms.java.fk.feature.Feature;
 import it.unimi.dsi.fastutil.Hash;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * Created by jianghm on 2016/10/22.
+ * A concrete Naive Bayes classifier.
+ * @author Lan Jiang
  */
 public class NaiveBayes extends AbstractClassifier {
 
@@ -20,15 +23,18 @@ public class NaiveBayes extends AbstractClassifier {
     private Map<Instance.Result, Double> priorProbability;
 
     /**
-     * Indicate the likelyhoods, i.e. p(x|c)
+     * Indicate the likelyhoods, i.e. p(x|c). The keys and values in the map
+     * stand for <FeatureName, <Label, <Value, Count>>>.
      */
     private Map<String, Map<Instance.Result, Map<Object, Double>>> likelyhoods;
+//    private List<PartialLikelyhoods> likelyhoods;
 
     private Map<Instance.Result, List<Instance>> instancesByClasses;
 
     public NaiveBayes() {
         priorProbability = new HashMap<>();
         likelyhoods = new HashMap<>();
+//        likelyhoods = new ArrayList<>();
     }
 
     private void calcultePriorProbability() {
@@ -64,8 +70,26 @@ public class NaiveBayes extends AbstractClassifier {
                     featureValueByClass.put(entry.getKey(), partialfeatureValue);
                     likelyhoods.put(featureName, featureValueByClass);
                 }
+//                PartialLikelyhoods partialLikelyhoods = new PartialLikelyhoods(featureName, entry.getKey());
+//                partialLikelyhoods.setValueDistribution(partialfeatureValue);
+//                likelyhoods.add(partialLikelyhoods);
             });
         });
+
+//        instancesByClasses.entrySet().forEach(resultListEntry -> {
+//            features.stream().forEach(feature -> {
+//                PartialLikelyhoods partialLikelyhoods =
+//                        new PartialLikelyhoods(feature.getFeatureName(), resultListEntry.getKey());
+//                List<Object> values = resultListEntry.getValue().stream()
+//                        .map(Instance::getFeatureVector).flatMap(map -> map.entrySet().stream())
+//                        .filter(entry -> entry.getKey().equals(feature.getFeatureName()))
+//                        .map(Map.Entry::getValue).collect(Collectors.toList());
+//                partialLikelyhoods.calculateValueDistribution(values);
+//                partialLikelyhoods.getValueDistribution().entrySet().stream()
+//                        .forEach(objectDoubleEntry ->
+//                                partialLikelyhoods.getValueDistribution().put(objectDoubleEntry.getKey(),objectDoubleEntry.getValue()+1.0));
+//            });
+//        });
     }
 
     @Override
@@ -78,7 +102,6 @@ public class NaiveBayes extends AbstractClassifier {
 
     @Override
     public void predict() {
-        Map<UnaryForeignKeyCandidate, Instance.Result> predicted = new HashMap<>();
         testset.getDataset().forEach(instance -> {
             double max = Double.NEGATIVE_INFINITY;
             Instance.Result maxResult = Instance.Result.UNKNOWN;
@@ -100,7 +123,6 @@ public class NaiveBayes extends AbstractClassifier {
                 }
             }
             instance.setIsForeignKey(maxResult);
-//            predicted.putIfAbsent(instance.getForeignKeyCandidate(), maxResult);
         });
     }
 
@@ -111,4 +133,37 @@ public class NaiveBayes extends AbstractClassifier {
     public Map<String, Map<Instance.Result, Map<Object, Double>>> getLikelyhoods() {
         return likelyhoods;
     }
+
+//    public class PartialLikelyhoods {
+//        private String featureName;
+//        private Instance.Result label;
+//        private Map<Object, Double> valueDistribution;
+//
+//        public PartialLikelyhoods(String featureName, Instance.Result label) {
+//            this.featureName = featureName;
+//            this.label = label;
+//            valueDistribution = new HashMap<>();
+//        }
+//
+////        public void calculateValueDistribution(List<Object> values) {
+////            Map<Object, Long> result = values.stream().
+////                    collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+////            for (Map.Entry<Object, Long> entry : result.entrySet()) {
+////                valueDistribution.put(entry.getKey(), (double)entry.getValue());
+////            }
+////        }
+//
+//
+//        public String getFeatureName() {
+//            return featureName;
+//        }
+//
+//        public Map<Object, Double> getValueDistribution() {
+//            return valueDistribution;
+//        }
+//
+//        public void setValueDistribution(Map<Object, Double> valueDistribution) {
+//            this.valueDistribution = valueDistribution;
+//        }
+//    }
 }

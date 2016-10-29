@@ -7,6 +7,11 @@ import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * An abstract classifier class holding some basic necessary information of a classifier. It has to be extended by a
+ * concrete classifier, which overrides the <method>train</method> and <method>predict</method> methods.
+ * @author Lan Jiang
+ */
 abstract public class AbstractClassifier {
 
     protected Dataset trainingset;
