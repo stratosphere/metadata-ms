@@ -3,9 +3,10 @@ package de.hpi.isg.mdms.java.fk;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Represent an instance in the dataset.
+ * Represent an {@link Instance} in the {@link Dataset}.
  * @author Lan Jiang
  */
 public class Instance {
@@ -65,5 +66,20 @@ public class Instance {
          * Indicates that the classifier believes that an IND is not a foreign key.
          */
         NO_FOREIGN_KEY;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Instance instance = (Instance) o;
+        return isForeignKey == instance.isForeignKey &&
+                Objects.equals(featureVector, instance.featureVector) &&
+                Objects.equals(fkCandidate, instance.fkCandidate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(isForeignKey, featureVector, fkCandidate);
     }
 }

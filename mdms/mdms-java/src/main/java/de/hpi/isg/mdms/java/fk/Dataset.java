@@ -2,14 +2,11 @@ package de.hpi.isg.mdms.java.fk;
 
 import de.hpi.isg.mdms.java.fk.feature.Feature;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Represent a dataset holding a list of <code>Instance</code>.
+ * Represent a dataset holding a list of {@link Instance}
  * @author Lan Jiang
  */
 public class Dataset {
@@ -71,5 +68,11 @@ public class Dataset {
                 .filter(instance -> instance.getForeignKeyCandidate().equals(unaryForeignKeyCandidate))
                 .findFirst();
         return result.orElse(null);
+    }
+
+    public void removeTestset(Dataset testset) {
+        dataset.removeAll(testset.dataset);
+        buildDatasetStatistics();
+        buildFeatureValueDistribution();
     }
 }

@@ -12,7 +12,7 @@ import java.util.Map;
  * concrete classifier, which overrides the <method>train</method> and <method>predict</method> methods.
  * @author Lan Jiang
  */
-abstract public class AbstractClassifier {
+abstract public class AbstractClassifier implements Classifier {
 
     protected Dataset trainingset;
 
@@ -33,8 +33,4 @@ abstract public class AbstractClassifier {
     public Dataset getTestset() {
         return testset;
     }
-
-    abstract public void train();
-
-    abstract public void predict();
 }

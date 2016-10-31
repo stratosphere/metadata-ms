@@ -9,7 +9,7 @@ import java.util.Collection;
  * Super class for various feature classes.
  * @author Lan Jiang
  */
-abstract public class Feature {
+abstract public class Feature implements FeatureUpdate {
 
     protected String featureName;
 
@@ -36,7 +36,4 @@ abstract public class Feature {
     public String getFeatureName() {
         return featureName;
     }
-
-    abstract public void calcualteFeatureValue(Collection<Instance> instanceCollection);
-
 }

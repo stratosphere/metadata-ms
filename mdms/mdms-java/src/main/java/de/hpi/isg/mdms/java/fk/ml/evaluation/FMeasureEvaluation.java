@@ -6,14 +6,18 @@ import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FMeasureEvaluation extends ClassifierEvaluation{
+public class FMeasureEvaluation extends ClassifierEvaluation {
 
 
     private Instance.Result evaluatedLabel;
 
-    private double beta;
+    private double beta = 1.0;
 
     private double fscore;
+
+    public FMeasureEvaluation(Instance.Result evaluatedLabel) {
+        this.evaluatedLabel = evaluatedLabel;
+    }
 
     public FMeasureEvaluation(Instance.Result evaluatedLabel, double beta) {
         this.evaluatedLabel = evaluatedLabel;
