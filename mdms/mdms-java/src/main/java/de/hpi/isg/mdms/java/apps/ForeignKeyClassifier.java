@@ -13,8 +13,15 @@ import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
+import de.hpi.isg.mdms.java.fk.Dataset;
+import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
 import de.hpi.isg.mdms.java.fk.classifiers.*;
+import de.hpi.isg.mdms.java.fk.feature.*;
+import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
+import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
+import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -37,6 +44,8 @@ import java.util.stream.Stream;
 public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.Parameters> {
 
     private final List<PartialForeignKeyClassifier> partialClassifiers = new LinkedList<>();
+
+    private List<Feature> features = new ArrayList<>();
 
     public ForeignKeyClassifier(final ForeignKeyClassifier.Parameters parameters) {
         super(parameters);
@@ -129,33 +138,28 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         ClassificationSet::getForeignKeyCandidate,
                         Function.identity()
                 ));
-        // Set up the classifiers.
-//        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
-        this.partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, dvcCollection));
-//        this.partialClassifiers.add(new CoverageClassifier(1d, 0.75d, 0.4d, dvcCollection));
-//        this.partialClassifiers.add(new DependentAndReferencedClassifier(1d, 2));
-//        this.partialClassifiers.add(new MultiDependentClassifier(1d, 2));
-//        this.partialClassifiers.add(new MultiReferencedClassifier(1d, 2));
-//        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.95, 0.5));
-        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.9, 0.5));
-        this.partialClassifiers.add(new ValueDiffClassifier(Double.NaN, statsCollection, 0.01, 0.3));
-//        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.75, 0.5));
-        double tndWeight = 1.5d / 3;
-        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 3, this.metadataStore));
-        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 5, this.metadataStore));
-        this.partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 7, this.metadataStore));
-        double srtnWeight = 1.5d / 6;
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 5, this.metadataStore));
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 7, this.metadataStore));
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 9, this.metadataStore));
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 11, this.metadataStore));
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 13, this.metadataStore));
-        this.partialClassifiers.add(new ShortReferencedTableNameClassifier(srtnWeight, 15, this.metadataStore));
-//        this.partialClassifiers.add(new NoReferencingPKClassifier(10d, uccCollection));
-        // ...
 
-        // Run classifiers.
-        this.partialClassifiers.forEach(classifier -> classifier.classify(fkCandidateClassificationSet.values()));
+        List<Instance> instances = relevantInds.stream()
+                .flatMap(this::splitIntoUnaryForeignKeyCandidates)
+                .distinct()
+                .map(Instance::new)
+                .collect(Collectors.toList());
+
+        this.features.add(new CoverageFeature(statsCollection));
+        this.features.add(new DependentAndReferencedFeature());
+        this.features.add(new DistinctDependentValuesFeature(statsCollection));
+        this.features.add(new MultiDependentFeature());
+        this.features.add(new MultiReferencedFeature());
+
+        Dataset dataset = new Dataset(instances, features);
+        dataset.buildDatasetStatistics();
+        dataset.buildFeatureValueDistribution();
+
+        AbstractClassifier classifier = new NaiveBayes();
+        classifier.setTrainingset(dataset);
+        classifier.setTestset(dataset);
+        classifier.train();
+        classifier.predict();
 
         // Calculate the score for all the inclusion dependencies.
         final List<InclusionDependencyRating> indRatings = relevantInds.stream()
@@ -379,7 +383,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
 
         @Parameter(names = {"--distinct-values"},
                 description = "ID of the constraint collection that contains the distinct value counts",
-                required = true)
+                required = false)
         public int dvcCollectionId;
 
         @Parameter(names = {"--statistics"},
