@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.domain.util;
 
+import de.hpi.isg.mdms.domain.constraints.DistinctValueOverlap;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
@@ -49,6 +50,36 @@ public class DependencyPrettyPrinter extends BasicPrettyPrinter {
             separator = ", ";
         }
         sb.append("]");
+        return sb.toString();
+    }
+
+    /**
+     * Pretty-prints the given partial IND/distinct value overlap.
+     *
+     * @param dvo a partial IND
+     * @return the pretty-printed partial IND
+     */
+    public String prettyPrint(DistinctValueOverlap dvo) {
+        StringBuffer sb = new StringBuffer();
+        int columnId1 = dvo.getTargetReference().getColumn1();
+        int columnId2 = dvo.getTargetReference().getColumn2();
+        IdUtils idUtils = this.metadataStore.getIdUtils();
+
+        // Assemble the LHS.
+        int depSchemaId = idUtils.getSchemaId(columnId1);
+        Schema depSchema = this.metadataStore.getSchemaById(depSchemaId);
+        int depTableId = idUtils.getTableId(columnId1);
+        Table depTable = depSchema.getTableById(depTableId);
+        sb.append(depTable.getName()).append("[");
+        sb.append(depTable.getColumnById(columnId1).getName());
+        sb.append("] ~ ");
+        int refSchemaId = idUtils.getSchemaId(columnId2);
+        Schema refSchema = this.metadataStore.getSchemaById(refSchemaId);
+        int refTableId = idUtils.getTableId(columnId2);
+        Table refTable = refSchema.getTableById(refTableId);
+        sb.append(refTable.getName()).append("[");
+        sb.append(refTable.getColumnById(columnId2).getName());
+        sb.append("]: ").append(String.format("%,d", dvo.getOverlap()));
         return sb.toString();
     }
 

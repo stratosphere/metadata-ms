@@ -43,6 +43,7 @@ import java.util.List;
  */
 public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements RDBMSConstraint {
 
+
     public static class DistinctValueOverlapSQLiteSerializer implements ConstraintSQLSerializer<DistinctValueOverlap> {
 
         private final static String tableName = "DistinctValueOverlap";
@@ -237,6 +238,14 @@ public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements R
             return targetIds;
         }
 
+        public int getColumn1() {
+            return this.column1;
+        }
+
+        public int getColumn2() {
+            return this.column2;
+        }
+
         @Override
         public String toString() {
             return "Reference [" + column1 + ", " + column2 + "]";
@@ -267,6 +276,10 @@ public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements R
     public DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target) {
         this.overlap = overlap;
         this.target = target;
+    }
+
+    public int getOverlap() {
+        return overlap;
     }
 
     @Override
