@@ -71,7 +71,7 @@
     </repositories>
 
     <properties>
-        <flink.version>0.10.1</flink.version>
+        <flink.version>0.10.2</flink.version>
         <metanome.version>0.0.2-SNAPSHOT</metanome.version>
         <scala.version>2.11.8</scala.version>
         <scala.major.version>2.11</scala.major.version>
