@@ -1,15 +1,19 @@
 package de.hpi.isg.mdms.java.fk.classifiers;
 
+import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * This classifier distinguishes foreign key constraints by the fact that the foreign key should have a similar
@@ -35,23 +39,53 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
      */
     private final double nonFkRatio;
 
+    /**
+     *@author Lan Jiang
+     */
     public CoverageClassifier(double weight,
                               double fkRatio, double nonFkRatio,
-                              ConstraintCollection distinctValuesConstraintCollection) {
+                              ConstraintCollection columnStatsConstraintCollection) {
         super(weight);
 
         this.fkRatio = fkRatio;
         this.nonFkRatio = nonFkRatio;
         // Initialize the distinct value counts.
-        this.distinctValues = new Int2LongOpenHashMap(distinctValuesConstraintCollection.getConstraints().size());
-        distinctValuesConstraintCollection.getConstraints().stream()
-                .filter(constraint -> constraint instanceof DistinctValueCount)
-                .map(constraint -> (DistinctValueCount) constraint)
+//        this.distinctValues = new Int2LongOpenHashMap(columnStatsConstraintCollection.getConstraints().size());
+//        columnStatsConstraintCollection.getConstraints().stream()
+//                .filter(constraint -> constraint instanceof DistinctValueCount)
+//                .map(constraint -> (DistinctValueCount) constraint)
+//                .forEach(distinctValueCount -> distinctValues.put(
+//                        distinctValueCount.getTargetReference().getTargetId(),
+//                        distinctValueCount.getNumDistinctValues()));
+
+        this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()
+                .filter(constraint -> constraint instanceof ColumnStatistics).count());
+        columnStatsConstraintCollection.getConstraints().stream()
+                .filter(constraint -> constraint instanceof ColumnStatistics)
+                .map(constraint -> (ColumnStatistics) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
                         distinctValueCount.getTargetReference().getTargetId(),
-                        distinctValueCount.getNumDistinctValues()));
-
+                        distinctValueCount.getNumDistinctValues()
+                ));
     }
+
+//    public CoverageClassifier(double weight,
+//                              double fkRatio, double nonFkRatio,
+//                              ConstraintCollection distinctValuesConstraintCollection) {
+//        super(weight);
+//
+//        this.fkRatio = fkRatio;
+//        this.nonFkRatio = nonFkRatio;
+//        // Initialize the distinct value counts.
+//        this.distinctValues = new Int2LongOpenHashMap(distinctValuesConstraintCollection.getConstraints().size());
+//        distinctValuesConstraintCollection.getConstraints().stream()
+//                .filter(constraint -> constraint instanceof DistinctValueCount)
+//                .map(constraint -> (DistinctValueCount) constraint)
+//                .forEach(distinctValueCount -> distinctValues.put(
+//                        distinctValueCount.getTargetReference().getTargetId(),
+//                        distinctValueCount.getNumDistinctValues()));
+//
+//    }
 
     @Override
     public void classify(Collection<ClassificationSet> classificationSets) {
