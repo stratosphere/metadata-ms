@@ -108,4 +108,21 @@ public class IdUtilsTest {
         Assert.assertFalse(idUtils.isSchemaId(0b000000000000000000000000));
         Assert.assertFalse(idUtils.isTableId(0b1000000000000000000000000));
     }
+
+    @Test
+    public void testIdContained(){
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12),idUtils.createGlobalId(12)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12,1, 2),idUtils.createGlobalId(12)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12,1, 2),idUtils.createGlobalId(12)));
+
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12 ),idUtils.createGlobalId(12, 10)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10 ),idUtils.createGlobalId(12,10)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10, 2 ),idUtils.createGlobalId(12,10)));
+
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12 ),idUtils.createGlobalId(12, 1, 2)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12, 1 ),idUtils.createGlobalId(12,1 , 2)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 1, 2 ),idUtils.createGlobalId(12, 1, 2 )));
+
+
+    }
 }

@@ -235,5 +235,24 @@ public class IdUtils implements Serializable {
     public String toString() {
         return String.format("IdUtils [%d/%d/%d]", this.numSchemaBits, this.numColumnBits, this.numTableBits);
     }
-    
+
+    public boolean isContained(int id1, int id2){
+        if (isSchemaId(id2)){
+            if (getSchemaId(id1) == getSchemaId(id2))
+                return true;
+        }
+        else if (isTableId(id2) & !isSchemaId(id1)){
+            if (getSchemaId(id1) == getSchemaId(id2) & getTableId(id1) == getTableId(id2) ){
+                return true;
+            }
+        }
+        else{
+            if (!isTableId(id2) & !isSchemaId(id2) & !isTableId(id1) & !isSchemaId(id1)){
+               if (id1==id2){
+                   return true;
+                }
+            }
+        }
+        return false;
+    }
 }
