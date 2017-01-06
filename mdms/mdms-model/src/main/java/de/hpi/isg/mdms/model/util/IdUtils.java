@@ -1,11 +1,11 @@
 /***********************************************************************************************************************
  * Copyright (C) 2014 by Sebastian Kruse
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -29,12 +29,14 @@ import de.hpi.isg.mdms.model.MetadataStore;
  */
 @SuppressWarnings("serial")
 public class IdUtils implements Serializable {
-    
-    public static enum IdTypes { SCHEMA_ID, TABLE_ID, COLUMN_ID };
+
+    public static enum IdTypes {SCHEMA_ID, TABLE_ID, COLUMN_ID}
+
+    ;
 
     public static final int DEFAULT_NUM_COLUMN_BITS = 12;
     public static final int DEFAULT_NUM_TABLE_BITS = 12;
-    
+
     private final int numTableBits;
     private final int numColumnBits;
     private final int numSchemaBits;
@@ -68,7 +70,7 @@ public class IdUtils implements Serializable {
         this.numSchemaBits = 32 - numTableBits - numColumnBits;
         this.numTableBits = numTableBits;
         this.numColumnBits = numColumnBits;
-        
+
         schemaIdBitmask = toBitMask(numSchemaBits);
         schemaIdOffset = numTableBits + numColumnBits;
 
@@ -89,15 +91,12 @@ public class IdUtils implements Serializable {
 
     /**
      * Creates a global ID for the specified target.
-     * 
-     * @param localSchemaId
-     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
-     * @param localTableId
-     *        is a unique number for the table within its schema between {@value #minTableNumber} and
-     *        {@value #maxTableNumber}
-     * @param localColumnId
-     *        is the offset of the column within its table between {@value #minColumnNumber} and
-     *        {@value #maxColumnNumber}
+     *
+     * @param localSchemaId is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
+     * @param localTableId  is a unique number for the table within its schema between {@value #minTableNumber} and
+     *                      {@value #maxTableNumber}
+     * @param localColumnId is the offset of the column within its table between {@value #minColumnNumber} and
+     *                      {@value #maxColumnNumber}
      * @return the global ID
      */
     public int createGlobalId(final int localSchemaId, final int localTableId, final int localColumnId) {
@@ -108,12 +107,10 @@ public class IdUtils implements Serializable {
 
     /**
      * Creates a global ID for the specified target.
-     * 
-     * @param localSchemaId
-     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
-     * @param localTableId
-     *        is a unique number for the table within its schema between {@value #minTableNumber} and
-     *        {@value #maxTableNumber}
+     *
+     * @param localSchemaId is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
+     * @param localTableId  is a unique number for the table within its schema between {@value #minTableNumber} and
+     *                      {@value #maxTableNumber}
      * @return the global ID
      */
     public int createGlobalId(final int localSchemaId, final int localTableId) {
@@ -122,9 +119,8 @@ public class IdUtils implements Serializable {
 
     /**
      * Creates a global ID for the specified target.
-     * 
-     * @param localSchemaId
-     *        is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
+     *
+     * @param localSchemaId is a unique number for the schema between {@value #minSchemaNumber} and {@value #maxSchemaNumber}
      * @return the global ID
      */
     public int createGlobalId(final int localSchemaId) {
@@ -133,9 +129,8 @@ public class IdUtils implements Serializable {
 
     /**
      * Returns the local schema ID that is encoded in the given global ID.
-     * 
-     * @param globalId
-     *        is the ID from which the local schema ID shall be extracted
+     *
+     * @param globalId is the ID from which the local schema ID shall be extracted
      * @return the local schema ID
      */
     public int getLocalSchemaId(final int globalId) {
@@ -144,9 +139,8 @@ public class IdUtils implements Serializable {
 
     /**
      * Returns the local table ID that is encoded in the given global ID.
-     * 
-     * @param globalId
-     *        is the ID from which the local table ID shall be extracted
+     *
+     * @param globalId is the ID from which the local table ID shall be extracted
      * @return the local table ID
      */
     public int getLocalTableId(final int globalId) {
@@ -155,9 +149,8 @@ public class IdUtils implements Serializable {
 
     /**
      * Returns the local column ID that is encoded in the given global ID.
-     * 
-     * @param globalId
-     *        is the ID from which the local column ID shall be extracted
+     *
+     * @param globalId is the ID from which the local column ID shall be extracted
      * @return the local column ID
      */
     public int getLocalColumnId(final int globalId) {
@@ -207,19 +200,19 @@ public class IdUtils implements Serializable {
     public int getMaxColumnNumber() {
         return maxColumnNumber;
     }
-    
+
     public int getTableId(int id) {
-    	int schemaNumber = getLocalSchemaId(id);
-    	int tableNumber = getLocalTableId(id);
-    	if (tableNumber == this.maxTableNumber + 1) {
-    		throw new IllegalArgumentException("Cannot create a table ID for the ID " + id);
-    	}
-    	return createGlobalId(schemaNumber, tableNumber);
+        int schemaNumber = getLocalSchemaId(id);
+        int tableNumber = getLocalTableId(id);
+        if (tableNumber == this.maxTableNumber + 1) {
+            throw new IllegalArgumentException("Cannot create a table ID for the ID " + id);
+        }
+        return createGlobalId(schemaNumber, tableNumber);
     }
-    
+
     public int getSchemaId(int id) {
-    	int schemaNumber = getLocalSchemaId(id);
-    	return createGlobalId(schemaNumber);
+        int schemaNumber = getLocalSchemaId(id);
+        return createGlobalId(schemaNumber);
     }
 
     public IdTypes getIdType(int id) {
@@ -230,26 +223,26 @@ public class IdUtils implements Serializable {
         }
         return IdTypes.COLUMN_ID;
     }
-    
+
     @Override
     public String toString() {
         return String.format("IdUtils [%d/%d/%d]", this.numSchemaBits, this.numColumnBits, this.numTableBits);
     }
 
-    public boolean isContained(int id1, int id2){
-        if (isSchemaId(id2)){
-            if (getSchemaId(id1) == getSchemaId(id2))
-                return true;
-        }
-        else if (isTableId(id2) & !isSchemaId(id1)){
-            if (getSchemaId(id1) == getSchemaId(id2) & getTableId(id1) == getTableId(id2) ){
+    // Target1 contained in Target2
+    public boolean isContained(int id1, int id2) {
+        if (isSchemaId(id2)) {
+            if (getSchemaId(id1) == getSchemaId(id2)) {
                 return true;
             }
-        }
-        else{
-            if (!isTableId(id2) & !isSchemaId(id2) & !isTableId(id1) & !isSchemaId(id1)){
-               if (id1==id2){
-                   return true;
+        } else if (isTableId(id2)) {
+            if (!isSchemaId(id1) && getSchemaId(id1) == getSchemaId(id2) && getTableId(id1) == getTableId(id2)) {
+                return true;
+            }
+        } else {
+            if (!isTableId(id1) && !isSchemaId(id1)) {
+                if (id1 == id2) {
+                    return true;
                 }
             }
         }

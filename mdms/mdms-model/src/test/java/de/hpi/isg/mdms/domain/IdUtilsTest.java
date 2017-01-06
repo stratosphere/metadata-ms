@@ -110,19 +110,26 @@ public class IdUtilsTest {
     }
 
     @Test
-    public void testIdContained(){
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12),idUtils.createGlobalId(12)));
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12,1, 2),idUtils.createGlobalId(12)));
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12,1, 2),idUtils.createGlobalId(12)));
+    public void testIdContained() {
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12), idUtils.createGlobalId(12)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 1), idUtils.createGlobalId(12)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 1, 2), idUtils.createGlobalId(12)));
 
-        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12 ),idUtils.createGlobalId(12, 10)));
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10 ),idUtils.createGlobalId(12,10)));
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10, 2 ),idUtils.createGlobalId(12,10)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(11), idUtils.createGlobalId(12)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(11, 1), idUtils.createGlobalId(12)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(11, 1, 2), idUtils.createGlobalId(12)));
 
-        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12 ),idUtils.createGlobalId(12, 1, 2)));
-        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12, 1 ),idUtils.createGlobalId(12,1 , 2)));
-        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 1, 2 ),idUtils.createGlobalId(12, 1, 2 )));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12), idUtils.createGlobalId(12, 1)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10), idUtils.createGlobalId(12, 10)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 10, 2), idUtils.createGlobalId(12, 10)));
 
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(11, 10), idUtils.createGlobalId(12, 10)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12, 11, 2), idUtils.createGlobalId(12, 10)));
 
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12), idUtils.createGlobalId(12, 1, 2)));
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12, 1), idUtils.createGlobalId(12, 1, 2)));
+        Assert.assertTrue(idUtils.isContained(idUtils.createGlobalId(12, 1, 2), idUtils.createGlobalId(12, 1, 2)));
+
+        Assert.assertFalse(idUtils.isContained(idUtils.createGlobalId(12, 1, 3), idUtils.createGlobalId(12, 1, 2)));
     }
 }
