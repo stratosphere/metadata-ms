@@ -11,6 +11,7 @@ public interface Observer<T> {
      * @return
      */
     int generateRandomId();
+    int getUnusedSchemaId();
 
     /**
      * This method is called by objects that want to be registered by the {@link Observer}.

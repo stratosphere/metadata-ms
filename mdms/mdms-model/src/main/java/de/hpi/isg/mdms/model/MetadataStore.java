@@ -57,8 +57,8 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     /**
      * Returns a list of {@link ConstraintCollection} with the given target.
      *
-     * @param target
      * @return the list of {@link ConstraintCollection} with the given target.
+     * @param target
      */
     default Collection<ConstraintCollection> getConstraintCollectionByTarget(Target target) {
         Collection<ConstraintCollection> result = new LinkedList<>();
@@ -142,7 +142,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * This method creates a new {@link Algorithm} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    Algorithm createAlgorithm(String name);
+    Algorithm  createAlgorithm(String name);
 
     /**
      * Retrieve an algorithm from the store if it exists for the given id

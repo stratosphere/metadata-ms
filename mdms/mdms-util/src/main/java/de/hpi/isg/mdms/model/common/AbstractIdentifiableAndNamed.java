@@ -19,7 +19,7 @@ public abstract class AbstractIdentifiableAndNamed extends AbstractHashCodeAndEq
 
     public AbstractIdentifiableAndNamed(final Observer observer, int id, final String name) {
         if (id == -1) {
-            id = observer.generateRandomId();
+            id = observer.getUnusedSchemaId();
         }
 
         this.id = id;

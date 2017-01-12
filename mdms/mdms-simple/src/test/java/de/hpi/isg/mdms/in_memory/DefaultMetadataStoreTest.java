@@ -6,12 +6,10 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import de.hpi.isg.mdms.domain.*;
+import de.hpi.isg.mdms.model.targets.*;
 import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -21,17 +19,10 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.MetadataStore;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.model.targets.DefaultSchema;
 import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 
@@ -302,41 +293,41 @@ public class DefaultMetadataStoreTest {
      * store2 = MetadataStoreFactory.load(file); } catch (final MetadataStoreNotFoundException e) {
      * // TODO Auto-generated catch block e.printStackTrace(); } assertEquals(store1, store2); }
      */
-    
+
     @Test
-    public void testAddingOfAlgorithm(){
-    	  final MetadataStore store1 = new DefaultMetadataStore();
-          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
-          assertTrue(store1.getAlgorithms().contains(algorithm1));
+    public void testAddingOfAlgorithm() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+        assertTrue(store1.getAlgorithms().contains(algorithm1));
     }
 
     @Test
-    public void testRetrievingOfAlgorithm(){
-    	  final MetadataStore store1 = new DefaultMetadataStore();
-          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
-          assertTrue(store1.getAlgorithmById(algorithm1.getId()) == algorithm1);
+    public void testRetrievingOfAlgorithm() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+        assertTrue(store1.getAlgorithmById(algorithm1.getId()) == algorithm1);
     }
 
     @Test
-    public void testCreatingOfExperiment(){
-    	  final MetadataStore store1 = new DefaultMetadataStore();
-          final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
-          Experiment experiment = store1.createExperiment("experiment1", algorithm1);
-          assertTrue(store1.getExperiments().contains(experiment));
+    public void testCreatingOfExperiment() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+        Experiment experiment = store1.createExperiment("experiment1", algorithm1);
+        assertTrue(store1.getExperiments().contains(experiment));
     }
 
     @Test
-    public void testRetrievingOfExperiment(){
-  	  final MetadataStore store1 = new DefaultMetadataStore();
-      final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
-      Experiment experiment = store1.createExperiment("experiment1", algorithm1);
-      experiment.addParameter("key", "value");
-      assertTrue(store1.getExperimentById(experiment.getId()) == experiment);
-      assertTrue(store1.getExperimentById(experiment.getId()).getParameters().size() == 1);
+    public void testRetrievingOfExperiment() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
+        Experiment experiment = store1.createExperiment("experiment1", algorithm1);
+        experiment.addParameter("key", "value");
+        assertTrue(store1.getExperimentById(experiment.getId()) == experiment);
+        assertTrue(store1.getExperimentById(experiment.getId()).getParameters().size() == 1);
     }
-    
+
     @Test
-    public void testAddConstraintCollectionToExperiment(){    	
+    public void testAddConstraintCollectionToExperiment() {
         final MetadataStore store1 = new DefaultMetadataStore();
         final Schema dummySchema1 = DefaultSchema.buildAndRegister(store1, "PDB", null, mock(Location.class));
         store1.getSchemas().add(dummySchema1);
@@ -345,9 +336,159 @@ public class DefaultMetadataStoreTest {
         ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
         experiment.add(constraintCollection);
         assertTrue(store1.getExperimentById(experiment.getId()).getConstraintCollections().size() == 1);
-
-
     }
 
-    
+    @Test
+    public void testGetConstraintCollectionByTarget() {
+        // XY in S2?
+        {
+            final MetadataStore store1 = new DefaultMetadataStore();
+            final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+            store1.getSchemas().add(dummySchema);
+            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema);
+
+            Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
+            Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
+
+            final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
+            store1.getSchemas().add(dummySchema2);
+            Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
+            Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
+
+            Collection<ConstraintCollection> result;
+
+            // S1 in S2?
+            result = store1.getConstraintCollectionByTarget(dummySchema);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+            // T1 in S2?
+            result = store1.getConstraintCollectionByTarget(dummyTable);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+            // C1 in S2?
+            result = store1.getConstraintCollectionByTarget(dummyCol);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+
+            // S1 not in S2?
+            result = store1.getConstraintCollectionByTarget(dummySchema2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // T1 not in S2?
+            result = store1.getConstraintCollectionByTarget(dummyTable2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // C1 not in S2?
+            result = store1.getConstraintCollectionByTarget(dummyCol2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+        }
+
+        // XY in T2?
+        {
+            final MetadataStore store1 = new DefaultMetadataStore();
+            final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+            store1.getSchemas().add(dummySchema);
+            Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
+            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyTable);
+            Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
+
+            final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
+            store1.getSchemas().add(dummySchema2);
+            Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
+            Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
+
+            Collection<ConstraintCollection> result;
+
+            // S1 in T2?
+            result = store1.getConstraintCollectionByTarget(dummySchema);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // T1 in T2?
+            result = store1.getConstraintCollectionByTarget(dummyTable);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+            // C1 in T2?
+            result = store1.getConstraintCollectionByTarget(dummyCol);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+
+            // T1 not in S2?
+            result = store1.getConstraintCollectionByTarget(dummyTable2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // C1 not in S2?
+            result = store1.getConstraintCollectionByTarget(dummyCol2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+        }
+
+        // XY in C2?
+        {
+            final MetadataStore store1 = new DefaultMetadataStore();
+            final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+            store1.getSchemas().add(dummySchema);
+            Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
+            Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
+            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyCol);
+
+            final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
+            store1.getSchemas().add(dummySchema2);
+            Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
+            Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
+
+            Collection<ConstraintCollection> result;
+
+            // S1 in C2?
+            result = store1.getConstraintCollectionByTarget(dummySchema);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // T1 in C2?
+            result = store1.getConstraintCollectionByTarget(dummyTable);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+            // C1 in C2?
+            result = store1.getConstraintCollectionByTarget(dummyCol);
+            assertEquals(1, result.size());
+            for (Object o : result) {
+                assertTrue(store1.getConstraintCollections().contains(o));
+            }
+
+            // C1 not in C2?
+            result = store1.getConstraintCollectionByTarget(dummyCol2);
+            assertEquals(0, result.size());
+            for (Object o : result) {
+                Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+        }
+    }
 }
