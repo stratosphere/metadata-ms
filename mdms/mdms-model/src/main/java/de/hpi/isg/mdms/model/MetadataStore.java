@@ -64,7 +64,11 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         Collection<ConstraintCollection> result = new LinkedList<>();
         for (ConstraintCollection constraintCollection : getConstraintCollections()) {
             for (Target scopetarget : constraintCollection.getScope())
-                if (getIdUtils().isContained(target.getId(), scopetarget.getId())) result.add(constraintCollection);
+                if (getIdUtils().isContained(target.getId(), scopetarget.getId()))
+                {
+                    result.add(constraintCollection);
+                    break;
+                }
         }
         return result;
     }
