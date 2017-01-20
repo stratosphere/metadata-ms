@@ -84,6 +84,21 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         return result;
     }
 
+    default <T extends Constraint>Collection<ConstraintCollection<T>>
+    getConstraintCollectionByConstraintTypeAndTarget(Class<T> constrainttype, Target target) {
+        Collection<ConstraintCollection<T>> result = new LinkedList<>();
+        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
+            if (constraintCollection.getConstraintClass() == constrainttype){
+                for (Target scopetarget : constraintCollection.getScope())
+                    if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
+                        result.add((ConstraintCollection<T>) constraintCollection);
+                    }
+                break;
+            }
+        }
+        return result;
+    }
+
     /**
      * Retrieve a schema from the store if it exists, throws {@link NameAmbigousException} if there are more than one
      * with that name

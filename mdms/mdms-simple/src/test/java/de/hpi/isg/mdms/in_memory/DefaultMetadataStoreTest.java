@@ -10,6 +10,7 @@ import java.util.*;
 
 import de.hpi.isg.mdms.domain.*;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
+import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.model.targets.*;
 import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
 import de.hpi.isg.mdms.model.constraints.Constraint;
@@ -346,7 +347,7 @@ public class DefaultMetadataStoreTest {
             final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
 
             store1.getSchemas().add(dummySchema);
-            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class,dummySchema);
+            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema);
 
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
@@ -356,7 +357,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection<? extends Constraint> > result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in S2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -488,6 +489,117 @@ public class DefaultMetadataStoreTest {
             assertEquals(0, result.size());
             for (Object o : result) {
                 Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+        }
+    }
+
+    @Test
+    public void testGetConstraintCollectionByType() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+        store1.getSchemas().add(dummySchema);
+        ConstraintCollection<InclusionDependency> constraintCollection = store1.createConstraintCollection(null, InclusionDependency.class, dummySchema);
+        {
+            Collection<ConstraintCollection<InclusionDependency>> result;
+            result = store1.getConstraintCollectionByConstraintType(InclusionDependency.class);
+            assertEquals(1, result.size());
+        }
+        {
+            Collection<ConstraintCollection<TupleCount>> result;
+            result = store1.getConstraintCollectionByConstraintType(TupleCount.class);
+            assertEquals(0, result.size());
+        }
+    }
+
+    @Test
+    public void testGetConstraintCollectionByTypeAndTarget() {
+        // XY in T2?
+        {
+            final MetadataStore store1 = new DefaultMetadataStore();
+            final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+            store1.getSchemas().add(dummySchema);
+            Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
+            ConstraintCollection<InclusionDependency> constraintCollection = store1.createConstraintCollection(null, InclusionDependency.class, dummyTable);
+            Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
+
+            final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
+            store1.getSchemas().add(dummySchema2);
+            Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
+            Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
+
+            // Here having the CORRECT constraint type...
+            {
+                Collection<ConstraintCollection<InclusionDependency>> result;
+
+                // S1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(InclusionDependency.class, dummySchema);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // T1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(InclusionDependency.class, dummyTable);
+                assertEquals(1, result.size());
+                for (Object o : result) {
+                    assertTrue(store1.getConstraintCollections().contains(o));
+                }
+                // C1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(InclusionDependency.class, dummyCol);
+                assertEquals(1, result.size());
+                for (Object o : result) {
+                    assertTrue(store1.getConstraintCollections().contains(o));
+                }
+
+                // T1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(InclusionDependency.class, dummyTable2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(InclusionDependency.class, dummyCol2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+            }
+            // Here having the INCORRECT constraint type...
+            {
+                Collection<ConstraintCollection<TupleCount>> result;
+
+                // S1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TupleCount.class, dummySchema);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // T1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TupleCount.class, dummyTable);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TupleCount.class, dummyCol);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+
+                // T1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TupleCount.class, dummyTable2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TupleCount.class, dummyCol2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
             }
         }
     }
