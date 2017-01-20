@@ -218,12 +218,12 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public Collection<ConstraintCollection> getConstraintCollections() {
+    public Collection<? extends Constraint> getConstraintCollections() {
         return this.sqlInterface.getAllConstraintCollections();
     }
 
     @Override
-    public ConstraintCollection getConstraintCollection(int id) {
+    public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
         return this.sqlInterface.getConstraintCollectionById(id);
     }
 
@@ -237,12 +237,12 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection(String description, Target... scope) {
+    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
-        ConstraintCollection constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
+        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
                 description,
                 new HashSet<Target>(Arrays.asList(scope)), getSQLInterface());
 

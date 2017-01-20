@@ -20,10 +20,10 @@ import de.hpi.isg.mdms.exceptions.NotAllTargetsInStoreException;
  *
  */
 
-public class DefaultConstraintCollection<T> extends AbstractIdentifiable implements ConstraintCollection<T> {
+public class DefaultConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -6633086023388829925L;
-    private final Set<Constraint> constraints;
+    private final Set<T> constraints;
     private final Set<Target> scope;
 
     private String description;
@@ -36,7 +36,7 @@ public class DefaultConstraintCollection<T> extends AbstractIdentifiable impleme
     @ExcludeHashCodeEquals
     private final DefaultMetadataStore metadataStore;
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
             Set<Target> scope, Experiment experiment, Class<T>  constrainttype) {
         super(id);
         this.metadataStore = metadataStore;
@@ -47,7 +47,7 @@ public class DefaultConstraintCollection<T> extends AbstractIdentifiable impleme
 
     }
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
             Set<Target> scope, Class<T> constrainttype) {
         super(id);
         this.metadataStore = metadataStore;

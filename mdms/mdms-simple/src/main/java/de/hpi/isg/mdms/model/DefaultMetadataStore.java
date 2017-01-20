@@ -97,7 +97,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     
     private final Collection<Experiment> experiments;
     
-    private final Collection<ConstraintCollection> constraintCollections;
+    private final Collection<ConstraintCollection<? extends Constraint>> constraintCollections;
 
     private final Int2ObjectMap<Target> allTargets;
 
@@ -252,12 +252,12 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
-        return this.constraintCollections;
+        return (Collection<ConstraintCollection<? extends Constraint>>) (Collection) this.constraintCollections;
     }
 
     @Override
-    public ConstraintCollection<T extends Constraint> getConstraintCollection(int id) {
-        for (ConstraintCollection<T extends Constraint> constraintCollection : this.constraintCollections) {
+    public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.constraintCollections) {
             if (constraintCollection.getId() == id) return constraintCollection;
         }
         return null;
@@ -403,8 +403,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	@Override
 	public Experiment createExperiment(String description, Algorithm algorithm) {
 		final int id = this.getUnusedExperimentId();
-        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<ConstraintCollection<T>>(),
-                new HashMap<String, String>(), new HashSet<Annotation>());
+        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<>(),
+                new HashMap<>(), new HashSet<>());
         this.experiments.add(experiment);
         algorithm.addExperiment(experiment);
         return experiment;

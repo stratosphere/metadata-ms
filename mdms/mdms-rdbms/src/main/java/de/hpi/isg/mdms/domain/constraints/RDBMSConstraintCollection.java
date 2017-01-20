@@ -26,7 +26,7 @@ import java.util.Set;
  *
  */
 
-public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
+public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractIdentifiable implements ConstraintCollection {
 
     private static final long serialVersionUID = -2911473574180511468L;
 
@@ -34,7 +34,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     public static final boolean IS_CHECK_CONSTRAINT_TARGETS = false;
 
-    private Collection<Constraint> constraints = null;
+    private Collection<T> constraints = null;
 
     private Collection<Target> scope;
 
@@ -88,7 +88,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     
     @Override
-    public Collection<Constraint> getConstraints() {
+    public Collection<T> getConstraints() {
         ensureConstraintsLoaded();
         return constraints;
     }
@@ -128,7 +128,7 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     }
 
     @Override
-    public void add(Constraint constraint) {
+    public void add(T constraint) {
         this.constraints = null;
 
         if (IS_CHECK_CONSTRAINT_TARGETS) {

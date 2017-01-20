@@ -45,7 +45,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @return all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    Collection<ConstraintCollection<T extends Constraint>> getConstraintCollections();
+    Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections();
 
     /**
      * Returns a particular {@link ConstraintCollection} with the given id.
