@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.*;
 
 import de.hpi.isg.mdms.domain.*;
+import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.model.targets.*;
 import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
 import de.hpi.isg.mdms.model.constraints.Constraint;
@@ -58,7 +59,6 @@ public class DefaultMetadataStoreTest {
         assertTrue(store1.getSchemas().contains(schema1));
     }
 
-
     @Test
     public void testGenerationOfIds() {
         final MetadataStore store = new DefaultMetadataStore();
@@ -97,7 +97,7 @@ public class DefaultMetadataStoreTest {
         System.out.println("Adding inclusion dependencies.");
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
-            ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null, schema);
+            ConstraintCollection<? extends Constraint> constraintCollection = metadataStore.createConstraintCollection(null, schema);
             int numInclusionDependencies = 0;
             OuterLoop:
             for (final Table table1 : schema.getTables()) {
@@ -180,7 +180,7 @@ public class DefaultMetadataStoreTest {
         final Set<?> scope = Collections.singleton(dummySchema1);
         final Constraint dummyTypeConstraint = new TestConstraint(col, col);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection<? extends Constraint> constraintCollection = store1.createConstraintCollection(null, dummySchema1);
         constraintCollection.add(dummyTypeConstraint);
 
         assertTrue(store1.getConstraintCollections().contains(constraintCollection));
@@ -333,7 +333,7 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
         final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
         Experiment experiment = store1.createExperiment("experiment1", algorithm1);
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection<InclusionDependency> constraintCollection = store1.createConstraintCollection(null, InclusionDependency.class, dummySchema1);
         experiment.add(constraintCollection);
         assertTrue(store1.getExperimentById(experiment.getId()).getConstraintCollections().size() == 1);
     }
@@ -346,7 +346,7 @@ public class DefaultMetadataStoreTest {
             final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
 
             store1.getSchemas().add(dummySchema);
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema);
+            ConstraintCollection<? extends Constraint> constraintCollection = store1.createConstraintCollection(null, dummySchema);
 
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
@@ -356,7 +356,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint> > result;
 
             // S1 in S2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -404,7 +404,7 @@ public class DefaultMetadataStoreTest {
 
             store1.getSchemas().add(dummySchema);
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyTable);
+            ConstraintCollection<? extends Constraint> constraintCollection = store1.createConstraintCollection(null, dummyTable);
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
 
             final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
@@ -412,7 +412,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in T2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -455,14 +455,14 @@ public class DefaultMetadataStoreTest {
             store1.getSchemas().add(dummySchema);
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyCol);
+            ConstraintCollection<? extends Constraint> constraintCollection = store1.createConstraintCollection(null, dummyCol);
 
             final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
             store1.getSchemas().add(dummySchema2);
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in C2?
             result = store1.getConstraintCollectionByTarget(dummySchema);

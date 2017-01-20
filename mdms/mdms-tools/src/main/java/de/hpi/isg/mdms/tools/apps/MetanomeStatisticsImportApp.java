@@ -7,6 +7,7 @@ import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -76,7 +77,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         if (schema == null) {
             throw new IllegalArgumentException("No such schema: " + this.parameters.schemaName);
         }
-        ConstraintCollection constraintCollection = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), schema);
+        ConstraintCollection<? extends Constraint> constraintCollection = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), schema);
 
 
         for (String inputDirectoryPath : this.parameters.inputDirectories) {
@@ -152,7 +153,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractTextColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractTextColumnStatistics(ConstraintCollection<? extends Constraint> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min String")) {
             TextColumnStatistics textColumnStatistics = new TextColumnStatistics(column.getId());
             textColumnStatistics.setMinValue(columnStatisticsObject.getString("Min String"));
@@ -175,7 +176,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractNumberColumnStatistics(ConstraintCollection constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractNumberColumnStatistics(ConstraintCollection<? extends Constraint> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min")) {
             NumberColumnStatistics numberColumnStatistics = new NumberColumnStatistics(column.getId());
             numberColumnStatistics.setMinValue(columnStatisticsObject.getDouble("Min"));
@@ -198,7 +199,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param numTuples              number of tuples in the table that contains the column
      */
     private void extractGeneralColumnStatistics(JSONObject columnStatisticsObject, Column column,
-                                                ConstraintCollection constraintCollection,
+                                                ConstraintCollection<? extends Constraint> constraintCollection,
                                                 long numTuples) {
         // Harvest the column type.
         final String dataType = columnStatisticsObject.getString("Data Type");
@@ -253,7 +254,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param constraintCollection stores any new constraints
      * @return the number of tuples found in the statics file
      */
-    private long processFirstStatisticsFileLine(String firstLine, Table table, ConstraintCollection constraintCollection) {
+    private long processFirstStatisticsFileLine(String firstLine, Table table, ConstraintCollection<? extends Constraint> constraintCollection) {
         final JSONObject firstLineObject = new JSONObject(firstLine);
         final long numTuples = firstLineObject.getLong("# Tuples");
         TupleCount.buildAndAddToCollection(new SingleTargetReference(table.getId()), constraintCollection, (int) numTuples);

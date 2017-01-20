@@ -16,9 +16,9 @@ public abstract class AbstractConstraint extends AbstractHashCodeAndEquals imple
     private static final long serialVersionUID = 8774433936666609976L;
 
     @ExcludeHashCodeEquals
-    private final ConstraintCollection constraintCollection;
+    private final ConstraintCollection<? extends Constraint> constraintCollection;
 
-    public AbstractConstraint(ConstraintCollection constraintCollection) {
+    public AbstractConstraint(ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintCollection = constraintCollection;
     }
 
