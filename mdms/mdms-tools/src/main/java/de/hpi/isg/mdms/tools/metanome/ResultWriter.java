@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import org.apache.flink.shaded.com.google.common.collect.Iterables;
 
+import javax.swing.*;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ public class ResultWriter {
     private final String tableName;
     private final HashMap<String, Table> tables = new HashMap<String, Table>();
     private final HashMap<String, HashMap<String, Column>> columns = new HashMap<String, HashMap<String, Column>>();
-    private final ConstraintCollection constraintCollection;
+    private final ConstraintCollection<? extends SpringLayout.Constraints> constraintCollection;
 
     public ResultWriter(MetadataStoreParameters metadatastoreParameters, String schemaname, String tablename, String description) {
         this(MetadataStoreUtil.loadMetadataStore(metadatastoreParameters), schemaname, tablename, description);
@@ -57,8 +58,7 @@ public class ResultWriter {
 
         String constraintsDescription = String.format(description,
                 this.schema.getName(), DateFormat.getInstance().format(new Date()));
-        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, this.schema);
-
+        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, ,this.schema);
     }
 
 
