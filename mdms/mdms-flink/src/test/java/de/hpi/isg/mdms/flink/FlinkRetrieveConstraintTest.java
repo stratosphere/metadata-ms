@@ -69,7 +69,7 @@ public class FlinkRetrieveConstraintTest {
         col2 = dummySchema1.addTable(store, "table1", null, new DefaultLocation()).addColumn(store,
                 "bar", null, 2);
 
-        dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
+        dummyConstraintCollection = store.createConstraintCollection(null, TestConstraint.class,dummySchema1);
 
         Configuration configuration = new Configuration();
         configuration.setInteger(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, 128);

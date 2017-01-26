@@ -104,7 +104,7 @@ public class RDBMSMetadataStoreTest {
         final Constraint dummyContraint = NumberedDummyConstraint.buildAndAddToCollection(dummyColumn,
                 mock(ConstraintCollection.class), 100);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummyContraint);
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -143,7 +143,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        final ConstraintCollection<? extends  Constraint>  dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class,dummySchema1);
 
         final Constraint dummyTypeConstraint1 = NumberedDummyConstraint.buildAndAddToCollection(col1,
                 dummyConstraintCollection,
@@ -153,9 +153,9 @@ public class RDBMSMetadataStoreTest {
                 dummyConstraintCollection,
                 200);
 
-        Collection<ConstraintCollection> loadedConstraintCollections = store1.getConstraintCollections();
+        Collection<ConstraintCollection<? extends  Constraint> > loadedConstraintCollections = store1.getConstraintCollections();
         assertTrue(loadedConstraintCollections.contains(dummyConstraintCollection));
-        ConstraintCollection constraintCollection = loadedConstraintCollections.iterator().next();
+        ConstraintCollection<? extends  Constraint>  constraintCollection = loadedConstraintCollections.iterator().next();
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint1));
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint2));
     }
@@ -255,7 +255,7 @@ public class RDBMSMetadataStoreTest {
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", null, 1);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema);
         final Constraint dummyContraint = NumberedDummyConstraint.buildAndAddToCollection(
                 dummyColumn, mock(ConstraintCollection.class), 100);
         constraintCollection.add(dummyContraint);
@@ -443,7 +443,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection<? extends  Constraint>  dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
 
         NumberedDummyConstraint.buildAndAddToCollection(col1, dummyConstraintCollection, 100);
 
@@ -460,7 +460,7 @@ public class RDBMSMetadataStoreTest {
         col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
 
         NumberedDummyConstraint.buildAndAddToCollection(col1, dummyConstraintCollection, 100);
 
@@ -485,8 +485,8 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        final ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null,
-                col1, col2);
+        final ConstraintCollection<? extends  Constraint>  dummyConstraintCollection = store1.createConstraintCollection(null,
+                , TestConstraint.class, col1, col2);
 
         NumberedDummyConstraint.buildAndAddToCollection(col1, dummyConstraintCollection, 100);
 
@@ -530,9 +530,9 @@ public class RDBMSMetadataStoreTest {
         assertTrue(loadedExperiments.iterator().next().getTimestamp() != null);
 
         //create constraintCollection
-        store1.createConstraintCollection(null, experiment, dummySchema1);
+        store1.createConstraintCollection(null, experiment, TestConstraint.class ,dummySchema1);
 
-        Collection<ConstraintCollection> loadedConstraintCollections = store1.getConstraintCollections();
+        Collection<ConstraintCollection<? extends  Constraint> > loadedConstraintCollections = store1.getConstraintCollections();
         assertTrue(loadedConstraintCollections.iterator().next().getExperiment().getId() == experiment.getId());
     }
 

@@ -44,7 +44,7 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
      */
     public CoverageClassifier(double weight,
                               double fkRatio, double nonFkRatio,
-                              ConstraintCollection columnStatsConstraintCollection) {
+                              ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
         super(weight);
 
         this.fkRatio = fkRatio;

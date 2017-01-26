@@ -22,6 +22,7 @@ import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
 import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
 import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -69,13 +70,13 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
     protected void executeAppLogic() throws Exception {
         // Load all relevant constraint collections.
         getLogger().info("Loading INDs...");
-        final ConstraintCollection indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
+        final ConstraintCollection<? extends Constraint> indCollection = this.metadataStore.getConstraintCollection(this.parameters.indCollectionId);
         getLogger().info("Loading DVCs...");
-        final ConstraintCollection dvcCollection = this.metadataStore.getConstraintCollection(this.parameters.dvcCollectionId);
+        final ConstraintCollection<? extends Constraint> dvcCollection = this.metadataStore.getConstraintCollection(this.parameters.dvcCollectionId);
         getLogger().info("Loading UCCs...");
-        final ConstraintCollection uccCollection = this.metadataStore.getConstraintCollection(this.parameters.uccCollectionId);
+        final ConstraintCollection<? extends Constraint> uccCollection = this.metadataStore.getConstraintCollection(this.parameters.uccCollectionId);
         getLogger().info("Loading statistics...");
-        final ConstraintCollection statsCollection = this.metadataStore.getConstraintCollection(this.parameters.statisticsCollectionId);
+        final ConstraintCollection<? extends Constraint> statsCollection = this.metadataStore.getConstraintCollection(this.parameters.statisticsCollectionId);
 
         // Collect all not-null columns.
         getLogger().info("Detecting not-null columns...");
@@ -219,8 +220,8 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         foreignKeyRating.score);
             }
         } else {
-            final ConstraintCollection constraintCollection = this.metadataStore.createConstraintCollection(
-                    String.format("Foreign keys (%s)", new Date()),
+            final ConstraintCollection<TestConstraint> constraintCollection = this.metadataStore.createConstraintCollection(
+                    String.format("Foreign keys (%s)", new Date()), statisticsCollectionId.class,
                     indCollection.getScope().toArray(new Target[indCollection.getScope().size()]));
             foreignKeyRatings.stream()
                     .map(fkRating -> fkRating.ind)

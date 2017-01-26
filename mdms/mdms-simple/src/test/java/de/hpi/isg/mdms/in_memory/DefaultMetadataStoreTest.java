@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.util.*;
 
 import de.hpi.isg.mdms.domain.*;
-import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
-import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.model.targets.*;
 import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
 import de.hpi.isg.mdms.model.constraints.Constraint;

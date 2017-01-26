@@ -14,6 +14,7 @@ import de.hpi.isg.mdms.rdbms.util.LocationCache;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Constraints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,7 +261,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection(String description, Experiment experiment, Target... scope) {
+    public ConstraintCollection<? extends Constraints> createConstraintCollection(String description, Experiment experiment, Class<T> , Target... scope) {
         return null;
     }
 

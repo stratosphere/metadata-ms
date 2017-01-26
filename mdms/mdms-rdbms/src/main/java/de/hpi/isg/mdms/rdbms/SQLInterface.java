@@ -44,7 +44,7 @@ public interface SQLInterface {
      *
      * @param constraint should be written
      */
-    void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection);
+    void writeConstraint(Constraint constraint, ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * Writes the given schema into the database.
@@ -74,14 +74,14 @@ public interface SQLInterface {
      *
      * @return the constraint collections
      */
-    Collection<ConstraintCollection> getAllConstraintCollections();
+    Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections();
 
     /**
      * Adds a {@link ConstraintCollection} to the database.
      *
      * @param constraintCollection is the collection to be added
      */
-    void addConstraintCollection(ConstraintCollection constraintCollection);
+    void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * Loads all schemas from the database.
@@ -147,7 +147,7 @@ public interface SQLInterface {
      * @param target to be added
      * @param constraintCollection to whose scope the target should be added
      */
-    void addScope(Target target, ConstraintCollection constraintCollection);
+    void addScope(Target target, ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * Returns a {@link java.util.Collection} of all {@link de.hpi.isg.mdms.model.constraints.Constraint}s in a
@@ -157,7 +157,7 @@ public interface SQLInterface {
      * @return the constraints within the constraint collection
      */
     Collection<Constraint> getAllConstraintsForConstraintCollection(
-            RDBMSConstraintCollection rdbmsConstraintCollection);
+            RDBMSConstraintCollection<? extends Constraint> rdbmsConstraintCollection);
 
     /**
      * Returns a {@link java.util.Collection} of {@link Target}s that are in the scope of a {@link ConstraintCollection}.
@@ -197,7 +197,7 @@ public interface SQLInterface {
      * @param id of the constraint collection
      * @return the constraint collection
      */
-    ConstraintCollection getConstraintCollectionById(int id);
+    ConstraintCollection<? extends Constraint> getConstraintCollectionById(int id);
 
     /**
      * Saves the configuration of a {@link de.hpi.isg.mdms.model.MetadataStore}.
@@ -338,7 +338,7 @@ public interface SQLInterface {
     /**
      * Removes a {@link ConstraintCollection} and all included {@link Constraint}s.
      */
-    void removeConstraintCollection(ConstraintCollection constraintCollection);
+    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * @return all stored {@link Location} types
@@ -419,7 +419,7 @@ public interface SQLInterface {
      * @param experiment the experiment whose constraint collections shall be loaded
      * @return a collection of constraint collections
      */
-	Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
+	Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
 
 	/**
 	 * Return an algorithm by its id

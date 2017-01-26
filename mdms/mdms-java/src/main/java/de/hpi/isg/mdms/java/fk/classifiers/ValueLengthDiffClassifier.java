@@ -31,7 +31,7 @@ public class ValueLengthDiffClassifier extends PartialForeignKeyClassifier {
      * @param weight weight of the classifiers results
      */
     protected ValueLengthDiffClassifier(double weight,
-                                        ConstraintCollection textColumnStatisticsCollection,
+                                        ConstraintCollection<? extends Constraint> textColumnStatisticsCollection,
                                         double maxLengthDelta,
                                         double maxStdDevDelta) {
         super(weight);

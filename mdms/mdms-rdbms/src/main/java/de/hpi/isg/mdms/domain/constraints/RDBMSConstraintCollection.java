@@ -26,7 +26,7 @@ import java.util.Set;
  *
  */
 
-public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractIdentifiable implements ConstraintCollection {
+public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -2911473574180511468L;
 

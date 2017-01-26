@@ -6,6 +6,7 @@ import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -31,7 +32,7 @@ public class ResultWriter {
     private final String tableName;
     private final HashMap<String, Table> tables = new HashMap<String, Table>();
     private final HashMap<String, HashMap<String, Column>> columns = new HashMap<String, HashMap<String, Column>>();
-    private final ConstraintCollection<? extends SpringLayout.Constraints> constraintCollection;
+    private final ConstraintCollection<? extends Constraint> constraintCollection;
 
     public ResultWriter(MetadataStoreParameters metadatastoreParameters, String schemaname, String tablename, String description) {
         this(MetadataStoreUtil.loadMetadataStore(metadatastoreParameters), schemaname, tablename, description);
@@ -58,7 +59,7 @@ public class ResultWriter {
 
         String constraintsDescription = String.format(description,
                 this.schema.getName(), DateFormat.getInstance().format(new Date()));
-        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, ,this.schema);
+        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, InclusionDependency.class, this.schema);
     }
 
 
