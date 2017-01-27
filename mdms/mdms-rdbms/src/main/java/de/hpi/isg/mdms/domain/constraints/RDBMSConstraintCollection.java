@@ -21,9 +21,8 @@ import java.util.Set;
 
 /**
  * The default implementation of a {@link ConstraintCollection} that is used in {@link de.hpi.isg.mdms.domain.RDBMSMetadataStore}s.
- * 
- * @author fabian
  *
+ * @author fabian
  */
 
 public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
@@ -41,9 +40,10 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
     private Set<Integer> scopeIdSet;
 
     private String description;
-    
+
     private Experiment experiment = null;
 
+    @ExcludeHashCodeEquals
     private Class<T> constrainttype;
 
     @ExcludeHashCodeEquals
@@ -68,7 +68,7 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
         this.constrainttype = constrainttype;
     }
 
-    
+
     private Set<Integer> rebuildScopeSet(Collection<Target> scope) {
         Set<Integer> set = new HashSet<>();
         for (Target t : scope) {
@@ -90,7 +90,7 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
         this.experiment = experiment;
     }
 
-    
+
     @Override
     public Collection<T> getConstraints() {
         ensureConstraintsLoaded();
@@ -137,7 +137,7 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
 
         if (IS_CHECK_CONSTRAINT_TARGETS) {
             // Ensure that all targets of the constraint are valid.
-            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
+            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext(); ) {
                 int targetId = i.nextInt();
                 if (!targetInScope(targetId)) {
                     LOGGER.warn("Target with id {} not in scope of constraint collection", targetId);
@@ -158,13 +158,13 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
         }
 
         switch (idUtils.getIdType(targetId)) {
-        case SCHEMA_ID:
-            return false;
-        case TABLE_ID:
-            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
-        case COLUMN_ID:
-            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
-                    || this.scopeIdSet.contains(idUtils.getTableId(targetId));
+            case SCHEMA_ID:
+                return false;
+            case TABLE_ID:
+                return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
+            case COLUMN_ID:
+                return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
+                        || this.scopeIdSet.contains(idUtils.getTableId(targetId));
         }
         return false;
     }
@@ -179,10 +179,10 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
         this.description = description;
     }
 
-	@Override
-	public Experiment getExperiment() {
-		return this.experiment;
-	}
+    @Override
+    public Experiment getExperiment() {
+        return this.experiment;
+    }
 
     /*
      * @Override public boolean equals(Object obj) { ensureConstraintsLoaded(); if (obj instanceof
@@ -192,8 +192,18 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
      */
 
     @Override
-    public Class<T> getConstraintClass(){
+    //public Class<T> getConstraintClass(){
+    //  return this.constrainttype;
+    //}
+
+    public Class<T> getConstraintClass() {
+        if (this.constrainttype == null) {
+
+            for (T constraint : getConstraints()) {
+                this.constrainttype = (Class<T>) constraint.getClass();
+                break;
+            }
+        }
         return this.constrainttype;
     }
-
 }

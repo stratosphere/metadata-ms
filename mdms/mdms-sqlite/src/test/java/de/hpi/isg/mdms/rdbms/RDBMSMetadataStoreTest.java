@@ -144,7 +144,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        final ConstraintCollection<? extends  Constraint>  dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class,dummySchema1);
+        final ConstraintCollection<TestConstraint>  dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class,dummySchema1);
 
         final Constraint dummyTypeConstraint1 = NumberedDummyConstraint.buildAndAddToCollection(col1,
                 dummyConstraintCollection,
