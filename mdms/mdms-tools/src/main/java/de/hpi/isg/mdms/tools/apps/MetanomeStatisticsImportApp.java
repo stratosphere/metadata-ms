@@ -77,7 +77,9 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         if (schema == null) {
             throw new IllegalArgumentException("No such schema: " + this.parameters.schemaName);
         }
-        ConstraintCollection<? extends Constraint> constraintCollection = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), schema);
+        ConstraintCollection<ColumnStatistics> constraintCollectionColumnStatistics = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), ColumnStatistics.class, schema);
+        ConstraintCollection<NumberColumnStatistics> constraintCollectionNumberColumnStatistics = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), NumberColumnStatistics.class, schema);
+        ConstraintCollection<TextColumnStatistics> constraintCollectionTextColumnStatistics = this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TextColumnStatistics.class, schema);
 
 
         for (String inputDirectoryPath : this.parameters.inputDirectories) {
@@ -110,7 +112,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
 
                 // The first line contains general data about the profiled table.
                 final String firstLine = lines.get(0);
-                final long numTuples = processFirstStatisticsFileLine(firstLine, table, constraintCollection);
+                final long numTuples = processFirstStatisticsFileLine(firstLine, table, constraintCollectionColumnStatistics);
 
                 // All following lines contain statistics on different columns.
                 for (String columnStatisticsLine : lines.subList(1, lines.size())) {
@@ -124,14 +126,14 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                             getLogger().warn("Could not find the column {} in table {}. Skipping...", columnName, table.getName());
                             continue;
                         }
-                        extractGeneralColumnStatistics(columnStatisticsObject, column, constraintCollection, numTuples);
+                        extractGeneralColumnStatistics(columnStatisticsObject, column, constraintCollectionColumnStatistics, numTuples);
 
 
                         // For numeric columns, create a specific statistics object.
-                        extractNumberColumnStatistics(constraintCollection, columnStatisticsObject, column);
+                        extractNumberColumnStatistics(constraintCollectionNumberColumnStatistics, columnStatisticsObject, column);
 
                         // For character columns, create a specific statistics object.
-                        extractTextColumnStatistics(constraintCollection, columnStatisticsObject, column);
+                        extractTextColumnStatistics(constraintCollectionTextColumnStatistics, columnStatisticsObject, column);
                     } catch (Exception e) {
                         getLogger().error("Could not handle " + columnStatisticsLine + ".", e);
                     }
@@ -143,17 +145,18 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         // Finalize.
         this.metadataStore.close();
 
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollection.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionColumnStatistics.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionTextColumnStatistics.getId());
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionNumberColumnStatistics.getId());
     }
 
     /**
      * Extracts statistics that are specific to text columns.
-     *
-     * @param constraintCollection   stores any created constraints
+     *  @param constraintCollection   stores any created constraints
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractTextColumnStatistics(ConstraintCollection<? extends Constraint> constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractTextColumnStatistics(ConstraintCollection<TextColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min String")) {
             TextColumnStatistics textColumnStatistics = new TextColumnStatistics(column.getId());
             textColumnStatistics.setMinValue(columnStatisticsObject.getString("Min String"));
@@ -171,12 +174,11 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
 
     /**
      * Extracts statistics that are specific to numeric columns.
-     *
-     * @param constraintCollection   stores any created constraints
+     *  @param constraintCollection   stores any created constraints
      * @param columnStatisticsObject input statistics of the column
      * @param column                 the column described by the input statistics
      */
-    private void extractNumberColumnStatistics(ConstraintCollection<? extends Constraint> constraintCollection, JSONObject columnStatisticsObject, Column column) {
+    private void extractNumberColumnStatistics(ConstraintCollection<NumberColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
         if (columnStatisticsObject.has("Min")) {
             NumberColumnStatistics numberColumnStatistics = new NumberColumnStatistics(column.getId());
             numberColumnStatistics.setMinValue(columnStatisticsObject.getDouble("Min"));
@@ -199,7 +201,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param numTuples              number of tuples in the table that contains the column
      */
     private void extractGeneralColumnStatistics(JSONObject columnStatisticsObject, Column column,
-                                                ConstraintCollection<? extends Constraint> constraintCollection,
+                                                ConstraintCollection<ColumnStatistics> constraintCollection,
                                                 long numTuples) {
         // Harvest the column type.
         final String dataType = columnStatisticsObject.getString("Data Type");

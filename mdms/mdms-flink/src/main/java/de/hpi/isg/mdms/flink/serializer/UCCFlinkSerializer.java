@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.flink.serializer;
 
 import java.util.ArrayList;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -25,7 +26,7 @@ public class UCCFlinkSerializer implements AbstractFlinkSerializer<UniqueColumnC
 		
         private int[] columnIds;
         private int numDistinctValues;
-        private ConstraintCollection constraintCollection;
+        private ConstraintCollection<? extends Constraint> constraintCollection;
 
         public AddUCCCommand(final Tuple1<int[]> tuple, final ConstraintCollection constraintCollection) {
             this.columnIds = tuple.f0;
@@ -94,7 +95,7 @@ public class UCCFlinkSerializer implements AbstractFlinkSerializer<UniqueColumnC
 
 	@Override
 	public Runnable getAddRunnable(Tuple1<int[]> tuple,
-			ConstraintCollection constraintCollection) {
+			ConstraintCollection<? extends Constraint> constraintCollection) {
 		return new AddUCCCommand(tuple, constraintCollection);
 	}    
     

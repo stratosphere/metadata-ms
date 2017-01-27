@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.flink.serializer;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -17,9 +18,9 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	private class AddOverlapCommand implements Runnable {
 		        
 		        private final int column1, column2, overlap;
-		        private final ConstraintCollection constraintCollection;
+		        private final ConstraintCollection<? extends Constraint> constraintCollection;
 		    
-		        public AddOverlapCommand(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection constraintCollection) {
+		        public AddOverlapCommand(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection<? extends Constraint> constraintCollection) {
 		            super();
 		            this.column1 = tuple.f0;
 		            this.column2 = tuple.f1;
@@ -41,7 +42,7 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	public DataSet<Tuple3<Integer, Integer, Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection datasourceCollection) {
+			ConstraintCollection<? extends Constraint> datasourceCollection) {
 		
 		// Read data from a relational database using the JDBC input format
 		RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;
@@ -66,7 +67,7 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 
 	@Override
 	public Runnable getAddRunnable(Tuple3<Integer, Integer, Integer> tuple,
-			ConstraintCollection constraintCollection) {
+			ConstraintCollection<? extends Constraint> constraintCollection) {
 		return new AddOverlapCommand(tuple, constraintCollection);
 	}
 

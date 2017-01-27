@@ -198,7 +198,6 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
 
     public Class<T> getConstraintClass() {
         if (this.constrainttype == null) {
-
             for (T constraint : getConstraints()) {
                 this.constrainttype = (Class<T>) constraint.getClass();
                 break;

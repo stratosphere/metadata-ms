@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.domain;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -213,13 +214,13 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public Collection<ConstraintCollection> getConstraintCollections() {
+    public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
     	//TODO
     	return null;
     }
 
     @Override
-    public ConstraintCollection getConstraintCollection(int id) {
+    public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
     	//TODO
     	return null;
     }
@@ -261,12 +262,12 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
-    public ConstraintCollection<? extends Constraints> createConstraintCollection(String description, Experiment experiment, Class<T> , Target... scope) {
+    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope) {
         return null;
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection(String description, Target... scope) {
+    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
     	//TODO
     	return null;
     }
@@ -330,7 +331,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
        //TODO
     }
 

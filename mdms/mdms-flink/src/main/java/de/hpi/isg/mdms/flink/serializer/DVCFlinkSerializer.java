@@ -64,11 +64,11 @@ public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 		
 		return dbData;
 	}
-	
+
 	@Override
 	public Runnable getAddRunnable(Tuple2<Integer, Integer> tuple,
-			ConstraintCollection<DistinctValueCount> constraintCollection) {
-		return new AddDistinctValueCountCommand(tuple, constraintCollection);
+			ConstraintCollection<? extends Constraint> constraintCollection) {
+		return new AddDistinctValueCountCommand(tuple, (ConstraintCollection<DistinctValueCount>) constraintCollection);
 	}
 
 }

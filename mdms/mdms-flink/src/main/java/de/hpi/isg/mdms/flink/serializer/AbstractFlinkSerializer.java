@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.flink.serializer;
 
+import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -16,6 +17,5 @@ public interface AbstractFlinkSerializer<T extends Constraint, F extends Tuple> 
 			MetadataStore metadataStore,
 			ConstraintCollection<? extends Constraint> datasourceCollection);
     
-	Runnable getAddRunnable(F tuple, ConstraintCollection<T> constraintCollection);
-	
+	Runnable getAddRunnable(F tuple, ConstraintCollection<? extends Constraint> constraintCollection);
 }

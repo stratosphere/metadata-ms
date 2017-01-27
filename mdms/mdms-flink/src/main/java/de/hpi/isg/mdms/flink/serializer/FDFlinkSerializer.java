@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.flink.serializer;
 
 import java.util.ArrayList;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -27,7 +28,7 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
 		private Integer rhs;
 		private ConstraintCollection constraintCollection;
 
-		public AddFunctionalDependencyCommand(final Tuple2<int[], Integer> tuple, final ConstraintCollection constraintCollection) {
+		public AddFunctionalDependencyCommand(final Tuple2<int[], Integer> tuple, final ConstraintCollection<? extends Constraint> constraintCollection) {
             super();
             this.lhs = tuple.f0;
             this.rhs = tuple.f1;
@@ -50,7 +51,7 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
 	public DataSet<Tuple2<int[], Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection datasourceCollection) {
+			ConstraintCollection<? extends Constraint> datasourceCollection) {
 		
 		// Read data from a relational database using the JDBC input format
 		RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;
@@ -97,7 +98,7 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
 
 	@Override
 	public Runnable getAddRunnable(Tuple2<int[], Integer> tuple,
-			ConstraintCollection constraintCollection) {
+			ConstraintCollection<? extends Constraint> constraintCollection) {
 		return new AddFunctionalDependencyCommand(tuple, constraintCollection);
 	}    
     
