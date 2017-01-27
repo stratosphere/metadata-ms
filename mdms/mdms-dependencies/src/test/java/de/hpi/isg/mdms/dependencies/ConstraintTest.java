@@ -33,7 +33,7 @@ public class ConstraintTest {
                 dummyColumn.getId()),
                 Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class);
         ((Collection<Constraint>) constraintCollection.getConstraints()).add(dummyTypeContraint);
     }
 
@@ -72,7 +72,7 @@ public class ConstraintTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn1", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
         final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn.getId()), cC, "VARCHAR");
         final Constraint dummyTypeContraint2 = TypeConstraint.buildAndAddToCollection(
@@ -87,7 +87,7 @@ public class ConstraintTest {
         final Table dummyTable = DefaultTable.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Schema.class),
                 "dummyTable", null, new DefaultLocation());
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
         final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(
                 new SingleTargetReference(dummyTable.getId()), cC, 1);
         final TupleCount tupleCount2 = TupleCount.build(
@@ -104,7 +104,7 @@ public class ConstraintTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn1", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<DistinctValueCount> cC = Mockito.mock(ConstraintCollection.class);
         final DistinctValueCount distinctValueCount1 = DistinctValueCount.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn.getId()), cC, 1);
         final DistinctValueCount distinctValueCount2 = new DistinctValueCount(
@@ -148,7 +148,7 @@ public class ConstraintTest {
         final Column dummyColumn3 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn3", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
         @SuppressWarnings("unused")
         final InclusionDependency ind1 = new InclusionDependency(new InclusionDependency.Reference(
                 new Column[] { dummyColumn1 },
@@ -163,7 +163,7 @@ public class ConstraintTest {
         final Column dummyColumn2 = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn2", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
         final UniqueColumnCombination ucc1 = UniqueColumnCombination.build(new UniqueColumnCombination.Reference(
                 new int[] { dummyColumn1.getId(), dummyColumn2.getId() }), cC);
         final UniqueColumnCombination ucc2 = UniqueColumnCombination.build(new UniqueColumnCombination.Reference(
@@ -188,7 +188,7 @@ public class ConstraintTest {
                 dummyColumn.getId()),
                 Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
-        ConstraintCollection constraintCollection = store.createConstraintCollection(null);
+        ConstraintCollection<Constraint> constraintCollection = store.createConstraintCollection(null, Constraint.class);
         constraintCollection.add(dummyTypeContraint);
     }
 
@@ -204,7 +204,7 @@ public class ConstraintTest {
                 dummyColumn.getId()),
                 Mockito.mock(ConstraintCollection.class), "VARCHAR");
 
-        ConstraintCollection constraintCollection = store2.createConstraintCollection(null);
+        ConstraintCollection<Constraint> constraintCollection = store2.createConstraintCollection(null, Constraint.class);
         constraintCollection.add(dummyTypeContraint);
     }
 

@@ -11,6 +11,7 @@ import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.common.AbstractIdentifiable;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -25,7 +26,7 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
 public class DefaultExperiment extends AbstractIdentifiable implements Experiment{
 	
 	private static final long serialVersionUID = 5894427384713010467L;
-		private final Set<ConstraintCollection> constraintsCollections;
+		private final Set<ConstraintCollection<? extends Constraint>> constraintsCollections;
 	    private final Algorithm algorithm;
 	    private final Map<String, String> parameters;
 		private final Set<Annotation> annotations;
@@ -38,7 +39,7 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	    private final DefaultMetadataStore metadataStore;
 
 	    
-	public DefaultExperiment(DefaultMetadataStore metadataStore, int id, Algorithm algorithm, Set<ConstraintCollection> constraintCollections,
+	public DefaultExperiment(DefaultMetadataStore metadataStore, int id, Algorithm algorithm, Set<ConstraintCollection<? extends Constraint>> constraintCollections,
 			Map<String, String> parameters, Set<Annotation> annotation) {
 		super(id);
 		this.metadataStore = metadataStore;
@@ -76,12 +77,12 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	}
 
 	@Override
-	public Collection<ConstraintCollection> getConstraintCollections() {
+	public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
 		return Collections.unmodifiableCollection(this.constraintsCollections);
 	}
 
 	@Override
-	public void add(ConstraintCollection constraintCollection) {
+	public void add(ConstraintCollection<? extends Constraint> constraintCollection) {
 		this.constraintsCollections.add(constraintCollection);		
 	}
 

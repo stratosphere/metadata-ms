@@ -1,6 +1,7 @@
 package de.hpi.isg.mdms.flink.serializer;
 
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -20,9 +21,9 @@ public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 		
 		        private int targetId;
 		        private int numDistinctValues;
-		        private ConstraintCollection constraintCollection;
+		        private ConstraintCollection<DistinctValueCount> constraintCollection;
 		
-		        public AddDistinctValueCountCommand(final Tuple2<Integer, Integer> tuple, final ConstraintCollection constraintCollection) {
+		        public AddDistinctValueCountCommand(final Tuple2<Integer, Integer> tuple, final ConstraintCollection<DistinctValueCount> constraintCollection) {
 		            this.targetId = tuple.f0;
 		            this.numDistinctValues = tuple.f1;
 		            this.constraintCollection = constraintCollection;
@@ -42,7 +43,7 @@ public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	public DataSet<Tuple2<Integer, Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection datasourceCollection) {
+			ConstraintCollection<? extends Constraint> datasourceCollection) {
 		
 		// Read data from a relational database using the JDBC input format
 		RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;
@@ -62,12 +63,11 @@ public class DVCFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 
 		
 		return dbData;
-
 	}
 	
 	@Override
 	public Runnable getAddRunnable(Tuple2<Integer, Integer> tuple,
-			ConstraintCollection constraintCollection) {
+			ConstraintCollection<DistinctValueCount> constraintCollection) {
 		return new AddDistinctValueCountCommand(tuple, constraintCollection);
 	}
 

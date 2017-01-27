@@ -186,7 +186,7 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<ConstraintCollection> getAllConstraintCollections() {
+    public Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections() {
 //        try {
 //            flush();
 //        } catch (SQLException e) {
@@ -197,11 +197,11 @@ public class SQLiteInterface implements SQLInterface {
             Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
             constraintCollection.setScope(scope);
         }
-        return (Collection<ConstraintCollection>) (Collection<?>) constraintCollections;
+        return (Collection<ConstraintCollection<? extends Constraint>>) (Collection<?>) constraintCollections;
     }
 
     @Override
-    public void addConstraintCollection(ConstraintCollection constraintCollection) {
+    public void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintHandler.addConstraintCollection(constraintCollection);
     }
 
@@ -246,7 +246,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addScope(Target target, ConstraintCollection constraintCollection) {
+    public void addScope(Target target, ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintHandler.addScope(target, constraintCollection);
     }
 
@@ -284,7 +284,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public ConstraintCollection getConstraintCollectionById(int id) {
+    public ConstraintCollection<? extends Constraint> getConstraintCollectionById(int id) {
         RDBMSConstraintCollection constraintCollection = this.constraintHandler.getConstraintCollectionById(id);
         if (constraintCollection != null) {
             Set<Target> scope = getScopeOfConstraintCollection(constraintCollection);
@@ -294,7 +294,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
+    public void writeConstraint(Constraint constraint, ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintHandler.writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection) constraintCollection);
     }
 
@@ -460,7 +460,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintHandler.removeConstraintCollection(constraintCollection);
     }
 
@@ -527,7 +527,7 @@ public class SQLiteInterface implements SQLInterface {
 	}
 
 	@Override
-	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(
+	public Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(
 			RDBMSExperiment experiment) {
 		return this.constraintHandler.getAllConstraintCollectionsForExperiment(experiment);
 	}

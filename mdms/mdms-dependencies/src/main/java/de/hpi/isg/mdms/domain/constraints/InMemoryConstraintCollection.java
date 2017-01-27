@@ -16,36 +16,40 @@ import java.util.LinkedList;
  * @author sebastian.kruse
  * @since 20.02.2015
  */
-public class InMemoryConstraintCollection implements ConstraintCollection {
+public class InMemoryConstraintCollection<T extends Constraint> implements ConstraintCollection<T> {
 
     private final Collection<Target> scope;
     
     private final Experiment experiment;
 
+    private final Class<T> constrainttype;
+
     private final MetadataStore metadataStore;
 
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Target scope) {
-        this(metadataStore, Collections.singleton(scope));
+
+    public InMemoryConstraintCollection(MetadataStore metadataStore, Target scope, Class<T> constrainttype) {
+        this(metadataStore, Collections.singleton(scope), constrainttype);
     }
     
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Collection<Target> scope) {
+    public InMemoryConstraintCollection(MetadataStore metadataStore, Collection<Target> scope, Class<T>  constrainttype) {
         this.metadataStore = metadataStore;
         this.scope = scope;
         this.experiment = null;
+        this.constrainttype = constrainttype;
     }
 
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Experiment experiment, Collection<Target> scope) {
+    public InMemoryConstraintCollection(MetadataStore metadataStore, Experiment experiment, Collection<Target> scope, Class<T>  constrainttype) {
         this.metadataStore = metadataStore;
         this.scope = scope;
         this.experiment = experiment;
+        this.constrainttype = constrainttype;
     }
     
     private final Collection<Constraint> constraints = new LinkedList<>();
     private String description = "in-memory metadata store";
 
     @Override
-    public Collection<Constraint> getConstraints() {
-        return this.constraints;
+    public Collection<T> getConstraints() {return (Collection<T>) this.constraints;
     }
 
     @Override
@@ -82,4 +86,9 @@ public class InMemoryConstraintCollection implements ConstraintCollection {
 	public Experiment getExperiment() {
 		return this.experiment;
 	}
+
+    @Override
+    public Class<T> getConstraintClass(){
+        return this.constrainttype;
+    }
 }

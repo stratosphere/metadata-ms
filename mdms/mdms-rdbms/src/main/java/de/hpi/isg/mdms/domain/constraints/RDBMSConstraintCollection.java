@@ -26,7 +26,7 @@ import java.util.Set;
  *
  */
 
-public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
+public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -2911473574180511468L;
 
@@ -44,24 +44,28 @@ public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractId
     
     private Experiment experiment = null;
 
+    private Class<T> constrainttype;
+
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
         super(id);
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
         this.description = description != null ? description : "";
+        this.constrainttype = constrainttype;
     }
 
-    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
         super(id);
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
         this.description = description != null ? description : "";
         this.experiment = experiment;
+        this.constrainttype = constrainttype;
     }
 
     
@@ -186,5 +190,10 @@ public class RDBMSConstraintCollection<T extends  Constraint> extends AbstractId
      * super.equals(obj); }
      * @Override public int hashCode() { ensureConstraintsLoaded(); return super.hashCode(); }
      */
+
+    @Override
+    public Class<T> getConstraintClass(){
+        return this.constrainttype;
+    }
 
 }

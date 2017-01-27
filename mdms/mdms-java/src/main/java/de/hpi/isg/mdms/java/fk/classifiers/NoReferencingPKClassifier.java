@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.java.fk.classifiers;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -29,7 +30,7 @@ public class NoReferencingPKClassifier extends PartialForeignKeyClassifier {
      *
      * @param weight weight of the classifiers results
      */
-    public NoReferencingPKClassifier(double weight, ConstraintCollection pkConstraintCollection) {
+    public NoReferencingPKClassifier(double weight, ConstraintCollection<? extends Constraint> pkConstraintCollection) {
         super(weight);
         this.pkColumnIds = new IntOpenHashSet();
         pkConstraintCollection.getConstraints().stream()

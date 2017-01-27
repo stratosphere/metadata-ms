@@ -122,7 +122,7 @@ public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDB
         }
 
         @Override
-        public void serialize(Constraint distinctValueCount, ConstraintCollection constraintCollection) {
+        public void serialize(Constraint distinctValueCount, ConstraintCollection<? extends Constraint> constraintCollection) {
             Validate.isTrue(distinctValueCount instanceof DistinctValueCount);
             try {
                 this.insertDistinctValueCountWriter.write(new int[] { constraintCollection.getId(),
@@ -137,7 +137,7 @@ public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDB
 
         @Override
         public Collection<DistinctValueCount> deserializeConstraintsOfConstraintCollection(
-                ConstraintCollection constraintCollection) {
+                ConstraintCollection<? extends Constraint> constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
             Collection<DistinctValueCount> distinctValueCounts = new HashSet<>();
@@ -193,7 +193,7 @@ public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDB
         }
 
         @Override
-        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
             try {
                 ResultSet rsDistinctValueCounts = queryDistinctValueCountForConstraintCollection
                         .execute(constraintCollection.getId());
@@ -228,7 +228,7 @@ public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDB
     }
 
     public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
+            ConstraintCollection<DistinctValueCount> constraintCollection,
             int numDistinctValues) {
         DistinctValueCount distinctValueCount = new DistinctValueCount(target, numDistinctValues);
         constraintCollection.add(distinctValueCount);

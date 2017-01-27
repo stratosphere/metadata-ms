@@ -21,6 +21,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import de.hpi.isg.mdms.dependencies.TestConstraint;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -84,7 +86,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Inserting {} distinct value counts...", numColumns);
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<DistinctValueCount> constraintCollection = metadataStore.createConstraintCollection(null, DistinctValueCount.class);
         long startTimeNet = System.currentTimeMillis();
         for (Table table : schema.getTables()) {
             for (Column column : table.getColumns()) {
@@ -126,7 +128,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         }
         LOGGER.info("Inserting {} distinct value counts...", numColumns);
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<DistinctValueCount> constraintCollection = metadataStore.createConstraintCollection(null, DistinctValueCount.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column column : allColumns) {
             DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(
@@ -183,7 +185,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Inserting the {} generated INDs...", inclusionDependencies.size());
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<InclusionDependency> constraintCollection = metadataStore.createConstraintCollection(null, InclusionDependency.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> dependentColumns = Collections.singleton(columnPair[0]);
@@ -242,7 +244,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Inserting the {} generated INDs...", inclusionDependencies.size());
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<InclusionDependency> constraintCollection = metadataStore.createConstraintCollection(null, InclusionDependency.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> dependentColumns = Collections.singleton(columnPair[0]);
@@ -301,7 +303,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Inserting the {} generated UCCs...", inclusionDependencies.size());
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<UniqueColumnCombination> constraintCollection = metadataStore.createConstraintCollection(null, UniqueColumnCombination.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);
@@ -363,7 +365,7 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         LOGGER.info("Inserting the {} generated UCCs...", inclusionDependencies.size());
         long startTimeGross = System.currentTimeMillis();
-        ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null);
+        ConstraintCollection<UniqueColumnCombination> constraintCollection = metadataStore.createConstraintCollection(null, UniqueColumnCombination.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
             Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);

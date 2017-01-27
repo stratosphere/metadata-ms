@@ -156,8 +156,8 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection is the collection whose content is requested
      * @return the constraints within the constraint collection
      */
-    Collection<Constraint> getAllConstraintsForConstraintCollection(
-            RDBMSConstraintCollection<? extends Constraint> rdbmsConstraintCollection);
+    <T extends Constraint>Collection<T> getAllConstraintsForConstraintCollection(
+            RDBMSConstraintCollection<T> rdbmsConstraintCollection);
 
     /**
      * Returns a {@link java.util.Collection} of {@link Target}s that are in the scope of a {@link ConstraintCollection}.
@@ -165,7 +165,7 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection holds the scope
      * @return the schema elements within the scope
      */
-    Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection rdbmsConstraintCollection);
+    Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection<? extends Constraint> rdbmsConstraintCollection);
 
     /**
      * Loads a column with the given ID.

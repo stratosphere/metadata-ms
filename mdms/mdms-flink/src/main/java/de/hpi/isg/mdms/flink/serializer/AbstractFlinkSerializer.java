@@ -14,8 +14,8 @@ public interface AbstractFlinkSerializer<T extends Constraint, F extends Tuple> 
     DataSet<F> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection datasourceCollection);
+			ConstraintCollection<? extends Constraint> datasourceCollection);
     
-	Runnable getAddRunnable(F tuple, ConstraintCollection constraintCollection);
+	Runnable getAddRunnable(F tuple, ConstraintCollection<T> constraintCollection);
 	
 }

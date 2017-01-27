@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
+import de.hpi.isg.mdms.java.apps.domain.TestConstraint;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
@@ -220,8 +221,8 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                         foreignKeyRating.score);
             }
         } else {
-            final ConstraintCollection<TestConstraint> constraintCollection = this.metadataStore.createConstraintCollection(
-                    String.format("Foreign keys (%s)", new Date()), statisticsCollectionId.class,
+            final ConstraintCollection<InclusionDependency> constraintCollection = this.metadataStore.createConstraintCollection(
+                    String.format("Foreign keys (%s)", new Date()), InclusionDependency.class,
                     indCollection.getScope().toArray(new Target[indCollection.getScope().size()]));
             foreignKeyRatings.stream()
                     .map(fkRating -> fkRating.ind)

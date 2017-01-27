@@ -17,6 +17,7 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.cassandra.testJobs.CountDistinctValuesCQL.Parameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
+import de.hpi.isg.mdms.domain.TestConstraint;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.flink.apps.FlinkAppTemplate;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
@@ -61,7 +62,7 @@ public class CountDistinctValuesCQL extends FlinkAppTemplate<Parameters> {
 
     private Schema schema;
 
-    private ConstraintCollection constraintCollection<? extends Constraints>;
+    private ConstraintCollection constraintCollection;
 
     public CountDistinctValuesCQL(final CountDistinctValuesCQL.Parameters parameters) {
         super(parameters);

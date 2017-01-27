@@ -27,15 +27,15 @@ object TestUtil {
     InclusionDependency.buildAndAddToCollection(reference, constraintCollection)
   }
 
-  def addDummyInclusionDependency(constraintCollection: ConstraintCollection): InclusionDependency = {
+  def addDummyInclusionDependency(constraintCollection: ConstraintCollection<? extends Constraint>): InclusionDependency = {
     addInclusionDependency(Array(1), Array(0), constraintCollection)
   }
 
-  def emptyConstraintCollection(store: RDBMSMetadataStore, schema: Schema): ConstraintCollection = {
+  def emptyConstraintCollection(store: RDBMSMetadataStore, schema: Schema): ConstraintCollection<? extends Constraint> = {
     new InMemoryConstraintCollection(store, schema)
   }
 
-  def basicINDJoinCSSetup(store: RDBMSMetadataStore, schema: Schema): (ConstraintCollection, ConstraintCollection) = {
+  def basicINDJoinCSSetup(store: RDBMSMetadataStore, schema: Schema): (ConstraintCollection<? extends Constraint>, ConstraintCollection<? extends Constraint>) = {
     val indCollection = TestUtil.emptyConstraintCollection(store, schema)
     // Adds IND wit dependent: 1, referenced: 0
     TestUtil.addDummyInclusionDependency(indCollection)

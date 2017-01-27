@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.rdbms.domain.TestConstraint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -104,7 +105,7 @@ public class RDBMSMetadataStoreTest {
         final Constraint dummyContraint = NumberedDummyConstraint.buildAndAddToCollection(dummyColumn,
                 mock(ConstraintCollection.class), 100);
 
-        ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummyContraint);
+        ConstraintCollection<Constraint> constraintCollection = store1.createConstraintCollection(null, Constraint.class);
         constraintCollection.add(dummyContraint);
 
         store1.flush();
@@ -486,7 +487,7 @@ public class RDBMSMetadataStoreTest {
                 "bar", null, 2);
 
         final ConstraintCollection<? extends  Constraint>  dummyConstraintCollection = store1.createConstraintCollection(null,
-                , TestConstraint.class, col1, col2);
+                TestConstraint.class, col1, col2);
 
         NumberedDummyConstraint.buildAndAddToCollection(col1, dummyConstraintCollection, 100);
 

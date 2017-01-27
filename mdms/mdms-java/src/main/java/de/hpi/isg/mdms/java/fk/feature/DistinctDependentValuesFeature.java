@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.java.fk.feature;
 import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
@@ -21,7 +22,7 @@ public class DistinctDependentValuesFeature extends Feature {
      */
     private final Int2LongMap distinctValues;
 
-    public DistinctDependentValuesFeature(ConstraintCollection columnStatsConstraintCollection) {
+    public DistinctDependentValuesFeature(ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
         featureName = DISTINCT_DEPENDENT_VALUES_FEATURE_NAME;
 
         // Initialize the distinct value counts.
