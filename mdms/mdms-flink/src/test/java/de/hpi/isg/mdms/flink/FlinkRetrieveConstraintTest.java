@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.flink;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.flink.domain.TestConstraint;
 import de.hpi.isg.mdms.flink.readwrite.FlinkMetdataStoreAdapter;
 import de.hpi.isg.mdms.flink.serializer.*;
 import de.hpi.isg.mdms.model.MetadataStore;
@@ -69,7 +70,7 @@ public class FlinkRetrieveConstraintTest {
         col2 = dummySchema1.addTable(store, "table1", null, new DefaultLocation()).addColumn(store,
                 "bar", null, 2);
 
-        dummyConstraintCollection = store.createConstraintCollection(null, dummySchema1);
+        dummyConstraintCollection = store.createConstraintCollection(null, TestConstraint.class,dummySchema1);
 
         Configuration configuration = new Configuration();
         configuration.setInteger(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, 128);

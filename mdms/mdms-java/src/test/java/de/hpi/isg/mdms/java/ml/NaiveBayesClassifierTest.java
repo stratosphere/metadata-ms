@@ -13,6 +13,7 @@ import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
@@ -48,7 +49,7 @@ public class NaiveBayesClassifierTest {
         final Column column30 = bar3.addColumn(store, "column0", null, 0);
         final Column column31 = bar3.addColumn(store, "column1", null, 1);
 
-        ConstraintCollection constraint = store.createConstraintCollection(null, schema);
+        ConstraintCollection<ColumnStatistics> constraint = store.createConstraintCollection(null, ColumnStatistics.class, schema);
         ColumnStatistics columnStatisticsConstraint = new ColumnStatistics(column10.getId());
         columnStatisticsConstraint.setNumDistinctValues(5);
         constraint.add(columnStatisticsConstraint);

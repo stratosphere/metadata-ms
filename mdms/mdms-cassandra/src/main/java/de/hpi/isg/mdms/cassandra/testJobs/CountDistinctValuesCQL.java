@@ -17,12 +17,14 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.cassandra.testJobs.CountDistinctValuesCQL.Parameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
+import de.hpi.isg.mdms.domain.TestConstraint;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.flink.apps.FlinkAppTemplate;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
 import de.hpi.isg.mdms.flink.readwrite.RemoteCollectorImpl;
 import de.hpi.isg.mdms.flink.util.PlanBuildingUtils;
 import de.hpi.isg.mdms.hadoop.cassandra.CqlFlinkOutputFormat;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Schema;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
@@ -30,11 +32,13 @@ import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.hadoop.mapred.HadoopOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Constraints;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -96,7 +100,7 @@ public class CountDistinctValuesCQL extends FlinkAppTemplate<Parameters> {
 
         String constraintsDescription = String.format("DVCs for %s (%s)",
                 this.schema.getName(), DateFormat.getInstance().format(new Date()));
-        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, this.schema);
+        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, TestConstraint.class ,this.schema);
 
 
         HadoopOutputFormat<String, ArrayList<Object>> hadoopOutputFormat =

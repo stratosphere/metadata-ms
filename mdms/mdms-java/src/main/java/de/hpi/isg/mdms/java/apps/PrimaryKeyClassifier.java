@@ -12,6 +12,7 @@ import de.hpi.isg.mdms.domain.constraints.TextColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
+import de.hpi.isg.mdms.java.apps.domain.TestConstraint;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
@@ -67,7 +68,7 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
         // Load the statistics.
         this.columnStatics = new Int2ObjectOpenHashMap<>();
         this.textColumnStatistics = new Int2ObjectOpenHashMap<>();
-        final Collection<Constraint> constraints = this.metadataStore
+        final Collection<? extends Constraint> constraints = this.metadataStore
                 .getConstraintCollection(this.parameters.statisticsCollectionId).getConstraints();
         for (Constraint constraint : constraints) {
             if (constraint instanceof ColumnStatistics) {
@@ -82,7 +83,7 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
 
     @Override
     protected void executeAppLogic() throws Exception {
-        final ConstraintCollection uccCollection = this.metadataStore
+        final ConstraintCollection<? extends Constraint> uccCollection = this.metadataStore
                 .getConstraintCollection(this.parameters.uccCollectionId);
 
         // Group the UCCs by their table.
@@ -101,8 +102,8 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
             pkStream.forEach(pk -> System.out.format("Designate %s as primary key.\n",
                     this.prettyPrinter.prettyPrint(pk)));
         } else {
-            final ConstraintCollection constraintCollection = this.metadataStore.createConstraintCollection(
-                    String.format("Primary keys (%s)", new Date()),
+            final ConstraintCollection<UniqueColumnCombination> constraintCollection = this.metadataStore.createConstraintCollection(
+                    String.format("Primary keys (%s)", new Date()), UniqueColumnCombination.class,
                     uccCollection.getScope().toArray(new Target[uccCollection.getScope().size()]));
             pkStream.forEach(constraintCollection::add);
             this.metadataStore.flush();

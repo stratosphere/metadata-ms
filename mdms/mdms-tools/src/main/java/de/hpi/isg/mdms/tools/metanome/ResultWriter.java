@@ -6,6 +6,7 @@ import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
@@ -21,6 +22,7 @@ import java.util.HashMap;
  * It receives necessary information about dependencies and transforms them to a format required for the metadatastore.
  *
  * @author Susanne Buelow
+ * @author Sebastian Kruse
  */
 
 public class ResultWriter {
@@ -30,7 +32,8 @@ public class ResultWriter {
     private final String tableName;
     private final HashMap<String, Table> tables = new HashMap<String, Table>();
     private final HashMap<String, HashMap<String, Column>> columns = new HashMap<String, HashMap<String, Column>>();
-    private final ConstraintCollection constraintCollection;
+    private final String description;
+    private ConstraintCollection<?> constraintCollection;
 
     public ResultWriter(MetadataStoreParameters metadatastoreParameters, String schemaname, String tablename, String description) {
         this(MetadataStoreUtil.loadMetadataStore(metadatastoreParameters), schemaname, tablename, description);
@@ -55,12 +58,27 @@ public class ResultWriter {
             this.columns.put(table.getName(), columnsForTable);
         }
 
-        String constraintsDescription = String.format(description,
-                this.schema.getName(), DateFormat.getInstance().format(new Date()));
-        this.constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, this.schema);
-
+        this.description = description;
     }
 
+    @SuppressWarnings("unchecked") // We check type safety by hand.
+    private <T extends Constraint> ConstraintCollection<T> getConstraintCollection(Class<T> type) {
+        if (this.constraintCollection == null) {
+            String constraintsDescription = String.format(this.description,
+                    this.schema.getName(), DateFormat.getInstance().format(new Date()));
+            ConstraintCollection<T> constraintCollection = this.metadataStore.createConstraintCollection(constraintsDescription, type, this.schema);
+            this.constraintCollection = constraintCollection;
+            return constraintCollection;
+        } else {
+            // Ensure that the constraint collection has the right type.
+            if (type != this.constraintCollection.getConstraintClass()) {
+                throw new IllegalArgumentException(String.format("Conflicting constraint types: %s and %s",
+                        this.constraintCollection.getConstraintClass(), type
+                ));
+            }
+            return (ConstraintCollection<T>) this.constraintCollection;
+        }
+    }
 
     /**
      * Writes a functional dependency to the metadatastore.
@@ -80,10 +98,12 @@ public class ResultWriter {
             fdLHSColumnIds[i] = getColumnIdFor(fdLHSTableNames[i], fdLHSColumnNames[i]);
         }
 
-        synchronized (this.constraintCollection) {
+        synchronized (this) {
+            ConstraintCollection<FunctionalDependency> constraintCollection = this.getConstraintCollection(FunctionalDependency.class);
             FunctionalDependency.buildAndAddToCollection(
                     new FunctionalDependency.Reference(fdRHSColumnId, fdLHSColumnIds),
-                    this.constraintCollection);
+                    constraintCollection
+            );
         }
     }
 
@@ -100,8 +120,9 @@ public class ResultWriter {
             uniqueColumnIds[i] = getColumnIdFor(uniqueColumnTableNames[i], uniqueColumnNames[i]);
         }
 
-        synchronized (this.constraintCollection) {
-            UniqueColumnCombination.buildAndAddToCollection(new UniqueColumnCombination.Reference(uniqueColumnIds), this.constraintCollection);
+        synchronized (this) {
+            ConstraintCollection<UniqueColumnCombination> constraintCollection = this.getConstraintCollection(UniqueColumnCombination.class);
+            UniqueColumnCombination.buildAndAddToCollection(new UniqueColumnCombination.Reference(uniqueColumnIds), constraintCollection);
         }
     }
 
@@ -121,10 +142,12 @@ public class ResultWriter {
             dependentColumns[i] = getColumnFor(depTableNames[i], depColumnNames[i]);
         }
 
-        synchronized (this.constraintCollection) {
+        synchronized (this) {
+            ConstraintCollection<InclusionDependency> constraintCollection = this.getConstraintCollection(InclusionDependency.class);
             InclusionDependency.buildAndAddToCollection(
                     new InclusionDependency.Reference(dependentColumns, referencedColumns),
-                    this.constraintCollection);
+                    constraintCollection
+            );
         }
     }
 

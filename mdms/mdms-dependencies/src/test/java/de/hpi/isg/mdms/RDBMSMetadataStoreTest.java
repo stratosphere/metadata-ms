@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms;
 
+import de.hpi.isg.mdms.dependencies.TestConstraint;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
@@ -68,7 +69,7 @@ public class RDBMSMetadataStoreTest {
 
         final Table dummyTable = dummySchema.addTable(store1, "dummyTable", null, dummyTableLocation);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class);
         final TupleCount dummyContraint = TupleCount.buildAndAddToCollection(new SingleTargetReference(
                 dummyTable.getId()), constraintCollection, 5);
         constraintCollection.add(dummyContraint);
@@ -95,7 +96,7 @@ public class RDBMSMetadataStoreTest {
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", null, 1);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class);
         final TypeConstraint dummyContraint = TypeConstraint.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn.getId()), constraintCollection, "VARCHAR");
         constraintCollection.add(dummyContraint);
@@ -122,7 +123,7 @@ public class RDBMSMetadataStoreTest {
 
         final Column dummyColumn = dummyTable.addColumn(store1, "dummyColumn", null, 1);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection("some collection");
+        ConstraintCollection constraintCollection = store1.createConstraintCollection("some collection", TestConstraint.class);
 
         final DistinctValueCount dummyContraint = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(
                 dummyColumn.getId()), constraintCollection, 5);
@@ -154,7 +155,7 @@ public class RDBMSMetadataStoreTest {
         final Column dummyColumn1 = dummyTable.addColumn(store1, "dummyColumn1", null, 1);
         final Column dummyColumn2 = dummyTable.addColumn(store1, "dummyColumn2", null, 2);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class);
 
         final InclusionDependency dummyContraint = InclusionDependency.buildAndAddToCollection(
                 new InclusionDependency.Reference(
@@ -185,7 +186,7 @@ public class RDBMSMetadataStoreTest {
         final Column dummyColumn1 = dummyTable.addColumn(store1, "dummyColumn1", null, 1);
         final Column dummyColumn2 = dummyTable.addColumn(store1, "dummyColumn2", null, 2);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null);
+        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, TestConstraint.class);
 
         final UniqueColumnCombination dummyContraint = UniqueColumnCombination.buildAndAddToCollection(
                 new UniqueColumnCombination.Reference(
@@ -327,7 +328,7 @@ public class RDBMSMetadataStoreTest {
         Column col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
 
         TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),
@@ -367,7 +368,7 @@ public class RDBMSMetadataStoreTest {
         col2 = dummySchema1.addTable(store1, "table1", null, new DefaultLocation()).addColumn(store1,
                 "bar", null, 2);
 
-        dummyConstraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        dummyConstraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
 
         TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(col1.getId()),

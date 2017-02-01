@@ -152,7 +152,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         }
 
         @Override
-        public void serialize(Constraint inclusionDependency, ConstraintCollection constraintCollection) {
+        public void serialize(Constraint inclusionDependency, ConstraintCollection<? extends Constraint> constraintCollection) {
             ensureCurrentConstraintIdMaxInitialized();
 
             // for auto-increment id
@@ -177,7 +177,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
 
         @Override
         public Collection<InclusionDependency> deserializeConstraintsOfConstraintCollection(
-                ConstraintCollection constraintCollection) {
+                ConstraintCollection<? extends Constraint> constraintCollection) {
             boolean retrieveConstraintCollection = constraintCollection == null;
 
             Collection<InclusionDependency> inclusionDependencies = new HashSet<>();
@@ -262,7 +262,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
         }
 
         @Override
-        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
             try {
                 ResultSet rsINDs = queryInclusionDependenciesForConstraintCollection
                         .execute(constraintCollection.getId());
@@ -425,7 +425,7 @@ public class InclusionDependency extends AbstractHashCodeAndEquals implements RD
     }
 
     public static InclusionDependency buildAndAddToCollection(final InclusionDependency.Reference target,
-                                                              ConstraintCollection constraintCollection) {
+                                                              ConstraintCollection<InclusionDependency> constraintCollection) {
         InclusionDependency inclusionDependency = new InclusionDependency(target);
         constraintCollection.add(inclusionDependency);
         return inclusionDependency;

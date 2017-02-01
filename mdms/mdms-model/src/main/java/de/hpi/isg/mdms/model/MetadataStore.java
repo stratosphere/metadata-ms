@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 
 import de.hpi.isg.mdms.model.common.Observer;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -44,7 +45,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @return all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    Collection<ConstraintCollection> getConstraintCollections();
+    Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections();
 
     /**
      * Returns a particular {@link ConstraintCollection} with the given id.
@@ -52,7 +53,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param id
      * @return the {@link ConstraintCollection} with the given id, <code>null</code> if no exists with given id.
      */
-    ConstraintCollection getConstraintCollection(int id);
+    ConstraintCollection<? extends Constraint> getConstraintCollection(int id);
 
     /**
      * Returns a list of {@link ConstraintCollection} with the given target.
@@ -60,15 +61,40 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @return the list of {@link ConstraintCollection} with the given target.
      * @param target
      */
-    default Collection<ConstraintCollection> getConstraintCollectionByTarget(Target target) {
-        Collection<ConstraintCollection> result = new LinkedList<>();
-        for (ConstraintCollection constraintCollection : getConstraintCollections()) {
+    default Collection<ConstraintCollection<? extends Constraint>> getConstraintCollectionByTarget(Target target) {
+        Collection<ConstraintCollection<? extends Constraint>> result = new LinkedList<>();
+        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
             for (Target scopetarget : constraintCollection.getScope())
-                if (getIdUtils().isContained(target.getId(), scopetarget.getId()))
-                {
+                if (getIdUtils().isContained(target.getId(), scopetarget.getId())){
                     result.add(constraintCollection);
                     break;
                 }
+        }
+        return result;
+    }
+
+    default <T extends Constraint>Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
+        Collection<ConstraintCollection<T>> result = new LinkedList<>();
+        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
+                if (constraintCollection.getConstraintClass() == constrainttype){
+                    result.add((ConstraintCollection<T>) constraintCollection);
+                    break;
+                }
+        }
+        return result;
+    }
+
+    default <T extends Constraint>Collection<ConstraintCollection<T>>
+    getConstraintCollectionByConstraintTypeAndTarget(Class<T> constrainttype, Target target) {
+        Collection<ConstraintCollection<T>> result = new LinkedList<>();
+        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
+            if (constraintCollection.getConstraintClass() == constrainttype){
+                for (Target scopetarget : constraintCollection.getScope())
+                    if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
+                        result.add((ConstraintCollection<T>) constraintCollection);
+                    }
+                break;
+            }
         }
         return result;
     }
@@ -191,13 +217,13 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    ConstraintCollection createConstraintCollection(String description, Experiment experiment, Target... scope);
+    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target ... scope);
 
     /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    ConstraintCollection createConstraintCollection(String description, Target... scope);
+    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope);
 
 
     /**
@@ -236,7 +262,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @param constraintCollection
      */
-    void removeConstraintCollection(ConstraintCollection constraintCollection);
+    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * Closes the MetadataStore.
@@ -268,5 +294,4 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @return {@link Experiment}
      */
     public Experiment getExperimentById(int experimentId);
-
 }

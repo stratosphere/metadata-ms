@@ -49,7 +49,7 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
      * @param weight weight of the classifiers results
      */
     public ValueDiffClassifier(double weight,
-                               ConstraintCollection textColumnStatisticsCollection,
+                               ConstraintCollection<? extends Constraint> textColumnStatisticsCollection,
                                double minOverlapRatio,
                                double disqualifyingOverlapRatio) {
         super(weight);

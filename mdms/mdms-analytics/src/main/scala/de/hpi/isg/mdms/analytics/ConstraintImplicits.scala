@@ -12,7 +12,7 @@ import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 object ConstraintImplicits {
 
-  implicit class ConstraintCollectionQueryObject(constraintCollection: ConstraintCollection) {
+  implicit class ConstraintCollectionQueryObject[T<: Constraint](constraintCollection: ConstraintCollection[T]) {
 
     /**
       * Turns the ConstraintCollection into a Scala Iterable[Constraint].
@@ -65,7 +65,7 @@ object ConstraintImplicits {
       * @tparam A Type of the left hand side.
       * @tparam B Type of the right hand side.
       */
-    def join[A <: Constraint, B <: Constraint](other: ConstraintCollection): UnJoinedConstraintCollection[A, B] = {
+    def join[A <: Constraint, B <: Constraint](other: ConstraintCollection[B]): UnJoinedConstraintCollection[A, B] = {
       constraintCollection.join[A, B](other.asType[B])
     }
 
@@ -82,7 +82,7 @@ object ConstraintImplicits {
   }
 
 
-  implicit class ConstraintCollectionIterable(collections: java.util.Collection[ConstraintCollection]) {
+  implicit class ConstraintCollectionIterable(collections: java.util.Collection[ConstraintCollection[_]]) {
 
     // TODO: Add all constraints with correct description tag
     private val nameMapping = Map("FD" -> "FD", "IND" -> "IND", "UCC" -> "UCC", "CS" -> "column statistics")
@@ -90,7 +90,7 @@ object ConstraintImplicits {
     /**
       * Gets the ConstraintCollection by its name from nameMapping.
       */
-    def getCollectionByName(name: String): ConstraintCollection = {
+    def getCollectionByName(name: String): ConstraintCollection[_] = {
       if (!nameMapping.contains(name)) {
         throw new NoSuchElementException(s"No ConstraintCollection with that identifier! Choose from ${nameMapping.keys}")
       }
@@ -116,7 +116,7 @@ object ConstraintImplicits {
       * @param other ConstraintCollection to join with.
       * @tparam B Type of the right hand side.
       */
-    def join[B <: Constraint](other: ConstraintCollection): UnJoinedConstraintCollection[A, B] = {
+    def join[B <: Constraint](other: ConstraintCollection[B]): UnJoinedConstraintCollection[A, B] = {
       constraints.join[B](other.asType[B])
     }
 

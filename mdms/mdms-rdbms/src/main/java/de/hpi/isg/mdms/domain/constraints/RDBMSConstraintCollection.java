@@ -21,12 +21,11 @@ import java.util.Set;
 
 /**
  * The default implementation of a {@link ConstraintCollection} that is used in {@link de.hpi.isg.mdms.domain.RDBMSMetadataStore}s.
- * 
- * @author fabian
  *
+ * @author fabian
  */
 
-public class RDBMSConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
+public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -2911473574180511468L;
 
@@ -34,37 +33,42 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
 
     public static final boolean IS_CHECK_CONSTRAINT_TARGETS = false;
 
-    private Collection<Constraint> constraints = null;
+    private Collection<T> constraints = null;
 
     private Collection<Target> scope;
 
     private Set<Integer> scopeIdSet;
 
     private String description;
-    
+
     private Experiment experiment = null;
+
+    @ExcludeHashCodeEquals
+    private Class<T> constrainttype;
 
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
         super(id);
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
         this.description = description != null ? description : "";
+        this.constrainttype = constrainttype;
     }
 
-    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface) {
+    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
         super(id);
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
         this.description = description != null ? description : "";
         this.experiment = experiment;
+        this.constrainttype = constrainttype;
     }
 
-    
+
     private Set<Integer> rebuildScopeSet(Collection<Target> scope) {
         Set<Integer> set = new HashSet<>();
         for (Target t : scope) {
@@ -86,9 +90,9 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         this.experiment = experiment;
     }
 
-    
+
     @Override
-    public Collection<Constraint> getConstraints() {
+    public Collection<T> getConstraints() {
         ensureConstraintsLoaded();
         return constraints;
     }
@@ -128,12 +132,12 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
     }
 
     @Override
-    public void add(Constraint constraint) {
+    public void add(T constraint) {
         this.constraints = null;
 
         if (IS_CHECK_CONSTRAINT_TARGETS) {
             // Ensure that all targets of the constraint are valid.
-            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
+            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext(); ) {
                 int targetId = i.nextInt();
                 if (!targetInScope(targetId)) {
                     LOGGER.warn("Target with id {} not in scope of constraint collection", targetId);
@@ -154,13 +158,13 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         }
 
         switch (idUtils.getIdType(targetId)) {
-        case SCHEMA_ID:
-            return false;
-        case TABLE_ID:
-            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
-        case COLUMN_ID:
-            return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
-                    || this.scopeIdSet.contains(idUtils.getTableId(targetId));
+            case SCHEMA_ID:
+                return false;
+            case TABLE_ID:
+                return this.scopeIdSet.contains(idUtils.getSchemaId(targetId));
+            case COLUMN_ID:
+                return this.scopeIdSet.contains(idUtils.getSchemaId(targetId))
+                        || this.scopeIdSet.contains(idUtils.getTableId(targetId));
         }
         return false;
     }
@@ -175,10 +179,10 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
         this.description = description;
     }
 
-	@Override
-	public Experiment getExperiment() {
-		return this.experiment;
-	}
+    @Override
+    public Experiment getExperiment() {
+        return this.experiment;
+    }
 
     /*
      * @Override public boolean equals(Object obj) { ensureConstraintsLoaded(); if (obj instanceof
@@ -187,4 +191,18 @@ public class RDBMSConstraintCollection extends AbstractIdentifiable implements C
      * @Override public int hashCode() { ensureConstraintsLoaded(); return super.hashCode(); }
      */
 
+    @Override
+    //public Class<T> getConstraintClass(){
+    //  return this.constrainttype;
+    //}
+
+    public Class<T> getConstraintClass() {
+        if (this.constrainttype == null) {
+            for (T constraint : getConstraints()) {
+                this.constrainttype = (Class<T>) constraint.getClass();
+                break;
+            }
+        }
+        return this.constrainttype;
+    }
 }

@@ -20,40 +20,45 @@ import de.hpi.isg.mdms.exceptions.NotAllTargetsInStoreException;
  *
  */
 
-public class DefaultConstraintCollection extends AbstractIdentifiable implements ConstraintCollection {
+public class DefaultConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -6633086023388829925L;
-    private final Set<Constraint> constraints;
+    private final Set<T> constraints;
     private final Set<Target> scope;
 
     private String description;
     
     private final Experiment experiment;
 
+    private final Class<T> constrainttype;
+
+
     @ExcludeHashCodeEquals
     private final DefaultMetadataStore metadataStore;
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
-            Set<Target> scope, Experiment experiment) {
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
+            Set<Target> scope, Experiment experiment, Class<T>  constrainttype) {
         super(id);
         this.metadataStore = metadataStore;
         this.constraints = constraints;
         this.scope = scope;
         this.experiment = experiment;
+        this.constrainttype = constrainttype;
+
     }
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<Constraint> constraints,
-            Set<Target> scope) {
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
+            Set<Target> scope, Class<T> constrainttype) {
         super(id);
         this.metadataStore = metadataStore;
         this.constraints = constraints;
         this.scope = scope;
         this.experiment = null;
+        this.constrainttype = constrainttype;
     }
 
-    
     @Override
-    public Collection<Constraint> getConstraints() {
+    public Collection<T> getConstraints() {
         return Collections.unmodifiableCollection(this.constraints);
     }
 
@@ -68,7 +73,7 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
     }
 
     @Override
-    public void add(Constraint constraint) {
+    public void add(T constraint) {
         for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext();) {
             int targetId = i.nextInt();
             if (!this.metadataStore.hasTargetWithId(targetId)) {
@@ -98,4 +103,7 @@ public class DefaultConstraintCollection extends AbstractIdentifiable implements
 		return this.experiment;
 	}
 
+    public Class<T> getConstraintClass(){
+        return this.constrainttype;
+    }
 }

@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.flink.serializer;
 
 import java.util.ArrayList;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -27,7 +28,7 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
 		private int[] referenced;
 		private ConstraintCollection constraintCollection;
 
-		public AddInclusionDependencyCommand(final Tuple2<int[], int[]> indTuple, final ConstraintCollection constraintCollection) {
+		public AddInclusionDependencyCommand(final Tuple2<int[], int[]> indTuple, final ConstraintCollection<? extends Constraint> constraintCollection) {
             super();
             this.dependent = indTuple.f0;
             this.referenced = indTuple.f1;
@@ -97,7 +98,7 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
 
 	@Override
 	public Runnable getAddRunnable(Tuple2<int[], int[]> tuple,
-			ConstraintCollection constraintCollection) {
+			ConstraintCollection<? extends Constraint> constraintCollection) {
 		return new AddInclusionDependencyCommand(tuple, constraintCollection);
 	}
 	

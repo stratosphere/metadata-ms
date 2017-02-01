@@ -58,7 +58,6 @@ public class DefaultMetadataStoreTest {
         assertTrue(store1.getSchemas().contains(schema1));
     }
 
-
     @Test
     public void testGenerationOfIds() {
         final MetadataStore store = new DefaultMetadataStore();
@@ -97,7 +96,7 @@ public class DefaultMetadataStoreTest {
         System.out.println("Adding inclusion dependencies.");
         final Random random = new Random();
         for (final Schema schema : metadataStore.getSchemas()) {
-            ConstraintCollection constraintCollection = metadataStore.createConstraintCollection(null, schema);
+            ConstraintCollection<TestConstraint> constraintCollection = metadataStore.createConstraintCollection(null, TestConstraint.class, schema);
             int numInclusionDependencies = 0;
             OuterLoop:
             for (final Table table1 : schema.getTables()) {
@@ -107,8 +106,8 @@ public class DefaultMetadataStoreTest {
                             List<Column> dependentColumns;
                             List<Column> referencedColumns;
                             if (column1 != column2 && random.nextInt(10 * loadFactorForCreateComplexSchemaTest) <= 0) {
-                                Constraint constraint = new TestConstraint(column1, column2);
-                                constraintCollection.add(constraint);
+                                TestConstraint testConstraint = new TestConstraint(column1, column2);
+                                constraintCollection.add(testConstraint);
                                 numInclusionDependencies++;
                                 if (numInclusionDependencies >= 3000 * loadFactorForCreateComplexSchemaTest) {
                                     break OuterLoop;
@@ -178,10 +177,10 @@ public class DefaultMetadataStoreTest {
 
         @SuppressWarnings("unused")
         final Set<?> scope = Collections.singleton(dummySchema1);
-        final Constraint dummyTypeConstraint = new TestConstraint(col, col);
+        final TestConstraint testConstraint = new TestConstraint(col, col);
 
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
-        constraintCollection.add(dummyTypeConstraint);
+        ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
+        constraintCollection.add(testConstraint);
 
         assertTrue(store1.getConstraintCollections().contains(constraintCollection));
     }
@@ -333,7 +332,7 @@ public class DefaultMetadataStoreTest {
         store1.getSchemas().add(dummySchema1);
         final Algorithm algorithm1 = store1.createAlgorithm("algorithm1");
         Experiment experiment = store1.createExperiment("experiment1", algorithm1);
-        ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema1);
+        ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema1);
         experiment.add(constraintCollection);
         assertTrue(store1.getExperimentById(experiment.getId()).getConstraintCollections().size() == 1);
     }
@@ -346,7 +345,7 @@ public class DefaultMetadataStoreTest {
             final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
 
             store1.getSchemas().add(dummySchema);
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummySchema);
+            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema);
 
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
@@ -356,7 +355,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in S2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -404,7 +403,7 @@ public class DefaultMetadataStoreTest {
 
             store1.getSchemas().add(dummySchema);
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyTable);
+            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummyTable);
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
 
             final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
@@ -412,7 +411,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in T2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -455,14 +454,14 @@ public class DefaultMetadataStoreTest {
             store1.getSchemas().add(dummySchema);
             Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
             Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
-            ConstraintCollection constraintCollection = store1.createConstraintCollection(null, dummyCol);
+            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummyCol);
 
             final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
             store1.getSchemas().add(dummySchema2);
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection> result;
+            Collection<ConstraintCollection<? extends Constraint>> result;
 
             // S1 in C2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -488,6 +487,117 @@ public class DefaultMetadataStoreTest {
             assertEquals(0, result.size());
             for (Object o : result) {
                 Assert.assertFalse(store1.getConstraintCollections().contains(o));
+            }
+        }
+    }
+
+    @Test
+    public void testGetConstraintCollectionByType() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+        store1.getSchemas().add(dummySchema);
+        ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummySchema);
+        {
+            Collection<ConstraintCollection<TestConstraint>> result;
+            result = store1.getConstraintCollectionByConstraintType(TestConstraint.class);
+            assertEquals(1, result.size());
+        }
+        {
+            Collection<ConstraintCollection<TestConstraint2>> result;
+            result = store1.getConstraintCollectionByConstraintType(TestConstraint2.class);
+            assertEquals(0, result.size());
+        }
+    }
+
+    @Test
+    public void testGetConstraintCollectionByTypeAndTarget() {
+        // XY in T2?
+        {
+            final MetadataStore store1 = new DefaultMetadataStore();
+            final Schema dummySchema = DefaultSchema.buildAndRegister(store1, "schema1", null, mock(Location.class));
+
+            store1.getSchemas().add(dummySchema);
+            Table dummyTable = dummySchema.addTable(store1, "table1", null, mock(Location.class));
+            ConstraintCollection<TestConstraint> constraintCollection = store1.createConstraintCollection(null, TestConstraint.class, dummyTable);
+            Column dummyCol = dummyTable.addColumn(store1, "col1", null, 1);
+
+            final Schema dummySchema2 = DefaultSchema.buildAndRegister(store1, "schema2", null, mock(Location.class));
+            store1.getSchemas().add(dummySchema2);
+            Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
+            Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
+
+            // Here having the CORRECT constraint type...
+            {
+                Collection<ConstraintCollection<TestConstraint>> result;
+
+                // S1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummySchema);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // T1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyTable);
+                assertEquals(1, result.size());
+                for (Object o : result) {
+                    assertTrue(store1.getConstraintCollections().contains(o));
+                }
+                // C1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyCol);
+                assertEquals(1, result.size());
+                for (Object o : result) {
+                    assertTrue(store1.getConstraintCollections().contains(o));
+                }
+
+                // T1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyTable2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyCol2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+            }
+            // Here having the INCORRECT constraint type...
+            {
+                Collection<ConstraintCollection<TestConstraint2>> result;
+
+                // S1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummySchema);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // T1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyTable);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 in T2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyCol);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+
+                // T1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyTable2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
+                // C1 not in S2?
+                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyCol2);
+                assertEquals(0, result.size());
+                for (Object o : result) {
+                    Assert.assertFalse(store1.getConstraintCollections().contains(o));
+                }
             }
         }
     }

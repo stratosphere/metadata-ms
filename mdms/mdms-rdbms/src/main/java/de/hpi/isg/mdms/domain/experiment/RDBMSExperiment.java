@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSExperiment.class);
 
-	private  Set<ConstraintCollection> constraintCollections = new HashSet<ConstraintCollection>();
+	private  Set<ConstraintCollection<? extends Constraint>> constraintCollections = new HashSet<ConstraintCollection<? extends Constraint>>();
     private Algorithm algorithm;
     private Map<String, String> parameters = new HashMap<String, String>();
 	private Set<Annotation> annotations = new HashSet<Annotation>();
@@ -121,7 +122,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	}
 
 	@Override
-	public Collection<ConstraintCollection> getConstraintCollections() {
+	public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
 		ensureConstraintCollectionsLoaded();
 		return this.constraintCollections;
 	}
@@ -133,7 +134,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
     }
 
 	@Override
-	public void add(ConstraintCollection constraintCollection) {
+	public void add(ConstraintCollection<? extends Constraint> constraintCollection) {
 		this.constraintCollections = null;
 		this.sqlInterface.addConstraintCollection(constraintCollection);
 		

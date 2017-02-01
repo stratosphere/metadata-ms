@@ -48,7 +48,7 @@ object HTMLTable {
   /**
     * Returns a table with all elements in a ConstraintCollection.
     */
-  def fromCollection(collection: ConstraintCollection): Elem = {
+  def fromCollection[T<:Constraint](collection: ConstraintCollection[T]): Elem = {
     fromCollection(collection.constraintsIter)
   }
 

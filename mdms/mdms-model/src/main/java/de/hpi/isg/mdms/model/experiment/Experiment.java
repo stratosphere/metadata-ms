@@ -5,6 +5,7 @@ import java.util.Map;
 
 import de.hpi.isg.mdms.model.common.Described;
 import de.hpi.isg.mdms.model.common.Identifiable;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.MetadataStore;
 
@@ -57,7 +58,7 @@ public interface Experiment extends Identifiable, Described {
      * 
      * @return {@link Collection} of {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    public Collection<ConstraintCollection> getConstraintCollections();
+    public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections();
 
     /**
      * Adds a new {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection} to this collection.
@@ -65,7 +66,7 @@ public interface Experiment extends Identifiable, Described {
      * @param constraintCollection
      *        The {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection} to add.
      */
-    public void add(ConstraintCollection constraintCollection);
+    public void add(ConstraintCollection<? extends Constraint> constraintCollection);
 
     /**
      * This function returns the {@link de.hpi.isg.mdms.model.MetadataStore} this collection belongs to.

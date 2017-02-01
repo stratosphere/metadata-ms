@@ -97,7 +97,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     
     private final Collection<Experiment> experiments;
     
-    private final Collection<ConstraintCollection> constraintCollections;
+    private final Collection<ConstraintCollection<? extends Constraint>> constraintCollections;
 
     private final Int2ObjectMap<Target> allTargets;
 
@@ -117,7 +117,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         this.storeLocation = location;
 
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
-        this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection>());
+        this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection<? extends Constraint>>());
         this.allTargets = new Int2ObjectOpenHashMap<>();
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
         this.experiments = Collections.synchronizedList(new LinkedList<Experiment>());
@@ -251,42 +251,42 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public Collection<ConstraintCollection> getConstraintCollections() {
-        return this.constraintCollections;
+    public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
+        return (Collection<ConstraintCollection<? extends Constraint>>) (Collection) this.constraintCollections;
     }
 
     @Override
-    public ConstraintCollection getConstraintCollection(int id) {
-        for (ConstraintCollection constraintCollection : this.constraintCollections) {
+    public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.constraintCollections) {
             if (constraintCollection.getId() == id) return constraintCollection;
         }
         return null;
     }
 
     @Override
-    public ConstraintCollection createConstraintCollection(String description, Target... scope) {
+    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
         }
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(this,
+        ConstraintCollection<T> constraintCollection = new DefaultConstraintCollection<>(this,
                 getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)));
+                new HashSet<>(), new HashSet<Target>(Arrays.asList(scope)),cls);
         constraintCollection.setDescription(description);
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
     }
 
 	@Override
-	public ConstraintCollection createConstraintCollection(String description,
-			Experiment experiment, Target... scope) {
+	public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description,
+			Experiment experiment, Class<T> cls, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
         }
-        ConstraintCollection constraintCollection = new DefaultConstraintCollection(this,
+        ConstraintCollection<T> constraintCollection = new DefaultConstraintCollection(this,
                 getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), experiment);
+                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), experiment, cls);
         this.constraintCollections.add(constraintCollection);
         experiment.add(constraintCollection);
         return constraintCollection;
@@ -350,7 +350,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Not supported yet.");
         //
@@ -403,7 +403,8 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 	@Override
 	public Experiment createExperiment(String description, Algorithm algorithm) {
 		final int id = this.getUnusedExperimentId();
-        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<ConstraintCollection>(), new HashMap<String, String>(), new HashSet<Annotation>());
+        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<>(),
+                new HashMap<>(), new HashSet<>());
         this.experiments.add(experiment);
         algorithm.addExperiment(experiment);
         return experiment;

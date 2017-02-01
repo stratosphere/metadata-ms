@@ -61,7 +61,7 @@ public class SQLiteConstraintHandler {
      * @param constraintCollection to which the constraint belongs to;
      *                             must be a {@link de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection}
      */
-    public void writeConstraint(Constraint constraint, ConstraintCollection constraintCollection) {
+    public void writeConstraint(Constraint constraint, ConstraintCollection<? extends Constraint> constraintCollection) {
         if (!(constraint instanceof RDBMSConstraint)) {
             throw new IllegalArgumentException("Not an RDBMSConstraint: " + constraint);
         } else if (!(constraint instanceof RDBMSConstraintCollection)) {
@@ -76,7 +76,7 @@ public class SQLiteConstraintHandler {
      *
      * @param constraint is a constraint that shall be written
      */
-    public void writeConstraint(RDBMSConstraint constraint, RDBMSConstraintCollection constraintCollection) {
+    public void writeConstraint(RDBMSConstraint constraint, RDBMSConstraintCollection<? extends Constraint> constraintCollection) {
         // Try to find an existing serializer for the constraint type.
         ConstraintSQLSerializer<? extends Constraint> serializer = constraintSerializers.get(constraint.getClass());
 
@@ -162,7 +162,7 @@ public class SQLiteConstraintHandler {
     }
 
 
-    public void addConstraintCollection(ConstraintCollection constraintCollection) {
+    public void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         try {
         	if (constraintCollection.getExperiment() == null) {
                 String sqlAddConstraintCollection = String.format(
@@ -181,7 +181,7 @@ public class SQLiteConstraintHandler {
 
     }
 
-    public void addScope(Target target, ConstraintCollection constraintCollection) {
+    public void addScope(Target target, ConstraintCollection<? extends Constraint> constraintCollection) {
         try {
             String sqlAddScope = String.format("INSERT INTO Scope (targetId, constraintCollectionId) VALUES (%d, %d);",
                     target.getId(), constraintCollection.getId());
@@ -227,7 +227,7 @@ public class SQLiteConstraintHandler {
     }
 
 
-    public void removeConstraintCollection(ConstraintCollection constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         try {
             this.databaseAccess.flush();
             for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers
@@ -254,9 +254,9 @@ public class SQLiteConstraintHandler {
 
     }
 
-	public Set<ConstraintCollection> getAllConstraintCollectionsForExperiment(Experiment experiment) {
+	public Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(Experiment experiment) {
         try {
-            Set<ConstraintCollection> constraintCollections = new HashSet<>();
+            Set<ConstraintCollection<? extends Constraint>> constraintCollections = new HashSet<>();
 
             String sqlconstraintCollectionsForExperiment = String
                     .format("SELECT constraintCollection.id as id from constraintCollection where constraintCollection.experimentId = %d;",
