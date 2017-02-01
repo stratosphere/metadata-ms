@@ -359,7 +359,7 @@ public class UniqueColumnCombination extends AbstractHashCodeAndEquals implement
     }
 
     public static UniqueColumnCombination buildAndAddToCollection(final UniqueColumnCombination.Reference target,
-            ConstraintCollection constraintCollection) {
+            ConstraintCollection<UniqueColumnCombination> constraintCollection) {
         UniqueColumnCombination uniqueColumnCombination = new UniqueColumnCombination(target);
         constraintCollection.add(uniqueColumnCombination);
         return uniqueColumnCombination;

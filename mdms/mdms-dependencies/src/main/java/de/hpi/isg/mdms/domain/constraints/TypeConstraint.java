@@ -210,7 +210,7 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
     }
 
     public static TypeConstraint buildAndAddToCollection(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
+            ConstraintCollection<TypeConstraint> constraintCollection,
             String type) {
         TypeConstraint typeConstraint = new TypeConstraint(target, type);
         constraintCollection.add(typeConstraint);

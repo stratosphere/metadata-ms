@@ -26,7 +26,7 @@ public class UCCFlinkSerializer implements AbstractFlinkSerializer<UniqueColumnC
 		
         private int[] columnIds;
         private int numDistinctValues;
-        private ConstraintCollection<? extends Constraint> constraintCollection;
+        private ConstraintCollection<UniqueColumnCombination> constraintCollection;
 
         public AddUCCCommand(final Tuple1<int[]> tuple, final ConstraintCollection constraintCollection) {
             this.columnIds = tuple.f0;

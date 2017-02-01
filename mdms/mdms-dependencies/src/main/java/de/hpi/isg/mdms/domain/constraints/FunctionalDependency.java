@@ -380,7 +380,7 @@ public class FunctionalDependency extends AbstractHashCodeAndEquals implements R
     }
 
     public static FunctionalDependency buildAndAddToCollection(final FunctionalDependency.Reference target,
-                                                               ConstraintCollection constraintCollection) {
+                                                               ConstraintCollection<FunctionalDependency> constraintCollection) {
         FunctionalDependency functionalDependency = new FunctionalDependency(target);
         constraintCollection.add(functionalDependency);
         return functionalDependency;

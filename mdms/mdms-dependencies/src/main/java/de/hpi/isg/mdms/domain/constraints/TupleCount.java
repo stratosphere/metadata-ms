@@ -219,14 +219,13 @@ public class TupleCount extends AbstractHashCodeAndEquals implements RDBMSConstr
     }
 
     @Deprecated
-    public static TupleCount build(final SingleTargetReference target, ConstraintCollection constraintCollection,
+    public static TupleCount build(final SingleTargetReference target, ConstraintCollection<TupleCount> constraintCollection,
             int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, numTuples);
-        return tupleCount;
+        return new TupleCount(target, numTuples);
     }
 
     public static TupleCount buildAndAddToCollection(final SingleTargetReference target,
-            ConstraintCollection constraintCollection,
+            ConstraintCollection<TupleCount> constraintCollection,
             int numTuples) {
         TupleCount tupleCount = new TupleCount(target, numTuples);
         constraintCollection.add(tupleCount);

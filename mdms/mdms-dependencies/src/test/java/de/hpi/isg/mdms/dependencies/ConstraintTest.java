@@ -72,7 +72,7 @@ public class ConstraintTest {
         final Column dummyColumn = DefaultColumn.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Table.class),
                 "dummyColumn1", null, Mockito.mock(Location.class));
 
-        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<TypeConstraint> cC = Mockito.mock(ConstraintCollection.class);
         final Constraint dummyTypeContraint1 = TypeConstraint.buildAndAddToCollection(
                 new SingleTargetReference(dummyColumn.getId()), cC, "VARCHAR");
         final Constraint dummyTypeContraint2 = TypeConstraint.buildAndAddToCollection(
@@ -87,7 +87,7 @@ public class ConstraintTest {
         final Table dummyTable = DefaultTable.buildAndRegister(Mockito.mock(MetadataStore.class), Mockito.mock(Schema.class),
                 "dummyTable", null, new DefaultLocation());
 
-        final ConstraintCollection<? extends Constraint> cC = Mockito.mock(ConstraintCollection.class);
+        final ConstraintCollection<TupleCount> cC = Mockito.mock(ConstraintCollection.class);
         final TupleCount tupleCount1 = TupleCount.buildAndAddToCollection(
                 new SingleTargetReference(dummyTable.getId()), cC, 1);
         final TupleCount tupleCount2 = TupleCount.build(
