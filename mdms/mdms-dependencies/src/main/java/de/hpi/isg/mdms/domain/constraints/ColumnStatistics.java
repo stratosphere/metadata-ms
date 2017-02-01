@@ -204,7 +204,7 @@ public class ColumnStatistics implements RDBMSConstraint {
         }
 
         @Override
-        public void serialize(Constraint constraint, ConstraintCollection constraintCollection) {
+        public void serialize(Constraint constraint, ConstraintCollection<? extends Constraint> constraintCollection) {
             if (!(constraint instanceof ColumnStatistics)) {
                 throw new IllegalArgumentException();
             }
@@ -225,7 +225,7 @@ public class ColumnStatistics implements RDBMSConstraint {
         }
 
         @Override
-        public Collection<ColumnStatistics> deserializeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
+        public Collection<ColumnStatistics> deserializeConstraintsOfConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
 
             Collection<ColumnStatistics> constraints = new LinkedList<>();
             try (ResultSet resultSet = constraintCollection == null ?
@@ -249,7 +249,7 @@ public class ColumnStatistics implements RDBMSConstraint {
         }
 
         @Override
-        public void removeConstraintsOfConstraintCollection(ConstraintCollection constraintCollection) {
+        public void removeConstraintsOfConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
             // todo
             throw new RuntimeException("Not implemented.");
         }

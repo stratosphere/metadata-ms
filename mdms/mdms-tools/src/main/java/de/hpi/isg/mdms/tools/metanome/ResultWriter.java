@@ -32,7 +32,7 @@ public class ResultWriter {
     private final String tableName;
     private final HashMap<String, Table> tables = new HashMap<String, Table>();
     private final HashMap<String, HashMap<String, Column>> columns = new HashMap<String, HashMap<String, Column>>();
-    private final ConstraintCollection<? extends Constraint> constraintCollection;
+    private final ConstraintCollection<InclusionDependency> constraintCollection;
 
     public ResultWriter(MetadataStoreParameters metadatastoreParameters, String schemaname, String tablename, String description) {
         this(MetadataStoreUtil.loadMetadataStore(metadatastoreParameters), schemaname, tablename, description);
