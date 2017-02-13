@@ -18,12 +18,25 @@ public class JdbcLocation extends DefaultLocation {
      */
     public static final String DRIVER_CLASS = "DRIVER";
 
+    /**
+     * Configuration key for the schema name.
+     */
+    public static final String SCHEMA = "SCHEMA";
+
     public void setUrl(String url) {
         this.set(URL, url);
     }
 
     public String getUrl() {
         return this.get(URL);
+    }
+
+    public void setSchema(String schema) {
+        this.set(SCHEMA, schema);
+    }
+
+    public String getSchema() {
+        return this.get(SCHEMA);
     }
 
     public void setDriverClass(String driverClass) {

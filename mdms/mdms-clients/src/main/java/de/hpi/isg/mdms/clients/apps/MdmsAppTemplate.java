@@ -6,8 +6,7 @@ import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Schema;
 
 /**
- * This class gives a template for jobs that profile with CSV files. In particular, it takes care of resolving input
- * directories to files and indexing the columns in all files with unique IDs.
+ * This class gives a template for apps that operate on the MDMS.
  *
  * @author Sebastian Kruse
  */
