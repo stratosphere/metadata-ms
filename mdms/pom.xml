@@ -40,6 +40,16 @@
             <organization>Hasso-Plattner-Institut</organization>
             <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
         </developer>
+        <developer>
+            <name>Marius Walter</name>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
+        <developer>
+            <name>David Hahn</name>
+            <organization>Hasso-Plattner-Institut</organization>
+            <organizationUrl>http://hpi.de/naumann/home.html</organizationUrl>
+        </developer>
     </developers>
 
     <scm>
@@ -91,9 +101,17 @@
         <module>mdms-clients</module>
         <module>mdms-java</module>
         <module>mdms-cli</module>
-        <!--<module>mdms-distro</module>-->
         <module>mdms-analytics</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>distro</id>
+            <modules>
+                <module>mdms-distro</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <build>
         <pluginManagement>
@@ -267,7 +285,7 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>1.7.13</version>
-                <scope>provided</scope>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -289,15 +307,4 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 </project>

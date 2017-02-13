@@ -141,7 +141,7 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
                 new String[]{"TABLE"} // Only retrieve actual tables.
         );
         if (!tableRS.next()) {
-            System.out.printf("No tables found!");
+            System.out.println("No tables found!");
             return;
         }
         do {
@@ -181,7 +181,7 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("select TABLE_NAME from INFORMATION_SCHEMA.TABLES");
         String separator = " where ";
-        if (connection.getCatalog() != null) {
+        if (connection.getCatalog() != null && !connection.getCatalog().isEmpty()) {
             queryBuilder.append(separator).append("TABLE_CATALOG = '").append(connection.getCatalog()).append("'");
             separator = " and ";
         }
@@ -194,9 +194,10 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
 
         // Retrieve the tables.
         Statement statement = connection.createStatement();
+        this.logger.info("Executing \"{}\".", query);
         ResultSet tableRS = statement.executeQuery(query);
         if (!tableRS.next()) {
-            System.out.printf("No tables found!");
+            System.out.println("No tables found!");
             return;
         }
         do {
@@ -210,14 +211,15 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
             queryBuilder.setLength(0);
             queryBuilder.append("select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = '")
                     .append(table.getName()).append("'");
-            if (connection.getCatalog() != null) {
-                queryBuilder.append(separator).append(" and TABLE_CATALOG = '").append(connection.getCatalog()).append("'");
+            if (connection.getCatalog() != null && !connection.getCatalog().isEmpty()) {
+                queryBuilder.append(" and TABLE_CATALOG = '").append(connection.getCatalog()).append("'");
             }
             if (this.parameters.dbSchema != null) {
-                queryBuilder.append(separator).append(" and TABLE_SCHEMA = '").append(this.parameters.dbSchema).append("'");
+                queryBuilder.append(" and TABLE_SCHEMA = '").append(this.parameters.dbSchema).append("'");
             }
             queryBuilder.append(" order by ORDINAL_POSITION asc;");
             query = queryBuilder.toString();
+            this.logger.info("Executing \"{}\".", query);
             ResultSet columnRS = statement.executeQuery(query);
             int columnIndex = 0;
             while (columnRS.next()) {
