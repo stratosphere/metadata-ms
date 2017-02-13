@@ -26,9 +26,7 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.tools.util.PGPassFiles;
 
 import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.Date;
 import java.util.Properties;
 
@@ -55,14 +53,16 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
                                       String schemaName,
                                       String dbSchemaName,
                                       String pgpassPath,
-                                      String driverClassName) throws Exception {
+                                      String driverClassName,
+                                      String detectionMethod) throws Exception {
 
         CreateSchemaForRDBMSApp.Parameters parameters = new CreateSchemaForRDBMSApp.Parameters();
-        parameters.jdbcUrls = jdbcUrl;
+        parameters.jdbcUrl = jdbcUrl;
         parameters.schemaName = schemaName;
         parameters.dbSchema = dbSchemaName;
         parameters.pgPassPath = pgpassPath;
         parameters.driverClassName = driverClassName;
+        parameters.detection = detectionMethod;
 
         CreateSchemaForRDBMSApp app = new CreateSchemaForRDBMSApp(parameters);
         app.metadataStore = mds;
@@ -73,7 +73,7 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
     @Override
     protected void executeAppLogic() throws Exception {
         // Load the JDBC driver class if any.
-        if (parameters.driverClassName != null) {
+        if (this.parameters.driverClassName != null) {
             Class.forName(this.parameters.driverClassName);
         }
 
@@ -90,52 +90,23 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
             // Initialize the schema.
             String description = String.format("Schema %s at %s (%s)",
                     this.parameters.dbSchema == null ? "(none)" : this.parameters.dbSchema,
-                    this.parameters.jdbcUrls,
+                    this.parameters.jdbcUrl,
                     new Date()
             );
             JdbcLocation schemaLocation = new JdbcLocation();
-            schemaLocation.setUrl(this.parameters.jdbcUrls);
+            schemaLocation.setUrl(this.parameters.jdbcUrl);
             schemaLocation.setDriverClass(this.parameters.driverClassName);
             schemaLocation.setSchema(this.parameters.dbSchema);
             schema = this.metadataStore.addSchema(this.parameters.schemaName, description, schemaLocation);
 
             // Open the DB connection.
-            try (Connection connection = DriverManager.getConnection(this.parameters.jdbcUrls, connectionProperties)) {
-                // Retrieve the tables.
-                ResultSet tableRS = connection.getMetaData().getTables(
-                        connection.getCatalog(), // Do we have a better guess than that?
-                        this.parameters.dbSchema, // If a schema is given, narrow down the search.
-                        "%", // Retrieve all tables.
-                        new String[]{"TABLE"} // Only retrieve actual tables.
-                );
-                if (!tableRS.next()) {
-                    System.out.printf("No tables found!");
-                    return;
-                }
-                do {
-                    String tableName = tableRS.getString(3); // see DatabaseMetaData.getTables(...)
-                    Table table = schema.addTable(this.metadataStore, tableName, null, new DefaultLocation());
-                    this.logger.info("Added {}.", table);
-                } while (tableRS.next());
-
-                // Retrieve the columns for the tables.
-                for (Table table : schema.getTables()) {
-                    ResultSet columnRS = connection.getMetaData().getColumns(
-                            connection.getCatalog(),
-                            this.parameters.dbSchema,
-                            table.getName(),
-                            "%"
-                    );
-                    int columnIndex = 0;
-                    while (columnRS.next()) {
-                        String columnName = columnRS.getString(4); // see DatabaseMetaData.getColumns(...)
-                        // NB: We do not use the JDBC column ordinal, because they do not always start at 1 (e.g., SQLite).
-                        // However, the columns should be ordred by the ordinal, so we can do our own indexing.
-                        // int columnIndex = columnRS.getInt(17) - 1; // see DatabaseMetaData.getColumns(...)
-                        Column column = table.addColumn(this.metadataStore, columnName, null, columnIndex++);
-                        this.logger.info("Added {}.", column);
-                    }
-                    columnRS.close();
+            try (Connection connection = DriverManager.getConnection(this.parameters.jdbcUrl, connectionProperties)) {
+                if ("JDBC".equalsIgnoreCase(this.parameters.detection)) {
+                    this.extractTablesFromJdbcMetadata(schema, connection);
+                } else if ("INFORMATION_SCHEMA".equalsIgnoreCase(this.parameters.detection)) {
+                    this.extractTablesUsingInformationSchema(schema, connection);
+                } else {
+                    throw new IllegalArgumentException("Unknown detection method.");
                 }
             }
 
@@ -152,7 +123,112 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
         } finally {
             this.metadataStore.flush();
         }
-        logger.info(String.format("Saved schema (%d, %s):\n%s.\n", schema.getId(), schema.getName(), schema));
+        this.logger.info(String.format("Saved schema (%d, %s):\n%s.\n", schema.getId(), schema.getName(), schema));
+    }
+
+    /**
+     * Extract the tables of the schema using {@link Connection#getMetaData()}.
+     *
+     * @param schema     the name of the schema to extract
+     * @param connection a {@link Connection} to the database
+     */
+    private void extractTablesFromJdbcMetadata(Schema schema, Connection connection) throws SQLException {
+        // Retrieve the tables.
+        ResultSet tableRS = connection.getMetaData().getTables(
+                connection.getCatalog(), // Do we have a better guess than that?
+                this.parameters.dbSchema, // If a schema is given, narrow down the search.
+                "%", // Retrieve all tables.
+                new String[]{"TABLE"} // Only retrieve actual tables.
+        );
+        if (!tableRS.next()) {
+            System.out.printf("No tables found!");
+            return;
+        }
+        do {
+            String tableName = tableRS.getString(3); // see DatabaseMetaData.getTables(...)
+            Table table = schema.addTable(this.metadataStore, tableName, null, new DefaultLocation());
+            this.logger.info("Added {}.", table);
+        } while (tableRS.next());
+
+        // Retrieve the columns for the tables.
+        for (Table table : schema.getTables()) {
+            ResultSet columnRS = connection.getMetaData().getColumns(
+                    connection.getCatalog(),
+                    this.parameters.dbSchema,
+                    table.getName(),
+                    "%"
+            );
+            int columnIndex = 0;
+            while (columnRS.next()) {
+                String columnName = columnRS.getString(4); // see DatabaseMetaData.getColumns(...)
+                // NB: We do not use the JDBC column ordinal, because they do not always start at 1 (e.g., SQLite).
+                // However, the columns should be ordred by the ordinal, so we can do our own indexing.
+                // int columnIndex = columnRS.getInt(17) - 1; // see DatabaseMetaData.getColumns(...)
+                Column column = table.addColumn(this.metadataStore, columnName, null, columnIndex++);
+                this.logger.info("Added {}.", column);
+            }
+            columnRS.close();
+        }
+    }
+
+    /**
+     * Extract the tables of the schema using the special DB schema {@code INFORMATION_SCHEMA}.
+     *
+     * @param schema     the name of the schema to extract
+     * @param connection a {@link Connection} to the database
+     */
+    private void extractTablesUsingInformationSchema(Schema schema, Connection connection) throws SQLException {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("select TABLE_NAME from INFORMATION_SCHEMA.TABLES");
+        String separator = " where ";
+        if (connection.getCatalog() != null) {
+            queryBuilder.append(separator).append("TABLE_CATALOG = '").append(connection.getCatalog()).append("'");
+            separator = " and ";
+        }
+        if (this.parameters.dbSchema != null) {
+            queryBuilder.append(separator).append("TABLE_SCHEMA = '").append(this.parameters.dbSchema).append("'");
+            separator = " and ";
+        }
+        queryBuilder.append(separator).append("TABLE_TYPE like '%TABLE%';");
+        String query = queryBuilder.toString();
+
+        // Retrieve the tables.
+        Statement statement = connection.createStatement();
+        ResultSet tableRS = statement.executeQuery(query);
+        if (!tableRS.next()) {
+            System.out.printf("No tables found!");
+            return;
+        }
+        do {
+            String tableName = tableRS.getString(1);
+            Table table = schema.addTable(this.metadataStore, tableName, null, new DefaultLocation());
+            this.logger.info("Added {}.", table);
+        } while (tableRS.next());
+
+        // Retrieve the columns for the tables.
+        for (Table table : schema.getTables()) {
+            queryBuilder.setLength(0);
+            queryBuilder.append("select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = '")
+                    .append(table.getName()).append("'");
+            if (connection.getCatalog() != null) {
+                queryBuilder.append(separator).append(" and TABLE_CATALOG = '").append(connection.getCatalog()).append("'");
+            }
+            if (this.parameters.dbSchema != null) {
+                queryBuilder.append(separator).append(" and TABLE_SCHEMA = '").append(this.parameters.dbSchema).append("'");
+            }
+            queryBuilder.append(" order by ORDINAL_POSITION asc;");
+            query = queryBuilder.toString();
+            ResultSet columnRS = statement.executeQuery(query);
+            int columnIndex = 0;
+            while (columnRS.next()) {
+                String columnName = columnRS.getString(1);
+                // NB: We do not use the JDBC column ordinal, because they do not always start at 1 (e.g., SQLite).
+                // However, the columns should be ordered by the ordinal, so we can do our own indexing.
+                Column column = table.addColumn(this.metadataStore, columnName, null, columnIndex++);
+                this.logger.info("Added {}.", column);
+            }
+            columnRS.close();
+        }
     }
 
     @Override
@@ -181,7 +257,7 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
     public static class Parameters implements Serializable {
 
         @Parameter(names = "--url", required = true, description = "JDBC URL of the database")
-        public String jdbcUrls;
+        public String jdbcUrl;
 
         @Parameter(names = "--db-schema", description = "name of the DB schema to be retrieved")
         public String dbSchema;
@@ -194,6 +270,9 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
 
         @Parameter(names = {"--driver"}, description = "JDBC driver class to be loaded")
         public String driverClassName;
+
+        @Parameter(names = "--detection", description = "reflection API to detect tables (JDBC, INFORMATION_SCHEMA)")
+        public String detection = "JDBC";
 
         @ParametersDelegate
         public final MetadataStoreParameters metadataStoreParameters = new MetadataStoreParameters();
