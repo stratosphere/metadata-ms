@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.tools.metanome.reader;
+package de.hpi.isg.mdms.tools.metanome.friendly;
 
 import de.metanome.algorithm_integration.ColumnCombination;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 /**
  * Parser for {@link de.metanome.algorithm_integration.results.FunctionalDependency} constraints.
  */
-public class FunctionalDependencyReader extends AbstractResultReader<FunctionalDependency> {
+public class FunctionalDependencyReader extends AbstractFriendlyReader<FunctionalDependency> {
 
     @Override
     protected void processLine(String line, ResultReceiver resultReceiver) {

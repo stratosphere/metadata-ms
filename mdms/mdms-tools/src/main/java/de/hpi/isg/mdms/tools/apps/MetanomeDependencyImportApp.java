@@ -13,10 +13,16 @@ import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
-import de.hpi.isg.mdms.tools.metanome.reader.*;
+import de.hpi.isg.mdms.tools.metanome.ResultReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader;
 import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 
 /**
@@ -73,7 +79,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         ResultReader resultReader = this.createResultReader(this.parameters);
         Class<? extends Constraint> constraintClass = this.parameters.getConstraintClass();
         try (ResultReceiver resultReceiver = new ResultMetadataStoreWriter<>(
-                "Metanome import",
+                this.getClass().getSimpleName(),
                 this.metadataStore,
                 schema,
                 scope,
@@ -86,7 +92,13 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                         this.getLogger().info("Loading {}.", file);
                         return true;
                     })
-                    .forEach(resultFile -> resultReader.parse(resultFile, resultReceiver));
+                    .forEach(resultFile -> {
+                        try {
+                            resultReader.readAndLoad(resultFile, resultReceiver);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
         }
 
         this.metadataStore.close();
@@ -96,21 +108,25 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
      * @return a {@link ResultReader} according to the {@link MetanomeDependencyImportApp.Parameters#dependencyType}.
      */
     private ResultReader createResultReader(MetanomeDependencyImportApp.Parameters parameters) {
-        switch (parameters.dependencyType) {
-            case "IND":
-            case "ind":
-                return new InclusionDependencyReader();
-            case "UCC":
-            case "ucc":
-                return new UniqueColumnCombinationReader();
-            case "FD":
-            case "fd":
-                return new FunctionalDependencyReader();
-            case "OD":
-            case "od":
-                return new OrderDependencyReader();
-            default:
-                throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
+        if ("friendly".equalsIgnoreCase(parameters.fileType)) {
+            switch (parameters.dependencyType) {
+                case "IND":
+                case "ind":
+                    return new InclusionDependencyReader();
+                case "UCC":
+                case "ucc":
+                    return new UniqueColumnCombinationReader();
+                case "FD":
+                case "fd":
+                    return new FunctionalDependencyReader();
+                case "OD":
+                case "od":
+                    return new OrderDependencyReader();
+                default:
+                    throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
+            }
+        } else {
+            throw new IllegalArgumentException(String.format("File type \"%s\" is currently not supported.", parameters.fileType));
         }
     }
 
@@ -138,8 +154,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         public final List<String> resultFiles = new LinkedList<>();
 
         @Parameter(names = "--description",
-                description = "description for the imported constraint collection",
-                required = false)
+                description = "description for the imported constraint collection")
         public String description;
 
         @Parameter(names = "--schema",
@@ -153,8 +168,8 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         public List<String> scope;
 
         @Parameter(names = "--file-type",
-                description = "type of the files to import (plain, JSON, compact)")
-        public String fileType = "plain";
+                description = "type of the files to import (friendly, JSON, compact)")
+        public String fileType = "friendly";
 
         /**
          * @return the user-specified description or a default one

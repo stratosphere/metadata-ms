@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.tools.metanome.reader;
+package de.hpi.isg.mdms.tools.metanome.friendly;
 
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 /**
  * Parser for {@link OrderDependency} constraints.
  */
-public class OrderDependencyReader extends AbstractResultReader<OrderDependency> {
+public class OrderDependencyReader extends AbstractFriendlyReader<OrderDependency> {
 
     @Override
     protected void processLine(String line, ResultReceiver resultReceiver) {
