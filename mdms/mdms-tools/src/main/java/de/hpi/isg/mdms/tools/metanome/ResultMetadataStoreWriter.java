@@ -1,55 +1,65 @@
 package de.hpi.isg.mdms.tools.metanome;
 
-import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.Target;
+import de.hpi.isg.mdms.model.util.IdUtils;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.*;
 import de.metanome.backend.result_receiver.ResultReceiver;
 import org.apache.commons.lang.NotImplementedException;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
 
 /**
- * Writes all received results to a specified metadata store.
- * Receives the metanome results and extracts the relevant information.
- * These are passed to the {@link ResultWriter} to write them to the metadatastore.
+ * Writes all received results to a specified {@link MetadataStore}.
+ * Receives the Metanome results and extracts the relevant information.
  *
  * @author Susanne Buelow
+ * @author Sebastian Kruse
  */
-public class ResultMetadataStoreWriter extends ResultReceiver {
+public class ResultMetadataStoreWriter<T extends Constraint> extends ResultReceiver {
 
-    private ResultWriter writer;
-
-    public ResultMetadataStoreWriter(String algorithmExecutionIdentifier,
-                                     MetadataStoreParameters metadatastoreParameters,
-                                     String schemaName,
-                                     String tableName,
-                                     String resultDescription)
-            throws FileNotFoundException {
-        super(algorithmExecutionIdentifier);
-        writer = new ResultWriter(metadatastoreParameters, schemaName, tableName, resultDescription);
-    }
-
-    public ResultMetadataStoreWriter(String algorithmExecutionIdentifier, MetadataStore metadatastore, String schemaName, String tableName,
-                                     String resultDescription) throws FileNotFoundException {
-        super(algorithmExecutionIdentifier);
-        writer = new ResultWriter(metadatastore, schemaName, tableName, resultDescription);
-
-    }
-
+    private final ConstraintCollection<T> constraintCollection;
 
     /**
-     * Method not implemented yet!
-     * <p>
-     * To implement:
-     * create basicStatistic-representation in mdms;
-     * extract table and column names from metanome-statistic to get column id in metadatastore;
-     * create a method in {@link ResultWriter} to write statistic to metadatastore.
+     * Metanome does not have the notion of schemata, so we require to have a given {@link Schema} which the
+     * imported metadata describe.
+     */
+    private final Schema schema;
+
+    public ResultMetadataStoreWriter(String algorithmExecutionIdentifier,
+                                     MetadataStore metadatastore,
+                                     Schema schema,
+                                     Collection<Target> scope,
+                                     Class<T> constraintClass,
+                                     String resultDescription) throws FileNotFoundException {
+        super(algorithmExecutionIdentifier);
+        this.schema = schema;
+        this.constraintCollection = metadatastore.createConstraintCollection(
+                resultDescription, constraintClass, scope.toArray(new Target[scope.size()])
+        );
+    }
+
+    @SuppressWarnings("unchecked") // We check type safety by hand.
+    private <S extends Constraint> ConstraintCollection<S> testAndCastConstraintCollection(Class<S> type) {
+        if (this.constraintCollection.getConstraintClass() != type) {
+            throw new IllegalArgumentException(String.format("Conflicting constraint types: %s and %s",
+                    this.constraintCollection.getConstraintClass(), type
+            ));
+        }
+        return (ConstraintCollection<S>) this.constraintCollection;
+    }
+
+    /**
+     * TODO: Method not implemented yet!
      */
     @Override
     public void receiveResult(BasicStatistic statistic) {
@@ -57,105 +67,129 @@ public class ResultMetadataStoreWriter extends ResultReceiver {
     }
 
     @Override
-    public void receiveResult(FunctionalDependency functionalDependency) {
-        String rhsTableName = convertMetanomeTableIdentifier(functionalDependency.getDependant().getTableIdentifier());
-        String rhsColumnName = convertMetanomeColumnIdentifier(functionalDependency.getDependant().getColumnIdentifier());
-
-        Set<ColumnIdentifier> cc = functionalDependency.getDeterminant().getColumnIdentifiers();
-        String[] lhsTableNames = new String[cc.size()];
-        String[] lhsColumnNames = new String[cc.size()];
+    public void receiveResult(FunctionalDependency fd) {
+        Column[] lhs = new Column[fd.getDeterminant().getColumnIdentifiers().size()];
         int i = 0;
-        for (ColumnIdentifier c : cc) {
-            lhsTableNames[i] = convertMetanomeTableIdentifier(c.getTableIdentifier());
-            lhsColumnNames[i] = convertMetanomeColumnIdentifier(c.getColumnIdentifier());
-            i++;
+        for (ColumnIdentifier columnIdentifier : fd.getDeterminant().getColumnIdentifiers()) {
+            lhs[i++] = this.resolveColumn(columnIdentifier);
         }
-        writer.writeFD(rhsTableName, rhsColumnName, lhsTableNames, lhsColumnNames);
+        Column rhs = this.resolveColumn(fd.getDependant());
+
+        de.hpi.isg.mdms.domain.constraints.FunctionalDependency.buildAndAddToCollection(
+                new de.hpi.isg.mdms.domain.constraints.FunctionalDependency.Reference(rhs, lhs),
+                this.testAndCastConstraintCollection(de.hpi.isg.mdms.domain.constraints.FunctionalDependency.class)
+        );
     }
 
     @Override
-    public void receiveResult(InclusionDependency inclusionDependency) {
-        List<ColumnIdentifier> DepColumnIdentifiers = inclusionDependency.getDependant().getColumnIdentifiers();
-        List<ColumnIdentifier> RefColumnIdentifiers = inclusionDependency.getReferenced().getColumnIdentifiers();
-
-        String[] depTableNames = new String[DepColumnIdentifiers.size()];
-        String[] depColumnNames = new String[DepColumnIdentifiers.size()];
-        String[] refTableNames = new String[RefColumnIdentifiers.size()];
-        String[] refColumnNames = new String[RefColumnIdentifiers.size()];
-        ColumnIdentifier dep;
-        ColumnIdentifier ref;
-        for (int i = 0; i < DepColumnIdentifiers.size(); i++) {
-            dep = DepColumnIdentifiers.get(i);
-            ref = RefColumnIdentifiers.get(i);
-            depTableNames[i] = convertMetanomeTableIdentifier(dep.getTableIdentifier());
-            depColumnNames[i] = convertMetanomeColumnIdentifier(dep.getColumnIdentifier());
-            refTableNames[i] = convertMetanomeTableIdentifier(ref.getTableIdentifier());
-            refColumnNames[i] = convertMetanomeColumnIdentifier(ref.getColumnIdentifier());
+    public void receiveResult(InclusionDependency ind) {
+        Column[] deps = new Column[ind.getDependant().getColumnIdentifiers().size()];
+        for (int i = 0; i < deps.length; i++) {
+            deps[i] = this.resolveColumn(ind.getDependant().getColumnIdentifiers().get(i));
+        }
+        Column[] refs = new Column[ind.getReferenced().getColumnIdentifiers().size()];
+        for (int i = 0; i < refs.length; i++) {
+            refs[i] = this.resolveColumn(ind.getReferenced().getColumnIdentifiers().get(i));
         }
 
-        writer.writeIND(refTableNames, refColumnNames, depTableNames, depColumnNames);
+        de.hpi.isg.mdms.domain.constraints.InclusionDependency.buildAndAddToCollection(
+                new de.hpi.isg.mdms.domain.constraints.InclusionDependency.Reference(deps, refs),
+                this.testAndCastConstraintCollection(de.hpi.isg.mdms.domain.constraints.InclusionDependency.class)
+        );
     }
 
     @Override
-    public void receiveResult(UniqueColumnCombination uniqueColumnCombination) {
-        Set<ColumnIdentifier> cc = uniqueColumnCombination.getColumnCombination().getColumnIdentifiers();
-        String[] uccTableNames = new String[cc.size()];
-        String[] uccColumnNames = new String[cc.size()];
+    public void receiveResult(UniqueColumnCombination ucc) {
+        Column[] columns = new Column[ucc.getColumnCombination().getColumnIdentifiers().size()];
         int i = 0;
-        for (ColumnIdentifier c : cc) {
-            uccTableNames[i] = convertMetanomeTableIdentifier(c.getTableIdentifier());
-            uccColumnNames[i] = convertMetanomeColumnIdentifier(c.getColumnIdentifier());
-            i++;
+        for (ColumnIdentifier columnIdentifier : ucc.getColumnCombination().getColumnIdentifiers()) {
+            columns[i++] = this.resolveColumn(columnIdentifier);
         }
-        writer.writeUCC(uccTableNames, uccColumnNames);
+
+        de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination.buildAndAddToCollection(
+                new de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination.Reference(columns),
+                this.testAndCastConstraintCollection(de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination.class)
+        );
     }
 
     /**
-     * Method not implemented yet!
-     * <p>
-     * To implement:
-     * create cUcc-representation in mdms;
-     * extract table and column names from metanome-cUcc to get column id in metadatastore;
-     * create a method in {@link ResultWriter} to write cUcc to metadatastore.
+     * TODO: Method not implemented yet!
      */
     public void receiveResult(ConditionalUniqueColumnCombination conditionalUniqueColumnCombination) {
         throw new NotImplementedException();
     }
 
     /**
-     * Method not implemented yet!
-     * <p>
-     * To implement:
-     * create od-representation in mdms;
-     * extract table and column names from metanome-od to get column id in metadatastore;
-     * create a method in {@link ResultWriter} to write od to metadatastore.
+     * TODO: Method not implemented yet!
      */
     @Override
     public void receiveResult(OrderDependency orderDependency) throws CouldNotReceiveResultException {
         throw new NotImplementedException();
     }
 
-    public static String convertMetanomeTableIdentifier(String tableIdentifier) {
-        if (tableIdentifier != null && !tableIdentifier.isEmpty()) {
-            return tableIdentifier.substring(tableIdentifier.lastIndexOf(File.separator) + 1);
-        } else {
-            return "";
-        }
+    /**
+     * Resolve a {@link ColumnIdentifier} to a {@link Column}.
+     *
+     * @throws IllegalArgumentException if the {@link Column} could not be found
+     */
+    private Column resolveColumn(ColumnIdentifier columnIdentifier) throws IllegalArgumentException {
+        Table table = this.resolveTable(columnIdentifier.getTableIdentifier());
+        return this.resolveColumn(table, columnIdentifier.getColumnIdentifier());
     }
 
-    public static String convertMetanomeColumnIdentifier(String columnIdentifier) {
-        if (columnIdentifier.contains("column")) {
+    private Column resolveColumn(Table table, String columnIdentifier) {
+        Column column = table.getColumnByName(columnIdentifier);
+        if (column != null) return column;
+
+        // Detect Metanome's fallback column names.
+        if (columnIdentifier.startsWith("column")) {
             try {
-                return "[" + (Integer.valueOf(columnIdentifier.replace("column", "")) - 1) + "]";
+                int columnPosition = Integer.parseInt(columnIdentifier.substring(7));
+                IdUtils idUtils = this.constraintCollection.getMetadataStore().getIdUtils();
+                int localSchemaId = idUtils.getLocalSchemaId(table.getId());
+                int localTableId = idUtils.getLocalTableId(table.getId());
+                int columnId = idUtils.createGlobalId(localSchemaId, localTableId, columnPosition - 1);
+                column = table.getColumnById(columnId);
+                if (column != null) return column;
             } catch (NumberFormatException e) {
+                // Pass.
             }
         }
-        return columnIdentifier;
+
+        throw new IllegalArgumentException(String.format("Cannot find a column named \"%s\" in %s.", columnIdentifier, table));
     }
+
+    /**
+     * Resolves a {@link Table} by its name.
+     *
+     * @param tableIdentifier the name of the {@link Table}
+     * @return the {@link Table}
+     * @throws IllegalArgumentException if the {@link Table} could not be found
+     */
+    private Table resolveTable(String tableIdentifier) throws IllegalArgumentException {
+        // Try to resolve the table name immediately.
+        Table table = this.schema.getTableByName(tableIdentifier);
+        if (table != null) return table;
+
+        // Try to strip of any file extension comprised in the table name.
+        int extensionIndex = tableIdentifier.lastIndexOf('.');
+        if (extensionIndex != -1) {
+            String trimmedTableIdentifier = tableIdentifier.substring(0, extensionIndex);
+            table = this.schema.getTableByName(trimmedTableIdentifier);
+            if (table != null) return table;
+        }
+
+        throw new IllegalArgumentException(String.format("Cannot find a table named \"%s\".", tableIdentifier));
+    }
+
 
     @Override
     public void close() throws IOException {
-        writer.close();
+        try {
+            this.constraintCollection.getMetadataStore().flush();
+        } catch (Exception e) {
+            throw new IOException("Could not flush the metadata store.", e);
+        }
     }
 
 }

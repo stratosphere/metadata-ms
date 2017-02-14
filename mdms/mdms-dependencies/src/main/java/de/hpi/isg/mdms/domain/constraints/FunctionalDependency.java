@@ -329,7 +329,6 @@ public class FunctionalDependency extends AbstractHashCodeAndEquals implements R
 
         private static final long serialVersionUID = -3272378011671591628L;
 
-        @SuppressWarnings("unused")
         private static int[] toIntArray(Column[] columns) {
             int[] intArray = new int[columns.length];
             for (int i = 0; i < columns.length; i++) {
@@ -340,6 +339,12 @@ public class FunctionalDependency extends AbstractHashCodeAndEquals implements R
 
         int[] lhs_columns;
         int rhs_column;
+
+        public Reference(final Column rhs_column, final Column[] lhs_columns) {
+            this.lhs_columns = toIntArray(lhs_columns);
+            Arrays.sort(this.lhs_columns);
+            this.rhs_column = rhs_column.getId();
+        }
 
         public Reference(final int rhs_column, final int[] lhs_columns) {
             this.lhs_columns = lhs_columns;

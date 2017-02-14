@@ -126,7 +126,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                     try {
                         final JSONObject columnStatisticsObject = new JSONObject(columnStatisticsLine);
                         final String metanomeColumnIdentifier = columnStatisticsObject.getString("column Name");
-                        final String columnName = ResultMetadataStoreWriter.convertMetanomeColumnIdentifier(metanomeColumnIdentifier);
+                        final String columnName =  null; // todo: ResultMetadataStoreWriter.convertMetanomeColumnIdentifier(metanomeColumnIdentifier);
                         final Column column = table.getColumnByName(columnName);
                         if (column == null) {
                             getLogger().warn("Could not find the column {} in table {}. Skipping...", columnName, table.getName());
