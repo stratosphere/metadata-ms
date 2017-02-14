@@ -99,6 +99,13 @@
             <artifactId>mdms-analytics</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
+
+        <!-- Package in the simple logger. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

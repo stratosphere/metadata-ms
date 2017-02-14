@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.domain;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import de.hpi.isg.mdms.model.location.JdbcLocation;
 import de.hpi.isg.mdms.model.location.Location;
 import org.junit.Test;
 
@@ -43,6 +44,16 @@ public class LocationTest {
         final DefaultLocation location1 = DefaultLocation.createForFile("hdfs//123");
         assertEquals(location1.getIfExists(Location.PATH), "hdfs//123");
 
+    }
+
+    @Test
+    public void testJdbcLocation() {
+        final JdbcLocation jdbcLocation = new JdbcLocation();
+        jdbcLocation.setUrl("jdbc:mydb://myhost:1234/mydb");
+        jdbcLocation.setDriverClass("org.mydb.Driver");
+
+        assertEquals("jdbc:mydb://myhost:1234/mydb", jdbcLocation.getUrl());
+        assertEquals("org.mydb.Driver", jdbcLocation.getDriverClass());
     }
 
     @Test(expected = IllegalArgumentException.class)
