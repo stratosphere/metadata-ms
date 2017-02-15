@@ -6,6 +6,8 @@ import de.hpi.isg.mdms.domain.constraints.{FunctionalDependency, UniqueColumnCom
 import org.junit.{Assert, Test}
 import org.mockito.Mockito
 import org.qcri.rheem.api.PlanBuilder
+import org.qcri.rheem.core.api.RheemContext
+import org.qcri.rheem.java.Java
 
 /**
   * Tests the [[MetadataStoreRheemWrapper]] class.
@@ -58,6 +60,49 @@ class MetadataStoreRheemWrapperTest {
     val table2 = store.getTableByName("schema1.table2")
     implicit val planBuilder = Mockito.mock(classOf[PlanBuilder])
     store.loadConstraints[FunctionalDependency](table2)
+  }
+
+  @Test
+  def testLoadColumns(): Unit = {
+    val (store, ccFd1, ccFd2, ccUcc1, ccUcc2) = TestUtil.metadataStoreFixture1
+
+    val rheemContext = new RheemContext().withPlugin(Java.basicPlugin)
+    implicit val planBuilder = new PlanBuilder(rheemContext)
+    Assert.assertEquals(
+      1L, store.loadColumns(store.getTargetByName("schema1.table1.column1")).count.collect().head
+    )
+    Assert.assertEquals(
+      10L, store.loadColumns(store.getTargetByName("schema1.table1")).count.collect().head
+    )
+    Assert.assertEquals(
+      2 * 5 * 10L, store.loadColumns().count.collect().head
+    )
+  }
+
+  @Test
+  def testLoadTables(): Unit = {
+    val (store, ccFd1, ccFd2, ccUcc1, ccUcc2) = TestUtil.metadataStoreFixture1
+
+    val rheemContext = new RheemContext().withPlugin(Java.basicPlugin)
+    implicit val planBuilder = new PlanBuilder(rheemContext)
+    Assert.assertEquals(
+      1L, store.loadTables(store.getTargetByName("schema1.table1")).count.collect().head
+    )
+    Assert.assertEquals(
+      5L, store.loadTables(store.getTargetByName("schema1")).count.collect().head
+    )
+    Assert.assertEquals(
+      2 * 5L, store.loadTables().count.collect().head
+    )
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def testLoadTablesFailsForColumns(): Unit = {
+    val (store, ccFd1, ccFd2, ccUcc1, ccUcc2) = TestUtil.metadataStoreFixture1
+
+    val rheemContext = new RheemContext().withPlugin(Java.basicPlugin)
+    implicit val planBuilder = new PlanBuilder(rheemContext)
+    store.loadTables(store.getTargetByName("schema1.table1.column1")).collect()
   }
 
 }

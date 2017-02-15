@@ -3,7 +3,7 @@ package de.hpi.isg.mdms.analytics.rheem
 import de.hpi.isg.mdms.analytics._
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
-import de.hpi.isg.mdms.model.targets.Target
+import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
 import org.qcri.rheem.api._
 
 import scala.collection.JavaConversions._
@@ -90,6 +90,14 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     planBuilder.loadCollection(constraintCollection.getConstraints)
   }
 
+  /**
+    * Load one or more [[ConstraintCollection]]s as [[DataQuanta]].
+    *
+    * @param constraintCollections that should be loaded
+    * @param planBuilder           required to construct the [[DataQuanta]]
+    * @tparam Type of the [[Constraint]]s in the [[ConstraintCollection]]s
+    * @return the [[DataQuanta]]
+    */
   def loadConstraints[Type <: Constraint : ClassTag](constraintCollections: ConstraintCollection[Type]*)(implicit planBuilder: PlanBuilder):
   DataQuanta[Type] =
     constraintCollections.size match {
@@ -107,4 +115,49 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
         .map(cc => this.loadConstraints[Type](cc))
         .reduce(_ union _)
     }
+
+  /**
+    * Load the ID and (canonical) name of all [[de.hpi.isg.mdms.model.targets.Column]]s under the given [[Target]].
+    *
+    * @param target the [[Target]] or `null` if all [[Column]]s should be loaded
+    * @return [[DataQuanta]] of column IDs and names
+    */
+  def loadColumns(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
+    var columns: Iterable[Column] = target match {
+      case null => metadataStore.getSchemas.flatMap(_.getTables).flatMap(_.getColumns)
+      case column: Column => Seq(column)
+      case table: Table => table.getColumns
+      case schema: Schema => schema.getTables.flatMap(_.getColumns)
+    }
+    val idsWithNames = columns.map(c => c.getId -> c.getNameWithTableName)
+    planBuilder.loadCollection(idsWithNames)
+  }
+
+  /**
+    * Load the ID and (canonical) name of all [[de.hpi.isg.mdms.model.targets.Table]]s under the given [[Target]].
+    *
+    * @param target the [[Target]] or `null` if all [[Table]]s should be loaded
+    * @return [[DataQuanta]] of table IDs and names
+    */
+  def loadTables(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
+    var tables: Iterable[Table] = target match {
+      case null => metadataStore.getSchemas.flatMap(_.getTables)
+      case table: Table => Seq(table)
+      case schema: Schema => schema.getTables
+      case _ => throw new IllegalArgumentException("Could not identify tables.")
+    }
+    val idsWithNames = tables.map(t => t.getId -> t.getName)
+    planBuilder.loadCollection(idsWithNames)
+  }
+
+  /**
+    * Load the ID and (canonical) name of all [[de.hpi.isg.mdms.model.targets.Schema]]ta.
+    *
+    * @return [[DataQuanta]] of schema IDs and names
+    */
+  def loadSchemata()(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
+    val idsWithNames = metadataStore.getSchemas.map(s => s.getId -> s.getName)
+    planBuilder.loadCollection(idsWithNames)
+  }
+
 }
