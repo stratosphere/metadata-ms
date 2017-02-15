@@ -1,30 +1,32 @@
 package de.hpi.isg.mdms.in_memory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import de.hpi.isg.mdms.domain.TestConstraint;
+import de.hpi.isg.mdms.domain.TestConstraint2;
+import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.DefaultSchema;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
+import org.apache.commons.io.FileUtils;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import de.hpi.isg.mdms.domain.*;
-import de.hpi.isg.mdms.model.targets.*;
-import de.hpi.isg.mdms.simple.factories.DefaultMetadataStoreFactory;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.experiment.Algorithm;
-import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.MetadataStore;
-
-import org.apache.commons.io.FileUtils;
-import org.junit.*;
-
-import de.hpi.isg.mdms.model.DefaultMetadataStore;
-import de.hpi.isg.mdms.model.location.DefaultLocation;
-import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class DefaultMetadataStoreTest {
 
@@ -226,6 +228,58 @@ public class DefaultMetadataStoreTest {
             e.printStackTrace();
         }
         assertEquals(store1, store2);
+    }
+
+    @Test
+    public void testGetTargetByName() {
+        final MetadataStore metadataStore = new DefaultMetadataStore();
+        Schema a = metadataStore.addSchema("a", "", new DefaultLocation());
+        Table aa = a.addTable(metadataStore, "a", "", new DefaultLocation());
+        Column aaa = aa.addColumn(metadataStore, "a", "", 0);
+        Column aab = aa.addColumn(metadataStore, "b", "", 1);
+        Table ab = a.addTable(metadataStore, "b", "", new DefaultLocation());
+        Column aba = ab.addColumn(metadataStore, "a", "", 0);
+        Column abb = ab.addColumn(metadataStore, "b", "", 1);
+        Schema b = metadataStore.addSchema("b", "", new DefaultLocation());
+        Table ba = b.addTable(metadataStore, "a", "", new DefaultLocation());
+        Column baa = ba.addColumn(metadataStore, "a", "", 0);
+        Column bab = ba.addColumn(metadataStore, "b", "", 1);
+        Table bb = b.addTable(metadataStore, "b", "", new DefaultLocation());
+        Column bba = bb.addColumn(metadataStore, "a", "", 0);
+        Column bbb = bb.addColumn(metadataStore, "b", "", 1);
+
+        Assert.assertEquals(a, metadataStore.getTargetByName("a"));
+        Assert.assertEquals(aa, metadataStore.getTargetByName("a.a"));
+        Assert.assertEquals(aaa, metadataStore.getTargetByName("a.a.a"));
+        Assert.assertEquals(aab, metadataStore.getTargetByName("a.a.b"));
+        Assert.assertEquals(ab, metadataStore.getTargetByName("a.b"));
+        Assert.assertEquals(aba, metadataStore.getTargetByName("a.b.a"));
+        Assert.assertEquals(abb, metadataStore.getTargetByName("a.b.b"));
+        Assert.assertEquals(b, metadataStore.getTargetByName("b"));
+        Assert.assertEquals(ba, metadataStore.getTargetByName("b.a"));
+        Assert.assertEquals(baa, metadataStore.getTargetByName("b.a.a"));
+        Assert.assertEquals(bab, metadataStore.getTargetByName("b.a.b"));
+        Assert.assertEquals(bb, metadataStore.getTargetByName("b.b"));
+        Assert.assertEquals(bba, metadataStore.getTargetByName("b.b.a"));
+        Assert.assertEquals(bbb, metadataStore.getTargetByName("b.b.b"));
+
+        Assert.assertEquals(null, metadataStore.getTargetByName("c"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("c"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("a.c"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("c.c"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("a.c.a"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("c.c.a"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("a.c.c"));
+        Assert.assertEquals(null, metadataStore.getTargetByName("c.c.c"));
+    }
+
+    @Test(expected = NameAmbigousException.class)
+    public void testGetTargetByNameWithAmbigousName() {
+        final MetadataStore metadataStore = new DefaultMetadataStore();
+        Schema a = metadataStore.addSchema("a", "", new DefaultLocation());
+        a.addTable(metadataStore, "a", "", new DefaultLocation());
+        metadataStore.addSchema("a.a", "", new DefaultLocation());
+        metadataStore.getTargetByName("a.a");
     }
 
     /*

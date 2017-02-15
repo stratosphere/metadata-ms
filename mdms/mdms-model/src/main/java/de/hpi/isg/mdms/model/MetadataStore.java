@@ -1,10 +1,6 @@
 package de.hpi.isg.mdms.model;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.LinkedList;
-
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.common.Observer;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -14,7 +10,11 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * A {@link MetadataStore} stores schema information as well as {@link de.hpi.isg.mdms.model.constraints.Constraint}s holding on the objects stored in it.
@@ -58,14 +58,14 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     /**
      * Returns a list of {@link ConstraintCollection} with the given target.
      *
-     * @return the list of {@link ConstraintCollection} with the given target.
      * @param target
+     * @return the list of {@link ConstraintCollection} with the given target.
      */
     default Collection<ConstraintCollection<? extends Constraint>> getConstraintCollectionByTarget(Target target) {
         Collection<ConstraintCollection<? extends Constraint>> result = new LinkedList<>();
         for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
             for (Target scopetarget : constraintCollection.getScope())
-                if (getIdUtils().isContained(target.getId(), scopetarget.getId())){
+                if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
                     result.add(constraintCollection);
                     break;
                 }
@@ -73,22 +73,22 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         return result;
     }
 
-    default <T extends Constraint>Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
+    default <T extends Constraint> Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
         for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
-                if (constraintCollection.getConstraintClass() == constrainttype){
-                    result.add((ConstraintCollection<T>) constraintCollection);
-                    break;
-                }
+            if (constraintCollection.getConstraintClass() == constrainttype) {
+                result.add((ConstraintCollection<T>) constraintCollection);
+                break;
+            }
         }
         return result;
     }
 
-    default <T extends Constraint>Collection<ConstraintCollection<T>>
+    default <T extends Constraint> Collection<ConstraintCollection<T>>
     getConstraintCollectionByConstraintTypeAndTarget(Class<T> constrainttype, Target target) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
         for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
-            if (constraintCollection.getConstraintClass() == constrainttype){
+            if (constraintCollection.getConstraintClass() == constrainttype) {
                 for (Target scopetarget : constraintCollection.getScope())
                     if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
                         result.add((ConstraintCollection<T>) constraintCollection);
@@ -132,6 +132,37 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     Collection<Schema> getSchemas();
 
     /**
+     * Resolves a {@link Target} by its name.
+     *
+     * @param targetName the name of the {@link Target} conforming to the regex {@code <schema>( "." <table> ( "." <column>)? )?}
+     * @return the resolved {@link Target} or {@code null} if it could not be resolved
+     * @throws NameAmbigousException if more than one {@link Target} matches
+     */
+    default Target getTargetByName(String targetName) throws NameAmbigousException {
+        Target lastEncounteredTarget = null;
+        int separatorIndex = -1;
+        do {
+            separatorIndex = targetName.indexOf('.', separatorIndex + 1);
+            if (separatorIndex == -1) separatorIndex = targetName.length();
+            String schemaName = targetName.substring(0, separatorIndex);
+            Schema schema = this.getSchemaByName(schemaName);
+            if (schema != null) {
+                if (separatorIndex == targetName.length()) {
+                    if (lastEncounteredTarget != null) throw new NameAmbigousException(targetName);
+                    lastEncounteredTarget = schema;
+                } else {
+                    Target target = schema.getTargetByName(targetName.substring(separatorIndex + 1));
+                    if (target != null) {
+                        if (lastEncounteredTarget != null) throw new NameAmbigousException(targetName);
+                        lastEncounteredTarget = target;
+                    }
+                }
+            }
+        } while (separatorIndex < targetName.length());
+        return lastEncounteredTarget;
+    }
+
+    /**
      * Looks for an ID that can be assigned to a new schema.
      *
      * @return the unused schema ID
@@ -172,7 +203,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * This method creates a new {@link Algorithm} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    Algorithm  createAlgorithm(String name);
+    Algorithm createAlgorithm(String name);
 
     /**
      * Retrieve an algorithm from the store if it exists for the given id
@@ -217,7 +248,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target ... scope);
+    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope);
 
     /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
@@ -275,7 +306,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @param algorithm the {@link Algorithm} to remove
      */
-    public void removeAlgorithm(Algorithm algorithm);
+    void removeAlgorithm(Algorithm algorithm);
 
 
     /**
@@ -284,7 +315,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @param experiment the {@link Experiment} to remove
      */
-    public void removeExperiment(Experiment experiment);
+    void removeExperiment(Experiment experiment);
 
 
     /**
@@ -293,5 +324,5 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param experimentId
      * @return {@link Experiment}
      */
-    public Experiment getExperimentById(int experimentId);
+    Experiment getExperimentById(int experimentId);
 }

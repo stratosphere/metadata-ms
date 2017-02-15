@@ -5,16 +5,25 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
+import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
+import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
+import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
-import de.hpi.isg.mdms.tools.metanome.reader.*;
+import de.hpi.isg.mdms.tools.metanome.ResultReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader;
+import de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader;
 import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 /**
  * Imports results in the user-readable Metanome format.
@@ -32,7 +41,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
         parameters.resultFiles.add(fileLocation);
         parameters.dependencyType = type;
-        parameters.schemaName = schemaName;
+        parameters.scope = Collections.singletonList(schemaName);
 
         MetanomeDependencyImportApp app = new MetanomeDependencyImportApp(parameters);
         app.metadataStore = mds;
@@ -48,23 +57,77 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
     @Override
     protected void executeAppLogic() throws Exception {
+        // Identify the schema.
+        Schema schema = this.metadataStore.getSchemaByName(this.parameters.schema);
+        if (schema == null) {
+            throw new IllegalArgumentException("Schema not found.");
+        }
+
+        // Identify the scope.
+        Collection<Target> scope = new ArrayList<>();
+        for (String scopeName : this.parameters.scope) {
+            Target target = this.metadataStore.getTargetByName(scopeName);
+            if (target == null) {
+                throw new IllegalArgumentException(String.format(
+                        "Could not find part of scope: \"%s\".", scopeName
+                ));
+            }
+            scope.add(target);
+        }
+
         // Set up the dependency reader and receiver.
-        ResultReader resultReader = this.parameters.createResultReader();
-        try (ResultReceiver resultReceiver = new ResultMetadataStoreWriter("import",
+        ResultReader resultReader = this.createResultReader(this.parameters);
+        Class<? extends Constraint> constraintClass = this.parameters.getConstraintClass();
+        try (ResultReceiver resultReceiver = new ResultMetadataStoreWriter<>(
+                this.getClass().getSimpleName(),
                 this.metadataStore,
-                this.parameters.schemaName,
-                null,
+                schema,
+                scope,
+                constraintClass,
                 String.format("%s (%s)", this.parameters.getDescription(), new Date()))) {
+
             this.parameters.resultFiles.stream()
                     .map(File::new)
                     .filter(file -> {
-                        getLogger().info("Loading {}.", file);
+                        this.getLogger().info("Loading {}.", file);
                         return true;
                     })
-                    .forEach(resultFile -> resultReader.parse(resultFile, resultReceiver));
+                    .forEach(resultFile -> {
+                        try {
+                            resultReader.readAndLoad(resultFile, resultReceiver);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
         }
 
         this.metadataStore.close();
+    }
+
+    /**
+     * @return a {@link ResultReader} according to the {@link MetanomeDependencyImportApp.Parameters#dependencyType}.
+     */
+    private ResultReader createResultReader(MetanomeDependencyImportApp.Parameters parameters) {
+        if ("friendly".equalsIgnoreCase(parameters.fileType)) {
+            switch (parameters.dependencyType) {
+                case "IND":
+                case "ind":
+                    return new InclusionDependencyReader();
+                case "UCC":
+                case "ucc":
+                    return new UniqueColumnCombinationReader();
+                case "FD":
+                case "fd":
+                    return new FunctionalDependencyReader();
+                case "OD":
+                case "od":
+                    return new OrderDependencyReader();
+                default:
+                    throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
+            }
+        } else {
+            throw new IllegalArgumentException(String.format("File type \"%s\" is currently not supported.", parameters.fileType));
+        }
     }
 
     @Override
@@ -91,9 +154,22 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         public final List<String> resultFiles = new LinkedList<>();
 
         @Parameter(names = "--description",
-                description = "description for the imported constraint collection",
-                required = false)
+                description = "description for the imported constraint collection")
         public String description;
+
+        @Parameter(names = "--schema",
+                description = "name of the schema to which the profiling results pertain",
+                required = true)
+        public String schema;
+
+        @Parameter(names = "--scope",
+                description = "scope of the imported constraint collection",
+                variableArity = true)
+        public List<String> scope;
+
+        @Parameter(names = "--file-type",
+                description = "type of the files to import (friendly, JSON, compact)")
+        public String fileType = "friendly";
 
         /**
          * @return the user-specified description or a default one
@@ -102,33 +178,25 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
             return this.description == null ? String.format("%s import", this.dependencyType) : this.description;
         }
 
-        @Parameter(names = MetadataStoreParameters.SCHEMA_NAME,
-                description = MetadataStoreParameters.SCHEMA_NAME_DESCRIPTION,
-                required = true)
-        public String schemaName;
-
         @Parameter(names = "--dependency-type",
                 description = "type of imported dependencies; one of IND, UCC, FD, OD",
                 required = true)
         public String dependencyType;
 
-        /**
-         * @return a {@link ResultReader} according to the {@link #dependencyType}.
-         */
-        public ResultReader createResultReader() {
+        private Class<? extends Constraint> getConstraintClass() {
             switch (this.dependencyType) {
                 case "IND":
-                    return new InclusionDependencyReader();
+                case "ind":
+                    return InclusionDependency.class;
                 case "UCC":
-                    return new UniqueColumnCombinationReader();
+                case "ucc":
+                    return UniqueColumnCombination.class;
                 case "FD":
-                    return new FunctionalDependencyReader();
-                case "OD":
-                    return new OrderDependencyReader();
+                case "fd":
+                    return FunctionalDependency.class;
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + this.dependencyType);
             }
         }
-
     }
 }
