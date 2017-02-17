@@ -12,13 +12,12 @@ import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.hpi.isg.mdms.tools.metanome.ResultReader;
 import de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader;
 import de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader;
 import de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader;
 import de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader;
-import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,8 +77,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         // Set up the dependency reader and receiver.
         ResultReader resultReader = this.createResultReader(this.parameters);
         Class<? extends Constraint> constraintClass = this.parameters.getConstraintClass();
-        try (ResultReceiver resultReceiver = new ResultMetadataStoreWriter<>(
-                this.getClass().getSimpleName(),
+        try (DependencyResultReceiver<? extends Constraint> resultReceiver = new DependencyResultReceiver<>(
                 this.metadataStore,
                 schema,
                 scope,

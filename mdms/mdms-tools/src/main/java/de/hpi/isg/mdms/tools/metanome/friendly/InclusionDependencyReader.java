@@ -1,9 +1,9 @@
 package de.hpi.isg.mdms.tools.metanome.friendly;
 
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
-import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -18,8 +18,8 @@ public class InclusionDependencyReader extends AbstractFriendlyReader<InclusionD
     private Pattern rhsPattern = Pattern.compile("\\[([^\\[\\]]*)\\]");
 
     @Override
-    protected void processLine(String line, ResultReceiver resultReceiver) {
-        toINDs(line).forEach(ind -> {
+    protected void processLine(String line, DependencyResultReceiver<?> resultReceiver) {
+        this.toINDs(line).forEach(ind -> {
             try {
                 resultReceiver.receiveResult(ind);
             } catch (CouldNotReceiveResultException e) {
@@ -30,7 +30,7 @@ public class InclusionDependencyReader extends AbstractFriendlyReader<InclusionD
 
     private Collection<InclusionDependency> toINDs(String line) {
         String[] split = line.split(" c ");
-        ColumnPermutation lhs = toColumnPermutation(clean(split[0]));
+        ColumnPermutation lhs = toColumnPermutation(this.clean(split[0]));
         String rhses = split[1];
         Collection<InclusionDependency> inds = new LinkedList<>();
         final Matcher matcher = this.rhsPattern.matcher(rhses);

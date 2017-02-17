@@ -11,7 +11,9 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.tools.metanome.ResultMetadataStoreWriter;
+import de.hpi.isg.mdms.tools.metanome.StatisticsResultReceiver;
+import de.metanome.algorithm_integration.results.BasicStatistic;
+import de.metanome.algorithm_integration.results.JsonConverter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * This class imports single column statistics from JSON files in a custom format from Hazar Harmouch.
+ * This class imports single column statistics from JSON files.
  */
 public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatisticsImportApp.Parameters> {
 
@@ -58,6 +60,10 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     }
 
     public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName) throws Exception {
+        fromParameters(mds, fileLocation, ".+", schemaName);
+    }
+
+    public static void fromParameters(MetadataStore mds, String fileLocation, String filePattern, String schemaName) throws Exception {
 
         MetanomeStatisticsImportApp.Parameters parameters = new MetanomeStatisticsImportApp.Parameters();
 
@@ -79,221 +85,48 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         if (schema == null) {
             throw new IllegalArgumentException("No such schema: " + this.parameters.schemaName);
         }
-        ConstraintCollection<ColumnStatistics> constraintCollectionColumnStatistics =
-                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), ColumnStatistics.class, schema);
-//        ConstraintCollection<TupleCount> constraintCollectionTupleCounts =
-//                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TupleCount.class, schema);
-        ConstraintCollection<TypeConstraint> constraintCollectionTypeConstraints =
-                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TypeConstraint.class, schema);
-        ConstraintCollection<NumberColumnStatistics> constraintCollectionNumberColumnStatistics =
-                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), NumberColumnStatistics.class, schema);
-        ConstraintCollection<TextColumnStatistics> constraintCollectionTextColumnStatistics =
-                this.metadataStore.createConstraintCollection(this.parameters.getDescription(), TextColumnStatistics.class, schema);
 
+        JsonConverter<BasicStatistic> jsonConverter = new JsonConverter<>();
 
-        for (String inputDirectoryPath : this.parameters.inputDirectories) {
+        try (StatisticsResultReceiver resultReceiver = new StatisticsResultReceiver(
+                this.metadataStore, schema, Collections.singletonList(schema), String.format("Statistics for %s", schema.getName())
+        )) {
 
-            // Discover files with statistics.
-            Map<File, String> fileToTableNameMap = discoverStatisticsFiles(inputDirectoryPath);
+            for (String inputDirectoryPath : this.parameters.inputDirectories) {
+                // Discover files with statistics.
+                Collection<File> statisticsFiles = this.discoverStatisticsFiles(inputDirectoryPath);
 
-            // Now import all the files.
-            for (Map.Entry<File, String> fileToTableNameEntry : fileToTableNameMap.entrySet()) {
-                final File statisticsFile = fileToTableNameEntry.getKey();
-                final String tableName = fileToTableNameEntry.getValue()+".csv";
+                // Now import all the files.
+                for (File statisticsFile : statisticsFiles) {
+                    this.logger.info("Loading {}.", statisticsFile);
 
-                // Find the table in the schema.
-                final Table table = schema.getTableByName(tableName);
-                if (table == null) {
-                    getLogger().warn("Could not find the table {} in the metadata store. Skipping...", tableName);
-                    continue;
-                }
-
-                // Load the file.
-                List<String> lines;
-                try {
-                    lines = Files
-                            .lines(statisticsFile.toPath(), Charset.forName(this.parameters.encoding))
-                            .collect(Collectors.toList());
-                } catch (Exception e) {
-                    getLogger().error("Could not read " + statisticsFile + ".", e);
-                    continue;
-                }
-
-                int numTuples = 0;
-                for (String columnStatisticsLine : lines) {
+                    // Load the file.
+                    List<String> lines;
                     try {
-                        final JSONObject columnStatisticsObject = new JSONObject(columnStatisticsLine);
-                        final int numberDistinctValue = columnStatisticsObject.getJSONObject("statisticMap")
-                                .getJSONObject("Number of Distinct Values").getInt("value");
-                        if (numTuples < numberDistinctValue) {
-                            numTuples = numberDistinctValue;
-                        }
+                        lines = Files
+                                .lines(statisticsFile.toPath(), Charset.forName(this.parameters.encoding))
+                                .collect(Collectors.toList());
                     } catch (Exception e) {
-                        getLogger().error("Could not handle " + columnStatisticsLine + ".", e);
+                        this.getLogger().error("Could not read " + statisticsFile + ".", e);
+                        continue;
+                    }
+
+                    // All following lines contain statistics on different columns.
+                    for (String columnStatisticsLine : lines) {
+                        try {
+                            BasicStatistic basicStatistic = jsonConverter.fromJsonString(columnStatisticsLine, BasicStatistic.class);
+                            resultReceiver.receiveResult(basicStatistic);
+                        } catch (Exception e) {
+                            this.logger.error("Could not parse a line of {}.", statisticsFile, e);
+                        }
                     }
                 }
-
-                // All following lines contain statistics on different columns.
-                for (String columnStatisticsLine : lines) {
-                    try {
-                        final JSONObject columnStatisticsObject = new JSONObject(columnStatisticsLine);
-                        final JSONArray columnIdentifierArr = columnStatisticsObject
-                                .getJSONObject("columnCombination")
-                                .getJSONArray("columnIdentifiers");
-                        final String columnName = ResultMetadataStoreWriter
-                                .convertMetanomeColumnIdentifier(columnIdentifierArr.getJSONObject(0).getString("columnIdentifier"));
-
-                        final Column column = table.getColumnByName(columnName);
-                        if (column == null) {
-                            getLogger().warn("Could not find the column {} in table {}. Skipping...", columnName, table.getName());
-                            continue;
-                        }
-                        final JSONObject statisticsMapObject = columnStatisticsObject.getJSONObject("statisticMap");
-                        extractGeneralColumnStatistics(statisticsMapObject, column,
-                                constraintCollectionColumnStatistics, constraintCollectionTypeConstraints, numTuples
-                        );
-
-                        // For numeric columns, create a specific statistics object.
-                        extractNumberColumnStatistics(constraintCollectionNumberColumnStatistics, statisticsMapObject, column);
-
-                        // For character columns, create a specific statistics object.
-                        extractTextColumnStatistics(constraintCollectionTextColumnStatistics, statisticsMapObject, column);
-                    } catch (Exception e) {
-                        getLogger().error("Could not handle " + columnStatisticsLine + ".", e);
-                    }
-                }
-
             }
+
         }
 
         // Finalize.
         this.metadataStore.close();
-
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionColumnStatistics.getId());
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionTextColumnStatistics.getId());
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_KEY, constraintCollectionNumberColumnStatistics.getId());
-    }
-
-    /**
-     * Extracts statistics that are specific to text columns.
-     *
-     * @param constraintCollection   stores any created constraints
-     * @param columnStatisticsObject input statistics of the column
-     * @param column                 the column described by the input statistics
-     */
-    private void extractTextColumnStatistics(ConstraintCollection<TextColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
-        if (columnStatisticsObject.has("Min String")) {
-            TextColumnStatistics textColumnStatistics = new TextColumnStatistics(column.getId());
-            textColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min String").getString("value"));
-            textColumnStatistics.setMaxValue(columnStatisticsObject.getJSONObject("Max String").getString("value"));
-            textColumnStatistics.setShortestValue(columnStatisticsObject.getJSONObject("Shortest String").getString("value"));
-            textColumnStatistics.setLongestValue(columnStatisticsObject.getJSONObject("Longest String").getString("value"));
-            if (columnStatisticsObject.has("Symantic Data Type")) {
-                textColumnStatistics.setSubtype(columnStatisticsObject.getJSONObject("Symantic Data Type").getString("value"));
-            }
-            constraintCollection.add(textColumnStatistics);
-        }
-    }
-
-    /**
-     * Extracts statistics that are specific to numeric columns.
-     *
-     * @param constraintCollection   stores any created constraints
-     * @param columnStatisticsObject input statistics of the column
-     * @param column                 the column described by the input statistics
-     */
-    private void extractNumberColumnStatistics(ConstraintCollection<NumberColumnStatistics> constraintCollection, JSONObject columnStatisticsObject, Column column) {
-        if (columnStatisticsObject.has("Min")) {
-            NumberColumnStatistics numberColumnStatistics = new NumberColumnStatistics(column.getId());
-            numberColumnStatistics.setMinValue(columnStatisticsObject.getJSONObject("Min").getDouble("value"));
-            numberColumnStatistics.setMaxValue(columnStatisticsObject.getJSONObject("Max").getDouble("value"));
-            numberColumnStatistics.setAverage(columnStatisticsObject.getJSONObject("Avg.").getDouble("value"));
-            if (columnStatisticsObject.has("Standard Deviation")) {
-                numberColumnStatistics.setStandardDeviation(columnStatisticsObject.getJSONObject("Standard Deviation").getDouble("value"));
-            }
-            constraintCollection.add(numberColumnStatistics);
-        }
-    }
-
-    /**
-     * Extracts statistics that apply to all columns.
-     *
-     * @param typeConstraintsCC   stores any created type constraints
-     * @param columnStatisticsCC   stores any created column statistics constraints
-     * @param columnStatisticsObject input statistics of the column
-     * @param column                 the column described by the input statistics
-     * @param numTuples              number of tuples in the table that contains the column
-     */
-    private void extractGeneralColumnStatistics(JSONObject columnStatisticsObject, Column column,
-                                                ConstraintCollection<ColumnStatistics> columnStatisticsCC,
-                                                ConstraintCollection<TypeConstraint> typeConstraintsCC,
-                                                long numTuples) {
-        // Harvest the column type.
-        final String dataType = columnStatisticsObject.getJSONObject("Data Type").getString("value");
-        TypeConstraint.buildAndAddToCollection(new SingleTargetReference(column.getId()), typeConstraintsCC, dataType);
-
-        // Harvest the general column statistics.
-        ColumnStatistics columnStatistics = new ColumnStatistics(column.getId());
-        columnStatistics.setNumNulls(columnStatisticsObject.getJSONObject("Nulls").getLong("value"));
-        columnStatistics.setFillStatus(1d - columnStatisticsObject.getJSONObject("Percentage of Nulls").getDouble("value"));
-        columnStatistics.setNumDistinctValues(columnStatisticsObject.getJSONObject("Number of Distinct Values").getLong("value"));
-
-        // Some statistics can only exist if there are any values at all.
-        long numNonNulls = numTuples - columnStatistics.getNumNulls();
-        if (numNonNulls > 0L) {
-            // Calculate the uniqueness, which is not imported but derived from the statistics.
-            columnStatistics.setUniqueness(columnStatistics.getNumDistinctValues() / (double) numNonNulls);
-
-            // Find the most frequent values.
-            final OptionalInt maxK = columnStatisticsObject.keySet().stream()
-                    .flatMapToInt((key) -> {
-                        final Matcher matcher = TOP_K_FREQUENT_VALUES_PATTERN.matcher(key);
-                        if (matcher.matches()) {
-                            return IntStream.of(Integer.valueOf(matcher.group(1)));
-                        } else {
-                            return IntStream.empty();
-                        }
-                    })
-                    .max();
-            if (maxK.isPresent()) {
-                String items = String.format(TOP_K_FREQUENT_VALUES_FORMAT, maxK.getAsInt());
-                String frequency = String.format(FREQUENCY_TOP_K_ITEMS_FORMAT, maxK.getAsInt());
-                final JSONObject topKFrequentValuesObject = columnStatisticsObject.getJSONObject(items);
-                final JSONObject topKFrequencyObject = columnStatisticsObject.getJSONObject(frequency);
-                Map<String, Long> itemFrequencyMap = new HashMap<>();
-                JSONArray itemsArray = topKFrequentValuesObject.getJSONArray("value");
-                JSONArray frequencyArray = topKFrequencyObject.getJSONArray("value");
-                for (int i = 0; i < itemsArray.length(); i++) {
-                    itemFrequencyMap.putIfAbsent(itemsArray.getString(i), frequencyArray.getLong(i));
-                }
-
-                final List<ColumnStatistics.ValueOccurrence> topKEntryList = itemFrequencyMap.keySet().stream()
-                        .map(topKValue -> {
-                            return new ColumnStatistics.ValueOccurrence(topKValue, itemFrequencyMap.get(topKValue));
-                        })
-                        .sorted(Collections.reverseOrder())
-                        .collect(Collectors.toList());
-                columnStatistics.setTopKFrequentValues(topKEntryList);
-            }
-        }
-
-        // Save the statistics.
-        columnStatisticsCC.add(columnStatistics);
-    }
-
-    /**
-     * Extract the information that is found in the first line of statistics files.
-     *
-     * @param firstLine            the raw input line
-     * @param table                the table that is described by the statistics file
-     * @param constraintCollection stores any new constraints
-     * @return the number of tuples found in the statics file
-     */
-    private long processFirstStatisticsFileLine(String firstLine, Table table, ConstraintCollection<TupleCount> constraintCollection) {
-        final JSONObject firstLineObject = new JSONObject(firstLine);
-        final long numTuples = firstLineObject.getLong("# Tuples");
-        TupleCount.buildAndAddToCollection(new SingleTargetReference(table.getId()), constraintCollection, (int) numTuples);
-        return numTuples;
     }
 
     /**
@@ -302,21 +135,16 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
      * @param inputDirectoryPath a directory with statistics files
      * @return a mapping from statistics files to the names of the tables that they describe
      */
-    private Map<File, String> discoverStatisticsFiles(String inputDirectoryPath) {
+    private Collection<File> discoverStatisticsFiles(String inputDirectoryPath) {
         // Detect files to import.
         File inputDir = new File(inputDirectoryPath);
         if (!inputDir.isDirectory()) {
             throw new IllegalArgumentException("Not a directory: " + inputDir);
         }
-        Pattern statisticsFilePattern = Pattern.compile("(.+)_SingleColumnProfiler\\.txt");
-        final File[] staticsFiles = inputDir.listFiles((file) -> statisticsFilePattern.matcher(file.getName()).matches());
-        return Arrays.stream(staticsFiles).collect(Collectors.toMap(
-                Function.identity(),
-                (file) -> {
-                    final Matcher matcher = statisticsFilePattern.matcher(file.getName());
-                    if (!matcher.matches()) throw new IllegalStateException();
-                    return matcher.group(1);
-                }));
+        Pattern statisticsFilePattern = Pattern.compile(this.parameters.filePattern);
+        File[] statisticsFiles = inputDir.listFiles((file) -> file.isFile() && statisticsFilePattern.matcher(file.getName()).matches());
+        if (statisticsFiles == null) statisticsFiles = new File[0];
+        return Arrays.stream(statisticsFiles).collect(Collectors.toList());
     }
 
     @Override
@@ -340,6 +168,10 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         @Parameter(description = "directories with single column statistics files",
                 required = true)
         public List<String> inputDirectories;
+
+        @Parameter(names = "--file-pattern",
+        description = "matches statistics files in the input directory")
+        public String filePattern = ".+";
 
         @Parameter(names = "--description",
                 description = "description for the imported constraint collection",
