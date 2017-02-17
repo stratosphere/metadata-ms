@@ -42,6 +42,21 @@ public class MetanomeStatisticsImportAppTest {
                 "TPC-H"
         );
 
+        // Check that we have all tuple counts.
+        Collection<ConstraintCollection<TupleCount>> tupleCountConstraintCollections =
+                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                        TupleCount.class,
+                        schema
+                );
+        Assert.assertEquals(1, tupleCountConstraintCollections.size());
+        ConstraintCollection<TupleCount> tupleCountConstraintCollection = tupleCountConstraintCollections.iterator().next();
+        Assert.assertEquals(1, tupleCountConstraintCollection.getConstraints().size());
+        TupleCount tupleCount = tupleCountConstraintCollection.getConstraints().stream()
+                .filter(tc -> tc.getTargetReference().getTargetId() == table.getId())
+                .findAny()
+                .orElseThrow(AssertionError::new);
+        Assert.assertEquals(26, tupleCount.getNumTuples());
+
         // Check that we have all the type constraints.
         Collection<ConstraintCollection<TypeConstraint>> typeConstraintCollections =
                 metadataStore.getConstraintCollectionByConstraintTypeAndTarget(

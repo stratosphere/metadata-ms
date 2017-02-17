@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.tools.metanome;
 import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
@@ -48,6 +49,8 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
 
     private ConstraintCollection<TextColumnStatistics> constraintCollectionTextColumnStatistics;
 
+    private ConstraintCollection<TupleCount> constraintCollectionTupleCount;
+
     private final Target[] scope;
 
     private final MetadataStore metadataStore;
@@ -79,10 +82,26 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
         Column column = this.identifierResolver.resolveColumn(columnIdentifier);
         Map<String, BasicStatisticValue> statistics = basicStatistic.getStatisticMap();
 
+        this.handleTupleCount(statistics, column);
         this.handleTypeConstraint(statistics, column);
         this.handleColumnStatistics(statistics, column);
         this.handleTextColumnStatistics(statistics, column);
         this.handleNumberColumnStatistics(statistics, column);
+    }
+
+    /**
+     * Extract a {@link TypeConstraint}.
+     */
+    private void handleTupleCount(Map<String, BasicStatisticValue> statistics, Column column) {
+        // Handle the tuple count.
+        boolean isFirstColumn = "0".equals(column.getLocation().get(Location.INDEX));
+        if (isFirstColumn && statistics.containsKey("Number of Tuples")) {
+            TupleCount.buildAndAddToCollection(
+                    new SingleTargetReference(column.getTable().getId()),
+                    this.getConstraintCollectionTupleCount(),
+                    ((BasicStatisticValueLong) statistics.get("Number of Tuples")).getValue().intValue()
+            );
+        }
     }
 
     /**
@@ -205,6 +224,15 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     @Override
     public Boolean acceptedResult(BasicStatistic result) {
         return true;
+    }
+
+    public ConstraintCollection<TupleCount> getConstraintCollectionTupleCount() {
+        if (this.constraintCollectionTupleCount == null) {
+            this.constraintCollectionTupleCount = this.metadataStore.createConstraintCollection(
+                    this.resultDescription, TupleCount.class, this.scope
+            );
+        }
+        return this.constraintCollectionTupleCount;
     }
 
     public ConstraintCollection<ColumnStatistics> getConstraintCollectionColumnStatistics() {
