@@ -44,7 +44,7 @@ public class MetanomeStatisticsImportAppTest {
 
         // Check that we have all tuple counts.
         Collection<ConstraintCollection<TupleCount>> tupleCountConstraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         TupleCount.class,
                         schema
                 );
@@ -59,7 +59,7 @@ public class MetanomeStatisticsImportAppTest {
 
         // Check that we have all the type constraints.
         Collection<ConstraintCollection<TypeConstraint>> typeConstraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         TypeConstraint.class,
                         schema
                 );
@@ -74,7 +74,7 @@ public class MetanomeStatisticsImportAppTest {
 
         // Check that we have all the general statistics.
         Collection<ConstraintCollection<ColumnStatistics>> columnStatisticsCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(ColumnStatistics.class, schema);
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(ColumnStatistics.class, schema);
         Assert.assertEquals(1, columnStatisticsCollections.size());
         ConstraintCollection<ColumnStatistics> statisticsConstraintCollection = columnStatisticsCollections.iterator().next();
         Assert.assertEquals(8, statisticsConstraintCollection.getConstraints().size());
@@ -94,7 +94,7 @@ public class MetanomeStatisticsImportAppTest {
 
         // Check that we have all the text constraints.
         Collection<ConstraintCollection<TextColumnStatistics>> textConstraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         TextColumnStatistics.class,
                         schema
                 );
@@ -113,7 +113,7 @@ public class MetanomeStatisticsImportAppTest {
 
         // Check that we have all the number constraints.
         Collection<ConstraintCollection<NumberColumnStatistics>> numberConstraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         NumberColumnStatistics.class,
                         schema
                 );
