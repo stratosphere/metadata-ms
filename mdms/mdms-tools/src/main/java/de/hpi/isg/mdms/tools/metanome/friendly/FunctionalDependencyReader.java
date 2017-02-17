@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.tools.metanome.friendly;
 
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.metanome.algorithm_integration.ColumnCombination;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.FunctionalDependency;
@@ -15,8 +16,8 @@ import java.util.stream.Stream;
 public class FunctionalDependencyReader extends AbstractFriendlyReader<FunctionalDependency> {
 
     @Override
-    protected void processLine(String line, ResultReceiver resultReceiver) {
-        toFD(line).forEach(fd -> {
+    protected void processLine(String line, DependencyResultReceiver<?> resultReceiver) {
+        this.toFD(line).forEach(fd -> {
             try {
                 resultReceiver.receiveResult(fd);
             } catch (CouldNotReceiveResultException e) {

@@ -17,6 +17,6 @@ public interface ResultReader {
      * @param resultReceiver that receives the parsed dependencies
      * @throws IOException if the {@code file} cannot be read properly or the parsing fails
      */
-    void readAndLoad(File file, ResultReceiver resultReceiver) throws IOException;
+    void readAndLoad(File file, DependencyResultReceiver<?> resultReceiver) throws IOException;
 
 }
