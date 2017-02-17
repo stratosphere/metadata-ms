@@ -1,9 +1,9 @@
 package de.hpi.isg.mdms.tools.metanome.friendly;
 
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.OrderDependency;
-import de.metanome.backend.result_receiver.ResultReceiver;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
@@ -15,10 +15,11 @@ import java.util.stream.Stream;
 public class OrderDependencyReader extends AbstractFriendlyReader<OrderDependency> {
 
     @Override
-    protected void processLine(String line, ResultReceiver resultReceiver) {
+    protected void processLine(String line, DependencyResultReceiver<?> resultReceiver) {
         toOD(line).forEach(od -> {
             try {
-                resultReceiver.receiveResult(od);
+//                resultReceiver.receiveResult(od);
+                throw new CouldNotReceiveResultException("ODs are not supported.");
             } catch (CouldNotReceiveResultException e) {
                 throw new RuntimeException(String.format("Could not process \"{}\".", line), e);
             }

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.tools.metanome.friendly;
 
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.hpi.isg.mdms.tools.metanome.ResultReader;
 import de.metanome.algorithm_integration.ColumnCombination;
 import de.metanome.algorithm_integration.ColumnIdentifier;
@@ -38,7 +39,7 @@ public abstract class AbstractFriendlyReader<T> implements ResultReader {
     }
 
     @Override
-    public void readAndLoad(final File resultFile, final ResultReceiver resultReceiver) {
+    public void readAndLoad(final File resultFile, final DependencyResultReceiver<?> resultReceiver) {
         if (resultFile.exists()) {
             try {
                 Files.lines(resultFile.toPath()).forEach(line -> this.processLine(line, resultReceiver));
@@ -56,6 +57,6 @@ public abstract class AbstractFriendlyReader<T> implements ResultReader {
      * @param line           the line to parse
      * @param resultReceiver consumes the result
      */
-    protected abstract void processLine(String line, ResultReceiver resultReceiver);
+    protected abstract void processLine(String line, DependencyResultReceiver<?> resultReceiver);
 
 }

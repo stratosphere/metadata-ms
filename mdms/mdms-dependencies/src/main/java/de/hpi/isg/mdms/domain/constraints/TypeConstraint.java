@@ -201,7 +201,7 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
 
     private final String type;
 
-    private final TargetReference target;
+    private final SingleTargetReference target;
 
     @Deprecated
     public static TypeConstraint build(final SingleTargetReference target, String type) {
@@ -230,8 +230,8 @@ public class TypeConstraint extends AbstractHashCodeAndEquals implements RDBMSCo
     }
 
     @Override
-    public TargetReference getTargetReference() {
-        return target;
+    public SingleTargetReference getTargetReference() {
+        return this.target;
     }
 
     public String getType() {

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.tools.metanome.friendly;
 
+import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.UniqueColumnCombination;
 import de.metanome.backend.result_receiver.ResultReceiver;
@@ -12,7 +13,7 @@ import java.util.regex.Pattern;
 public class UniqueColumnCombinationReader extends AbstractFriendlyReader<UniqueColumnCombination> {
 
     @Override
-    protected void processLine(String line, ResultReceiver resultReceiver) {
+    protected void processLine(String line, DependencyResultReceiver<?> resultReceiver) {
         try {
             resultReceiver.receiveResult(toUCC(line));
         } catch (CouldNotReceiveResultException e) {
