@@ -41,30 +41,19 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
      * @param schemaName is the name of the schema to be retrieved
      * @return the schema
      * @throws IllegalArgumentException if both the schema name and ID are {@code null} or the given schema name is ambiguous
-     * @deprecated use {@link MetadataStore#getSchemaById(int)} and/or {@link MetadataStore#getSchemaByName(String)}
      */
     protected Schema getSchema(final Integer schemaId, final String schemaName) {
         if (schemaId == null && schemaName == null) {
             throw new IllegalArgumentException("Schema ID and name must not be null at the same time.");
         }
-
-        Schema schemaByName = null;
-        for (final Schema schema : this.metadataStore.getSchemas()) {
-            if (schemaId != null) {
-                if (schemaId.intValue() == schema.getId()) {
-                    return schema;
-                }
-            } else {
-                if (schemaName.equals(schema.getName())) {
-                    if (schemaByName != null) {
-                        throw new IllegalArgumentException(String.format("The schema name \"%s\" is ambiguous.",
-                                schemaName));
-                    }
-                    schemaByName = schema;
-                }
-            }
+        Schema schema = null;
+        if (schemaId != null) {
+            schema = this.metadataStore.getSchemaById(schemaId);
         }
-        return schemaByName;
+        if (schema == null && schemaName != null) {
+            schema = this.metadataStore.getSchemaByName(schemaName);
+        }
+        return schema;
     }
 
     @Override
@@ -72,19 +61,19 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
         super.prepareAppLogic();
 
         if (this.metadataStore == null) {
-            this.metadataStore = loadMetadataStore();
+            this.metadataStore = this.loadMetadataStore();
         }
     }
 
     protected MetadataStore loadMetadataStore() {
-        return MetadataStoreUtil.loadMetadataStore(getMetadataStoreParameters());
+        return MetadataStoreUtil.loadMetadataStore(this.getMetadataStoreParameters());
     }
 
     @Override
     protected void onExit() {
         super.onExit();
 
-        if (getMetadataStoreParameters().isForceQuit) {
+        if (this.getMetadataStoreParameters().isForceQuit) {
             this.logger.info("Forcing application to quit...");
             System.exit(0);
         }

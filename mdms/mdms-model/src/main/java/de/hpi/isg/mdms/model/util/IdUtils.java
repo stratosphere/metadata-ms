@@ -30,9 +30,7 @@ import de.hpi.isg.mdms.model.MetadataStore;
 @SuppressWarnings("serial")
 public class IdUtils implements Serializable {
 
-    public static enum IdTypes {SCHEMA_ID, TABLE_ID, COLUMN_ID}
-
-    ;
+    public enum IdTypes {SCHEMA_ID, TABLE_ID, COLUMN_ID}
 
     public static final int DEFAULT_NUM_COLUMN_BITS = 12;
     public static final int DEFAULT_NUM_TABLE_BITS = 12;

@@ -58,6 +58,9 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @ExcludeHashCodeEquals
     transient final LocationCache locationCache = new LocationCache();
 
+    @ExcludeHashCodeEquals
+    transient Collection<ConstraintCollection<? extends Constraint>> constraintCollectionCache = null;
+
     public static RDBMSMetadataStore createNewInstance(SQLInterface sqlInterface) {
         return createNewInstance(sqlInterface, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
     }
@@ -220,7 +223,10 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
-        return this.sqlInterface.getAllConstraintCollections();
+        if (this.constraintCollectionCache == null) {
+            this.constraintCollectionCache = this.sqlInterface.getAllConstraintCollections();
+        }
+        return this.constraintCollectionCache;
     }
 
     @Override
@@ -243,13 +249,15 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
         ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
-                description, new HashSet<Target>(Arrays.asList(scope)), getSQLInterface(), cls);
+                description, new HashSet<>(Arrays.asList(scope)), getSQLInterface(), cls);
 
         // Store the constraint collection in the DB.
         this.sqlInterface.addConstraintCollection(constraintCollection);
         for (Target target : constraintCollection.getScope()) {
             this.sqlInterface.addScope(target, constraintCollection);
         }
+
+        if (this.constraintCollectionCache != null) this.constraintCollectionCache.add(constraintCollection);
 
         return constraintCollection;
     }
@@ -339,6 +347,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
+        this.constraintCollectionCache = null;
         sqlInterface.removeConstraintCollection(constraintCollection);
     }
 
