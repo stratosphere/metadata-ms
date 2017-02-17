@@ -46,7 +46,7 @@ public class MetanomeDependencyImportAppTest {
         );
 
         Collection<ConstraintCollection<FunctionalDependency>> constraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         FunctionalDependency.class, metadataStore.getTargetByName("WDC.WDC_astronomical.csv")
                 );
         Assert.assertEquals(1, constraintCollections.size());
@@ -123,7 +123,7 @@ public class MetanomeDependencyImportAppTest {
         );
 
         Collection<ConstraintCollection<InclusionDependency>> constraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         InclusionDependency.class, metadataStore.getTargetByName("SG")
                 );
         Assert.assertEquals(1, constraintCollections.size());
@@ -175,7 +175,7 @@ public class MetanomeDependencyImportAppTest {
         );
 
         Collection<ConstraintCollection<UniqueColumnCombination>> constraintCollections =
-                metadataStore.getConstraintCollectionByConstraintTypeAndTarget(
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
                         UniqueColumnCombination.class, metadataStore.getTargetByName("schema.table")
                 );
         Assert.assertEquals(1, constraintCollections.size());

@@ -1,11 +1,11 @@
 package de.hpi.isg.mdms.analytics.util
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore
-import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InMemoryConstraintCollection, InclusionDependency}
+import de.hpi.isg.mdms.domain.constraints._
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
 import de.hpi.isg.mdms.model.location.DefaultLocation
-import de.hpi.isg.mdms.model.targets.Schema
-import de.hpi.isg.mdms.analytics.ConstraintImplicits._
+import de.hpi.isg.mdms.model.targets.{Schema, Table}
+import de.hpi.isg.mdms.model.{DefaultMetadataStore, MetadataStore}
 
 import scala.reflect.ClassTag
 
@@ -23,7 +23,7 @@ object TestUtil {
   }
 
   def addInclusionDependency(dependent: Seq[Int], referenced: Seq[Int], constraintCollection: ConstraintCollection[InclusionDependency]):
-    InclusionDependency = {
+  InclusionDependency = {
 
     val reference = new InclusionDependency.Reference(dependent.toArray, referenced.toArray)
     InclusionDependency.buildAndAddToCollection(reference, constraintCollection)
@@ -50,4 +50,138 @@ object TestUtil {
 
     (indCollection, csCollection)
   }
+
+  def metadataStoreFixture1 = {
+    val store = new DefaultMetadataStore()
+
+    // Set up the schemata.
+    addSchemata(store, 2, 5, 10)
+
+    // Add some constraints.
+    val ccFd1 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column4"),
+        Array(store.getColumnByName("schema1.table1.column0"))
+      ),
+      ccFd1
+    )
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column4"),
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
+      ),
+      ccFd1
+    )
+
+    // Add some more constraints.
+    val ccFd2 = store.createConstraintCollection("FDs on schema1.table2", classOf[FunctionalDependency], store.getTableByName("schema1.table2"))
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table2.column4"),
+        Array(store.getColumnByName("schema1.table2.column0"))
+      ),
+      ccFd2
+    )
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table2.column4"),
+        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2"))
+      ),
+      ccFd2
+    )
+
+    // Add some constraints.
+    val ccUcc1 = store.createConstraintCollection("UCCs on schema1.table1", classOf[UniqueColumnCombination], store.getTableByName("schema1.table1"))
+    UniqueColumnCombination.buildAndAddToCollection(
+      new UniqueColumnCombination.Reference(
+        Array(store.getColumnByName("schema1.table1.column0"))
+      ),
+      ccUcc1
+    )
+    UniqueColumnCombination.buildAndAddToCollection(
+      new UniqueColumnCombination.Reference(
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
+      ),
+      ccUcc1
+    )
+
+    // Add some more constraints.
+    val ccUcc2 = store.createConstraintCollection("FDs on schema1.table2", classOf[UniqueColumnCombination], store.getTableByName("schema1.table2"))
+    UniqueColumnCombination.buildAndAddToCollection(
+      new UniqueColumnCombination.Reference(
+        Array(store.getColumnByName("schema1.table2.column0"))
+      ),
+      ccUcc2
+    )
+    UniqueColumnCombination.buildAndAddToCollection(
+      new UniqueColumnCombination.Reference(
+        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2"))
+      ),
+      ccUcc2
+    )
+
+    (store, ccFd1, ccFd2, ccUcc1, ccUcc2)
+  }
+
+  def metadataStoreFixture2 = {
+    val store = new DefaultMetadataStore()
+
+    // Set up the schemata.
+    addSchemata(store, 2, 3, 10)
+
+    // Add some constraints.
+    val ccFd1 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column4"),
+        Array(store.getColumnByName("schema1.table1.column0"))
+      ),
+      ccFd1
+    )
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column4"),
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
+      ),
+      ccFd1
+    )
+
+    // Add some more constraints.
+    val ccFd2 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column4"),
+        Array(store.getColumnByName("schema1.table1.column0"))
+      ),
+      ccFd2
+    )
+    FunctionalDependency.buildAndAddToCollection(
+      new FunctionalDependency.Reference(
+        store.getColumnByName("schema1.table1.column2"),
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
+      ),
+      ccFd2
+    )
+
+    (store, ccFd1, ccFd2)
+  }
+
+  def addSchemata(store: MetadataStore, numSchemata: Int, numTables: Int, numColumns: Int): Unit = {
+    for (i <- 0 until numSchemata) {
+      val schema = store.addSchema(s"schema$i", "A test schema", new DefaultLocation)
+      addTables(store, schema, numTables, numColumns)
+    }
+  }
+
+  def addTables(store: MetadataStore, schema: Schema, numTables: Int, numColumns: Int): Unit = {
+    for (i <- 0 until numTables) {
+      val table = schema.addTable(store, s"table$i", "A test table", new DefaultLocation)
+      addColumns(store, table, numColumns)
+    }
+  }
+
+  def addColumns(store: MetadataStore, table: Table, n: Int): Unit =
+    for (i <- 0 until n) table.addColumn(store, s"column$i", "A test column", i)
+
 }

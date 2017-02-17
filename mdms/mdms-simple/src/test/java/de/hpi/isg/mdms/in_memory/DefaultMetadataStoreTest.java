@@ -586,32 +586,32 @@ public class DefaultMetadataStoreTest {
                 Collection<ConstraintCollection<TestConstraint>> result;
 
                 // S1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummySchema);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint.class, dummySchema);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
                 // T1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyTable);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint.class, dummyTable);
                 assertEquals(1, result.size());
                 for (Object o : result) {
                     assertTrue(store1.getConstraintCollections().contains(o));
                 }
                 // C1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyCol);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint.class, dummyCol);
                 assertEquals(1, result.size());
                 for (Object o : result) {
                     assertTrue(store1.getConstraintCollections().contains(o));
                 }
 
                 // T1 not in S2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyTable2);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint.class, dummyTable2);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
                 // C1 not in S2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint.class, dummyCol2);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint.class, dummyCol2);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
@@ -622,32 +622,32 @@ public class DefaultMetadataStoreTest {
                 Collection<ConstraintCollection<TestConstraint2>> result;
 
                 // S1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummySchema);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint2.class, dummySchema);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
                 // T1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyTable);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint2.class, dummyTable);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
                 // C1 in T2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyCol);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint2.class, dummyCol);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
 
                 // T1 not in S2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyTable2);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint2.class, dummyTable2);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
                 // C1 not in S2?
-                result = store1.getConstraintCollectionByConstraintTypeAndTarget(TestConstraint2.class, dummyCol2);
+                result = store1.getConstraintCollectionByConstraintTypeAndScope(TestConstraint2.class, dummyCol2);
                 assertEquals(0, result.size());
                 for (Object o : result) {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));

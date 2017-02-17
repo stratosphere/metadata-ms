@@ -7,7 +7,9 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
 
@@ -56,16 +58,16 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     ConstraintCollection<? extends Constraint> getConstraintCollection(int id);
 
     /**
-     * Returns a list of {@link ConstraintCollection} with the given target.
+     * Retrieve all {@link ConstraintCollection}s in this instance that have the given scope.
      *
-     * @param target
-     * @return the list of {@link ConstraintCollection} with the given target.
+     * @param scope the scope {@link Target}
+     * @return the matching {@link ConstraintCollection}s
      */
-    default Collection<ConstraintCollection<? extends Constraint>> getConstraintCollectionByTarget(Target target) {
+    default Collection<ConstraintCollection<? extends Constraint>> getConstraintCollectionByTarget(Target scope) {
         Collection<ConstraintCollection<? extends Constraint>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
-            for (Target scopetarget : constraintCollection.getScope())
-                if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+            for (Target ccScope : constraintCollection.getScope())
+                if (this.getIdUtils().isContained(scope.getId(), ccScope.getId())) {
                     result.add(constraintCollection);
                     break;
                 }
@@ -73,9 +75,16 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         return result;
     }
 
+    /**
+     * Retrieve all {@link ConstraintCollection}s in this instance that have the given {@link Constraint} type.
+     *
+     * @param constrainttype the {@link Class} of the {@link Constraint} type
+     * @return the matching {@link ConstraintCollection}s
+     */
+    @SuppressWarnings("unchecked") // We check by hand.
     default <T extends Constraint> Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
                 result.add((ConstraintCollection<T>) constraintCollection);
                 break;
@@ -84,16 +93,48 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         return result;
     }
 
+    /**
+     * Retrieve all {@link ConstraintCollection}s in this instance that have the given {@link Constraint} type and scope.
+     *
+     * @param constrainttype the {@link Class} of the {@link Constraint} type
+     * @param scope          the scope {@link Target}
+     * @return the matching {@link ConstraintCollection}s
+     */
+    @SuppressWarnings("unchecked") // We check by hand.
     default <T extends Constraint> Collection<ConstraintCollection<T>>
-    getConstraintCollectionByConstraintTypeAndTarget(Class<T> constrainttype, Target target) {
+    getConstraintCollectionByConstraintTypeAndScope(Class<T> constrainttype, Target scope) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : getConstraintCollections()) {
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
-                for (Target scopetarget : constraintCollection.getScope())
-                    if (getIdUtils().isContained(target.getId(), scopetarget.getId())) {
+                for (Target ccScope : constraintCollection.getScope())
+                    if (this.getIdUtils().isContained(scope.getId(), ccScope.getId())) {
                         result.add((ConstraintCollection<T>) constraintCollection);
+                        break;
                     }
-                break;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Retrieve all {@link ConstraintCollection}s in this instance that have the given {@link Constraint} type and whose
+     * scope is included in the given {@link Target}.
+     *
+     * @param constrainttype the {@link Class} of the {@link Constraint} type
+     * @param target         the {@link Target}
+     * @return the matching {@link ConstraintCollection}s
+     */
+    @SuppressWarnings("unchecked") // We check by hand.
+    default <T extends Constraint> Collection<ConstraintCollection<T>>
+    getIncludedConstraintCollections(Class<T> constrainttype, Target target) {
+        Collection<ConstraintCollection<T>> result = new LinkedList<>();
+        NextConstraintCollection:
+        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+            if (constraintCollection.getConstraintClass() == constrainttype) {
+                for (Target ccScope : constraintCollection.getScope())
+                    if (!this.getIdUtils().isContained(ccScope.getId(), target.getId()))
+                        continue NextConstraintCollection;
+                result.add((ConstraintCollection<T>) constraintCollection);
             }
         }
         return result;
@@ -160,6 +201,38 @@ public interface MetadataStore extends Serializable, Observer<Target> {
             }
         } while (separatorIndex < targetName.length());
         return lastEncounteredTarget;
+    }
+
+    /**
+     * Resolves a {@link Table} by its name.
+     *
+     * @param targetName the name of the {@link Table} conforming to the format {@code <schema> "." <table>}
+     * @return the resolved {@link Table} or {@code null} if it could not be resolved
+     * @throws NameAmbigousException    if more than one {@link Target} matches
+     * @throws IllegalArgumentException if the matching {@link Target} is not a {@link Table}
+     */
+    default Table getTableByName(String targetName) throws IllegalArgumentException {
+        Target target = this.getTargetByName(targetName);
+        if (!(target instanceof Table)) {
+            throw new IllegalArgumentException(String.format("%s is not a table.", target));
+        }
+        return (Table) target;
+    }
+
+    /**
+     * Resolves a {@link Column} by its name.
+     *
+     * @param targetName the name of the {@link Table} conforming to the format {@code <schema> "." <table> "." <column>}
+     * @return the resolved {@link Table} or {@code null} if it could not be resolved
+     * @throws NameAmbigousException    if more than one {@link Target} matches
+     * @throws IllegalArgumentException if the matching {@link Target} is not a {@link Column}
+     */
+    default Column getColumnByName(String targetName) throws IllegalArgumentException {
+        Target target = this.getTargetByName(targetName);
+        if (!(target instanceof Column)) {
+            throw new IllegalArgumentException(String.format("%s is not a column.", target));
+        }
+        return (Column) target;
     }
 
     /**
