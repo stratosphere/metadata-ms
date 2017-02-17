@@ -1,0 +1,4 @@
+{"type":"FunctionalDependency","determinant":{"columnIdentifiers":[]},"dependant":{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"Symbol"}}
+{"type":"FunctionalDependency","determinant":{"columnIdentifiers":[{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"IAU abbreviation"}]},"dependant":{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"Name"}}
+{"type":"FunctionalDependency","determinant":{"columnIdentifiers":[{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"Name"}]},"dependant":{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"IAU abbreviation"}}
+{"type":"FunctionalDependency","determinant":{"columnIdentifiers":[{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"Unicode codepoint"},{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"Represents"}]},"dependant":{"tableIdentifier":"WDC_astronomical.csv","columnIdentifier":"IAU abbreviation"}}

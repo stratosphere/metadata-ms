@@ -7,6 +7,8 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 
+import java.util.NoSuchElementException;
+
 /**
  * This utility helps to resolve Metanome identifiers to {@link Table}s and {@link Column}s.
  */
@@ -43,20 +45,23 @@ public class IdentifierResolver {
     }
 
     private Column resolveColumn(Table table, String columnIdentifier) {
-        Column column = table.getColumnByName(columnIdentifier);
-        if (column != null) return column;
+        try {
+            return table.getColumnByName(columnIdentifier);
+        } catch (NoSuchElementException e) {
+                // Pass.
+        }
 
         // Detect Metanome's fallback column names.
         if (columnIdentifier.startsWith("column")) {
             try {
-                int columnPosition = Integer.parseInt(columnIdentifier.substring(7));
+                int columnPosition = Integer.parseInt(columnIdentifier.substring(6));
                 IdUtils idUtils = this.metadataStore.getIdUtils();
                 int localSchemaId = idUtils.getLocalSchemaId(table.getId());
                 int localTableId = idUtils.getLocalTableId(table.getId());
                 int columnId = idUtils.createGlobalId(localSchemaId, localTableId, columnPosition - 1);
-                column = table.getColumnById(columnId);
+                Column column = table.getColumnById(columnId);
                 if (column != null) return column;
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException | NoSuchElementException e) {
                 // Pass.
             }
         }

@@ -70,6 +70,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         List<String> inputFiles = new ArrayList<>();
         inputFiles.add(fileLocation);
         parameters.inputDirectories = inputFiles;
+        parameters.filePattern = filePattern;
         parameters.schemaName = schemaName;
 
         MetanomeStatisticsImportApp app = new MetanomeStatisticsImportApp(parameters);

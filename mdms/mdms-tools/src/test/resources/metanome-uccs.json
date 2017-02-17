@@ -1,0 +1,2 @@
+{"type":"UniqueColumnCombination","columnCombination":{"columnIdentifiers":[{"tableIdentifier":"table","columnIdentifier":"id"}]}}
+{"type":"UniqueColumnCombination","columnCombination":{"columnIdentifiers":[{"tableIdentifier":"table","columnIdentifier":"name"},{"tableIdentifier":"table","columnIdentifier":"zip"}]}}
