@@ -14,10 +14,6 @@ import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
 import de.hpi.isg.mdms.tools.metanome.ResultReader;
-import de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader;
-import de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader;
-import de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader;
-import de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,12 +29,17 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         super(parameters);
     }
 
-    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
+    public static void fromParameters(MetadataStore mds,
+                                      String fileLocation,
+                                      String fileType,
+                                      String schemaName,
                                       String type) throws Exception {
 
         MetanomeDependencyImportApp.Parameters parameters = new MetanomeDependencyImportApp.Parameters();
 
+        parameters.schema = schemaName;
         parameters.resultFiles.add(fileLocation);
+        parameters.fileType = fileType;
         parameters.dependencyType = type;
         parameters.scope = Collections.singletonList(schemaName);
 
@@ -110,19 +111,38 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
             switch (parameters.dependencyType) {
                 case "IND":
                 case "ind":
-                    return new InclusionDependencyReader();
+                    return new de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader();
                 case "UCC":
                 case "ucc":
-                    return new UniqueColumnCombinationReader();
+                    return new de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader();
                 case "FD":
                 case "fd":
-                    return new FunctionalDependencyReader();
+                    return new de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader();
                 case "OD":
                 case "od":
-                    return new OrderDependencyReader();
+                    return new de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader();
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }
+
+        } else if ("json".equalsIgnoreCase(parameters.fileType)) {
+            switch (parameters.dependencyType) {
+                case "IND":
+                case "ind":
+                    return new de.hpi.isg.mdms.tools.metanome.json.InclusionDependencyReader();
+                case "UCC":
+                case "ucc":
+                    return new de.hpi.isg.mdms.tools.metanome.json.UniqueColumnCombinationReader();
+                case "FD":
+                case "fd":
+                    return new de.hpi.isg.mdms.tools.metanome.json.FunctionalDependencyReader();
+                case "OD":
+                case "od":
+                    return new de.hpi.isg.mdms.tools.metanome.json.OrderDependencyReader();
+                default:
+                    throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
+            }
+
         } else {
             throw new IllegalArgumentException(String.format("File type \"%s\" is currently not supported.", parameters.fileType));
         }
