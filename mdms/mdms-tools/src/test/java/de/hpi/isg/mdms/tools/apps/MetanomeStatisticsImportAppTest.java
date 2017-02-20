@@ -39,7 +39,8 @@ public class MetanomeStatisticsImportAppTest {
                 metadataStore,
                 inputFile.getParentFile().getAbsolutePath(),
                 ".*-statistics\\.json",
-                "TPC-H"
+                "TPC-H",
+                null
         );
 
         // Check that we have all tuple counts.

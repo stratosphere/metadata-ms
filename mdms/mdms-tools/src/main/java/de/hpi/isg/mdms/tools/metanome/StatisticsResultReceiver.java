@@ -229,7 +229,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TupleCount> getConstraintCollectionTupleCount() {
         if (this.constraintCollectionTupleCount == null) {
             this.constraintCollectionTupleCount = this.metadataStore.createConstraintCollection(
-                    this.resultDescription, TupleCount.class, this.scope
+                    this.resultDescription + " (tuple counts)", TupleCount.class, this.scope
             );
         }
         return this.constraintCollectionTupleCount;
@@ -238,7 +238,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<ColumnStatistics> getConstraintCollectionColumnStatistics() {
         if (this.constraintCollectionColumnStatistics == null) {
             this.constraintCollectionColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription, ColumnStatistics.class, this.scope
+                    this.resultDescription + " (column statistics)", ColumnStatistics.class, this.scope
             );
         }
         return this.constraintCollectionColumnStatistics;
@@ -247,7 +247,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TypeConstraint> getConstraintCollectionTypeConstraints() {
         if (this.constraintCollectionTypeConstraints == null) {
             this.constraintCollectionTypeConstraints = this.metadataStore.createConstraintCollection(
-                    this.resultDescription, TypeConstraint.class, this.scope
+                    this.resultDescription + " (type constraints)", TypeConstraint.class, this.scope
             );
         }
         return this.constraintCollectionTypeConstraints;
@@ -256,7 +256,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<NumberColumnStatistics> getConstraintCollectionNumberColumnStatistics() {
         if (this.constraintCollectionNumberColumnStatistics == null) {
             this.constraintCollectionNumberColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription, NumberColumnStatistics.class, this.scope
+                    this.resultDescription + " (number statistics)", NumberColumnStatistics.class, this.scope
             );
         }
         return this.constraintCollectionNumberColumnStatistics;
@@ -265,7 +265,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TextColumnStatistics> getConstraintCollectionTextColumnStatistics() {
         if (this.constraintCollectionTextColumnStatistics == null) {
             this.constraintCollectionTextColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription, TextColumnStatistics.class, this.scope
+                    this.resultDescription + " (text statistics)", TextColumnStatistics.class, this.scope
             );
         }
         return this.constraintCollectionTextColumnStatistics;
