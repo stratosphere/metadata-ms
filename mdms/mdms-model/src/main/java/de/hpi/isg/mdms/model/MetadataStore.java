@@ -87,7 +87,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
         for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
                 result.add((ConstraintCollection<T>) constraintCollection);
-                break;
+                continue;
             }
         }
         return result;
