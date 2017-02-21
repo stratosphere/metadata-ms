@@ -96,11 +96,9 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
         // Handle the tuple count.
         boolean isFirstColumn = "0".equals(column.getLocation().get(Location.INDEX));
         if (isFirstColumn && statistics.containsKey("Number of Tuples")) {
-            TupleCount.buildAndAddToCollection(
-                    new SingleTargetReference(column.getTable().getId()),
-                    this.getConstraintCollectionTupleCount(),
-                    ((BasicStatisticValueLong) statistics.get("Number of Tuples")).getValue().intValue()
-            );
+            this.getConstraintCollectionTupleCount().add(new TupleCount(
+                    column.getTable().getId(), ((BasicStatisticValueLong) statistics.get("Number of Tuples")).getValue().intValue()
+            ));
         }
     }
 
@@ -110,10 +108,8 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     private void handleTypeConstraint(Map<String, BasicStatisticValue> statistics, Column column) {
         // Handle the type constraint.
         if (statistics.containsKey("Data Type")) {
-            TypeConstraint.buildAndAddToCollection(
-                    new SingleTargetReference(column.getId()),
-                    this.getConstraintCollectionTypeConstraints(),
-                    statistics.get("Data Type").getValue().toString()
+            this.getConstraintCollectionTypeConstraints().add(
+                    new TypeConstraint(column.getId(), statistics.get("Data Type").getValue().toString())
             );
         }
     }

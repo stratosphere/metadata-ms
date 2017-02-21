@@ -13,52 +13,37 @@
 package de.hpi.isg.mdms.domain.constraints;
 
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.targets.Column;
 
 /**
- * Constraint implementation distinct value counts of a single column.
+ * {@link Constraint} implementation distinct value counts of a single {@link Column}.
  *
  * @author Sebastian Kruse
  */
-public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDBMSConstraint {
+public class DistinctValueCount extends AbstractHashCodeAndEquals implements Constraint {
 
-    private static final long serialVersionUID = -932394088609862495L;
+    private int columnId;
 
     private int numDistinctValues;
 
-    private SingleTargetReference target;
-
-    public DistinctValueCount(final SingleTargetReference target, int numDistinctValues) {
-
-        this.target = target;
+    public DistinctValueCount(int columnId, int numDistinctValues) {
+        this.columnId = columnId;
         this.numDistinctValues = numDistinctValues;
-    }
-
-    @Deprecated
-    public static DistinctValueCount build(final SingleTargetReference target,
-                                           int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, numDistinctValues);
-        return distinctValueCount;
-    }
-
-    public static DistinctValueCount buildAndAddToCollection(final SingleTargetReference target,
-                                                             ConstraintCollection<DistinctValueCount> constraintCollection,
-                                                             int numDistinctValues) {
-        DistinctValueCount distinctValueCount = new DistinctValueCount(target, numDistinctValues);
-        constraintCollection.add(distinctValueCount);
-        return distinctValueCount;
-    }
-
-    @Override
-    public SingleTargetReference getTargetReference() {
-        return this.target;
     }
 
     /**
      * @return the numDistinctValues
      */
     public int getNumDistinctValues() {
-        return numDistinctValues;
+        return this.numDistinctValues;
+    }
+
+    /**
+     * @return the ID of the {@link Column} being described
+     */
+    public int getColumnId() {
+        return this.columnId;
     }
 
     /**
@@ -69,8 +54,15 @@ public class DistinctValueCount extends AbstractHashCodeAndEquals implements RDB
     }
 
     @Override
+    public int[] getAllTargetIds() {
+        return new int[]{this.columnId};
+    }
+
+    @Override
     public String toString() {
-        return "DistinctValueCount[" + getTargetReference() + ", numDistinctValues=" + numDistinctValues + "]";
+        return String.format("%s[col=%08x, %,d]",
+                this.getClass().getSimpleName(), this.columnId, this.numDistinctValues
+        );
     }
 
 }

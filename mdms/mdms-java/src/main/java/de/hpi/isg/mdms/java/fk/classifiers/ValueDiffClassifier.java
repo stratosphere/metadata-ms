@@ -64,7 +64,7 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
         for (Constraint constraint : textColumnStatisticsCollection.getConstraints()) {
             if (!(constraint instanceof NumberColumnStatistics)) continue;
             NumberColumnStatistics numberColumnStatistics = (NumberColumnStatistics) constraint;
-            final int columnId = numberColumnStatistics.getTargetReference().getTargetId();
+            final int columnId = numberColumnStatistics.getColumnId();
             this.columnAvgValue.put(columnId, numberColumnStatistics.getAverage());
             this.columnValueStdDevs.put(columnId, numberColumnStatistics.getStandardDeviation());
         }

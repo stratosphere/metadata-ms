@@ -10,7 +10,6 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.rdbms.SQLInterface;
-import it.unimi.dsi.fastutil.ints.IntIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,8 +131,7 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
 
         if (IS_CHECK_CONSTRAINT_TARGETS) {
             // Ensure that all targets of the constraint are valid.
-            for (IntIterator i = constraint.getTargetReference().getAllTargetIds().iterator(); i.hasNext(); ) {
-                int targetId = i.nextInt();
+            for (int targetId : constraint.getAllTargetIds()) {
                 if (!this.isTargetInScope(targetId)) {
                     LOGGER.warn("Target with id {} not in scope of constraint collection", targetId);
                 }

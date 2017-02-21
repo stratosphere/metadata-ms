@@ -3,7 +3,6 @@ package de.hpi.isg.mdms.exceptions;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.targets.TargetReference;
 
 /**
  * This {@link Exception} is thrown if the user tries to add a {@link Constraint} to a {@link MetadataStore} with

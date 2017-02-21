@@ -8,7 +8,6 @@ import de.hpi.isg.mdms.db.query.StrategyBasedPreparedQuery;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -131,7 +130,7 @@ public class SQLiteConstraintHandler {
      * @param constraint           is a constraint that shall be written
      * @param constraintCollection to which the {@code constraint} should belong
      */
-    public void writeConstraint(RDBMSConstraint constraint, RDBMSConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
+    public void writeConstraint(Constraint constraint, RDBMSConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
         Validate.isAssignableFrom(constraintCollection.getConstraintClass(), constraint.getClass());
         this.addConstraintWriter.write(new Tuple2<>(constraintCollection, constraint));
     }

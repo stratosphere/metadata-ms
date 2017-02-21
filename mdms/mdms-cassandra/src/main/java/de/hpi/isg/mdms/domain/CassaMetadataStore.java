@@ -325,6 +325,11 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
+    public Target getTargetById(int targetId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void removeSchema(Schema schema) {
         //TODO
     }

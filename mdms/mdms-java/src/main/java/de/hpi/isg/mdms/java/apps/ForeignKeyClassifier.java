@@ -5,32 +5,24 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.TupleCount;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
-import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
-import de.hpi.isg.mdms.java.apps.domain.TestConstraint;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.Dataset;
 import de.hpi.isg.mdms.java.fk.Instance;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.java.fk.classifiers.*;
+import de.hpi.isg.mdms.java.fk.classifiers.PartialForeignKeyClassifier;
 import de.hpi.isg.mdms.java.fk.feature.*;
 import de.hpi.isg.mdms.java.fk.ml.classifier.AbstractClassifier;
 import de.hpi.isg.mdms.java.fk.ml.classifier.NaiveBayes;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.ClassifierEvaluation;
-import de.hpi.isg.mdms.java.fk.ml.evaluation.FMeasureEvaluation;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.rdbms.SQLiteInterface;
 import it.unimi.dsi.fastutil.ints.*;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -62,9 +54,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
     @Override
     protected void prepareAppLogic() throws Exception {
         super.prepareAppLogic();
-
-        SQLiteConstraintUtils.registerStandardConstraints(
-                (SQLiteInterface) ((RDBMSMetadataStore) this.metadataStore).getSQLInterface());
     }
 
     @Override
@@ -86,7 +75,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .filter(constraint -> constraint instanceof ColumnStatistics)
                 .map(constraint -> (ColumnStatistics) constraint)
                 .filter(columnStatistics -> columnStatistics.getNumNulls() > 0)
-                .forEach(columnStatistics -> nullableColumns.add(columnStatistics.getTargetReference().getTargetId()));
+                .forEach(columnStatistics -> nullableColumns.add(columnStatistics.getColumnId()));
 
         // Find PK candidates (by removing UCCs with nullable columns) and index them by their table.
         getLogger().info("Identifying PK candidates...");
@@ -94,9 +83,9 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         final Map<Integer, List<UniqueColumnCombination>> tableUccs = uccCollection.getConstraints().stream()
                 .filter(constraint -> constraint instanceof UniqueColumnCombination)
                 .map(constraint -> (UniqueColumnCombination) constraint)
-                .filter(ucc -> ucc.getTargetReference().getAllTargetIds().stream().noneMatch(nullableColumns::contains))
+                .filter(ucc -> Arrays.stream(ucc.getAllTargetIds()).noneMatch(nullableColumns::contains))
                 .collect(Collectors.groupingBy(
-                        ucc -> idUtils.getTableId(ucc.getTargetReference().getAllTargetIds().iterator().nextInt()),
+                        ucc -> idUtils.getTableId(Arrays.stream(ucc.getAllTargetIds()).iterator().nextInt()),
                         Collectors.toList()));
 
         final IntSet nonEmptyTableIds = new IntOpenHashSet();
@@ -106,7 +95,7 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                     .filter(constraint -> constraint instanceof TupleCount)
                     .map(constraint -> (TupleCount) constraint)
                     .filter(tupleCount -> tupleCount.getNumTuples() > 0)
-                    .forEach(tupleCount -> nonEmptyTableIds.add(tupleCount.getTargetReference().getTargetId()));
+                    .forEach(tupleCount -> nonEmptyTableIds.add(tupleCount.getTableId()));
             getLogger().info("Found {} non-empty tables.", nonEmptyTableIds.size());
         }
 
@@ -116,12 +105,12 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
                 .map(constraint -> (InclusionDependency) constraint)
                 .filter(ind -> {
                     if (!this.parameters.isNeglectEmptyTables) return true;
-                    final int depTableId = idUtils.getTableId(ind.getTargetReference().getDependentColumns()[0]);
-                    final int refTableId = idUtils.getTableId(ind.getTargetReference().getReferencedColumns()[0]);
+                    final int depTableId = idUtils.getTableId(ind.getDependentColumnIds()[0]);
+                    final int refTableId = idUtils.getTableId(ind.getReferencedColumnIds()[0]);
                     return nonEmptyTableIds.contains(depTableId) && nonEmptyTableIds.contains(refTableId);
                 })
                 .filter(ind -> {
-                    final int[] refColumnIds = ind.getTargetReference().getReferencedColumns();
+                    final int[] refColumnIds = ind.getReferencedColumnIds();
                     final int tableId = idUtils.getTableId(refColumnIds[0]);
                     final List<UniqueColumnCombination> uccs = tableUccs.get(tableId);
                     return uccs != null && uccs.stream()
@@ -188,26 +177,26 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
         final List<InclusionDependencyRating> foreignKeyRatings = indRatings.stream()
                 .filter(indRating -> {
                     // Check that none of the dependent attributes is part of an already picked IND.
-                    if (Arrays.stream(indRating.ind.getTargetReference().getDependentColumns())
+                    if (Arrays.stream(indRating.ind.getDependentColumnIds())
                             .anyMatch(usedDependentColumns::contains)) return false;
 
                     // The referenced attributes imply a primary key: Check that no other foreign key has been picked.
-                    final int tableId = idUtils.getTableId(indRating.ind.getTargetReference().getReferencedColumns()[0]);
+                    final int tableId = idUtils.getTableId(indRating.ind.getReferencedColumnIds()[0]);
                     final IntSet refTablePK = tablePrimaryKeys.get(tableId);
                     if (refTablePK != null &&
                             (refTablePK.size() != indRating.ind.getArity() ||
-                                    !Arrays.stream(indRating.ind.getTargetReference().getReferencedColumns())
+                                    !Arrays.stream(indRating.ind.getReferencedColumnIds())
                                             .allMatch(refTablePK::contains))) {
                         return false;
                     }
 
                     // It's settled: we accept the IND. Update the PKs and used dependent attributes accordingly.
-                    Arrays.stream(indRating.ind.getTargetReference().getDependentColumns())
+                    Arrays.stream(indRating.ind.getDependentColumnIds())
                             .forEach(usedDependentColumns::add);
                     if (refTablePK == null) {
                         tablePrimaryKeys.put(
                                 tableId,
-                                new IntOpenHashSet(indRating.ind.getTargetReference().getReferencedColumns()));
+                                new IntOpenHashSet(indRating.ind.getReferencedColumnIds()));
                     }
                     return true;
                 })
@@ -290,8 +279,8 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
      */
     private boolean uccIsReferenced(UniqueColumnCombination ucc, InclusionDependency inclusionDependency,
                                     boolean isWithUccSupersets) {
-        final IntCollection uccColumnIds = ucc.getTargetReference().getAllTargetIds();
-        final int[] refColumnIds = inclusionDependency.getTargetReference().getReferencedColumns();
+        final IntCollection uccColumnIds = IntArrayList.wrap(ucc.getAllTargetIds());
+        final int[] refColumnIds = inclusionDependency.getReferencedColumnIds();
 
         // Conclude via the cardinalities of the UCC and IND.
         if (uccColumnIds.size() > refColumnIds.length || (!isWithUccSupersets && uccColumnIds.size() < refColumnIds.length)) {
@@ -317,8 +306,8 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
      */
     private Stream<UnaryForeignKeyCandidate> splitIntoUnaryForeignKeyCandidates(InclusionDependency ind) {
         List<UnaryForeignKeyCandidate> fkCandidates = new ArrayList<>(ind.getArity());
-        final int[] depColumnIds = ind.getTargetReference().getDependentColumns();
-        final int[] refColumnIds = ind.getTargetReference().getReferencedColumns();
+        final int[] depColumnIds = ind.getDependentColumnIds();
+        final int[] refColumnIds = ind.getReferencedColumnIds();
         for (int i = 0; i < ind.getArity(); i++) {
             fkCandidates.add(new UnaryForeignKeyCandidate(depColumnIds[i], refColumnIds[i]));
         }
@@ -354,9 +343,10 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
             String separator = "";
             for (Map.Entry<UnaryForeignKeyCandidate, List<ClassificationSet>> entry : reasoning.entrySet()) {
                 final UnaryForeignKeyCandidate fkCandidate = entry.getKey();
-                InclusionDependency ind = new InclusionDependency(new InclusionDependency.Reference(
+                InclusionDependency ind = new InclusionDependency(
                         new int[]{fkCandidate.getDependentColumnId()},
-                        new int[]{fkCandidate.getReferencedColumnId()}));
+                        new int[]{fkCandidate.getReferencedColumnId()}
+                );
                 sb.append(separator).append(prettyPrinter.prettyPrint(ind)).append(": {");
                 separator = "";
                 for (ClassificationSet classificationSet : entry.getValue()) {

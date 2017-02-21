@@ -9,6 +9,7 @@ import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.util.ReferenceUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,18 +56,10 @@ public class MetanomeDependencyImportAppTest {
 
         Set<FunctionalDependency> discoveredFds = new HashSet<>(constraintCollection.getConstraints());
         Set<FunctionalDependency> expectedFds = new HashSet<>();
-        expectedFds.add(new FunctionalDependency(new FunctionalDependency.Reference(
-                symbol, new Column[]{}
-        )));
-        expectedFds.add(new FunctionalDependency(new FunctionalDependency.Reference(
-                name, new Column[]{iau}
-        )));
-        expectedFds.add(new FunctionalDependency(new FunctionalDependency.Reference(
-                iau, new Column[]{name}
-        )));
-        expectedFds.add(new FunctionalDependency(new FunctionalDependency.Reference(
-                iau, new Column[]{unicodeCodepoint, represents}
-        )));
+        expectedFds.add(new FunctionalDependency(new int[0], symbol.getId()));
+        expectedFds.add(new FunctionalDependency(new int[]{iau.getId()}, name.getId()));
+        expectedFds.add(new FunctionalDependency(new int[]{name.getId()}, iau.getId()));
+        expectedFds.add(new FunctionalDependency(new int[]{unicodeCodepoint.getId(), represents.getId()}, iau.getId()));
 
         Assert.assertEquals(expectedFds, discoveredFds);
     }
@@ -132,26 +125,26 @@ public class MetanomeDependencyImportAppTest {
 
         Set<InclusionDependency> discoveredInds = new HashSet<>(constraintCollection.getConstraints());
         Set<InclusionDependency> expectedInds = new HashSet<>();
-        expectedInds.add(new InclusionDependency(new InclusionDependency.Reference(
-                new Column[]{
+        expectedInds.add(new InclusionDependency(
+                ReferenceUtils.toIntArray(new Column[]{
                         sgBiodatabase.getColumnByName("[0]"),
                         sgBiodatabase.getColumnByName("[2]"),
                         sgBiodatabase.getColumnByName("[3]"),
                         sgBiodatabase.getColumnByName("[4]"),
                         sgBiodatabase.getColumnByName("[5]")
-                },
-                new Column[]{
+                }),
+                ReferenceUtils.toIntArray(new Column[]{
                         sgBioentry.getColumnByName("[7]"),
                         sgBioentry.getColumnByName("[0]"),
                         sgBioentry.getColumnByName("[1]"),
                         sgBioentry.getColumnByName("[2]"),
                         sgBioentry.getColumnByName("[3]")
-                }
-        )));
-        expectedInds.add(new InclusionDependency(new InclusionDependency.Reference(
-                new Column[]{sgTerm.getColumnByName("[5]")},
-                new Column[]{sgOntology.getColumnByName("[0]")}
-        )));
+                })
+        ));
+        expectedInds.add(new InclusionDependency(
+                ReferenceUtils.toIntArray(new Column[]{sgTerm.getColumnByName("[5]")}),
+                ReferenceUtils.toIntArray(new Column[]{sgOntology.getColumnByName("[0]")})
+        ));
         Assert.assertEquals(expectedInds, discoveredInds);
     }
 
@@ -184,8 +177,8 @@ public class MetanomeDependencyImportAppTest {
 
         Set<UniqueColumnCombination> discoveredInds = new HashSet<>(constraintCollection.getConstraints());
         Set<UniqueColumnCombination> expectedInds = new HashSet<>();
-        expectedInds.add(new UniqueColumnCombination(new UniqueColumnCombination.Reference(new Column[]{id})));
-        expectedInds.add(new UniqueColumnCombination(new UniqueColumnCombination.Reference(new Column[]{name, zip})));
+        expectedInds.add(new UniqueColumnCombination(ReferenceUtils.toIntArray(new Column[]{id})));
+        expectedInds.add(new UniqueColumnCombination(ReferenceUtils.toIntArray(new Column[]{name, zip})));
         Assert.assertEquals(expectedInds, discoveredInds);
     }
 

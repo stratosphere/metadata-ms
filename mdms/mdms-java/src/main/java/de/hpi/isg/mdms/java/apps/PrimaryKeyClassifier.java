@@ -6,22 +6,18 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.TextColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
-import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
-import de.hpi.isg.mdms.java.apps.domain.TestConstraint;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.util.CollectionUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -61,8 +57,6 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
     protected void prepareAppLogic() throws Exception {
         super.prepareAppLogic();
 
-        SQLiteConstraintUtils.registerStandardConstraints(
-                (SQLiteInterface) ((RDBMSMetadataStore) this.metadataStore).getSQLInterface());
         this.prettyPrinter = new DependencyPrettyPrinter(this.metadataStore);
 
         // Load the statistics.
@@ -73,10 +67,10 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
         for (Constraint constraint : constraints) {
             if (constraint instanceof ColumnStatistics) {
                 ColumnStatistics columnStatistics = (ColumnStatistics) constraint;
-                this.columnStatics.put(columnStatistics.getTargetReference().getTargetId(), columnStatistics);
+                this.columnStatics.put(columnStatistics.getColumnId(), columnStatistics);
             } else if (constraint instanceof TextColumnStatistics) {
                 TextColumnStatistics textColumnStatistics = (TextColumnStatistics) constraint;
-                this.textColumnStatistics.put(textColumnStatistics.getTargetReference().getTargetId(), textColumnStatistics);
+                this.textColumnStatistics.put(textColumnStatistics.getColumnId(), textColumnStatistics);
             }
         }
     }
@@ -92,7 +86,7 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
                 .filter(constraint -> constraint instanceof UniqueColumnCombination)
                 .map(constraint -> (UniqueColumnCombination) constraint)
                 .collect(Collectors.groupingBy(ucc -> {
-                    final int anyColumnid = CollectionUtils.getAny(ucc.getTargetReference().getAllTargetIds());
+                    final int anyColumnid = ucc.getAllTargetIds()[0];
                     return idUtils.getTableId(anyColumnid);
                 })).values();
 
@@ -174,15 +168,15 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
     }
 
     private int getMinColumnIndex(UniqueColumnCombination ucc) {
-        return ucc.getTargetReference().getAllTargetIds().stream()
-                .mapToInt(this.metadataStore.getIdUtils()::getLocalColumnId)
-                .min().getAsInt();
+        return Arrays.stream(ucc.getAllTargetIds())
+                .map(this.metadataStore.getIdUtils()::getLocalColumnId)
+                .min().orElseThrow(IllegalArgumentException::new);
     }
 
     private int getMaxColumnIndex(UniqueColumnCombination ucc) {
-        return ucc.getTargetReference().getAllTargetIds().stream()
-                .mapToInt(this.metadataStore.getIdUtils()::getLocalColumnId)
-                .max().getAsInt();
+        return Arrays.stream(ucc.getAllTargetIds())
+                .map(this.metadataStore.getIdUtils()::getLocalColumnId)
+                .max().orElseThrow(IllegalArgumentException::new);
     }
 
     /**
@@ -198,7 +192,7 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
      * Checks whether any of the columns in the {@code ucc} contains {@code NULL} values.
      */
     private boolean containsNullValues(UniqueColumnCombination ucc) {
-        return ucc.getTargetReference().getAllTargetIds().stream()
+        return Arrays.stream(ucc.getAllTargetIds())
                 .anyMatch(columnId -> {
                     final ColumnStatistics columnStatistics = this.columnStatics.get(columnId);
                     return columnStatistics != null && columnStatistics.getNumNulls() > 0;

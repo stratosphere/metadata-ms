@@ -13,44 +13,24 @@
 package de.hpi.isg.mdms.domain.constraints;
 
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 
 /**
  * Constraint implementation for the number of tuples in a table.
  *
  * @author Sebastian Kruse
  */
-public class TupleCount extends AbstractHashCodeAndEquals implements RDBMSConstraint {
+public class TupleCount extends AbstractHashCodeAndEquals implements Constraint {
 
     private static final long serialVersionUID = -932394088609862495L;
 
     private int numTuples;
 
-    private SingleTargetReference target;
+    private int tableId;
 
-    public TupleCount(final SingleTargetReference target, int numTuples) {
-
-        this.target = target;
+    public TupleCount(final int tableId, int numTuples) {
+        this.tableId = tableId;
         this.numTuples = numTuples;
-    }
-
-    @Deprecated
-    public static TupleCount build(final SingleTargetReference target, ConstraintCollection<TupleCount> constraintCollection,
-                                   int numTuples) {
-        return new TupleCount(target, numTuples);
-    }
-
-    public static TupleCount buildAndAddToCollection(final SingleTargetReference target,
-                                                     ConstraintCollection<TupleCount> constraintCollection,
-                                                     int numTuples) {
-        TupleCount tupleCount = new TupleCount(target, numTuples);
-        constraintCollection.add(tupleCount);
-        return tupleCount;
-    }
-
-    @Override
-    public SingleTargetReference getTargetReference() {
-        return this.target;
     }
 
     /**
@@ -60,16 +40,20 @@ public class TupleCount extends AbstractHashCodeAndEquals implements RDBMSConstr
         return numTuples;
     }
 
+    public int getTableId() {
+        return this.tableId;
+    }
+
+    @Override
+    public int[] getAllTargetIds() {
+        return new int[]{this.tableId};
+    }
+
     /**
      * @param numDistinctValues the numDistinctValues to set
      */
     public void setNumDistinctValues(int numDistinctValues) {
         this.numTuples = numDistinctValues;
-    }
-
-    @Override
-    public String toString() {
-        return "TupleCount[" + getTargetReference() + ", numTuples=" + numTuples + "]";
     }
 
 }

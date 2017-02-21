@@ -4,7 +4,6 @@ import com.twitter.chill.KryoPool;
 import com.twitter.chill.ScalaKryoInstantiator;
 import de.hpi.isg.mdms.db.DatabaseAccess;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.RDBMSConstraint;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
 import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
@@ -260,7 +259,7 @@ public class SQLiteInterface implements SQLInterface {
 
     @Override
     public <T extends Constraint> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException {
-        this.constraintHandler.writeConstraint((RDBMSConstraint) constraint, (RDBMSConstraintCollection<T>) constraintCollection);
+        this.constraintHandler.writeConstraint(constraint, (RDBMSConstraintCollection<T>) constraintCollection);
     }
 
     /**

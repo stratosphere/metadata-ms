@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -36,7 +37,7 @@ public class NoReferencingPKClassifier extends PartialForeignKeyClassifier {
         pkConstraintCollection.getConstraints().stream()
                 .filter(constraint -> constraint instanceof UniqueColumnCombination)
                 .map(constraint -> (UniqueColumnCombination) constraint)
-                .flatMap(ucc -> ucc.getTargetReference().getAllTargetIds().stream())
+                .flatMapToInt(ucc -> Arrays.stream(ucc.getAllTargetIds()))
                 .forEach(this.pkColumnIds::add);
     }
 

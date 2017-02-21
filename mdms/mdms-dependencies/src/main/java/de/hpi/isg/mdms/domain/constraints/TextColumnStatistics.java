@@ -1,9 +1,11 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
+
 /**
  * This constraint class encapsulates string-specific single column statistics.
  */
-public class TextColumnStatistics implements RDBMSConstraint {
+public class TextColumnStatistics implements Constraint {
 
     /**
      * Special values in a column.
@@ -15,15 +17,19 @@ public class TextColumnStatistics implements RDBMSConstraint {
      */
     private String subtype;
 
-    private final SingleTargetReference targetReference;
+    private final int columnId;
 
     public TextColumnStatistics(int columnId) {
-        this.targetReference = new SingleTargetReference(columnId);
+        this.columnId = columnId;
+    }
+
+    public int getColumnId() {
+        return this.columnId;
     }
 
     @Override
-    public SingleTargetReference getTargetReference() {
-        return this.targetReference;
+    public int[] getAllTargetIds() {
+        return new int[]{this.columnId};
     }
 
     public String getMinValue() {

@@ -32,7 +32,7 @@ public class DistinctDependentValuesFeature extends Feature {
                 .filter(constraint -> constraint instanceof ColumnStatistics)
                 .map(constraint -> (ColumnStatistics) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
-                        distinctValueCount.getTargetReference().getTargetId(),
+                        distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()
                 ));
     }

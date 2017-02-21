@@ -40,7 +40,7 @@ public class DistinctDependentValuesClassifier extends PartialForeignKeyClassifi
         distinctValuesConstraintCollection.getConstraints().stream()
                 .map(constraint -> (DistinctValueCount) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
-                        distinctValueCount.getTargetReference().getTargetId(),
+                        distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()));
 
     }

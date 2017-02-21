@@ -13,78 +13,47 @@
 package de.hpi.isg.mdms.domain.constraints;
 
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.targets.TargetReference;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntCollection;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.targets.Column;
 
 /**
- * Constraint implementation for an n-ary unique column combination.
+ * {@link Constraint} implementation to store the overlap of distinct values of two {@link Column}s.
  *
  * @author Sebastian Kruse
  */
-public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements RDBMSConstraint {
+public class DistinctValueOverlap extends AbstractHashCodeAndEquals implements Constraint {
 
-    public static class Reference extends AbstractHashCodeAndEquals implements TargetReference {
-
-        private static final long serialVersionUID = -3272378011671591628L;
-
-        private final int column1, column2;
-
-        public Reference(int column1, int column2) {
-            super();
-            this.column1 = column1;
-            this.column2 = column2;
-        }
-
-        @Override
-        public IntCollection getAllTargetIds() {
-            IntArrayList targetIds = new IntArrayList(2);
-            targetIds.add(this.column1);
-            targetIds.add(this.column2);
-            return targetIds;
-        }
-
-        @Override
-        public String toString() {
-            return "Reference [" + column1 + ", " + column2 + "]";
-        }
-
-    }
-
-    private static final long serialVersionUID = -932394088609862495L;
-
-    private DistinctValueOverlap.Reference target;
+    private final int columnId1, columnId2;
 
     private int overlap;
 
-    @Deprecated
-    public static DistinctValueOverlap build(final int overlap, final DistinctValueOverlap.Reference target) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
-        return uniqueColumnCombination;
-    }
-
-    public static DistinctValueOverlap buildAndAddToCollection(final int overlap,
-                                                               final DistinctValueOverlap.Reference target, ConstraintCollection constraintCollection) {
-        DistinctValueOverlap uniqueColumnCombination = new DistinctValueOverlap(overlap, target);
-        constraintCollection.add(uniqueColumnCombination);
-        return uniqueColumnCombination;
-    }
-
-
-    public DistinctValueOverlap(final int overlap, final DistinctValueOverlap.Reference target) {
+    public DistinctValueOverlap(final int overlap, final int columnId1, final int columnId2) {
         this.overlap = overlap;
-        this.target = target;
+        this.columnId1 = columnId1;
+        this.columnId2 = columnId2;
+    }
+
+    public int getColumnId1() {
+        return this.columnId1;
+    }
+
+    public int getColumnId2() {
+        return this.columnId2;
+    }
+
+    public int getOverlap() {
+        return this.overlap;
     }
 
     @Override
-    public DistinctValueOverlap.Reference getTargetReference() {
-        return target;
+    public int[] getAllTargetIds() {
+        return new int[]{this.columnId1, this.columnId2};
     }
 
     @Override
     public String toString() {
-        return "DistinctValueOverlap [target=" + target + ", overlap=" + overlap + "]";
+        return String.format("%s[col1=%08x, col2=%08x, %,d]",
+                this.getClass().getSimpleName(), this.columnId1, this.columnId2, this.overlap
+        );
     }
-
 }

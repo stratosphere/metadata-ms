@@ -17,16 +17,15 @@ object TestUtil {
 
     val referenced = Array(columns.head.getId)
     val dependent = Array(columns(1).getId)
-    val reference = new InclusionDependency.Reference(dependent, referenced)
-    InclusionDependency.buildAndAddToCollection(reference, constraintCollection)
+    constraintCollection.add(new InclusionDependency(dependent, referenced))
     store.flush()
   }
 
   def addInclusionDependency(dependent: Seq[Int], referenced: Seq[Int], constraintCollection: ConstraintCollection[InclusionDependency]):
   InclusionDependency = {
-
-    val reference = new InclusionDependency.Reference(dependent.toArray, referenced.toArray)
-    InclusionDependency.buildAndAddToCollection(reference, constraintCollection)
+    val ind = new InclusionDependency(dependent.toArray, referenced.toArray)
+    constraintCollection.add(ind)
+    ind
   }
 
   def addDummyInclusionDependency(constraintCollection: ConstraintCollection[InclusionDependency]): InclusionDependency = {
@@ -59,66 +58,58 @@ object TestUtil {
 
     // Add some constraints.
     val ccFd1 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column4"),
-        Array(store.getColumnByName("schema1.table1.column0"))
-      ),
-      ccFd1
+    ccFd1.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column0").getId),
+        store.getColumnByName("schema1.table1.column4").getId
+      )
     )
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column4"),
-        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
-      ),
-      ccFd1
+    ccFd1.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2")).map(_.getId),
+        store.getColumnByName("schema1.table1.column4").getId
+      )
     )
 
     // Add some more constraints.
     val ccFd2 = store.createConstraintCollection("FDs on schema1.table2", classOf[FunctionalDependency], store.getTableByName("schema1.table2"))
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table2.column4"),
-        Array(store.getColumnByName("schema1.table2.column0"))
-      ),
-      ccFd2
+    ccFd2.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table2.column0")).map(_.getId),
+        store.getColumnByName("schema1.table2.column4").getId
+      )
     )
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table2.column4"),
-        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2"))
-      ),
-      ccFd2
+    ccFd2.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2")).map(_.getId),
+        store.getColumnByName("schema1.table2.column4").getId
+      )
     )
 
     // Add some constraints.
     val ccUcc1 = store.createConstraintCollection("UCCs on schema1.table1", classOf[UniqueColumnCombination], store.getTableByName("schema1.table1"))
-    UniqueColumnCombination.buildAndAddToCollection(
-      new UniqueColumnCombination.Reference(
-        Array(store.getColumnByName("schema1.table1.column0"))
-      ),
-      ccUcc1
+    ccUcc1.add(
+      new UniqueColumnCombination(
+        Array(store.getColumnByName("schema1.table1.column0")).map(_.getId)
+      )
     )
-    UniqueColumnCombination.buildAndAddToCollection(
-      new UniqueColumnCombination.Reference(
-        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
-      ),
-      ccUcc1
+    ccUcc1.add(
+      new UniqueColumnCombination(
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2")).map(_.getId)
+      )
     )
 
     // Add some more constraints.
     val ccUcc2 = store.createConstraintCollection("FDs on schema1.table2", classOf[UniqueColumnCombination], store.getTableByName("schema1.table2"))
-    UniqueColumnCombination.buildAndAddToCollection(
-      new UniqueColumnCombination.Reference(
-        Array(store.getColumnByName("schema1.table2.column0"))
-      ),
-      ccUcc2
+    ccUcc2.add(
+      new UniqueColumnCombination(
+        Array(store.getColumnByName("schema1.table2.column0")).map(_.getId)
+      )
     )
-    UniqueColumnCombination.buildAndAddToCollection(
-      new UniqueColumnCombination.Reference(
-        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2"))
-      ),
-      ccUcc2
+    ccUcc2.add(
+      new UniqueColumnCombination(
+        Array(store.getColumnByName("schema1.table2.column1"), store.getColumnByName("schema1.table2.column2")).map(_.getId)
+      )
     )
 
     (store, ccFd1, ccFd2, ccUcc1, ccUcc2)
@@ -132,36 +123,32 @@ object TestUtil {
 
     // Add some constraints.
     val ccFd1 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column4"),
-        Array(store.getColumnByName("schema1.table1.column0"))
-      ),
-      ccFd1
+    ccFd1.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column0")).map(_.getId),
+        store.getColumnByName("schema1.table1.column4").getId
+      )
     )
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column4"),
-        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
-      ),
-      ccFd1
+    ccFd1.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2")).map(_.getId),
+        store.getColumnByName("schema1.table1.column4").getId
+      )
     )
 
     // Add some more constraints.
     val ccFd2 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column4"),
-        Array(store.getColumnByName("schema1.table1.column0"))
-      ),
-      ccFd2
+    ccFd2.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column0")).map(_.getId),
+        store.getColumnByName("schema1.table1.column4").getId
+      )
     )
-    FunctionalDependency.buildAndAddToCollection(
-      new FunctionalDependency.Reference(
-        store.getColumnByName("schema1.table1.column2"),
-        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2"))
-      ),
-      ccFd2
+    ccFd2.add(
+      new FunctionalDependency(
+        Array(store.getColumnByName("schema1.table1.column1"), store.getColumnByName("schema1.table1.column2")).map(_.getId),
+        store.getColumnByName("schema1.table1.column2").getId
+      )
     )
 
     (store, ccFd1, ccFd2)

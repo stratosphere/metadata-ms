@@ -1,9 +1,11 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.model.constraints.Constraint;
+
 /**
  * This constraint class encapsulates string-specific single column statistics.
  */
-public class NumberColumnStatistics implements RDBMSConstraint {
+public class NumberColumnStatistics implements Constraint {
 
     /**
      * Special values in a column.
@@ -23,7 +25,7 @@ public class NumberColumnStatistics implements RDBMSConstraint {
     /**
      * Reference to the described column.
      */
-    private final SingleTargetReference targetReference;
+    private final int columnId;
 
     /**
      * Create a new instance.
@@ -31,12 +33,16 @@ public class NumberColumnStatistics implements RDBMSConstraint {
      * @param columnId the ID of the column that is to be described by the new instance
      */
     public NumberColumnStatistics(int columnId) {
-        this.targetReference = new SingleTargetReference(columnId);
+        this.columnId = columnId;
+    }
+
+    public int getColumnId() {
+        return this.columnId;
     }
 
     @Override
-    public SingleTargetReference getTargetReference() {
-        return this.targetReference;
+    public int[] getAllTargetIds() {
+        return new int[]{this.columnId};
     }
 
     public double getMinValue() {

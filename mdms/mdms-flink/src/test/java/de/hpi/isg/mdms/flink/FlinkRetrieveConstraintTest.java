@@ -89,11 +89,8 @@ public class FlinkRetrieveConstraintTest {
 
         //write dvcs to database
         ConstraintCollection<DistinctValueCount> cc = store.createConstraintCollection(null, DistinctValueCount.class, store.getTargetByName("PDB"));
-        DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(this.col1.getId()),
-                cc, 1);
-
-        DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(this.col2.getId()),
-                cc, 3);
+        cc.add(new DistinctValueCount(this.col1.getId(), 1));
+        cc.add(new DistinctValueCount(this.col2.getId(), 3));
 
         this.store.flush();
 
@@ -114,9 +111,8 @@ public class FlinkRetrieveConstraintTest {
 
     @Test
     public void testDistinctValueOverlap() throws Exception {
-        ConstraintCollection<DistinctValueCount> cc = store.createConstraintCollection(null, DistinctValueCount.class, store.getTargetByName("PDB"));
-        DistinctValueOverlap.Reference reference = new DistinctValueOverlap.Reference(this.col1.getId(), this.col2.getId());
-        DistinctValueOverlap.buildAndAddToCollection(2, reference, cc);
+        ConstraintCollection<DistinctValueOverlap> cc = store.createConstraintCollection(null, DistinctValueOverlap.class, store.getTargetByName("PDB"));
+        cc.add(new DistinctValueOverlap(2, this.col1.getId(), this.col2.getId()));
         this.store.flush();
 
         //flink job
@@ -140,8 +136,7 @@ public class FlinkRetrieveConstraintTest {
         ConstraintCollection<InclusionDependency> cc = store.createConstraintCollection(null, InclusionDependency.class, store.getTargetByName("PDB"));
         int[] referenced = {col1.getId()};
         int[] dependent = {col2.getId()};
-        InclusionDependency.Reference reference = new InclusionDependency.Reference(dependent, referenced);
-        InclusionDependency.buildAndAddToCollection(reference, cc);
+        cc.add(new InclusionDependency(dependent, referenced));
         this.store.flush();
 
         //flink job
@@ -163,7 +158,7 @@ public class FlinkRetrieveConstraintTest {
     public void testUniqueColumnCombination() throws Exception {
         ConstraintCollection<UniqueColumnCombination> cc = store.createConstraintCollection(null, UniqueColumnCombination.class, store.getTargetByName("PDB"));
         int[] columns = {col1.getId()};
-        UniqueColumnCombination.buildAndAddToCollection(new UniqueColumnCombination.Reference(columns), cc);
+        cc.add(new UniqueColumnCombination(columns));
         this.store.flush();
 
         //flink job
@@ -187,8 +182,7 @@ public class FlinkRetrieveConstraintTest {
         ConstraintCollection<FunctionalDependency> cc = store.createConstraintCollection(null, FunctionalDependency.class, store.getTargetByName("PDB"));
         int[] lhs = {col1.getId()};
         int rhs = col2.getId();
-        FunctionalDependency.Reference reference = new FunctionalDependency.Reference(rhs, lhs);
-        FunctionalDependency.buildAndAddToCollection(reference, cc);
+        cc.add(new FunctionalDependency(lhs, rhs));
         this.store.flush();
 
         //flink job

@@ -12,35 +12,24 @@
  **********************************************************************************************************************/
 package de.hpi.isg.mdms.benchmark;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-
-import de.hpi.isg.mdms.dependencies.TestConstraint;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
-import de.hpi.isg.mdms.domain.factories.MetadataStoreFactory;
-import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.constraints.SingleTargetReference;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.rdbms.SQLiteInterface;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * A little test set to quantify the performance of constraint insertions into a metadata store.
@@ -90,9 +79,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         long startTimeNet = System.currentTimeMillis();
         for (Table table : schema.getTables()) {
             for (Column column : table.getColumns()) {
-                DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(new SingleTargetReference(
-                        column.getId()), constraintCollection, 100);
-                constraintCollection.add(dvCount);
+                constraintCollection.add(new DistinctValueCount(column.getId(), 100));
             }
         }
         long endTimeNet = System.currentTimeMillis();
@@ -131,10 +118,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection<DistinctValueCount> constraintCollection = metadataStore.createConstraintCollection(null, DistinctValueCount.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column column : allColumns) {
-            DistinctValueCount dvCount = DistinctValueCount.buildAndAddToCollection(
-                    new SingleTargetReference(column.getId()),
-                    constraintCollection, 100);
-            constraintCollection.add(dvCount);
+            constraintCollection.add(new DistinctValueCount(column.getId(), 100));
         }
         long endTimeNet = System.currentTimeMillis();
         metadataStore.flush();
@@ -168,12 +152,13 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         Collection<Column[]> inclusionDependencies = new LinkedList<Column[]>();
         Random random = new Random();
-        OuterLoop: for (final Table table1 : schema.getTables()) {
+        OuterLoop:
+        for (final Table table1 : schema.getTables()) {
             for (final Table table2 : schema.getTables()) {
                 for (final Column column1 : table1.getColumns()) {
                     for (final Column column2 : table2.getColumns()) {
                         if (column1 != column2 && random.nextDouble() <= indProbablity) {
-                            inclusionDependencies.add(new Column[] { column1, column2 });
+                            inclusionDependencies.add(new Column[]{column1, column2});
                             if (inclusionDependencies.size() >= numDesiredInds) {
                                 break OuterLoop;
                             }
@@ -188,12 +173,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection<InclusionDependency> constraintCollection = metadataStore.createConstraintCollection(null, InclusionDependency.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
-            Collection<Column> dependentColumns = Collections.singleton(columnPair[0]);
-            Collection<Column> referencedColumns = Collections.singletonList(columnPair[1]);
-            final InclusionDependency.Reference reference = new InclusionDependency.Reference(
-                    dependentColumns.toArray(new Column[dependentColumns.size()]),
-                    referencedColumns.toArray(new Column[referencedColumns.size()]));
-            InclusionDependency.buildAndAddToCollection(reference, constraintCollection);
+            constraintCollection.add(new InclusionDependency(columnPair[0].getId(), columnPair[1].getId()));
         }
         long endTimeNet = System.currentTimeMillis();
         metadataStore.flush();
@@ -227,12 +207,13 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         Collection<Column[]> inclusionDependencies = new LinkedList<Column[]>();
         Random random = new Random();
-        OuterLoop: for (final Table table1 : schema.getTables()) {
+        OuterLoop:
+        for (final Table table1 : schema.getTables()) {
             for (final Table table2 : schema.getTables()) {
                 for (final Column column1 : table1.getColumns()) {
                     for (final Column column2 : table2.getColumns()) {
                         if (column1 != column2 && random.nextDouble() <= indProbablity) {
-                            inclusionDependencies.add(new Column[] { column1, column2 });
+                            inclusionDependencies.add(new Column[]{column1, column2});
                             if (inclusionDependencies.size() >= numDesiredInds) {
                                 break OuterLoop;
                             }
@@ -247,12 +228,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection<InclusionDependency> constraintCollection = metadataStore.createConstraintCollection(null, InclusionDependency.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
-            Collection<Column> dependentColumns = Collections.singleton(columnPair[0]);
-            Collection<Column> referencedColumns = Collections.singletonList(columnPair[1]);
-            final InclusionDependency.Reference reference = new InclusionDependency.Reference(
-                    dependentColumns.toArray(new Column[dependentColumns.size()]),
-                    referencedColumns.toArray(new Column[referencedColumns.size()]));
-            InclusionDependency.buildAndAddToCollection(reference, constraintCollection);
+            constraintCollection.add(new InclusionDependency(columnPair[0].getId(), columnPair[1].getId()));
         }
         long endTimeNet = System.currentTimeMillis();
         metadataStore.flush();
@@ -286,12 +262,13 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         Collection<Column[]> inclusionDependencies = new LinkedList<Column[]>();
         Random random = new Random();
-        OuterLoop: for (final Table table1 : schema.getTables()) {
+        OuterLoop:
+        for (final Table table1 : schema.getTables()) {
             for (final Table table2 : schema.getTables()) {
                 for (final Column column1 : table1.getColumns()) {
                     for (final Column column2 : table2.getColumns()) {
                         if (column1 != column2 && random.nextDouble() <= indProbablity) {
-                            inclusionDependencies.add(new Column[] { column1, column2 });
+                            inclusionDependencies.add(new Column[]{column1, column2});
                             if (inclusionDependencies.size() >= numDesiredInds) {
                                 break OuterLoop;
                             }
@@ -306,14 +283,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection<UniqueColumnCombination> constraintCollection = metadataStore.createConstraintCollection(null, UniqueColumnCombination.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
-            Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);
-            List<Integer> ids = new ArrayList<>();
-            for (Column c : uniqueColumns) {
-                ids.add(c.getId());
-            }
-            int[] intArray = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
-            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(intArray);
-            UniqueColumnCombination.buildAndAddToCollection(reference, constraintCollection);
+            constraintCollection.add(new UniqueColumnCombination(new int[]{columnPair[0].getId()}));
         }
         long endTimeNet = System.currentTimeMillis();
         metadataStore.flush();
@@ -348,12 +318,13 @@ public class ConstraintInsertPerfomanceBenchmark {
 
         Collection<Column[]> inclusionDependencies = new LinkedList<Column[]>();
         Random random = new Random();
-        OuterLoop: for (final Table table1 : schema.getTables()) {
+        OuterLoop:
+        for (final Table table1 : schema.getTables()) {
             for (final Table table2 : schema.getTables()) {
                 for (final Column column1 : table1.getColumns()) {
                     for (final Column column2 : table2.getColumns()) {
                         if (column1 != column2 && random.nextDouble() <= indProbablity) {
-                            inclusionDependencies.add(new Column[] { column1, column2 });
+                            inclusionDependencies.add(new Column[]{column1, column2});
                             if (inclusionDependencies.size() >= numDesiredInds) {
                                 break OuterLoop;
                             }
@@ -368,14 +339,7 @@ public class ConstraintInsertPerfomanceBenchmark {
         ConstraintCollection<UniqueColumnCombination> constraintCollection = metadataStore.createConstraintCollection(null, UniqueColumnCombination.class);
         long startTimeNet = System.currentTimeMillis();
         for (Column[] columnPair : inclusionDependencies) {
-            Collection<Column> uniqueColumns = Collections.singleton(columnPair[0]);
-            List<Integer> ids = new ArrayList<>();
-            for (Column c : uniqueColumns) {
-                ids.add(c.getId());
-            }
-            int[] intArray = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
-            final UniqueColumnCombination.Reference reference = new UniqueColumnCombination.Reference(intArray);
-            UniqueColumnCombination.buildAndAddToCollection(reference, constraintCollection);
+            constraintCollection.add(new UniqueColumnCombination(new int[]{columnPair[0].getId()}));
         }
         long endTimeNet = System.currentTimeMillis();
         metadataStore.flush();
