@@ -14,7 +14,7 @@ package de.hpi.isg.mdms.clients.util;
 
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
-import de.hpi.isg.mdms.domain.util.SQLiteConstraintUtils;
+import de.hpi.isg.mdms.exceptions.MetadataStoreException;
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 
 /**
  * This class offers methods to manage access to {@link MetadataStore}s.
@@ -77,7 +78,11 @@ public class MetadataStoreUtil {
 
         if (!params.isDemandJavaSerialized) {
             SQLInterface sqlInterface = SQLiteInterface.createForFile(metadataStoreFile);
-            return RDBMSMetadataStore.createNewInstance(sqlInterface, numTableBits, numColumnBits);
+            try {
+                return RDBMSMetadataStore.createNewInstance(sqlInterface, numTableBits, numColumnBits);
+            } catch (SQLException e) {
+                throw new MetadataStoreException("Could not create metadata store.", e);
+            }
         } else {
             return DefaultMetadataStore.createAndSave(metadataStoreFile, numTableBits, numColumnBits);
         }
@@ -106,8 +111,12 @@ public class MetadataStoreUtil {
             return DefaultMetadataStore.load(metadataStoreFile);
         } else {
             SQLiteInterface sqlInterface = SQLiteInterface.createForFile(metadataStoreFile);
-            SQLiteConstraintUtils.registerStandardConstraints(sqlInterface);
-            RDBMSMetadataStore metadataStore = RDBMSMetadataStore.load(sqlInterface);
+            RDBMSMetadataStore metadataStore;
+            try {
+                metadataStore = RDBMSMetadataStore.load(sqlInterface);
+            } catch (SQLException e) {
+                throw new MetadataStoreException("Could not load the metadata store.", e);
+            }
             metadataStore.setUseJournal(!metadataStoreParameters.isNotUseJournal);
             return metadataStore;
         }

@@ -22,14 +22,14 @@ public interface ConstraintCollection<T extends  Constraint> extends Identifiabl
      * 
      * @return the {@link de.hpi.isg.mdms.model.experiment.Experiment}
      */
-    public Experiment getExperiment();
+    Experiment getExperiment();
 
     /**
      * This function returns all {@link Constraint}s of this collection.
      * 
      * @return {@link Collection} of all containing {@link Constraint}s.
      */
-    public Collection<T> getConstraints();
+    Collection<T> getConstraints();
 
     /**
      * This functions returns the scope of this {@link ConstraintCollection}. The scope is a {@link Collection} of
@@ -39,7 +39,7 @@ public interface ConstraintCollection<T extends  Constraint> extends Identifiabl
      * 
      * @return
      */
-    public Collection<Target> getScope();
+    Collection<Target> getScope();
 
     /**
      * Adds a new {@link Constraint} to this collection.
@@ -47,14 +47,14 @@ public interface ConstraintCollection<T extends  Constraint> extends Identifiabl
      * @param constraint
      *        The {@link Constraint} to add.
      */
-    public void add(T constraint);
+    void add(T constraint);
 
     /**
      * This function returns the {@link de.hpi.isg.mdms.model.MetadataStore} this collection belongs to.
      * 
      * @return the {@link de.hpi.isg.mdms.model.MetadataStore}.
      */
-    public MetadataStore getMetadataStore();
+    MetadataStore getMetadataStore();
 
-    public Class<T> getConstraintClass();
+    Class<T> getConstraintClass();
 }

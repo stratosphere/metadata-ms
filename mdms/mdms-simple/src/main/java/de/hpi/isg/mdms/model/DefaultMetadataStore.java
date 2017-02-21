@@ -343,6 +343,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
+    public Target getTargetById(int targetId) {
+        return this.allTargets.get(targetId);
+    }
+
+    @Override
     public void removeSchema(Schema schema) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Not supported yet.");

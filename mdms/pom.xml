@@ -298,10 +298,16 @@
                 <version>1.48</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.twitter</groupId>
+                <artifactId>chill_${scala.major.version}</artifactId>
+                <version>0.9.1</version>
+            </dependency>
+
             <!-- Required for scala modules, doesn't build otherwise -->
             <dependency>
                 <groupId>org.scala-lang.modules</groupId>
-                <artifactId>scala-parser-combinators_2.11</artifactId>
+                <artifactId>scala-parser-combinators_${scala.major.version}</artifactId>
                 <version>1.0.4</version>
             </dependency>
         </dependencies>

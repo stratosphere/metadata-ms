@@ -15,6 +15,7 @@ import de.hpi.isg.mdms.model.util.IdUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -163,7 +164,17 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schemaId
      * @return
      */
-    Schema getSchemaById(int schemaId);
+    default Schema getSchemaById(int schemaId) {
+        return (Schema) this.getTargetById(schemaId);
+    }
+
+    /**
+     * Retrieve the {@link Target} with the given ID.
+     *
+     * @param targetId the ID of the {@link Target}
+     * @return the {@link Target} or {@code null} if there is no match
+     */
+    Target getTargetById(int targetId);
 
     /**
      * Get all knwon {@link Schema}s.

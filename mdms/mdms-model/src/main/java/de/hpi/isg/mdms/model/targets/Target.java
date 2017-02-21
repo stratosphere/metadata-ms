@@ -16,17 +16,29 @@ import de.hpi.isg.mdms.model.location.Location;
  */
 
 public interface Target extends Identifiable, Named, Serializable, Described {
+
+    enum Type { SCHEMA, COLUMN, TABLE }
+
     /**
      * Returns the {@link de.hpi.isg.mdms.model.location.Location} of a {@link Target}.
      * 
      * @return the {@link de.hpi.isg.mdms.model.location.Location}
      */
-    public Location getLocation();
+    Location getLocation();
 
     /**
      * This functions calls the {@link Observer} of this {@link Target} to register itself to the {@link Collection} of
      * known targets. Is usually called by the factory methdods of {@link Target} implementations, e.g.
      * {@link RDBMSTable#buildAndRegisterAndAdd(de.hpi.isg.mdms.domain.impl.RDBMSMetadataStore, de.hpi.isg.mdms.model.targets.Schema, int, String, String, Location)}
      */
-    public void register();
+    void register();
+
+    /**
+     * Retrieve the {@link Target.Type type} of this instance.
+     *
+     * @return the {@link Target.Type}
+     */
+    Target.Type getType();
+
+
 }

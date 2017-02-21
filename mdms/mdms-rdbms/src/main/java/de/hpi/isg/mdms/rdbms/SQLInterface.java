@@ -8,16 +8,14 @@ import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.model.targets.Target;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
 import java.sql.SQLException;
 import java.util.Collection;
@@ -36,7 +34,7 @@ public interface SQLInterface {
      * Initializes an empty {@link de.hpi.isg.mdms.model.MetadataStore}. All Tables are dropped first if they exist. Creates all base tables
      * of a {@link RDBMSMetadataStore} and all tables used by it's known {@link ConstraintSQLSerializer}s.
      */
-    void initializeMetadataStore();
+    void initializeMetadataStore() throws SQLException;
 
     /**
      * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table and uses the corresponding {@link ConstraintSQLSerializer} to
@@ -44,21 +42,14 @@ public interface SQLInterface {
      *
      * @param constraint should be written
      */
-    void writeConstraint(Constraint constraint, ConstraintCollection<? extends Constraint> constraintCollection);
+    <T extends Constraint> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException;
 
     /**
      * Writes the given schema into the database.
      *
      * @param schema is the schema to be written
      */
-    void addSchema(RDBMSSchema schema);
-
-    /**
-     * Returns all {@link de.hpi.isg.mdms.model.targets.Target}s from the underlying database.
-     *
-     * @return the targets
-     */
-    Collection<? extends Target> getAllTargets();
+    void addSchema(RDBMSSchema schema) throws SQLException;
 
     /**
      * Checks whether there exists a schema element with the given ID.
@@ -74,21 +65,21 @@ public interface SQLInterface {
      *
      * @return the constraint collections
      */
-    Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections();
+    Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections() throws SQLException;
 
     /**
      * Adds a {@link ConstraintCollection} to the database.
      *
      * @param constraintCollection is the collection to be added
      */
-    void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
+    void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException;
 
     /**
      * Loads all schemas from the database.
      *
      * @return the loaded schemas
      */
-    Collection<Schema> getAllSchemas();
+    Collection<Schema> getAllSchemas() throws SQLException;
 
     /**
      * Getter for the {@link RDBMSMetadataStore} this {@link SQLInterface} takes care of.
@@ -108,7 +99,7 @@ public interface SQLInterface {
      * @param rdbmsSchema is the schema whose tables shall be loaded
      * @return the tables of the schema
      */
-    Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema);
+    Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) throws SQLException;
 
     /**
      * Adds a table to the given schema.
@@ -116,7 +107,7 @@ public interface SQLInterface {
      * @param newTable is the table to add to the schema
      * @param schema   is the schema to that the table should be added
      */
-    void addTableToSchema(RDBMSTable newTable, Schema schema);
+    void addTableToSchema(RDBMSTable newTable, Schema schema) throws SQLException;
 
     /**
      * Loads all columns for a table.
@@ -124,7 +115,7 @@ public interface SQLInterface {
      * @param rdbmsTable is the table whose columns should be loaded
      * @return the loaded columns
      */
-    Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable);
+    Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) throws SQLException;
 
     /**
      * Adds a column to a table.
@@ -132,22 +123,14 @@ public interface SQLInterface {
      * @param newColumn is the column that should be added
      * @param table     is the table to which the column should be added
      */
-    void addColumnToTable(RDBMSColumn newColumn, Table table);
+    void addColumnToTable(RDBMSColumn newColumn, Table table) throws SQLException;
 
     /**
      * This function ensures that all base tables needed by the {@link de.hpi.isg.mdms.model.MetadataStore} are existing.
      *
      * @return whether all required tables exist
      */
-    boolean allTablesExist();
-
-    /**
-     * Adds a {@link Target} object to the scope of a {@link ConstraintCollection}.
-     *
-     * @param target to be added
-     * @param constraintCollection to whose scope the target should be added
-     */
-    void addScope(Target target, ConstraintCollection<? extends Constraint> constraintCollection);
+    boolean checkAllTablesExistence() throws SQLException;
 
     /**
      * Returns a {@link java.util.Collection} of all {@link de.hpi.isg.mdms.model.constraints.Constraint}s in a
@@ -156,16 +139,8 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection is the collection whose content is requested
      * @return the constraints within the constraint collection
      */
-    <T extends Constraint>Collection<T> getAllConstraintsForConstraintCollection(
-            RDBMSConstraintCollection<T> rdbmsConstraintCollection);
-
-    /**
-     * Returns a {@link java.util.Collection} of {@link Target}s that are in the scope of a {@link ConstraintCollection}.
-     *
-     * @param rdbmsConstraintCollection holds the scope
-     * @return the schema elements within the scope
-     */
-    Collection<Target> getScopeOfConstraintCollection(RDBMSConstraintCollection<? extends Constraint> rdbmsConstraintCollection);
+    <T extends Constraint> Collection<T> getAllConstraintsForConstraintCollection(
+            RDBMSConstraintCollection<T> rdbmsConstraintCollection) throws Exception;
 
     /**
      * Loads a column with the given ID.
@@ -173,7 +148,7 @@ public interface SQLInterface {
      * @param columnId is the ID of the column to load
      * @return the loaded column
      */
-    Column getColumnById(int columnId);
+    Column getColumnById(int columnId) throws SQLException;
 
     /**
      * Load a table with the given ID.
@@ -181,7 +156,16 @@ public interface SQLInterface {
      * @param tableId is the ID of the table to load
      * @return the loaded table
      */
-    Table getTableById(int tableId);
+    Table getTableById(int tableId) throws SQLException;
+
+    /**
+     * Get all the {@link Table}s with the given {@code name} within the given {@link Schema}.
+     *
+     * @param name   the {@link Table} name
+     * @param schema the {@link Schema}
+     * @return the matching {@link Table}s
+     */
+    Collection<Table> getTablesByName(String name, Schema schema) throws SQLException;
 
     /**
      * Load a schema with the given ID.
@@ -189,7 +173,7 @@ public interface SQLInterface {
      * @param schemaId is the ID of the schema to load
      * @return the loaded schema
      */
-    Schema getSchemaById(int schemaId);
+    Schema getSchemaById(int schemaId) throws SQLException;
 
     /**
      * Returns a {@link ConstraintCollection} for a given id, <code>null</code> if no such exists.
@@ -197,7 +181,7 @@ public interface SQLInterface {
      * @param id of the constraint collection
      * @return the constraint collection
      */
-    ConstraintCollection<? extends Constraint> getConstraintCollectionById(int id);
+    ConstraintCollection<? extends Constraint> getConstraintCollectionById(int id) throws SQLException;
 
     /**
      * Saves the configuration of a {@link de.hpi.isg.mdms.model.MetadataStore}.
@@ -209,21 +193,28 @@ public interface SQLInterface {
      *
      * @return a mapping from configuration keys to their values
      */
-    Map<String, String> loadConfiguration();
+    Map<String, String> loadConfiguration() throws SQLException;
 
     /**
-     * Loads the {@link de.hpi.isg.mdms.model.location.Location} for the schema element with the given ID.
+     * Load codes that are used to abbreviate common repeatedly used values.
      *
-     * @param id is the ID of the schema element for that the location should be loaded
-     * @return the loaded location
+     * @return the codes
      */
-    Location getLocationFor(int id);
+    Int2ObjectMap<String> loadCodes() throws SQLException;
+
+    /**
+     * Add a code.
+     *
+     * @param code  the code
+     * @param value the value represented by the code
+     */
+    void addCode(int code, String value);
 
     /**
      * This function drops all base tables of the {@link de.hpi.isg.mdms.model.MetadataStore}. Also all {@link ConstraintSQLSerializer} are
      * called to remove their tables.
      */
-    void dropTablesIfExist();
+    void dropTablesIfExist() throws SQLException;
 
     /**
      * Writes all pending changes back to the database.
@@ -238,22 +229,12 @@ public interface SQLInterface {
      * @param tablename the name of the table whose existance shall be verified
      * @return whether the table exists
      */
-    boolean tableExists(String tablename);
+    boolean tableExists(String tablename) throws SQLException;
 
     /**
      * This function executes a given <code>create table</code> statement.
      */
     void executeCreateTableStatement(String sqlCreateTables);
-
-    /**
-     * This function is used to register {@link ConstraintSQLSerializer} and therefore the ability to store and retrieve
-     * the corresponding {@link Constraint} type.
-     *
-     * @param clazz is the type of the constraint
-     * @param serializer that can serialize the constraints of the given class
-     */
-    void registerConstraintSQLSerializer(Class<? extends Constraint> clazz,
-                                         ConstraintSQLSerializer<? extends Constraint> serializer);
 
     /**
      * Returns the {@link DatabaseAccess} object that is used by this {@link SQLInterface}.
@@ -263,96 +244,38 @@ public interface SQLInterface {
     DatabaseAccess getDatabaseAccess();
 
     /**
-     * Tries to load a schema with the given name.
-     *
-     * @param schemaName is the name of the schema to load
-     * @return the loaded schema or {@code null} if there is no such schema
-     * @throws NameAmbigousException if there are multiple schemata with the given name
-     */
-    Schema getSchemaByName(String schemaName) throws NameAmbigousException;
-
-    /**
      * Loads the schemas with the given name
      *
      * @param schemaName is the name of the schema to be loaded
      * @return the loaded schemas
      */
-    Collection<Schema> getSchemasByName(String schemaName);
-
-    /**
-     * Loads the columns with the given name.
-     *
-     * @param columnName is the name of the columns to load
-     * @return the loaded columns
-     */
-    Collection<Column> getColumnsByName(String columnName);
-
-    /**
-     * Loads the column with the given name.
-     *
-     * @param columnName is the name of the column to load
-     * @param table      is the table that should contain the column
-     * @return the column or {@code null} if no such column exists
-     * @throws NameAmbigousException if there is more than one such column within the given table
-     */
-    Column getColumnByName(String columnName, Table table) throws NameAmbigousException;
-
-    /**
-     * Loads the table with the given name.
-     *
-     * @param tableName is the name of the table to load
-     * @return the loaded table or {@code null} if no such table exists
-     * @throws NameAmbigousException if there is more than table with the given name
-     */
-    Table getTableByName(String tableName) throws NameAmbigousException;
-
-    /**
-     * Loads the tables with the given name.
-     *
-     * @param tableName is the name of the table to be loaded
-     * @return the loaded tables
-     */
-    Collection<Table> getTablesByName(String tableName);
+    Collection<Schema> getSchemasByName(String schemaName) throws SQLException;
 
     /**
      * Removes a schema from the database.
      *
      * @param schema shall be removed
      */
-    void removeSchema(RDBMSSchema schema);
+    void removeSchema(RDBMSSchema schema) throws SQLException;
 
     /**
      * Removes a column from the database.
      *
      * @param column should be removed
      */
-    void removeColumn(RDBMSColumn column);
+    void removeColumn(RDBMSColumn column) throws SQLException;
 
     /**
      * Removes a table from the database.
      *
      * @param table is the table that should be removed
      */
-    void removeTable(RDBMSTable table);
+    void removeTable(RDBMSTable table) throws SQLException;
 
     /**
      * Removes a {@link ConstraintCollection} and all included {@link Constraint}s.
      */
-    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
-
-    /**
-     * @return all stored {@link Location} types
-     * @throws java.sql.SQLException
-     */
-    Collection<String> getLocationClassNames() throws SQLException;
-
-    /**
-     * Stores a given {@link Location} type.
-     *
-     * @param locationType is the type of a {@link Location} to be stored
-     * @throws java.sql.SQLException
-     */
-    void storeLocationType(Class<? extends Location> locationType) throws SQLException;
+    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException;
 
     /**
      * Set whether the underlying DB should use journaling. Note that this experimental feature should not affect
@@ -366,7 +289,7 @@ public interface SQLInterface {
      * Closes the the connection to the underlying database.
      */
     void closeMetaDataStore();
-    
+
     /**
      * An enumeration of DBs supported by default.
      */
@@ -380,101 +303,112 @@ public interface SQLInterface {
      * @param rdbmsAlgorithm the algorithm whose experiments should be loaded
      * @return a collection of experiments
      */
-	Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm rdbmsAlgorithm);
+    Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm rdbmsAlgorithm) throws SQLException;
 
-	
-	/**
-	 * Adds an algorithm to the database.
-	 * @param algorithm the algorithm that shall be added
-	 */
-	void addAlgorithm(RDBMSAlgorithm algorithm);
 
-	
-	/**
-	 * Adds an experiment to the database.
-	 * @param experiment the experiment that shall be added
-	 */
-	void writeExperiment(RDBMSExperiment experiment);
+    /**
+     * Adds an algorithm to the database.
+     *
+     * @param algorithm the algorithm that shall be added
+     */
+    void addAlgorithm(RDBMSAlgorithm algorithm) throws SQLException;
 
-	/**
-	 * Adds a key-value-pair of parameters to an experiment.
-	 * @param experiment the experiment for which the parameter shall be added.
-	 * @param key
-	 * @param value
-	 */
-	void addParameterToExperiment(RDBMSExperiment experiment,
-			String key, String value);
 
-	/**
-	 * Adds the execution time to an experiment
-	 * @param experiment the experiment for which the execution time shall be added
-	 * @param executionTime in ms
-	 */
-	void setExecutionTimeToExperiment(RDBMSExperiment experiment,
-			long executionTime);
+    /**
+     * Adds an experiment to the database.
+     *
+     * @param experiment the experiment that shall be added
+     */
+    void writeExperiment(RDBMSExperiment experiment) throws SQLException;
 
-	/**
+    /**
+     * Adds a key-value-pair of parameters to an experiment.
+     *
+     * @param experiment the experiment for which the parameter shall be added.
+     * @param key
+     * @param value
+     */
+    void addParameterToExperiment(RDBMSExperiment experiment,
+                                  String key, String value) throws SQLException;
+
+    /**
+     * Adds the execution time to an experiment
+     *
+     * @param experiment    the experiment for which the execution time shall be added
+     * @param executionTime in ms
+     */
+    void setExecutionTimeToExperiment(RDBMSExperiment experiment,
+                                      long executionTime) throws SQLException;
+
+    /**
      * Loads all constraint collections of an experiment.
      *
      * @param experiment the experiment whose constraint collections shall be loaded
      * @return a collection of constraint collections
      */
-	Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment);
+    Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment) throws SQLException;
 
-	/**
-	 * Return an algorithm by its id
-	 * @param algorithmId
-	 * @return algorithm
-	 */
-	Algorithm getAlgorithmByID(int algorithmId);
+    /**
+     * Return an algorithm by its id
+     *
+     * @param algorithmId
+     * @return algorithm
+     */
+    Algorithm getAlgorithmByID(int algorithmId) throws SQLException;
 
-	/**
-	 * Return an experiment by its id
-	 * @param experimentId
-	 * @return experiment
-	 */
-	Experiment getExperimentById(int experimentId);
+    /**
+     * Return an experiment by its id
+     *
+     * @param experimentId
+     * @return experiment
+     */
+    Experiment getExperimentById(int experimentId) throws SQLException;
 
-	/**
-	 * Removes an algorithm and the connected experiments
-	 * @param algorithm
-	 */
-	void removeAlgorithm(Algorithm algorithm);
+    /**
+     * Removes an algorithm and the connected experiments
+     *
+     * @param algorithm
+     */
+    void removeAlgorithm(Algorithm algorithm) throws SQLException;
 
-	/**
-	 * Removes an experiment.
-	 * @param experiment
-	 */
-	void removeExperiment(Experiment experiment);
+    /**
+     * Removes an experiment.
+     *
+     * @param experiment
+     */
+    void removeExperiment(Experiment experiment) throws SQLException;
 
 
-	/**
-	 * Returns all algorithms
-	 * @return collection of algorithms
-	 */
-	Collection<Algorithm> getAllAlgorithms();
+    /**
+     * Returns all algorithms
+     *
+     * @return collection of algorithms
+     */
+    Collection<Algorithm> getAllAlgorithms() throws SQLException;
 
-	/**
-	 * Returns all experiments
-	 * @return collection of experiments
-	 */
-	Collection<Experiment> getAllExperiments();
+    /**
+     * Returns all experiments
+     *
+     * @return collection of experiments
+     */
+    Collection<Experiment> getAllExperiments() throws SQLException;
 
-	/**
-	 * Returns an algorithm by name
-	 * @param name of the algorithm
-	 * @return algorithm
-	 */
-	Algorithm getAlgorithmByName(String name);
+    /**
+     * Returns an algorithm by name
+     *
+     * @param name of the algorithm
+     * @return algorithm
+     */
+    Algorithm getAlgorithmByName(String name) throws SQLException;
 
-	/**
-	 * Adds an annotation to an experiment
-	 * @param rdbmsExperiment
-	 * @param tag specifying a category of the annotation
-	 * @param text message
-	 */
-	void addAnnotation(RDBMSExperiment rdbmsExperiment, String tag,
-			String text);
-	
-	String getDatabaseURL();
+    /**
+     * Adds an annotation to an experiment
+     *
+     * @param rdbmsExperiment
+     * @param tag             specifying a category of the annotation
+     * @param text            message
+     */
+    void addAnnotation(RDBMSExperiment rdbmsExperiment, String tag, String text) throws SQLException;
+
+    String getDatabaseURL();
 }

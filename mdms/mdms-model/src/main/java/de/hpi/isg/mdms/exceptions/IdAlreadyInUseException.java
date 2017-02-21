@@ -6,7 +6,7 @@ import de.hpi.isg.mdms.model.MetadataStore;
  * This {@link Exception} is thrown if a certain id is already taken inside one {@link MetadataStore}.
  *
  */
-public class IdAlreadyInUseException extends IllegalArgumentException {
+public class IdAlreadyInUseException extends MetadataStoreException {
 
     private static final long serialVersionUID = 7299719181439998338L;
 

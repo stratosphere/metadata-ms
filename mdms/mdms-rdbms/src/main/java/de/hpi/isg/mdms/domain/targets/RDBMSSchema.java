@@ -1,19 +1,20 @@
 package de.hpi.isg.mdms.domain.targets;
 
-import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.exceptions.MetadataStoreException;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
+import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.util.LRUCache;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,35 +32,36 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
     private int numTables = -1;
 
     @ExcludeHashCodeEquals
-    private Reference<Collection<Table>> childTableCache;
+    private final LRUCache<Integer, RDBMSTable> childTableCache = new LRUCache<>(1000);
+
+    @ExcludeHashCodeEquals
+    private boolean isChildTableCacheComplete;
 
     private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, String description, Location location,
-            boolean isFreshlyCreated) {
+                        boolean isFreshlyCreated) {
         super(observer, id, name, description, location, isFreshlyCreated);
         if (isFreshlyCreated) {
-            cacheChildTables(new ArrayList<Table>());
+            this.isChildTableCacheComplete = true;
         }
     }
 
     public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, int id, String name,
-            String description,
-            Location location) {
+                                                     String description,
+                                                     Location location) {
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, description, location, true);
         newSchema.register();
-        // TODO: remove
-        // newSchema.getSqlInterface().addSchema(newSchema);
         newSchema.numTables = 0;
         return newSchema;
     }
 
     public static RDBMSSchema buildAndRegisterAndAdd(RDBMSMetadataStore observer, String name, String description,
-            Location location) {
+                                                     Location location) {
 
         return buildAndRegisterAndAdd(observer, -1, name, description, location);
     }
 
     public static RDBMSSchema restore(RDBMSMetadataStore observer, int id, String name,
-            String description, Location location) {
+                                      String description, Location location) {
 
         final RDBMSSchema newSchema = new RDBMSSchema(observer, id, name, description, location, false);
         return newSchema;
@@ -67,71 +69,89 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
     @Override
     public Table addTable(final MetadataStore metadataStore, final String name, final String description,
-            final Location location) {
+                          final Location location) {
         Validate.isTrue(metadataStore instanceof RDBMSMetadataStore);
         Collection<Schema> schemas = metadataStore.getSchemas();
         Validate.isTrue(schemas.contains(this));
         final int tableId = metadataStore.getUnusedTableId(this);
-        final Table table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
+        final RDBMSTable table = RDBMSTable.buildAndRegisterAndAdd((RDBMSMetadataStore) metadataStore, this, tableId, name,
                 description,
                 location);
-        addToChildIdCache(tableId);
+        this.childTableCache.put(tableId, table);
         if (this.numTables != -1) {
             this.numTables++;
-        }
-        Collection<Table> childTableCache = getChildTableCache();
-        if (childTableCache != null) {
-            childTableCache.add(table);
         }
         return table;
     }
 
     @Override
-    public void store() {
-        this.sqlInterface.addSchema(this);
+    public void store() throws SQLException {
+        this.getSqlInterface().addSchema(this);
     }
 
     @Override
     public Table getTableByName(final String name) throws NameAmbigousException {
-        return this.getSqlInterface().getTableByName(name);
+        Collection<Table> tables = this.getTablesByName(name);
+        if (tables.isEmpty()) return null;
+        if (tables.size() == 1) return tables.iterator().next();
+        throw new NameAmbigousException(
+                String.format("Multiple tables are named \"%s\" in \"%s\".", name, this.getName())
+        );
     }
 
     @Override
     public Collection<Table> getTablesByName(String name) {
-        return this.getSqlInterface().getTablesByName(name);
+        // NB: We must not answer the query from the cache, as the cache is not guaranteeing to serve all tables
+        // with a certain name.
+        try {
+            Collection<Table> tables = this.getSqlInterface().getTablesByName(name, this);
+            Collection<Table> matchingTables = new ArrayList<>(1);
+            // Put the tables into the cache and look for a match.
+            for (Table table : tables) {
+                if (table.getName().equals(name)) {
+                    matchingTables.add(table);
+                }
+                this.childTableCache.put(table.getId(), (RDBMSTable) table);
+            }
+            return matchingTables;
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     @Override
     public Table getTableById(int tableId) {
-        return this.getSqlInterface().getTableById(tableId);
+        // Try to serve the table from the cache.
+        RDBMSTable table = this.childTableCache.get(tableId);
+        if (table != null || this.isChildTableCacheComplete) return table;
+
+        // Otherwise, load all tables and repeat.
+        try {
+            table = (RDBMSTable) this.getSqlInterface().getTableById(tableId);
+            this.childTableCache.put(table.getId(), table);
+            return table;
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     @Override
     public Collection<Table> getTables() {
-        Collection<Table> tables = getChildTableCache();
-        if (tables == null) {
-            LOGGER.trace("Table cache miss");
-            tables = this.getSqlInterface().getAllTablesForSchema(this);
-            cacheChildTables(new ArrayList<>(tables));
-        } else {
-            LOGGER.trace("Table cache hit");
+        if (this.isChildTableCacheComplete) {
+            return Collections.unmodifiableCollection(new ArrayList<>(this.childTableCache.values()));
         }
-        return Collections.unmodifiableCollection(tables);
-    }
 
-    public void cacheChildTables(Collection<Table> tables) {
-        this.childTableCache = new SoftReference<Collection<Table>>(tables);
-    }
+        this.childTableCache.setEvictionEnabled(false);
+        try {
+            for (Table table : this.getSqlInterface().getAllTablesForSchema(this)) {
+                this.childTableCache.put(table.getId(), (RDBMSTable) table);
+            }
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
 
-    private Collection<Table> getChildTableCache() {
-        if (this.childTableCache == null) {
-            return null;
-        }
-        Collection<Table> childTables = this.childTableCache.get();
-        if (childTables == null) {
-            this.childTableCache = null;
-        }
-        return childTables;
+        this.numTables = this.childTableCache.size();
+        return Collections.unmodifiableCollection(new ArrayList<>(this.childTableCache.values()));
     }
 
     @Override
@@ -150,7 +170,7 @@ public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
      * @return the number of tables in this schema or -1 if it is unknown.
      */
     public int getNumTables() {
-        return numTables;
+        return this.numTables;
     }
 
     @Override

@@ -1,11 +1,14 @@
 package de.hpi.isg.mdms.domain.targets;
 
+import de.hpi.isg.mdms.exceptions.MetadataStoreException;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
 import de.hpi.isg.mdms.model.common.Printable;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Table;
+
+import java.sql.SQLException;
 
 /**
  * The default implementation of the {@link Column}.
@@ -48,7 +51,11 @@ public class RDBMSColumn extends AbstractRDBMSTarget implements Column {
 
     @Override
     public void store() {
-        this.sqlInterface.addColumnToTable(this, this.table);
+        try {
+            this.getSqlInterface().addColumnToTable(this, this.table);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     /**

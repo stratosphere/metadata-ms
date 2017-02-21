@@ -12,9 +12,7 @@ import de.hpi.isg.mdms.model.targets.TargetReference;
  * @author fabian
  *
  */
-public class NotAllTargetsInStoreException extends IllegalStateException {
-
-    private static final long serialVersionUID = 7552244497128771206L;
+public class NotAllTargetsInStoreException extends MetadataStoreException {
 
     public NotAllTargetsInStoreException(final int targetId) {
         super(String.format("Target with id %d", targetId));

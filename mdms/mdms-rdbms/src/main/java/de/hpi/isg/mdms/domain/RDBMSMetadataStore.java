@@ -4,26 +4,29 @@ import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
 import de.hpi.isg.mdms.domain.experiment.RDBMSAlgorithm;
 import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.AbstractRDBMSTarget;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.model.experiment.Algorithm;
-import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.rdbms.SQLInterface;
-import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
-import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.rdbms.util.LocationCache;
+import de.hpi.isg.mdms.exceptions.MetadataStoreException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
-
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
+import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.Target;
+import de.hpi.isg.mdms.model.util.IdUtils;
+import de.hpi.isg.mdms.rdbms.SQLInterface;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,17 +59,19 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     transient final IdUtils idUtils;
 
     @ExcludeHashCodeEquals
-    transient final LocationCache locationCache = new LocationCache();
+    transient final Int2ObjectMap<String> codeDictionary = new Int2ObjectOpenHashMap<>();
+    @ExcludeHashCodeEquals
+    transient final Object2IntMap<String> reverseCodeDictionary = new Object2IntOpenHashMap<>();
 
     @ExcludeHashCodeEquals
     transient Collection<ConstraintCollection<? extends Constraint>> constraintCollectionCache = null;
 
-    public static RDBMSMetadataStore createNewInstance(SQLInterface sqlInterface) {
+    public static RDBMSMetadataStore createNewInstance(SQLInterface sqlInterface) throws SQLException {
         return createNewInstance(sqlInterface, IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
     }
 
     public static RDBMSMetadataStore createNewInstance(SQLInterface sqlInterface, int numTableBitsInIds,
-            int numColumnBitsInIds) {
+                                                       int numColumnBitsInIds) throws SQLException {
         Map<String, String> configuration = new HashMap<>();
         configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(numTableBitsInIds));
         configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(numColumnBitsInIds));
@@ -74,8 +79,8 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     public static RDBMSMetadataStore createNewInstance(SQLInterface sqlInterface,
-            Map<String, String> configuration) {
-        if (sqlInterface.allTablesExist()) {
+                                                       Map<String, String> configuration) throws SQLException {
+        if (sqlInterface.checkAllTablesExistence()) {
             LOGGER.warn("The metadata store will be overwritten.");
         }
         sqlInterface.initializeMetadataStore();
@@ -84,13 +89,12 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         return metadataStore;
     }
 
-    public static RDBMSMetadataStore load(SQLInterface sqlInterface) {
-        if (!sqlInterface.allTablesExist()) {
+    public static RDBMSMetadataStore load(SQLInterface sqlInterface) throws SQLException {
+        if (!sqlInterface.checkAllTablesExistence()) {
             throw new IllegalStateException("The metadata store does not seem to be initialized.");
         }
         Map<String, String> configuration = sqlInterface.loadConfiguration();
         RDBMSMetadataStore metadataStore = new RDBMSMetadataStore(sqlInterface, configuration);
-        metadataStore.fillLocationCache();
         return metadataStore;
     }
 
@@ -103,17 +107,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
     }
 
-    @SuppressWarnings("unchecked")
-    private void fillLocationCache() {
-        try {
-            for (String locationClassName : this.sqlInterface.getLocationClassNames()) {
-                this.locationCache.cacheLocationType((Class<? extends Location>) Class.forName(locationClassName));
-            }
-        } catch (SQLException | ClassNotFoundException e) {
-            throw new RuntimeException("Could not fill location cache.", e);
-        }
-    }
-
     @Override
     public Schema addSchema(final String name, final String description, final Location location) {
         final int id = this.getUnusedSchemaId();
@@ -124,20 +117,45 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public int generateRandomId() {
         final int id = Math.abs(this.randomGenerator.nextInt(Integer.MAX_VALUE));
-        if (this.idIsInUse(id)) {
+        if (this.isIdInUse(id)) {
             return this.generateRandomId();
         }
         return id;
     }
 
     @Override
+    public Target getTargetById(int targetId) {
+        try {
+            switch (this.idUtils.getIdType(targetId)) {
+                case COLUMN:
+                    return this.sqlInterface.getColumnById(targetId);
+                case TABLE:
+                    return this.sqlInterface.getTableById(targetId);
+                case SCHEMA:
+                    return this.sqlInterface.getSchemaById(targetId);
+                default:
+                    throw new IllegalArgumentException("Invalid ID.");
+            }
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
+    @Override
     public Schema getSchemaByName(final String schemaName) throws NameAmbigousException {
-        return this.sqlInterface.getSchemaByName(schemaName);
+        Collection<Schema> schemas = this.getSchemasByName(schemaName);
+        if (schemas.isEmpty()) return null;
+        if (schemas.size() == 1) return schemas.iterator().next();
+        throw new NameAmbigousException(String.format("Found %d schemas named \"%s\".", schemas.size(), schemaName));
     }
 
     @Override
     public Collection<Schema> getSchemas() {
-        return Collections.unmodifiableCollection(this.sqlInterface.getAllSchemas());
+        try {
+            return Collections.unmodifiableCollection(this.sqlInterface.getAllSchemas());
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     @Override
@@ -149,7 +167,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             schemaNumber = schemaNumber > this.idUtils.getMaxSchemaNumber() ? schemaNumber
                     - (this.idUtils.getMaxSchemaNumber() - this.idUtils.getMinSchemaNumber()) : schemaNumber;
             final int id = this.idUtils.createGlobalId(schemaNumber);
-            if (!this.idIsInUse(id)) {
+            if (!this.isIdInUse(id)) {
                 return id;
             }
         }
@@ -158,7 +176,11 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public int getUnusedTableId(final Schema schema) {
-        Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
+        try {
+            Validate.isTrue(this.sqlInterface.getAllSchemas().contains(schema));
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
         final int schemaNumber = this.idUtils.getLocalSchemaId(schema.getId());
         final int searchOffset = ((RDBMSSchema) schema).getNumTables() != -1 ?
                 ((RDBMSSchema) schema).getNumTables() + 1 : schema.getTables().size();
@@ -168,7 +190,7 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             tableNumber = tableNumber > this.idUtils.getMaxTableNumber() ? tableNumber
                     - (this.idUtils.getMaxTableNumber() - this.idUtils.getMinTableNumber()) : tableNumber;
             final int id = this.idUtils.createGlobalId(schemaNumber, tableNumber);
-            if (!this.idIsInUse(id)) {
+            if (!this.isIdInUse(id)) {
                 return id;
             }
         }
@@ -177,43 +199,24 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public boolean hasTargetWithId(int id) {
-        return idIsInUse(id);
+        return isIdInUse(id);
     }
 
-    private boolean idIsInUse(final int id) {
+    private boolean isIdInUse(final int id) {
         try {
             return this.sqlInterface.isTargetIdInUse(id);
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Could not determine if ID %s is in use.", id), e);
         }
-        // synchronized (this.sqlInterface.getIdsInUse()) {
-        //
-        // return this.sqlInterface.getIdsInUse().contains(id);
-        // }
     }
 
-    // @Override
-    // public void registerId(final int id) {
-    // // synchronized (this.sqlInterface.getIdsInUse()) {
-    // if (!this.sqlInterface.addToIdsInUse(id)) {
-    // throw new IdAlreadyInUseException("id is already in use: " + id);
-    // }
-    // // }
-    // }
-    //
     @Override
     public void registerTargetObject(final Target target) {
-        // Register the Location type of the target.
-        if (this.locationCache.cacheLocationType(target.getLocation().getClass())) {
-            try {
-                this.sqlInterface.storeLocationType(target.getLocation().getClass());
-            } catch (SQLException e) {
-                throw new RuntimeException("Could not register location type.", e);
-            }
+        try {
+            ((AbstractRDBMSTarget) target).store();
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
         }
-
-        ((AbstractRDBMSTarget) target).store();
-        // this.sqlInterface.addTarget(target);
     }
 
     @Override
@@ -224,14 +227,22 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
         if (this.constraintCollectionCache == null) {
-            this.constraintCollectionCache = this.sqlInterface.getAllConstraintCollections();
+            try {
+                this.constraintCollectionCache = this.sqlInterface.getAllConstraintCollections();
+            } catch (SQLException e) {
+                throw new MetadataStoreException(e);
+            }
         }
         return this.constraintCollectionCache;
     }
 
     @Override
     public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
-        return this.sqlInterface.getConstraintCollectionById(id);
+        try {
+            return this.sqlInterface.getConstraintCollectionById(id);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     public SQLInterface getSQLInterface() {
@@ -248,13 +259,19 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
-        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
-                description, new HashSet<>(Arrays.asList(scope)), getSQLInterface(), cls);
+        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection<>(
+                this.getUnusedConstraintCollectonId(),
+                description,
+                new HashSet<>(Arrays.asList(scope)),
+                this.getSQLInterface(),
+                cls
+        );
 
         // Store the constraint collection in the DB.
-        this.sqlInterface.addConstraintCollection(constraintCollection);
-        for (Target target : constraintCollection.getScope()) {
-            this.sqlInterface.addScope(target, constraintCollection);
+        try {
+            this.sqlInterface.addConstraintCollection(constraintCollection);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
         }
 
         if (this.constraintCollectionCache != null) this.constraintCollectionCache.add(constraintCollection);
@@ -268,13 +285,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public IdUtils getIdUtils() {
         return idUtils;
-    }
-
-    /**
-     * @return the locationCache
-     */
-    public LocationCache getLocationCache() {
-        return locationCache;
     }
 
     /**
@@ -305,35 +315,39 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public Collection<Schema> getSchemasByName(String schemaName) {
-        return this.sqlInterface.getSchemasByName(schemaName);
+        try {
+            return this.sqlInterface.getSchemasByName(schemaName);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     @Override
     public Schema getSchemaById(int schemaId) {
-        return this.sqlInterface.getSchemaById(schemaId);
+        try {
+            return this.sqlInterface.getSchemaById(schemaId);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     @Override
     public void removeSchema(Schema schema) {
         try {
             this.flush();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        for (Table table : schema.getTables()) {
-            for (Column column : table.getColumns()) {
-                checkIfInScopeAndDelete(column);
-                sqlInterface.removeColumn((RDBMSColumn) column);
+            for (Table table : schema.getTables()) {
+                for (Column column : table.getColumns()) {
+                    checkIfInScopeAndDelete(column);
+                    sqlInterface.removeColumn((RDBMSColumn) column);
+                }
+                checkIfInScopeAndDelete(table);
+                sqlInterface.removeTable((RDBMSTable) table);
             }
-            checkIfInScopeAndDelete(table);
-            sqlInterface.removeTable((RDBMSTable) table);
-        }
-        checkIfInScopeAndDelete(schema);
-        sqlInterface.removeSchema((RDBMSSchema) schema);
-        try {
+            checkIfInScopeAndDelete(schema);
+            sqlInterface.removeSchema((RDBMSSchema) schema);
             this.flush();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new MetadataStoreException(e);
         }
     }
 
@@ -348,99 +362,145 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
         this.constraintCollectionCache = null;
-        sqlInterface.removeConstraintCollection(constraintCollection);
+        try {
+            sqlInterface.removeConstraintCollection(constraintCollection);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
     }
 
     public void setUseJournal(boolean isUseJournal) {
         this.sqlInterface.setUseJournal(isUseJournal);
     }
 
-	@Override
-	public int getUnusedAlgorithmId() {
+    @Override
+    public int getUnusedAlgorithmId() {
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
-	}
+    }
 
-	@Override
-	public int getUnusedExperimentId() {
+    @Override
+    public int getUnusedExperimentId() {
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
-	}
+    }
 
-	@Override
-	public Algorithm createAlgorithm(String name) {
-		RDBMSAlgorithm algorithm = new RDBMSAlgorithm(getUnusedAlgorithmId(), name, getSQLInterface());
-		this.sqlInterface.addAlgorithm(algorithm);
-		return algorithm;
-	}
+    @Override
+    public Algorithm createAlgorithm(String name) {
+        RDBMSAlgorithm algorithm = new RDBMSAlgorithm(getUnusedAlgorithmId(), name, getSQLInterface());
+        try {
+            this.sqlInterface.addAlgorithm(algorithm);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+        return algorithm;
+    }
 
-	@Override
-	public Algorithm getAlgorithmById(int algorithmId) {
-		return this.sqlInterface.getAlgorithmByID(algorithmId);
-	}
+    @Override
+    public Algorithm getAlgorithmById(int algorithmId) {
+        try {
+            return this.sqlInterface.getAlgorithmByID(algorithmId);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
 
-	@Override
-	public Collection<Algorithm> getAlgorithms() {
-		return this.sqlInterface.getAllAlgorithms();
-	}
+    @Override
+    public Collection<Algorithm> getAlgorithms() {
+        try {
+            return this.sqlInterface.getAllAlgorithms();
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
 
-	@Override
-	public Collection<Experiment> getExperiments() {
-		return this.sqlInterface.getAllExperiments();
-	}
+    @Override
+    public Collection<Experiment> getExperiments() {
+        try {
+            return this.sqlInterface.getAllExperiments();
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
 
-	@Override
-	public Experiment createExperiment(String description, Algorithm algorithm) {
-		RDBMSExperiment experiment = new RDBMSExperiment(getUnusedExperimentId(), description, algorithm, this.sqlInterface);
-		this.sqlInterface.writeExperiment(experiment);
-		return experiment;
-	}
+    @Override
+    public Experiment createExperiment(String description, Algorithm algorithm) {
+        RDBMSExperiment experiment = new RDBMSExperiment(getUnusedExperimentId(), description, algorithm, this.sqlInterface);
+        try {
+            this.sqlInterface.writeExperiment(experiment);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+        return experiment;
+    }
 
-	@Override
-	public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description,
-			Experiment experiment, Class<T> cls, Target... scope) {
+    @Override
+    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description,
+                                                                                     Experiment experiment, Class<T> cls, Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
-        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection(getUnusedConstraintCollectonId(),
-                description, experiment,
-                new HashSet<Target>(Arrays.asList(scope)), getSQLInterface(), cls);
+        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection<>(
+                this.getUnusedConstraintCollectonId(),
+                description,
+                experiment,
+                new HashSet<>(Arrays.asList(scope)),
+                this.getSQLInterface(),
+                cls
+        );
 
         // Store the constraint collection in the DB.
-        this.sqlInterface.addConstraintCollection(constraintCollection);
-        for (Target target : constraintCollection.getScope()) {
-            this.sqlInterface.addScope(target, constraintCollection);
+        try {
+            this.sqlInterface.addConstraintCollection(constraintCollection);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
         }
 
         return constraintCollection;
-	}
-
-	@Override
-	public void removeAlgorithm(Algorithm algorithm) {
-		this.sqlInterface.removeAlgorithm(algorithm);
-	}
-
-	@Override
-	public void removeExperiment(Experiment experiment) {
-		this.sqlInterface.removeExperiment(experiment);
-	}
-
-	@Override
-	public Experiment getExperimentById(int experimentId) {
-		return this.sqlInterface.getExperimentById(experimentId);
-	}
-
-	@Override
-	public Algorithm getAlgorithmByName(String name) {
-        return this.sqlInterface.getAlgorithmByName(name);
     }
 
     @Override
-	public void close() {
-		try {
-			sqlInterface.flush();
-			sqlInterface.closeMetaDataStore();
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    public void removeAlgorithm(Algorithm algorithm) {
+        try {
+            this.sqlInterface.removeAlgorithm(algorithm);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
+    @Override
+    public void removeExperiment(Experiment experiment) {
+        try {
+            this.sqlInterface.removeExperiment(experiment);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
+    @Override
+    public Experiment getExperimentById(int experimentId) {
+        try {
+            return this.sqlInterface.getExperimentById(experimentId);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
+    @Override
+    public Algorithm getAlgorithmByName(String name) {
+        try {
+            return this.sqlInterface.getAlgorithmByName(name);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            sqlInterface.flush();
+            sqlInterface.closeMetaDataStore();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
