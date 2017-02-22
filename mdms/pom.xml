@@ -304,6 +304,12 @@
                 <version>0.9.1</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
             <!-- Required for scala modules, doesn't build otherwise -->
             <dependency>
                 <groupId>org.scala-lang.modules</groupId>
