@@ -1,41 +1,31 @@
 package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.db.DatabaseAccess;
-import de.hpi.isg.mdms.db.PreparedStatementAdapter;
 import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DatabaseAccessTest {
 
     private File testDb;
     private Connection connection;
-    private static final PreparedStatementBatchWriter.Factory<Object[]> INSERT_TARGET_WRITER_FACTORY =
+    private static final PreparedStatementBatchWriter.Factory<Target> INSERT_TARGET_WRITER_FACTORY =
             new PreparedStatementBatchWriter.Factory<>(
-                    "INSERT INTO Target (ID, name, locationId) VALUES (?, ?, ?);",
-                    new PreparedStatementAdapter<Object[]>() {
-                        @Override
-                        public void translateParameter(Object[] parameters, PreparedStatement preparedStatement)
-                                throws SQLException {
-                            Target target = (Target) parameters[0];
-                            Integer locationId = (Integer) parameters[1];
-                            preparedStatement.setInt(1, target.getId());
-                            preparedStatement.setString(2, target.getName());
-                            preparedStatement.setInt(3, locationId);
-                        }
+                    "INSERT INTO Target (ID, name) VALUES (?, ?);",
+                    (target, preparedStatement) -> {
+                        preparedStatement.setInt(1, target.getId());
+                        preparedStatement.setString(2, target.getName());
                     },
                     "Target");
 
@@ -51,36 +41,45 @@ public class DatabaseAccessTest {
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
-
+            try (Statement stmt = this.connection.createStatement()) {
+                stmt.execute("create table [Target] ([ID] int, [name] text)");
+            }
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
             throw e;
         }
-        RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
 
     }
 
     @After
     public void tearDown() {
         try {
-            connection.close();
+            this.connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     @Test
-    public void testClosingOfDatabaseAccess() {
-        DatabaseAccess dbAccess = new DatabaseAccess(connection);
+    public void testPendingWritesOnClose() throws SQLException {
+        // Write something into the DB.
+        DatabaseAccess dbAccess = new DatabaseAccess(this.connection);
+        DatabaseWriter<Target> insertTargetWriter = dbAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
+        Target target = mock(Target.class);
+        when(target.getId()).thenReturn(42);
+        when(target.getName()).thenReturn("My Target");
+        insertTargetWriter.write(target);
+        dbAccess.close();
 
-        try {
-            DatabaseWriter<Object[]> insertTargetWriter = dbAccess.createBatchWriter(INSERT_TARGET_WRITER_FACTORY);
-            insertTargetWriter.write(new Object[] {
-                    mock(Target.class), 1
-            });
-            dbAccess.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        Assert.assertTrue(this.connection.isClosed());
+
+        // Reconnect.
+        this.connection = DriverManager.getConnection("jdbc:sqlite:" + this.testDb.toURI().getPath());
+        try (ResultSet rs = this.connection.createStatement().executeQuery("select [ID], [name] from [Target]")) {
+            Assert.assertTrue(rs.next());
+            Assert.assertEquals(42, rs.getInt("ID"));
+            Assert.assertEquals("My Target", rs.getString("name"));
+            Assert.assertFalse(rs.next());
         }
     }
 }
