@@ -48,6 +48,7 @@ public class ConstraintInsertPerfomanceBenchmark {
     }
 
     private Schema createSchema(MetadataStore metadataStore, int numTables, int numColumnsPerTable) {
+        long startTime = System.currentTimeMillis();
         Schema schema = metadataStore.addSchema("test-schema", null, new DefaultLocation());
         for (int tableNum = 0; tableNum < numTables; tableNum++) {
             Table table = schema.addTable(metadataStore, String.format("test-table-%04d", tableNum), null,
@@ -56,6 +57,11 @@ public class ConstraintInsertPerfomanceBenchmark {
                 table.addColumn(metadataStore, String.format("test-column-%04d", columnNum), null, columnNum);
             }
         }
+        long endTime = System.currentTimeMillis();
+        LOGGER.info("Created {} schema elements in {} ms.",
+                1 + numTables + numTables * numColumnsPerTable,
+                endTime - startTime
+        );
         return schema;
     }
 
@@ -104,7 +110,6 @@ public class ConstraintInsertPerfomanceBenchmark {
         int numColumnsPerTable = 100;
         int numColumns = numTables * numColumnsPerTable;
         Schema schema = createSchema(metadataStore, numTables, numColumnsPerTable);
-        metadataStore.flush();
 
         LOGGER.info("Collecting all columns...", numColumns);
         List<Column> allColumns = new ArrayList<>();
@@ -142,7 +147,6 @@ public class ConstraintInsertPerfomanceBenchmark {
         int numColumnsPerTable = 100;
         int numColumns = numTables * numColumnsPerTable;
         Schema schema = createSchema(metadataStore, numTables, numColumnsPerTable);
-        metadataStore.flush();
 
         LOGGER.info("Generating INDs...");
         int numDesiredInds = 100000;
@@ -252,7 +256,6 @@ public class ConstraintInsertPerfomanceBenchmark {
         int numColumnsPerTable = 100;
         int numColumns = numTables * numColumnsPerTable;
         Schema schema = createSchema(metadataStore, numTables, numColumnsPerTable);
-        metadataStore.flush();
 
         LOGGER.info("Generating UCCs...");
         int numDesiredInds = 100000;
@@ -308,7 +311,6 @@ public class ConstraintInsertPerfomanceBenchmark {
         int numColumnsPerTable = 100;
         int numColumns = numTables * numColumnsPerTable;
         Schema schema = createSchema(metadataStore, numTables, numColumnsPerTable);
-        metadataStore.flush();
 
         LOGGER.info("Generating UCCs...");
         int numDesiredInds = 100000;

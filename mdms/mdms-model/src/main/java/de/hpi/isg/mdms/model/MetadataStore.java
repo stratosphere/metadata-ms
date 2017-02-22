@@ -224,7 +224,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      */
     default Table getTableByName(String targetName) throws IllegalArgumentException {
         Target target = this.getTargetByName(targetName);
-        if (!(target instanceof Table)) {
+        if (target != null && !(target instanceof Table)) {
             throw new IllegalArgumentException(String.format("%s is not a table.", target));
         }
         return (Table) target;

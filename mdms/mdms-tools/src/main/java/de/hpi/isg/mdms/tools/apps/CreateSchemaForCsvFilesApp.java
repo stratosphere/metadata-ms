@@ -55,7 +55,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
     }
 
     public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
-                                      String fieldSeparator, String quoteChar, String hasHeader) throws Exception {
+                                      String fieldSeparator, String quoteChar, boolean hasHeader) throws Exception {
 
         CreateSchemaForCsvFilesApp.Parameters parameters = new CreateSchemaForCsvFilesApp.Parameters();
 
@@ -64,7 +64,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         parameters.inputFiles = inputFiles;
 
         parameters.schemaName = schemaName;
-        parameters.hasHeader = hasHeader;
+        parameters.hasHeader = Boolean.toString(hasHeader);
         parameters.csvParameters.fieldSeparatorName = fieldSeparator;
         parameters.csvParameters.quoteCharName = quoteChar;
 
