@@ -22,10 +22,7 @@ import scala.Tuple2;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class takes care of serializing and deserializing constraints on a SQLite database.
@@ -34,8 +31,6 @@ import java.util.Set;
  * @since 10.03.2015
  */
 public class SQLiteConstraintHandler {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SQLiteConstraintHandler.class);
 
     /**
      * Encapsulates the DB connection to allow for lazy writes.
@@ -57,12 +52,14 @@ public class SQLiteConstraintHandler {
     private int currentConstraintIdMax = -1;
 
     private final DatabaseWriter<ConstraintCollection<? extends Constraint>> addConstraintCollectionWriter;
+    private final DatabaseWriter<ConstraintCollection<?>> deleteConstraintCollectionWriter;
     private final DatabaseQuery<Integer> constraintCollectionByIdQuery;
     private final DatabaseQuery<Void> allConstraintCollectionsQuery;
     private final LRUCache<Integer, RDBMSConstraintCollection<? extends Constraint>> constraintCollectionCache = new LRUCache<>(100);
     private boolean isConstraintCollectionCacheComplete = false;
 
     private final DatabaseWriter<Tuple2<ConstraintCollection<?>, Constraint>> addConstraintWriter;
+    private final DatabaseWriter<ConstraintCollection<?>> deleteConstraintsWriter;
     private final DatabaseQuery<Integer> constraintsByConstraintCollectionIdQuery;
 
 
@@ -94,6 +91,13 @@ public class SQLiteConstraintHandler {
                         },
                         "ConstraintCollection"
                 ));
+        this.deleteConstraintCollectionWriter = this.databaseAccess.createBatchWriter(
+                new PreparedStatementBatchWriter.Factory<ConstraintCollection<?>>(
+                        "delete from [ConstraintCollection] where [id]=?",
+                        (cc, preparedStatement) -> preparedStatement.setInt(1, cc.getId()),
+                        "ConstraintCollection"
+                )
+        );
         this.constraintCollectionByIdQuery = this.databaseAccess.createQuery(new StrategyBasedPreparedQuery.Factory<>(
                 "select * from [ConstraintCollection] where [id]=?",
                 PreparedStatementAdapter.SINGLE_INT_ADAPTER,
@@ -112,6 +116,12 @@ public class SQLiteConstraintHandler {
                             preparedStatement.setInt(1, params._1().getId());
                             preparedStatement.setBytes(2, this.kryoPool.toBytesWithoutClass(params._2()));
                         },
+                        "Constraint"
+                ));
+        this.deleteConstraintsWriter = this.databaseAccess.createBatchWriter(
+                new PreparedStatementBatchWriter.Factory<ConstraintCollection<?>>(
+                        "delete from [Constraint] where [constraintCollection]=?",
+                        (cc, preparedStatement) -> preparedStatement.setInt(1, cc.getId()),
                         "Constraint"
                 ));
         this.constraintsByConstraintCollectionIdQuery = this.databaseAccess.createQuery(
@@ -241,31 +251,18 @@ public class SQLiteConstraintHandler {
         return constraints;
     }
 
-    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
-//        try {
-//            this.databaseAccess.flush();
-//            for (ConstraintSQLSerializer<? extends Constraint> constraintSerializer : this.constraintSerializers
-//                    .values()) {
-//                constraintSerializer
-//                        .removeConstraintsOfConstraintCollection(constraintCollection);
-//
-//            }
-//
-//            String sqlDeleteScope = String.format("DELETE from Scope where constraintCollectionId=%d;",
-//                    constraintCollection.getId());
-//            this.databaseAccess.executeSQL(sqlDeleteScope, "Scope");
-//
-//            String sqlDeleteConstraintCollection = String.format(
-//                    "DELETE from ConstraintCollection where id=%d;",
-//                    constraintCollection.getId());
-//            this.databaseAccess.executeSQL(sqlDeleteConstraintCollection, "ConstraintCollection");
-//
-//            this.databaseAccess.flush();
-//
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-        throw new UnsupportedOperationException("Not implemented.");
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
+        // We need to avoid to batch inserts and deletes together.
+        this.databaseAccess.flush(Arrays.asList("Constraint", "ConstraintCollection"));
+
+        // Remove the ConstraintCollection from the cache.
+        this.constraintCollectionCache.remove(constraintCollection.getId());
+
+        // Remove the ConstraintCollection from the database.
+        this.deleteConstraintCollectionWriter.write(constraintCollection);
+        this.deleteConstraintsWriter.write(constraintCollection);
+
+        this.databaseAccess.flush(Arrays.asList("Constraint", "ConstraintCollection"));
     }
 
     public Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(Experiment experiment) {

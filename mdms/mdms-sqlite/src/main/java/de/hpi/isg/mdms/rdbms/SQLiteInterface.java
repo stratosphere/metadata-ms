@@ -393,7 +393,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
         this.constraintHandler.removeConstraintCollection(constraintCollection);
     }
 

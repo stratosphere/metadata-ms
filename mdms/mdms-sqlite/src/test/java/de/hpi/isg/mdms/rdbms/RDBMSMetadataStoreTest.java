@@ -62,7 +62,7 @@ public class RDBMSMetadataStoreTest {
     @Test
     public void testExistenceOfTables() {
         DatabaseMetaData meta;
-        Set<String> tables = new HashSet<String>(Arrays.asList(SQLiteInterface.tableNames));
+        Set<String> tables = new HashSet<>(Arrays.asList(SQLiteInterface.tableNames));
 
         try {
             meta = connection.getMetaData();
@@ -432,7 +432,6 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    @Ignore
     public void testRemovalOfConstraintCollections() throws Exception {
         // setup metadataStore
         MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
