@@ -57,30 +57,6 @@ public class RDBMSMetadataStoreTest {
         // this.testDb.delete();
     }
 
-    // not longer useful test
-    @Ignore
-    @Test
-    public void testExistenceOfTables() {
-        DatabaseMetaData meta;
-        Set<String> tables = new HashSet<>(Arrays.asList(SQLiteInterface.tableNames));
-
-        try {
-            meta = connection.getMetaData();
-            ResultSet res = meta.getTables(null, null, null,
-                    new String[]{"TABLE"});
-            while (res.next()) {
-                // assertTrue(tables.remove(res.getString("TABLE_NAME")));
-                if (!tables.remove(res.getString("TABLE_NAME").toLowerCase())) {
-                    System.out.println("Unexpected target: " + res.getString("TABLE_NAME"));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        assertTrue(tables.isEmpty());
-    }
-
     @Test
     public void testAddingOfSchema() throws SQLException {
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
@@ -424,8 +400,6 @@ public class RDBMSMetadataStoreTest {
         table1.addColumn(store1, "bar", null, 1);
         table2.addColumn(store1, "bar", null, 0);
 
-        store1.flush();
-
         store1.removeSchema(schema1);
 
         assertTrue(store1.getSchemas().isEmpty());
@@ -476,7 +450,6 @@ public class RDBMSMetadataStoreTest {
     }
 
     @Test
-    @Ignore
     public void testRemovalOfSchemaCascadesConstraintCollectionRemoval() throws Exception {
         // setup metadataStore
         final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));

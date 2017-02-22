@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * This class manages the serialization and deserialization of schema elements within a SQLiteDatabase.
@@ -451,8 +452,10 @@ public class SQLiteSchemaHandler {
      * @param schema shall be removed
      */
     public void removeSchema(RDBMSSchema schema) throws SQLException {
+        this.databaseAccess.flush(Collections.singleton("Target"));
         this.deleteTargetWriter.write(schema.getId());
         this.schemaCache.remove(schema.getId());
+        this.databaseAccess.flush(Collections.singleton("Target"));
     }
 
     /**
@@ -461,7 +464,9 @@ public class SQLiteSchemaHandler {
      * @param column should be removed
      */
     public void removeColumn(RDBMSColumn column) throws SQLException {
+        this.databaseAccess.flush(Collections.singleton("Target"));
         this.deleteTargetWriter.write(column.getId());
+        this.databaseAccess.flush(Collections.singleton("Target"));
     }
 
     /**
@@ -470,7 +475,9 @@ public class SQLiteSchemaHandler {
      * @param table is the table that should be removed
      */
     public void removeTable(RDBMSTable table) throws SQLException {
+        this.databaseAccess.flush(Collections.singleton("Target"));
         this.deleteTargetWriter.write(table.getId());
+        this.databaseAccess.flush(Collections.singleton("Target"));
     }
 
     public void setMetadataStore(RDBMSMetadataStore metadataStore) {
