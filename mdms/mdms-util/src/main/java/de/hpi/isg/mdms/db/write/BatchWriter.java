@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.db.write;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -22,7 +23,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
     
     private final static Logger LOGGER = LoggerFactory.getLogger(BatchWriter.class);
 
-	public static final int DEFAULT_BATCH_SIZE = 10000;
+	public static final int DEFAULT_BATCH_SIZE = 10;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
@@ -66,7 +67,12 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	    if (this.curBatchSize > 0) {
 	        super.flush();
 	    } else {
-	        LOGGER.debug("Attempted to flush empty batch writer {}.", this);
+	        StringBuilder sb = new StringBuilder();
+	        sb.append("Stack trace:");
+			for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
+				sb.append("\n\t").append(stackTraceElement);
+			}
+			LOGGER.warn("Attempted to flush empty batch writer {}. {}", this, sb);
 	    }
 	}
 	
