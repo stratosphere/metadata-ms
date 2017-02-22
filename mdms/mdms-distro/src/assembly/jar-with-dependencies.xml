@@ -12,6 +12,9 @@
             <useProjectArtifact>true</useProjectArtifact>
             <unpack>true</unpack>
             <scope>runtime</scope>
+            <excludes>
+                <exclude>org.scala-lang:scala-compiler</exclude><!-- Probably added by the maven-scala-compiler plugin. -->
+            </excludes>
         </dependencySet>
     </dependencySets>
 

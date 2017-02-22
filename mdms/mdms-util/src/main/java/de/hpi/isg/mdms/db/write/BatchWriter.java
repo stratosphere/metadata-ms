@@ -23,7 +23,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
     
     private final static Logger LOGGER = LoggerFactory.getLogger(BatchWriter.class);
 
-	public static final int DEFAULT_BATCH_SIZE = 10;
+	public static final int DEFAULT_BATCH_SIZE = 10000;
 	
 	/**
 	 * The maximum number of SQL statements to include in a batch.
