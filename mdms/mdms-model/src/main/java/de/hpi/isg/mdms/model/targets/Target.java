@@ -17,7 +17,7 @@ import de.hpi.isg.mdms.model.location.Location;
 
 public interface Target extends Identifiable, Named, Serializable, Described {
 
-    enum Type { SCHEMA, COLUMN, TABLE }
+    enum Type { SCHEMA, TABLE, COLUMN }
 
     /**
      * Returns the {@link de.hpi.isg.mdms.model.location.Location} of a {@link Target}.
