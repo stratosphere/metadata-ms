@@ -25,8 +25,8 @@ public class SQLExecutor extends BatchWriter<String> {
             int batchSize) throws SQLException {
 
         super(databaseAccess,
-                Collections.<String> emptySet(),
-                Collections.<String> emptySet(),
+                Collections.emptySet(),
+                Collections.emptySet(),
                 batchSize);
     }
 
