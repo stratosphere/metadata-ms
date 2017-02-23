@@ -8,6 +8,8 @@ import org.qcri.rheem.api.PlanBuilder
 import org.qcri.rheem.core.api.RheemContext
 import org.qcri.rheem.java.Java
 
+import scala.collection.JavaConversions._
+
 /**
   * Tests the [[MetadataStoreRheemWrapper]] class.
   */
@@ -26,10 +28,7 @@ class MetadataQuantaTest {
       .resolveColumnIds(store, fd => fd._1.apply(0), { case (fd, column) => (column.nameWithSchema, fd._2) })
       .collect().toSet
 
-    val expectedFds = Set(
-      ("schema1.table1.column1", "schema1.table1.column4"),
-      ("schema1.table1.column0", "schema1.table1.column4")
-    )
+    val expectedFds = Set(("schema1.table1.column1", "schema1.table1.column4"), ("schema1.table1.column0", "schema1.table1.column4"))
 
     Assert.assertEquals(expectedFds, fds)
   }
@@ -62,6 +61,27 @@ class MetadataQuantaTest {
     val expectedSchemata = Set("schema0", "schema4")
 
     Assert.assertEquals(expectedSchemata, resolvedSchemata)
+  }
+
+  @Test
+  def shouldCreateNewConstraintCollectionsProperly(): Unit = {
+    val store = new DefaultMetadataStore()
+    TestUtil.addSchemata(store, 5, 5, 5)
+
+    implicit val planBuilder = this.createPlanBuilder
+    val novelCC = planBuilder
+      .loadCollection(for (i <- 0 to 100) yield i)
+      .map(i => f"$i%03d")
+      .storeConstraintCollection(
+        store,
+        Seq(store.getTableByName("schema0.table1")),
+        description = "My description"
+      )
+
+    Assert.assertEquals(classOf[String], novelCC.getConstraintClass)
+    Assert.assertEquals(Set(store.getTableByName("schema0.table1")), novelCC.getScope.toSet)
+    Assert.assertEquals("My description", novelCC.getDescription)
+    Assert.assertEquals(novelCC, store.getConstraintCollection(novelCC.getId))
   }
 
 }

@@ -2,7 +2,9 @@ package de.hpi.isg.mdms.analytics.rheem
 
 import de.hpi.isg.mdms.analytics._
 import de.hpi.isg.mdms.model.MetadataStore
-import de.hpi.isg.mdms.model.targets.{Column, Schema, Table}
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection
+import de.hpi.isg.mdms.model.experiment.Experiment
+import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
 import org.qcri.rheem.api.DataQuanta
 
 import scala.reflect.ClassTag
@@ -72,5 +74,27 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
     * @return the [[KeyedDataQuanta]]
     */
   def keyBy[Key: ClassTag](keyExtractor: Out => Key) = new KeyedDataQuanta[Out, Key](dataQuanta, keyExtractor)
+
+  /**
+    * Store the given this [[DataQuanta]] in a new [[ConstraintCollection]] within the `store`.
+    *
+    * @param store       in which the [[DataQuanta]] should be stored
+    * @param scope       of the new [[ConstraintCollection]]
+    * @param description for the new [[ConstraintCollection]]
+    * @param experiment  an optional [[Experiment]] to which the [[ConstraintCollection]] should belong
+    * @return the [[ConstraintCollection]]
+    */
+  def storeConstraintCollection(store: MetadataStore,
+                                scope: Iterable[Target],
+                                description: String = "(no description)",
+                                experiment: Option[Experiment] = None): ConstraintCollection[Out] = {
+    val cls = implicitly[ClassTag[Out]].runtimeClass.asInstanceOf[Class[Out]]
+    val cc = experiment match {
+      case None => store.createConstraintCollection(description, cls, scope.toSeq: _*)
+      case Some(exp) => store.createConstraintCollection(description, exp, cls, scope.toSeq: _*)
+    }
+    dataQuanta.foreach((quantum: Out) => cc.add(quantum))
+    cc
+  }
 
 }
