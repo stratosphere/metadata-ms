@@ -14,6 +14,7 @@
             <scope>runtime</scope>
             <excludes>
                 <exclude>org.scala-lang:scala-compiler</exclude><!-- Probably added by the maven-scala-compiler plugin. -->
+                <!--
                 <exclude>org.apache.flink:flink-clients</exclude>
                 <exclude>org.apache.flink:flink-runtime</exclude>
                 <exclude>org.apache.flink:flink-core</exclude>
@@ -21,6 +22,7 @@
                 <exclude>org.apache.flink:flink-scala</exclude>
                 <exclude>org.apache.flink:flink-jdbc</exclude>
                 <exclude>org.apache.flink:flink-hadoop-compatibility</exclude>
+                -->
             </excludes>
             <useTransitiveFiltering>true</useTransitiveFiltering>
         </dependencySet>

@@ -111,10 +111,6 @@
             <modules>
                 <module>mdms-distro</module>
             </modules>
-            <properties>
-                <!-- flink-java is introducing Scala, which might cause problems. -->
-                <flink.scope>provided</flink.scope>
-            </properties>
         </profile>
     </profiles>
 
@@ -204,45 +200,38 @@
             <!-- Flink dependencies -->
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-clients</artifactId>
+                <artifactId>flink-clients_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-runtime</artifactId>
+                <artifactId>flink-runtime_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-core</artifactId>
+                <artifactId>flink-core_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-jdbc</artifactId>
+                <artifactId>flink-jdbc_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-java</artifactId>
+                <artifactId>flink-java_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-hadoop-compatibility</artifactId>
+                <artifactId>flink-hadoop-compatibility_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.flink</groupId>
-                <artifactId>flink-scala</artifactId>
+                <artifactId>flink-scala_${scala.major.version}</artifactId>
                 <version>${flink.version}</version>
-                <scope>${flink.scope}</scope>
             </dependency>
 
             <!-- Rheem -->
