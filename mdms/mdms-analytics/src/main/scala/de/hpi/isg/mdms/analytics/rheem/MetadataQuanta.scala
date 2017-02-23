@@ -93,8 +93,18 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
       case None => store.createConstraintCollection(description, cls, scope.toSeq: _*)
       case Some(exp) => store.createConstraintCollection(description, exp, cls, scope.toSeq: _*)
     }
-    dataQuanta.foreach((quantum: Out) => cc.add(quantum))
+    this.store(cc)
     cc
+  }
+
+  /**
+    * Store the given this [[DataQuanta]] in the given `constraintCollection`, thereby leaving the existing
+    * elements intact.
+    *
+    * @param constraintCollection the [[ConstraintCollection]]
+    */
+  def store(constraintCollection: ConstraintCollection[Out]): Unit = {
+    dataQuanta.foreach((quantum: Out) => constraintCollection.add(quantum))
   }
 
 }

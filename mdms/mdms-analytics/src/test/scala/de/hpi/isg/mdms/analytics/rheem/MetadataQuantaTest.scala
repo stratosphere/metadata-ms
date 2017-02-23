@@ -84,4 +84,31 @@ class MetadataQuantaTest {
     Assert.assertEquals(novelCC, store.getConstraintCollection(novelCC.getId))
   }
 
+  @Test
+  def shouldAppendToConstraintCollectionProperly(): Unit = {
+    val store = new DefaultMetadataStore()
+    TestUtil.addSchemata(store, 5, 5, 5)
+
+    implicit var planBuilder = this.createPlanBuilder
+    val novelCC = planBuilder
+      .loadCollection(for (i <- 0 to 100) yield i)
+      .map(i => f"$i%03d")
+      .storeConstraintCollection(
+        store,
+        Seq(store.getTableByName("schema0.table1")),
+        description = "My description"
+      )
+
+    planBuilder = this.createPlanBuilder
+    planBuilder.loadCollection(for (i <- 101 to 200) yield i)
+      .map(i => f"$i%03d")
+      .store(novelCC)
+
+    Assert.assertEquals(classOf[String], novelCC.getConstraintClass)
+    Assert.assertEquals(Set(store.getTableByName("schema0.table1")), novelCC.getScope.toSet)
+    Assert.assertEquals("My description", novelCC.getDescription)
+    Assert.assertEquals(novelCC, store.getConstraintCollection(novelCC.getId))
+    Assert.assertEquals((for (i <- 0 to 200) yield f"$i%03d").toSet, novelCC.getConstraints.toSet)
+  }
+
 }
