@@ -39,8 +39,8 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
     * @return [[DataQuanta]] with resolved [[Table]] IDs
     */
   def resolveTableIds[NewOut: ClassTag](metadataStore: MetadataStore,
-                                         idExtractor: Out => Int,
-                                         finisher: (Out, TableMock) => NewOut): DataQuanta[NewOut] = {
+                                        idExtractor: Out => Int,
+                                        finisher: (Out, TableMock) => NewOut): DataQuanta[NewOut] = {
     implicit val planBuilder = dataQuanta.planBuilder
     val tables = metadataStore.loadTables(null)
     dataQuanta
@@ -61,9 +61,16 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
                                          finisher: (Out, ColumnMock) => NewOut): DataQuanta[NewOut] = {
     implicit val planBuilder = dataQuanta.planBuilder
     val columns = metadataStore.loadColumns(null)
-    dataQuanta
-      .join[ColumnMock, Int](idExtractor, columns, _.id)
-      .map { join => finisher(join.field0, join.field1) }
+    dataQuanta.keyBy(idExtractor).joinAndAssemble(columns.keyBy(_.id), finisher)
   }
+
+  /**
+    * Assigns this instance a key extractor, which enables some key-based operations.
+    *
+    * @see KeyedDataQuanta
+    * @param keyExtractor extracts the key from the [[DataQuanta]]
+    * @return the [[KeyedDataQuanta]]
+    */
+  def keyBy[Key: ClassTag](keyExtractor: Out => Key) = new KeyedDataQuanta[Out, Key](dataQuanta, keyExtractor)
 
 }
