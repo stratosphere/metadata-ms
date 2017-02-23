@@ -1,11 +1,13 @@
 package de.hpi.isg.mdms
 
-import de.hpi.isg.mdms.analytics.rheem.MetadataStoreRheemWrapper
+import de.hpi.isg.mdms.analytics.rheem.{MetadataQuanta, MetadataStoreRheemWrapper}
 import de.hpi.isg.mdms.model.MetadataStore
-import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
+import org.qcri.rheem.api.DataQuanta
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
   * Provides utilities to analyze metadata store contents.
@@ -21,11 +23,14 @@ package object analytics {
   implicit def wrapForRheem(metadataStore: MetadataStore): MetadataStoreRheemWrapper =
     new MetadataStoreRheemWrapper(metadataStore)
 
+  implicit def pimpDataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]): MetadataQuanta[Out] =
+    new MetadataQuanta(dataQuanta)
+
   /**
     * [[ConstraintCollectionConflictResolutionStrategy]] that always fails on conflicts.
     */
   object FailOnConflictStrategy extends ConstraintCollectionConflictResolutionStrategy {
-    override def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
+    override def resolve[T](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
       if (conflictDomain.size > 1) throw new ConstraintCollectionConflictException(conflictDomain)
       conflictDomain
     }
@@ -35,7 +40,7 @@ package object analytics {
     * [[ConstraintCollectionConflictResolutionStrategy]] that always takes the first element from the conflict domain.
     */
   object TakeFirstStrategy extends ConstraintCollectionConflictResolutionStrategy {
-    override def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
+    override def resolve[T](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
       if (conflictDomain.size > 1) Seq(conflictDomain.head)
       else conflictDomain
     }
@@ -45,7 +50,7 @@ package object analytics {
     * [[ConstraintCollectionConflictResolutionStrategy]] that always takes the first element from the conflict domain.
     */
   object TakeLastStrategy extends ConstraintCollectionConflictResolutionStrategy {
-    override def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
+    override def resolve[T](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] = {
       if (conflictDomain.size > 1) Seq(conflictDomain.last)
       else conflictDomain
     }
@@ -55,7 +60,7 @@ package object analytics {
     * [[ConstraintCollectionConflictResolutionStrategy]] that resolves conflict by taking all [[ConstraintCollection]]s.
     */
   object TakeAllStrategy extends ConstraintCollectionConflictResolutionStrategy {
-    override def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] =
+    override def resolve[T](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] =
       conflictDomain
   }
 
@@ -71,8 +76,8 @@ package object analytics {
   /**
     * Light-weight representation for a [[Schema]].
     *
-    * @param id     the [[Schema]] ID
-    * @param name   the [[Schema]] name
+    * @param id   the [[Schema]] ID
+    * @param name the [[Schema]] name
     */
   case class SchemaMock(id: Int, name: String) {
     def this(schema: Schema) = this(schema.getId, schema.getName)
@@ -87,6 +92,9 @@ package object analytics {
     */
   case class TableMock(id: Int, name: String, schema: String) {
     def this(table: Table) = this(table.getId, table.getName, table.getSchema.getName)
+
+    def nameWithSchema = schema + "." + name
+
   }
 
   /**
@@ -95,10 +103,14 @@ package object analytics {
     * @param id     the [[Column]] ID
     * @param name   the [[Column]] name
     * @param schema the name of the parent [[Schema]]
-    * @param table the name of the parent [[Table]]
+    * @param table  the name of the parent [[Table]]
     */
   case class ColumnMock(id: Int, name: String, schema: String, table: String) {
     def this(column: Column) = this(column.getId, column.getName, column.getTable.getSchema.getName, column.getTable.getName)
+
+    def nameWithTable = table + "." + name
+
+    def nameWithSchema = schema + "." + table + "." + name
   }
 
 }
