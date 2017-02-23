@@ -1,9 +1,9 @@
 package de.hpi.isg.mdms.java.fk.classifiers;
 
 import de.hpi.isg.mdms.domain.constraints.NumberColumnStatistics;
+import de.hpi.isg.mdms.domain.constraints.TextColumnStatistics;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
@@ -49,7 +49,7 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
      * @param weight weight of the classifiers results
      */
     public ValueDiffClassifier(double weight,
-                               ConstraintCollection<?> textColumnStatisticsCollection,
+                               ConstraintCollection<TextColumnStatistics> textColumnStatisticsCollection,
                                double minOverlapRatio,
                                double disqualifyingOverlapRatio) {
         super(weight);

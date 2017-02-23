@@ -44,7 +44,7 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
      */
     public CoverageClassifier(double weight,
                               double fkRatio, double nonFkRatio,
-                              ConstraintCollection<?> columnStatsConstraintCollection) {
+                              ConstraintCollection<ColumnStatistics> columnStatsConstraintCollection) {
         super(weight);
 
         this.fkRatio = fkRatio;
@@ -58,11 +58,8 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
 //                        distinctValueCount.getTargetReference().getTargetId(),
 //                        distinctValueCount.getNumDistinctValues()));
 
-        this.distinctValues = new Int2LongOpenHashMap((int) columnStatsConstraintCollection.getConstraints().stream()
-                .filter(constraint -> constraint instanceof ColumnStatistics).count());
-        columnStatsConstraintCollection.getConstraints().stream()
-                .filter(constraint -> constraint instanceof ColumnStatistics)
-                .map(constraint -> (ColumnStatistics) constraint)
+        this.distinctValues = new Int2LongOpenHashMap(columnStatsConstraintCollection.getConstraints().size());
+        columnStatsConstraintCollection.getConstraints()
                 .forEach(distinctValueCount -> distinctValues.put(
                         distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()
@@ -94,6 +91,11 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
 
             long depDistinctValueCount = this.distinctValues.get(fkc.getDependentColumnId());
             long refDistinctValueCount = this.distinctValues.get(fkc.getReferencedColumnId());
+
+            // Check if we know the distinct values in the first place.
+            if (depDistinctValueCount == -1 || refDistinctValueCount == -1) {
+                classificationSet.addPartialResult(new WeightedResult(Result.UNKNOWN));
+            }
 
             if (depDistinctValueCount >= this.fkRatio * refDistinctValueCount) {
                 classificationSet.addPartialResult(new WeightedResult(Result.FOREIGN_KEY));
