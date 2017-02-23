@@ -17,6 +17,6 @@ trait ConstraintCollectionConflictResolutionStrategy {
     * @throws ConstraintCollectionConflictException if the conflict could not be resolved
     */
   @throws(classOf[ConstraintCollectionConflictException])
-  def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]]
+  def resolve[T](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]]
 
 }
