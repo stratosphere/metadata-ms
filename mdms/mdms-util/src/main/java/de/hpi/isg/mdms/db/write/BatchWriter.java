@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.db.write;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -62,15 +63,6 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 	abstract protected void addBatch(T element) throws SQLException;
 	
 	@Override
-	public void flush() throws SQLException {
-	    if (this.curBatchSize > 0) {
-	        super.flush();
-	    } else {
-	        LOGGER.debug("Attempted to flush empty batch writer {}.", this);
-	    }
-	}
-	
-	@Override
 	protected void doFlush() throws SQLException {
 		if (this.curBatchSize > 0) {
 		    int batchSize = this.curBatchSize;
@@ -91,6 +83,13 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 		    }
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);
+		} else {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Stack trace:");
+			for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
+				sb.append("\n\t").append(stackTraceElement);
+			}
+			LOGGER.warn("Attempted to flush empty batch writer {}. {}", this, sb);
 		}
 		this.curBatchSize = 0;
 	}

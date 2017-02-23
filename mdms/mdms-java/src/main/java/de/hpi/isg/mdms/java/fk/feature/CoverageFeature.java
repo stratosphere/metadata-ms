@@ -24,7 +24,7 @@ public class CoverageFeature extends Feature {
      */
     private final Int2LongMap distinctValues;
 
-    public CoverageFeature(ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
+    public CoverageFeature(ConstraintCollection<?> columnStatsConstraintCollection) {
         featureName = COVERAGE_FEATURE_NAME;
 
         // Initialize the distinct value counts.
@@ -34,7 +34,7 @@ public class CoverageFeature extends Feature {
                 .filter(constraint -> constraint instanceof ColumnStatistics)
                 .map(constraint -> (ColumnStatistics) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
-                        distinctValueCount.getTargetReference().getTargetId(),
+                        distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()
                 ));
     }

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.domain.experiment;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import de.hpi.isg.mdms.exceptions.MetadataStoreException;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSExperiment.class);
 
-	private  Set<ConstraintCollection<? extends Constraint>> constraintCollections = new HashSet<ConstraintCollection<? extends Constraint>>();
+	private  Set<ConstraintCollection<?>> constraintCollections = new HashSet<ConstraintCollection<?>>();
     private Algorithm algorithm;
     private Map<String, String> parameters = new HashMap<String, String>();
 	private Set<Annotation> annotations = new HashSet<Annotation>();
@@ -106,7 +108,11 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	@Override
 	public void addParameter(String key, String value) {
 		this.parameters.put(key, value);
-		this.sqlInterface.addParameterToExperiment(this, key, value);		
+		try {
+			this.sqlInterface.addParameterToExperiment(this, key, value);
+		} catch (SQLException e) {
+			throw new MetadataStoreException(e);
+		}
 	}
 
 	@Override
@@ -117,27 +123,39 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	@Override
 	public void setExecutionTime(long executionTime) {
 		this.executionTime = executionTime;
-		this.sqlInterface.setExecutionTimeToExperiment(this, executionTime);
-		
+		try {
+			this.sqlInterface.setExecutionTimeToExperiment(this, executionTime);
+		} catch (SQLException e) {
+			throw new MetadataStoreException(e);
+		}
+
 	}
 
 	@Override
-	public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
+	public Collection<ConstraintCollection<?>> getConstraintCollections() {
 		ensureConstraintCollectionsLoaded();
 		return this.constraintCollections;
 	}
 
     private void ensureConstraintCollectionsLoaded() {
         if (this.constraintCollections == null) {
-            this.constraintCollections = this.sqlInterface.getAllConstraintCollectionsForExperiment(this);
-        }
+			try {
+				this.constraintCollections = this.sqlInterface.getAllConstraintCollectionsForExperiment(this);
+			} catch (SQLException e) {
+				throw new MetadataStoreException(e);
+			}
+		}
     }
 
 	@Override
-	public void add(ConstraintCollection<? extends Constraint> constraintCollection) {
+	public void add(ConstraintCollection<?> constraintCollection) {
 		this.constraintCollections = null;
-		this.sqlInterface.addConstraintCollection(constraintCollection);
-		
+		try {
+			this.sqlInterface.addConstraintCollection(constraintCollection);
+		} catch (SQLException e) {
+			throw new MetadataStoreException(e);
+		}
+
 	}
 
 	@Override
@@ -147,8 +165,12 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 
 	@Override
 	public void addAnnotation(String tag, String text) {
-		this.sqlInterface.addAnnotation(this, tag, text);
-		
+		try {
+			this.sqlInterface.addAnnotation(this, tag, text);
+		} catch (SQLException e) {
+			throw new MetadataStoreException(e);
+		}
+
 	}
 
 	@Override

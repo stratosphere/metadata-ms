@@ -31,7 +31,7 @@ public class ValueLengthDiffClassifier extends PartialForeignKeyClassifier {
      * @param weight weight of the classifiers results
      */
     protected ValueLengthDiffClassifier(double weight,
-                                        ConstraintCollection<? extends Constraint> textColumnStatisticsCollection,
+                                        ConstraintCollection<?> textColumnStatisticsCollection,
                                         double maxLengthDelta,
                                         double maxStdDevDelta) {
         super(weight);
@@ -39,7 +39,7 @@ public class ValueLengthDiffClassifier extends PartialForeignKeyClassifier {
         this.columnAvgValueLengths = new Int2DoubleOpenHashMap();
         this.columnValueLengthStdDevs = new Int2DoubleOpenHashMap();
 
-        for (Constraint constraint : textColumnStatisticsCollection.getConstraints()) {
+        for (Object constraint : textColumnStatisticsCollection.getConstraints()) {
             TextColumnStatistics textColumnStatistics = (TextColumnStatistics) constraint;
             throw new RuntimeException("Cannot run classifier: average string length not available yet.");
         }

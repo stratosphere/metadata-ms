@@ -49,7 +49,7 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
      * @param weight weight of the classifiers results
      */
     public ValueDiffClassifier(double weight,
-                               ConstraintCollection<? extends Constraint> textColumnStatisticsCollection,
+                               ConstraintCollection<?> textColumnStatisticsCollection,
                                double minOverlapRatio,
                                double disqualifyingOverlapRatio) {
         super(weight);
@@ -61,10 +61,10 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
         this.columnAvgValue.defaultReturnValue(Double.NaN);
         this.columnValueStdDevs = new Int2DoubleOpenHashMap();
         this.columnValueStdDevs.defaultReturnValue(Double.NaN);
-        for (Constraint constraint : textColumnStatisticsCollection.getConstraints()) {
+        for (Object constraint : textColumnStatisticsCollection.getConstraints()) {
             if (!(constraint instanceof NumberColumnStatistics)) continue;
             NumberColumnStatistics numberColumnStatistics = (NumberColumnStatistics) constraint;
-            final int columnId = numberColumnStatistics.getTargetReference().getTargetId();
+            final int columnId = numberColumnStatistics.getColumnId();
             this.columnAvgValue.put(columnId, numberColumnStatistics.getAverage());
             this.columnValueStdDevs.put(columnId, numberColumnStatistics.getStandardDeviation());
         }

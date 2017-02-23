@@ -77,8 +77,8 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
         // Set up the dependency reader and receiver.
         ResultReader resultReader = this.createResultReader(this.parameters);
-        Class<? extends Constraint> constraintClass = this.parameters.getConstraintClass();
-        try (DependencyResultReceiver<? extends Constraint> resultReceiver = new DependencyResultReceiver<>(
+        Class<?> constraintClass = this.parameters.getConstraintClass();
+        try (DependencyResultReceiver<?> resultReceiver = new DependencyResultReceiver<>(
                 this.metadataStore,
                 schema,
                 scope,
@@ -201,7 +201,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 required = true)
         public String dependencyType;
 
-        private Class<? extends Constraint> getConstraintClass() {
+        private Class<?> getConstraintClass() {
             switch (this.dependencyType) {
                 case "IND":
                 case "ind":

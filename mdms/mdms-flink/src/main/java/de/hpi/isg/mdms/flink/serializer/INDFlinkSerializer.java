@@ -26,9 +26,9 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
 
         private int[] dependent;
 		private int[] referenced;
-		private ConstraintCollection constraintCollection;
+		private ConstraintCollection<InclusionDependency> constraintCollection;
 
-		public AddInclusionDependencyCommand(final Tuple2<int[], int[]> indTuple, final ConstraintCollection<? extends Constraint> constraintCollection) {
+		public AddInclusionDependencyCommand(final Tuple2<int[], int[]> indTuple, final ConstraintCollection<InclusionDependency> constraintCollection) {
             super();
             this.dependent = indTuple.f0;
             this.referenced = indTuple.f1;
@@ -38,10 +38,8 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
         @Override
         public void run() {
         	synchronized(this.constraintCollection){
-        		final InclusionDependency.Reference reference = new InclusionDependency.Reference(
-                        dependent,
-                        referenced);
-                InclusionDependency.buildAndAddToCollection(reference, this.constraintCollection);
+        		final InclusionDependency ind = new InclusionDependency(this.dependent, this.referenced);
+        		this.constraintCollection.add(ind);
             }
         }
     }
@@ -98,7 +96,7 @@ public class INDFlinkSerializer implements AbstractFlinkSerializer<InclusionDepe
 
 	@Override
 	public Runnable getAddRunnable(Tuple2<int[], int[]> tuple,
-			ConstraintCollection<? extends Constraint> constraintCollection) {
+			ConstraintCollection<InclusionDependency> constraintCollection) {
 		return new AddInclusionDependencyCommand(tuple, constraintCollection);
 	}
 	

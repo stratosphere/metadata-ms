@@ -1,4 +1,4 @@
-package de.hpi.isg.mdms.domain.factories;
+package de.hpi.isg.mdms.benchmark;
 
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.util.IdUtils;

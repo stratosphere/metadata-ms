@@ -5,10 +5,12 @@ import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.constraints.DefaultConstraintCollection;
-import de.hpi.isg.mdms.model.experiment.*;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.DefaultAlgorithm;
+import de.hpi.isg.mdms.model.experiment.DefaultExperiment;
+import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.AbstractTarget;
 import de.hpi.isg.mdms.model.targets.DefaultSchema;
@@ -27,7 +29,6 @@ import java.util.stream.Collectors;
 
 /**
  * The default in-memory implementation of the {@link de.hpi.isg.mdms.model.MetadataStore}.
- *
  */
 
 public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements MetadataStore {
@@ -38,6 +39,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     /**
      * Creates a new DefaultMetadataStore and saves it to disk.
+     *
      * @param file stores the metadata store
      * @return the DefaultMetadataStore
      * @throws IOException
@@ -48,14 +50,15 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     /**
      * Creates a new DefaultMetadataStore and saves it to disk.
-     * @param file stores the metadata store
-     * @param numTableBitsInIds is the number of bits in object IDs to use for tables
+     *
+     * @param file               stores the metadata store
+     * @param numTableBitsInIds  is the number of bits in object IDs to use for tables
      * @param numColumnBitsInIds is the number of bits in object IDs to use for columns
      * @return the DefaultMetadataStore
      * @throws IOException
      */
     public static DefaultMetadataStore createAndSave(final File file, int numTableBitsInIds,
-                                                                         int numColumnBitsInIds) throws IOException {
+                                                     int numColumnBitsInIds) throws IOException {
 
         final DefaultMetadataStore metadataStore = new DefaultMetadataStore(file, numTableBitsInIds, numColumnBitsInIds);
         if (!file.exists()) {
@@ -71,6 +74,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     /**
      * Loads a DefaultMetadataStore from the given file.
+     *
      * @param file is the file that contains the metadata store
      * @return the loaded metadata store
      * @throws MetadataStoreNotFoundException if no metadata store could be loaded from the given file
@@ -94,10 +98,10 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     private final Collection<Schema> schemas;
 
     private final Collection<Algorithm> algorithms;
-    
+
     private final Collection<Experiment> experiments;
-    
-    private final Collection<ConstraintCollection<? extends Constraint>> constraintCollections;
+
+    private final Collection<ConstraintCollection<?>> constraintCollections;
 
     private final Int2ObjectMap<Target> allTargets;
 
@@ -117,7 +121,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         this.storeLocation = location;
 
         this.schemas = Collections.synchronizedSet(new HashSet<Schema>());
-        this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection<? extends Constraint>>());
+        this.constraintCollections = Collections.synchronizedList(new LinkedList<ConstraintCollection<?>>());
         this.allTargets = new Int2ObjectOpenHashMap<>();
         this.idUtils = new IdUtils(numTableBitsInIds, numColumnBitsInIds);
         this.experiments = Collections.synchronizedList(new LinkedList<Experiment>());
@@ -181,7 +185,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public int getUnusedConstraintCollectonId() {
-        return this.randomGenerator.nextInt(Integer.MAX_VALUE);
+        return this.constraintCollections.stream().mapToInt(ConstraintCollection::getId).max().orElse(-1) + 1;
     }
 
     @Override
@@ -189,12 +193,12 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
     }
 
-	@Override
-	public int getUnusedExperimentId() {
+    @Override
+    public int getUnusedExperimentId() {
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
-	}
+    }
 
-    
+
     @Override
     public int getUnusedTableId(final Schema schema) {
         Validate.isTrue(this.schemas.contains(schema));
@@ -237,8 +241,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     /**
-     * @param storeLocation
-     *        the storeLocation to set
+     * @param storeLocation the storeLocation to set
      */
     public void setStoreLocation(File storeLocation) {
         this.storeLocation = storeLocation;
@@ -251,49 +254,63 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
-        return (Collection<ConstraintCollection<? extends Constraint>>) (Collection) this.constraintCollections;
+    public Collection<ConstraintCollection<?>> getConstraintCollections() {
+        return (Collection<ConstraintCollection<?>>) (Collection) this.constraintCollections;
     }
 
     @Override
-    public ConstraintCollection<? extends Constraint> getConstraintCollection(int id) {
-        for (ConstraintCollection<? extends Constraint> constraintCollection : this.constraintCollections) {
+    public ConstraintCollection<?> getConstraintCollection(int id) {
+        for (ConstraintCollection<?> constraintCollection : this.constraintCollections) {
             if (constraintCollection.getId() == id) return constraintCollection;
         }
         return null;
     }
 
     @Override
-    public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
+    @SuppressWarnings("unchecked")
+    public <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
+        Validate.isTrue(Serializable.class.isAssignableFrom(cls), "DefaultMetadataStore requires serializable metadata.");
+
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
         }
-        ConstraintCollection<T> constraintCollection = new DefaultConstraintCollection<>(this,
-                getUnusedConstraintCollectonId(),
-                new HashSet<>(), new HashSet<Target>(Arrays.asList(scope)),cls);
+        ConstraintCollection<T> constraintCollection = (ConstraintCollection<T>) new DefaultConstraintCollection(
+                this,
+                this.getUnusedConstraintCollectonId(),
+                new HashSet<>(),
+                new HashSet<>(Arrays.asList(scope)),
+                cls
+        );
         constraintCollection.setDescription(description);
         this.constraintCollections.add(constraintCollection);
         return constraintCollection;
     }
 
-	@Override
-	public <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description,
-			Experiment experiment, Class<T> cls, Target... scope) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> ConstraintCollection<T> createConstraintCollection(String description,
+                                                                  Experiment experiment, Class<T> cls, Target... scope) {
+        Validate.isTrue(Serializable.class.isAssignableFrom(cls), "DefaultMetadataStore requires serializable metadata.");
+
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
         }
-        ConstraintCollection<T> constraintCollection = new DefaultConstraintCollection(this,
-                getUnusedConstraintCollectonId(),
-                new HashSet<Constraint>(), new HashSet<Target>(Arrays.asList(scope)), experiment, cls);
+        ConstraintCollection<T> constraintCollection = ((ConstraintCollection<T>) new DefaultConstraintCollection(
+                this,
+                this.getUnusedConstraintCollectonId(),
+                new HashSet<T>(),
+                new HashSet<>(Arrays.asList(scope)),
+                experiment,
+                cls
+        ));
         this.constraintCollections.add(constraintCollection);
         experiment.add(constraintCollection);
         return constraintCollection;
-	}
+    }
 
-    
-    
+
     @Override
     public IdUtils getIdUtils() {
         return this.idUtils;
@@ -343,6 +360,11 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
+    public Target getTargetById(int targetId) {
+        return this.allTargets.get(targetId);
+    }
+
+    @Override
     public void removeSchema(Schema schema) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Not supported yet.");
@@ -350,89 +372,89 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
     }
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) {
+    public void removeConstraintCollection(ConstraintCollection<?> constraintCollection) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Not supported yet.");
         //
     }
 
-	@Override
-	public Algorithm createAlgorithm(String name) {
-		final int id = this.getUnusedAlgorithmId();
-        final Algorithm algorithm = new DefaultAlgorithm (id, name, new HashSet<Experiment>());
+    @Override
+    public Algorithm createAlgorithm(String name) {
+        final int id = this.getUnusedAlgorithmId();
+        final Algorithm algorithm = new DefaultAlgorithm(id, name, new HashSet<Experiment>());
         this.algorithms.add(algorithm);
         return algorithm;
-	}
+    }
 
-	@Override
-	public Algorithm getAlgorithmById(int algorithmId) {
-		for (Algorithm algorithm : this.algorithms){
-			if (algorithm.getId() == algorithmId){
-				return algorithm;
-			}
-		}
-		return null;
-	}
+    @Override
+    public Algorithm getAlgorithmById(int algorithmId) {
+        for (Algorithm algorithm : this.algorithms) {
+            if (algorithm.getId() == algorithmId) {
+                return algorithm;
+            }
+        }
+        return null;
+    }
 
-	@Override
-	public Experiment getExperimentById(int experimentId) {
-		for (Experiment experiment : this.experiments){
-			if (experiment.getId() == experimentId){
-				return experiment;
-			}
-		}
-		return null;
-	}
-	
-	@Override
-	public Algorithm getAlgorithmByName(String name) {
-		for (Algorithm algorithm : algorithms){
-			if (algorithm.getName() == name){
-				return algorithm;
-			}
-		}
-		return null;
-	}
+    @Override
+    public Experiment getExperimentById(int experimentId) {
+        for (Experiment experiment : this.experiments) {
+            if (experiment.getId() == experimentId) {
+                return experiment;
+            }
+        }
+        return null;
+    }
 
-	@Override
-	public Collection<Algorithm> getAlgorithms() {
-		return this.algorithms;
-	}
-	
-	
-	@Override
-	public Experiment createExperiment(String description, Algorithm algorithm) {
-		final int id = this.getUnusedExperimentId();
-        final Experiment experiment = new DefaultExperiment (this, id, algorithm, new HashSet<>(),
+    @Override
+    public Algorithm getAlgorithmByName(String name) {
+        for (Algorithm algorithm : algorithms) {
+            if (algorithm.getName() == name) {
+                return algorithm;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Collection<Algorithm> getAlgorithms() {
+        return this.algorithms;
+    }
+
+
+    @Override
+    public Experiment createExperiment(String description, Algorithm algorithm) {
+        final int id = this.getUnusedExperimentId();
+        final Experiment experiment = new DefaultExperiment(this, id, algorithm, new HashSet<>(),
                 new HashMap<>(), new HashSet<>());
         this.experiments.add(experiment);
         algorithm.addExperiment(experiment);
         return experiment;
-	}
+    }
 
-	@Override
-	public void removeAlgorithm(Algorithm algorithm) {
-		this.algorithms.remove(algorithm);
-	}
+    @Override
+    public void removeAlgorithm(Algorithm algorithm) {
+        this.algorithms.remove(algorithm);
+    }
 
-	@Override
-	public void removeExperiment(Experiment experiment) {
-		this.experiments.remove(experiment);
-	}
+    @Override
+    public void removeExperiment(Experiment experiment) {
+        this.experiments.remove(experiment);
+    }
 
-	@Override
-	public Collection<Experiment> getExperiments() {
+    @Override
+    public Collection<Experiment> getExperiments() {
         return this.experiments;
     }
 
     @Override
-	public void close() {
-		try {
-			this.flush();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-	}
+    public void close() {
+        try {
+            this.flush();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
 }

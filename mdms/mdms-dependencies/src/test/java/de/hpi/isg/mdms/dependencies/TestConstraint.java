@@ -2,9 +2,6 @@ package de.hpi.isg.mdms.dependencies;
 
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.targets.Column;
-import de.hpi.isg.mdms.model.targets.TargetReference;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntCollection;
 
 /**
  * A simple dummy constraint for general metadata store tests for the
@@ -14,31 +11,15 @@ import it.unimi.dsi.fastutil.ints.IntCollection;
  */
 public class TestConstraint implements Constraint {
 
-    private final TestReference reference;
+    private final int columnId1, columnId2;
 
     public TestConstraint(Column column1, Column column2) {
-        this.reference = new TestReference(column1, column2);
+        this.columnId1 = column1.getId();
+        this.columnId2 = column2.getId();
     }
 
     @Override
-    public TargetReference getTargetReference() {
-        return this.reference;
+    public int[] getAllTargetIds() {
+        return new int[]{this.columnId1, this.columnId2};
     }
-
-    public static class TestReference implements TargetReference {
-
-        private final Column column1, column2;
-
-        public TestReference(Column column1, Column column2) {
-            this.column1 = column1;
-            this.column2 = column2;
-        }
-
-        @Override
-        public IntCollection getAllTargetIds() {
-            return new IntArrayList(new int[] { this.column1.getId(), this.column2.getId() });
-        }
-    }
-
-
 }

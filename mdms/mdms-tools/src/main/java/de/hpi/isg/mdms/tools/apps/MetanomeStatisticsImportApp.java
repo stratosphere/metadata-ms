@@ -11,6 +11,7 @@ import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.StatisticsResultReceiver;
 import de.metanome.algorithm_integration.results.BasicStatistic;
 import de.metanome.algorithm_integration.results.JsonConverter;
@@ -60,10 +61,10 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
     }
 
     public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName) throws Exception {
-        fromParameters(mds, fileLocation, ".+", schemaName);
+        fromParameters(mds, fileLocation, ".+", schemaName, null);
     }
 
-    public static void fromParameters(MetadataStore mds, String fileLocation, String filePattern, String schemaName) throws Exception {
+    public static void fromParameters(MetadataStore mds, String fileLocation, String filePattern, String schemaName, String scope) throws Exception {
 
         MetanomeStatisticsImportApp.Parameters parameters = new MetanomeStatisticsImportApp.Parameters();
 
@@ -87,10 +88,14 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
             throw new IllegalArgumentException("No such schema: " + this.parameters.schemaName);
         }
 
+        Target scope = this.parameters.scope == null ?
+                schema :
+                this.metadataStore.getTargetByName(this.parameters.scope);
+
         JsonConverter<BasicStatistic> jsonConverter = new JsonConverter<>();
 
         try (StatisticsResultReceiver resultReceiver = new StatisticsResultReceiver(
-                this.metadataStore, schema, Collections.singletonList(schema), String.format("Statistics for %s", schema.getName())
+                this.metadataStore, schema, Collections.singletonList(scope), String.format("Statistics for %s", schema.getName())
         )) {
 
             for (String inputDirectoryPath : this.parameters.inputDirectories) {
@@ -195,6 +200,10 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
                 description = MetadataStoreParameters.SCHEMA_NAME_DESCRIPTION,
                 required = true)
         public String schemaName;
+
+        @Parameter(names = "--scope",
+                description = "scope of the statistics; if missing, then the schema is used")
+        public String scope;
 
     }
 

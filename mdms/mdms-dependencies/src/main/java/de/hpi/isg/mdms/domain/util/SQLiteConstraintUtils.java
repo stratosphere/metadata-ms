@@ -1,9 +1,6 @@
 package de.hpi.isg.mdms.domain.util;
 
 
-import de.hpi.isg.mdms.domain.constraints.*;
-import de.hpi.isg.mdms.rdbms.SQLiteInterface;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,38 +11,6 @@ import java.sql.SQLException;
  * @since 04.03.2015.
  */
 public class SQLiteConstraintUtils {
-
-
-    /**
-     * Registers the standard constraint serializers for SQLite with the given SQLite interface.
-     * @param sqliteInterface is the SQLiteInterface with that the serializers shall be registered
-     * @return the given interface
-     */
-    public static SQLiteInterface registerStandardConstraints(SQLiteInterface sqliteInterface) {
-        sqliteInterface.registerConstraintSQLSerializer(DistinctValueCount.class,
-                new DistinctValueCount.DistinctValueCountSQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(InclusionDependency.class,
-                new InclusionDependency.InclusionDependencySQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(FunctionalDependency.class,
-                new FunctionalDependency.FunctionalDependencySQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(TupleCount.class, new TupleCount.TupleCountSQLiteSerializer(
-                sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(TypeConstraint.class,
-                new TypeConstraint.TypeConstraintSQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(UniqueColumnCombination.class, new
-                UniqueColumnCombination.UniqueColumnCombinationSQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(DistinctValueOverlap.class, new
-                DistinctValueOverlap.DistinctValueOverlapSQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(ColumnStatistics.class,
-                new ColumnStatistics.SQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(TextColumnStatistics.class,
-                new TextColumnStatistics.SQLiteSerializer(sqliteInterface));
-        sqliteInterface.registerConstraintSQLSerializer(NumberColumnStatistics.class,
-                new NumberColumnStatistics.SQLiteSerializer(sqliteInterface));
-
-
-        return sqliteInterface;
-    }
 
     /**
      * Loads the value for the given column from a {@link ResultSet}. If the value was {@code null}, a fallback

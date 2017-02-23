@@ -87,10 +87,10 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     val unJoined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
     assert(unJoined.isInstanceOf[UnJoinedConstraintCollection[InclusionDependency, ColumnStatistics]])
 
-    val halfJoined = unJoined.where(_.getTargetReference.getReferencedColumns.head)
+    val halfJoined = unJoined.where(_.getReferencedColumnIds.head)
     assert(halfJoined.isInstanceOf[HalfJoinedConstraintCollection[InclusionDependency, ColumnStatistics, Int]])
 
-    val fullyJoined = halfJoined.equalsKey(_.getTargetReference.getTargetId)
+    val fullyJoined = halfJoined.equalsKey(_.getColumnId)
     assert(fullyJoined.isInstanceOf[JoinedConstraintCollection[InclusionDependency, ColumnStatistics]])
 
     val joined = fullyJoined.selectAll()
@@ -101,8 +101,8 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     val (indCollection, csCollection) = TestUtil.basicINDJoinCSSetup(store, schema)
 
     val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getTargetId)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getColumnId)
       .selectAll()
 
     val ind = indCollection.asType[InclusionDependency].head
@@ -111,8 +111,8 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     assert(joined == expected)
 
     val otherJoined = csCollection.join[ColumnStatistics, InclusionDependency](indCollection)
-      .where(_.getTargetReference.getTargetId)
-      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .where(_.getColumnId)
+      .equalsKey(_.getReferencedColumnIds.head)
       .selectAll()
 
     val otherExpected = List((cs, ind))
@@ -124,8 +124,8 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     csCollection.add(new ColumnStatistics(0))
 
     val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getTargetId)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getColumnId)
       .selectAll()
 
     val inds = indCollection.asType[InclusionDependency]
@@ -143,8 +143,8 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     val empty2: ConstraintCollection[InclusionDependency] = TestUtil.emptyConstraintCollection(store, schema)
 
     val joined = empty1.join[InclusionDependency, InclusionDependency](empty2)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getReferencedColumnIds.head)
       .selectAll()
 
     assert(joined.isEmpty)
@@ -156,15 +156,15 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     TestUtil.addDummyInclusionDependency(nonEmpty)
 
     val emptyJoinedFull = empty.join[InclusionDependency, InclusionDependency](nonEmpty)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getReferencedColumnIds.head)
       .selectAll()
 
     assert(emptyJoinedFull.isEmpty)
 
     val fullJoinedEmpty = nonEmpty.join[InclusionDependency, InclusionDependency](empty)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getReferencedColumns.head)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getReferencedColumnIds.head)
       .selectAll()
 
     assert(fullJoinedEmpty.isEmpty)
@@ -188,8 +188,8 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     csCollection.add(cs3)
 
     val joined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getTargetId)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getColumnId)
       .selectAll()
 
     val expected = List((ind01, cs1), (ind10, cs0), (ind02, cs2))
@@ -205,10 +205,10 @@ class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
     csCollection.add(cs3)
 
     val fullyJoined = indCollection.join[InclusionDependency, ColumnStatistics](csCollection)
-      .where(_.getTargetReference.getReferencedColumns.head)
-      .equalsKey(_.getTargetReference.getTargetId)
+      .where(_.getReferencedColumnIds.head)
+      .equalsKey(_.getColumnId)
 
-    val filtered = fullyJoined.where(_._2.getTargetReference.getTargetId == 3).selectAll()
+    val filtered = fullyJoined.where(_._2.getColumnId == 3).selectAll()
     val expected = List((ind23, cs3))
 
     assert(filtered == expected)

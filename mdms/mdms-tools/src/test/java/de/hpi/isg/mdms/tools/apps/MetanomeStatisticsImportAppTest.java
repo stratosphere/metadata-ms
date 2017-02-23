@@ -39,7 +39,8 @@ public class MetanomeStatisticsImportAppTest {
                 metadataStore,
                 inputFile.getParentFile().getAbsolutePath(),
                 ".*-statistics\\.json",
-                "TPC-H"
+                "TPC-H",
+                null
         );
 
         // Check that we have all tuple counts.
@@ -52,7 +53,7 @@ public class MetanomeStatisticsImportAppTest {
         ConstraintCollection<TupleCount> tupleCountConstraintCollection = tupleCountConstraintCollections.iterator().next();
         Assert.assertEquals(1, tupleCountConstraintCollection.getConstraints().size());
         TupleCount tupleCount = tupleCountConstraintCollection.getConstraints().stream()
-                .filter(tc -> tc.getTargetReference().getTargetId() == table.getId())
+                .filter(tc -> tc.getTableId() == table.getId())
                 .findAny()
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals(26, tupleCount.getNumTuples());
@@ -67,7 +68,7 @@ public class MetanomeStatisticsImportAppTest {
         ConstraintCollection<TypeConstraint> typeConstraintCollection = typeConstraintCollections.iterator().next();
         Assert.assertEquals(8, typeConstraintCollection.getConstraints().size());
         TypeConstraint typeConstraint1 = typeConstraintCollection.getConstraints().stream()
-                .filter(typeConstraint -> typeConstraint.getTargetReference().getTargetId() == column1.getId())
+                .filter(typeConstraint -> typeConstraint.getColumnId() == column1.getId())
                 .findAny()
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals("INT", typeConstraint1.getType());
@@ -79,7 +80,7 @@ public class MetanomeStatisticsImportAppTest {
         ConstraintCollection<ColumnStatistics> statisticsConstraintCollection = columnStatisticsCollections.iterator().next();
         Assert.assertEquals(8, statisticsConstraintCollection.getConstraints().size());
         ColumnStatistics columnStatistics = statisticsConstraintCollection.getConstraints().stream()
-                .filter(cs -> cs.getTargetReference().getTargetId() == column8.getId())
+                .filter(cs -> cs.getColumnId() == column8.getId())
                 .findFirst()
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals(9, columnStatistics.getTopKFrequentValues().size());
@@ -102,7 +103,7 @@ public class MetanomeStatisticsImportAppTest {
         ConstraintCollection<TextColumnStatistics> textConstraintCollection = textConstraintCollections.iterator().next();
         Assert.assertEquals(5, textConstraintCollection.getConstraints().size());
         TextColumnStatistics textColumnStatistics = textConstraintCollection.getConstraints().stream()
-                .filter(textColumnStatistics1 -> textColumnStatistics1.getTargetReference().getTargetId() == column2.getId())
+                .filter(textColumnStatistics1 -> textColumnStatistics1.getColumnId() == column2.getId())
                 .findAny()
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals("Customer#000000001", textColumnStatistics.getMinValue());
@@ -121,7 +122,7 @@ public class MetanomeStatisticsImportAppTest {
         ConstraintCollection<NumberColumnStatistics> numberConstraintCollection = numberConstraintCollections.iterator().next();
         Assert.assertEquals(3, numberConstraintCollection.getConstraints().size());
         NumberColumnStatistics numberColumnStatistics = numberConstraintCollection.getConstraints().stream()
-                .filter(ncs -> ncs.getTargetReference().getTargetId() == column4.getId())
+                .filter(ncs -> ncs.getColumnId() == column4.getId())
                 .findAny()
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals(0.0, numberColumnStatistics.getMinValue(), 0d);

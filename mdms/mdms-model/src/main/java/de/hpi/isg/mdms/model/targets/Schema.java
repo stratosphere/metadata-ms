@@ -69,4 +69,8 @@ public interface Schema extends Target {
      */
     Column findColumn(int id);
 
+    @Override
+    default Target.Type getType() {
+        return Target.Type.SCHEMA;
+    }
 }

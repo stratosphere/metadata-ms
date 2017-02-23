@@ -58,7 +58,7 @@ public interface Experiment extends Identifiable, Described {
      * 
      * @return {@link Collection} of {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections();
+    public Collection<ConstraintCollection<?>> getConstraintCollections();
 
     /**
      * Adds a new {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection} to this collection.
@@ -66,7 +66,7 @@ public interface Experiment extends Identifiable, Described {
      * @param constraintCollection
      *        The {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection} to add.
      */
-    public void add(ConstraintCollection<? extends Constraint> constraintCollection);
+    public void add(ConstraintCollection<?> constraintCollection);
 
     /**
      * This function returns the {@link de.hpi.isg.mdms.model.MetadataStore} this collection belongs to.

@@ -9,6 +9,8 @@ import de.hpi.isg.mdms.model.targets.AbstractTarget;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
+import java.sql.SQLException;
+
 /**
  * This class is the abstract super class for all kind of {@link Target} objects that can be stored inside an
  * {@link de.hpi.isg.mdms.domain.RDBMSMetadataStore}.
@@ -25,7 +27,7 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
     private IntCollection childIdCache;
 
     @ExcludeHashCodeEquals
-    protected final SQLInterface sqlInterface;
+    protected final RDBMSMetadataStore metadataStore;
 
     public AbstractRDBMSTarget(RDBMSMetadataStore observer, int id, String name, String description, Location location,
             boolean isFreshlyCreated) {
@@ -36,7 +38,7 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
             throw new IllegalStateException(String.format("Target should have ID %08x but actually has %08x.", id,
                     this.getId()));
         }
-        this.sqlInterface = observer.getSQLInterface();
+        this.metadataStore = observer;
 
         // If we just created this Target, it cannot have children.
         // Therefore, we can safely build a new child ID cache.
@@ -84,10 +86,10 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
     /**
      * Stores this target.
      */
-    abstract public void store();
+    abstract public void store() throws SQLException;
 
     public SQLInterface getSqlInterface() {
-        return sqlInterface;
+        return this.metadataStore.getSQLInterface();
     }
 
     @Override

@@ -18,6 +18,12 @@
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-dependencies</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
@@ -37,6 +43,10 @@
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-simple</artifactId>
             <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twitter</groupId>
+            <artifactId>chill_${scala.major.version}</artifactId>
         </dependency>
     </dependencies>
 

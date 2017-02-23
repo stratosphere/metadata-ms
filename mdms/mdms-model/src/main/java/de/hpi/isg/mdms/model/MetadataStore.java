@@ -15,6 +15,7 @@ import de.hpi.isg.mdms.model.util.IdUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -47,7 +48,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @return all {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}s.
      */
-    Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections();
+    Collection<ConstraintCollection<?>> getConstraintCollections();
 
     /**
      * Returns a particular {@link ConstraintCollection} with the given id.
@@ -55,7 +56,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param id
      * @return the {@link ConstraintCollection} with the given id, <code>null</code> if no exists with given id.
      */
-    ConstraintCollection<? extends Constraint> getConstraintCollection(int id);
+    ConstraintCollection<?> getConstraintCollection(int id);
 
     /**
      * Retrieve all {@link ConstraintCollection}s in this instance that have the given scope.
@@ -63,9 +64,9 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param scope the scope {@link Target}
      * @return the matching {@link ConstraintCollection}s
      */
-    default Collection<ConstraintCollection<? extends Constraint>> getConstraintCollectionByTarget(Target scope) {
-        Collection<ConstraintCollection<? extends Constraint>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+    default Collection<ConstraintCollection<?>> getConstraintCollectionByTarget(Target scope) {
+        Collection<ConstraintCollection<?>> result = new LinkedList<>();
+        for (ConstraintCollection<?> constraintCollection : this.getConstraintCollections()) {
             for (Target ccScope : constraintCollection.getScope())
                 if (this.getIdUtils().isContained(scope.getId(), ccScope.getId())) {
                     result.add(constraintCollection);
@@ -82,12 +83,12 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @return the matching {@link ConstraintCollection}s
      */
     @SuppressWarnings("unchecked") // We check by hand.
-    default <T extends Constraint> Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
+    default <T> Collection<ConstraintCollection<T>> getConstraintCollectionByConstraintType(Class<T> constrainttype) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+        for (ConstraintCollection<?> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
                 result.add((ConstraintCollection<T>) constraintCollection);
-                break;
+                continue;
             }
         }
         return result;
@@ -101,10 +102,10 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @return the matching {@link ConstraintCollection}s
      */
     @SuppressWarnings("unchecked") // We check by hand.
-    default <T extends Constraint> Collection<ConstraintCollection<T>>
+    default <T> Collection<ConstraintCollection<T>>
     getConstraintCollectionByConstraintTypeAndScope(Class<T> constrainttype, Target scope) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
-        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+        for (ConstraintCollection<?> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
                 for (Target ccScope : constraintCollection.getScope())
                     if (this.getIdUtils().isContained(scope.getId(), ccScope.getId())) {
@@ -125,11 +126,11 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @return the matching {@link ConstraintCollection}s
      */
     @SuppressWarnings("unchecked") // We check by hand.
-    default <T extends Constraint> Collection<ConstraintCollection<T>>
+    default <T> Collection<ConstraintCollection<T>>
     getIncludedConstraintCollections(Class<T> constrainttype, Target target) {
         Collection<ConstraintCollection<T>> result = new LinkedList<>();
         NextConstraintCollection:
-        for (ConstraintCollection<? extends Constraint> constraintCollection : this.getConstraintCollections()) {
+        for (ConstraintCollection<?> constraintCollection : this.getConstraintCollections()) {
             if (constraintCollection.getConstraintClass() == constrainttype) {
                 for (Target ccScope : constraintCollection.getScope())
                     if (!this.getIdUtils().isContained(ccScope.getId(), target.getId()))
@@ -163,7 +164,17 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * @param schemaId
      * @return
      */
-    Schema getSchemaById(int schemaId);
+    default Schema getSchemaById(int schemaId) {
+        return (Schema) this.getTargetById(schemaId);
+    }
+
+    /**
+     * Retrieve the {@link Target} with the given ID.
+     *
+     * @param targetId the ID of the {@link Target}
+     * @return the {@link Target} or {@code null} if there is no match
+     */
+    Target getTargetById(int targetId);
 
     /**
      * Get all knwon {@link Schema}s.
@@ -213,7 +224,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      */
     default Table getTableByName(String targetName) throws IllegalArgumentException {
         Target target = this.getTargetByName(targetName);
-        if (!(target instanceof Table)) {
+        if (target != null && !(target instanceof Table)) {
             throw new IllegalArgumentException(String.format("%s is not a table.", target));
         }
         return (Table) target;
@@ -321,13 +332,13 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope);
+    <T> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope);
 
     /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    <T extends Constraint> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope);
+    <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope);
 
 
     /**
@@ -366,7 +377,7 @@ public interface MetadataStore extends Serializable, Observer<Target> {
      *
      * @param constraintCollection
      */
-    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection);
+    void removeConstraintCollection(ConstraintCollection<?> constraintCollection);
 
     /**
      * Closes the MetadataStore.

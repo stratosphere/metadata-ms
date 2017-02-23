@@ -39,20 +39,20 @@
 
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-hadoop-compatibility</artifactId>
+            <artifactId>flink-hadoop-compatibility_${scala.major.version}</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
+            <artifactId>flink-clients_${scala.major.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-java</artifactId>
+            <artifactId>flink-java_${scala.major.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-scala</artifactId>
+            <artifactId>flink-scala_${scala.major.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>

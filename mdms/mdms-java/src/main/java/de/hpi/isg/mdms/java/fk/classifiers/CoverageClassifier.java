@@ -44,7 +44,7 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
      */
     public CoverageClassifier(double weight,
                               double fkRatio, double nonFkRatio,
-                              ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
+                              ConstraintCollection<?> columnStatsConstraintCollection) {
         super(weight);
 
         this.fkRatio = fkRatio;
@@ -64,7 +64,7 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
                 .filter(constraint -> constraint instanceof ColumnStatistics)
                 .map(constraint -> (ColumnStatistics) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
-                        distinctValueCount.getTargetReference().getTargetId(),
+                        distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()
                 ));
     }

@@ -15,6 +15,7 @@ package de.hpi.isg.mdms.model.util;
 import java.io.Serializable;
 
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.targets.Target;
 
 /**
  * This class offers some utility functionality to deal with IDs in a {@link MetadataStore}. Thereby, it obeys the
@@ -29,8 +30,6 @@ import de.hpi.isg.mdms.model.MetadataStore;
  */
 @SuppressWarnings("serial")
 public class IdUtils implements Serializable {
-
-    public enum IdTypes {SCHEMA_ID, TABLE_ID, COLUMN_ID}
 
     public static final int DEFAULT_NUM_COLUMN_BITS = 12;
     public static final int DEFAULT_NUM_TABLE_BITS = 12;
@@ -213,13 +212,13 @@ public class IdUtils implements Serializable {
         return createGlobalId(schemaNumber);
     }
 
-    public IdTypes getIdType(int id) {
-        if (isSchemaId(id)) {
-            return IdTypes.SCHEMA_ID;
-        } else if (isTableId(id)) {
-            return IdTypes.TABLE_ID;
+    public Target.Type getIdType(int id) {
+        if (this.isSchemaId(id)) {
+            return Target.Type.SCHEMA;
+        } else if (this.isTableId(id)) {
+            return Target.Type.TABLE;
         }
-        return IdTypes.COLUMN_ID;
+        return Target.Type.COLUMN;
     }
 
     @Override

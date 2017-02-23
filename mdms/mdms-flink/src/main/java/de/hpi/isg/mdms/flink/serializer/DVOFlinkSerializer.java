@@ -18,9 +18,9 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	private class AddOverlapCommand implements Runnable {
 		        
 		        private final int column1, column2, overlap;
-		        private final ConstraintCollection<? extends Constraint> constraintCollection;
+		        private final ConstraintCollection<DistinctValueOverlap> constraintCollection;
 		    
-		        public AddOverlapCommand(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection<? extends Constraint> constraintCollection) {
+		        public AddOverlapCommand(Tuple3<Integer, Integer, Integer> tuple, ConstraintCollection<DistinctValueOverlap> constraintCollection) {
 		            super();
 		            this.column1 = tuple.f0;
 		            this.column2 = tuple.f1;
@@ -31,8 +31,8 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 		        @Override
 		        public void run() {
 		            synchronized (this.constraintCollection) {
-		                DistinctValueOverlap.buildAndAddToCollection(this.overlap, 
-		                        new DistinctValueOverlap.Reference(this.column1, this.column2), this.constraintCollection);
+						DistinctValueOverlap distinctValueOverlap = new DistinctValueOverlap(this.overlap, this.column1, this.column2);
+		                this.constraintCollection.add(distinctValueOverlap);
 		            }
 		        }
 		        
@@ -42,7 +42,7 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	public DataSet<Tuple3<Integer, Integer, Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection<? extends Constraint> datasourceCollection) {
+			ConstraintCollection<?> datasourceCollection) {
 		
 		// Read data from a relational database using the JDBC input format
 		RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;
@@ -67,7 +67,7 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 
 	@Override
 	public Runnable getAddRunnable(Tuple3<Integer, Integer, Integer> tuple,
-			ConstraintCollection<? extends Constraint> constraintCollection) {
+			ConstraintCollection<DistinctValueOverlap> constraintCollection) {
 		return new AddOverlapCommand(tuple, constraintCollection);
 	}
 

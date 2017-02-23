@@ -150,11 +150,6 @@ public class CreateSchemaForMcsvFileApp extends CsvAppTemplate<CreateSchemaForMc
         this.schema = this.metadataStore.addSchema(schemaName, description, schemaLocation);
         logger.debug("added schema {} with ID {}", schema.getName(), schema.getId());
 
-        // XXX: Little hack: clear the schema cache, so that the new created tables will not be kept in memory
-        if (schema instanceof RDBMSSchema) {
-            ((RDBMSSchema) schema).cacheChildTables(null);
-        }
-
         // Run the Flink job.
         executePlan(String.format("Determine #fields in %s.", inputFilePath));
 

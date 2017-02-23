@@ -20,4 +20,10 @@ public interface Column extends Target {
     String getNameWithTableName();
 
     Location getLocation();
+
+    @Override
+    default Target.Type getType() {
+        return Target.Type.COLUMN;
+    }
+
 }

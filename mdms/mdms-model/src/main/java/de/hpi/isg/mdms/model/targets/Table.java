@@ -22,18 +22,23 @@ public interface Table extends Target {
      *        is the index of the column within this table
      * @return the added column
      */
-    public Column addColumn(MetadataStore metadataStore, String name, String description, int index);
+    Column addColumn(MetadataStore metadataStore, String name, String description, int index);
 
-    public Collection<Column> getColumns();
+    Collection<Column> getColumns();
 
-    public Column getColumnByName(String name) throws NameAmbigousException;
+    Column getColumnByName(String name) throws NameAmbigousException;
 
-    public Collection<Column> getColumnsByName(String name);
+    Collection<Column> getColumnsByName(String name);
 
-    public Column getColumnById(int id);
+    Column getColumnById(int id);
 
     /**
      * @return the parent schema of this table
      */
-    public Schema getSchema();
+    Schema getSchema();
+
+    @Override
+    default Target.Type getType() {
+        return Target.Type.TABLE;
+    }
 }

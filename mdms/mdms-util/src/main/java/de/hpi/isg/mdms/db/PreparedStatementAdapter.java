@@ -10,22 +10,17 @@ public interface PreparedStatementAdapter<T> {
     /**
      * {@link de.hpi.isg.mdms.db.PreparedStatementAdapter} for queries that have a single integer parameter.
      */
-    static final PreparedStatementAdapter<Integer> SINGLE_INT_ADAPTER =
-            new PreparedStatementAdapter<Integer>() {
+    PreparedStatementAdapter<Integer> SINGLE_INT_ADAPTER =
+            (integer, preparedStatement) -> preparedStatement.setInt(1, integer);
 
-                public void translateParameter(Integer integer, PreparedStatement preparedStatement)
-                        throws SQLException {
-                    preparedStatement.setInt(1, integer);
-                }
-            };
+    /**
+     * {@link de.hpi.isg.mdms.db.PreparedStatementAdapter} for queries that have a single {@link String} parameter.
+     */
+    PreparedStatementAdapter<String> SINGLE_STRING_ADAPTER =
+            (str, preparedStatement) -> preparedStatement.setString(1, str);
 
-    static final PreparedStatementAdapter<Void> VOID_ADAPTER =
-            new PreparedStatementAdapter<Void>() {
-
-                @Override
-                public void translateParameter(Void object, PreparedStatement preparedStatement) throws SQLException {
-
-                }
+    PreparedStatementAdapter<Void> VOID_ADAPTER =
+            (object, preparedStatement) -> {
             };
 
 }

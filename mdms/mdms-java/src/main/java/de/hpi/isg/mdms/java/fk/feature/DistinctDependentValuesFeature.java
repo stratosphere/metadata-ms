@@ -22,7 +22,7 @@ public class DistinctDependentValuesFeature extends Feature {
      */
     private final Int2LongMap distinctValues;
 
-    public DistinctDependentValuesFeature(ConstraintCollection<? extends Constraint> columnStatsConstraintCollection) {
+    public DistinctDependentValuesFeature(ConstraintCollection<?> columnStatsConstraintCollection) {
         featureName = DISTINCT_DEPENDENT_VALUES_FEATURE_NAME;
 
         // Initialize the distinct value counts.
@@ -32,7 +32,7 @@ public class DistinctDependentValuesFeature extends Feature {
                 .filter(constraint -> constraint instanceof ColumnStatistics)
                 .map(constraint -> (ColumnStatistics) constraint)
                 .forEach(distinctValueCount -> distinctValues.put(
-                        distinctValueCount.getTargetReference().getTargetId(),
+                        distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()
                 ));
     }

@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -30,13 +31,13 @@ public class NoReferencingPKClassifier extends PartialForeignKeyClassifier {
      *
      * @param weight weight of the classifiers results
      */
-    public NoReferencingPKClassifier(double weight, ConstraintCollection<? extends Constraint> pkConstraintCollection) {
+    public NoReferencingPKClassifier(double weight, ConstraintCollection<?> pkConstraintCollection) {
         super(weight);
         this.pkColumnIds = new IntOpenHashSet();
         pkConstraintCollection.getConstraints().stream()
                 .filter(constraint -> constraint instanceof UniqueColumnCombination)
                 .map(constraint -> (UniqueColumnCombination) constraint)
-                .flatMap(ucc -> ucc.getTargetReference().getAllTargetIds().stream())
+                .flatMapToInt(ucc -> Arrays.stream(ucc.getAllTargetIds()))
                 .forEach(this.pkColumnIds::add);
     }
 
