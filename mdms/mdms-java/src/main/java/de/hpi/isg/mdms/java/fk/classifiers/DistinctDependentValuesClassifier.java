@@ -31,7 +31,7 @@ public class DistinctDependentValuesClassifier extends PartialForeignKeyClassifi
 
     public DistinctDependentValuesClassifier(double weight,
                                              int minDistinctValues,
-                                             ConstraintCollection<? extends Constraint> distinctValuesConstraintCollection) {
+                                             ConstraintCollection<?> distinctValuesConstraintCollection) {
         super(weight);
         this.minDistinctValues = minDistinctValues;
 

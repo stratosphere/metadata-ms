@@ -127,10 +127,10 @@ public class RDBMSMetadataStoreTest {
         final TupleCount dummyTypeConstraint2 = new TupleCount(col2.getId(), 200);
         dummyConstraintCollection.add(dummyTypeConstraint2);
 
-        Collection<ConstraintCollection<? extends Constraint>> loadedConstraintCollections = store1.getConstraintCollections();
+        Collection<ConstraintCollection<?>> loadedConstraintCollections = store1.getConstraintCollections();
         assertTrue(loadedConstraintCollections.contains(dummyConstraintCollection));
-        ConstraintCollection<? extends Constraint> constraintCollection = loadedConstraintCollections.iterator().next();
-        Collection<? extends Constraint> constraints = constraintCollection.getConstraints();
+        ConstraintCollection<?> constraintCollection = loadedConstraintCollections.iterator().next();
+        Collection<?> constraints = constraintCollection.getConstraints();
         assertTrue(constraints.contains(dummyTypeConstraint1));
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint2));
     }
@@ -507,7 +507,7 @@ public class RDBMSMetadataStoreTest {
         //create constraintCollection
         store1.createConstraintCollection(null, experiment, TupleCount.class, dummySchema1);
 
-        Collection<ConstraintCollection<? extends Constraint>> loadedConstraintCollections = store1.getConstraintCollections();
+        Collection<ConstraintCollection<?>> loadedConstraintCollections = store1.getConstraintCollections();
         assertTrue(loadedConstraintCollections.iterator().next().getExperiment().getId() == experiment.getId());
     }
 

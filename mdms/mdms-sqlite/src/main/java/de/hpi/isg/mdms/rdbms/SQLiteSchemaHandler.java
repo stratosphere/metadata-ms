@@ -18,8 +18,6 @@ import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
 import de.hpi.isg.mdms.util.LRUCache;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import org.apache.commons.lang3.Validate;
 import scala.Tuple2;
 
@@ -352,7 +350,7 @@ public class SQLiteSchemaHandler {
     /**
      * Loads the tables with the given parent {@link Schema}.
      *
-     * @param schema    the {@link Schema} in which the {@link Table}s reside
+     * @param schema the {@link Schema} in which the {@link Table}s reside
      * @return the loaded {@link Table}s
      */
     public Collection<Table> getTables(Schema schema) throws SQLException {

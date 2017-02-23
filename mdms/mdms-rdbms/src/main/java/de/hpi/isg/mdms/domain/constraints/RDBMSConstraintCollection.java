@@ -24,7 +24,7 @@ import java.util.Set;
  * @author fabian
  */
 
-public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
+public class RDBMSConstraintCollection<T> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -2911473574180511468L;
 
@@ -129,9 +129,9 @@ public class RDBMSConstraintCollection<T extends Constraint> extends AbstractIde
     public void add(T constraint) {
         this.constraints = null;
 
-        if (IS_CHECK_CONSTRAINT_TARGETS) {
+        if (IS_CHECK_CONSTRAINT_TARGETS && constraint instanceof Constraint) {
             // Ensure that all targets of the constraint are valid.
-            for (int targetId : constraint.getAllTargetIds()) {
+            for (int targetId : ((Constraint) constraint).getAllTargetIds()) {
                 if (!this.isTargetInScope(targetId)) {
                     LOGGER.warn("Target with id {} not in scope of constraint collection", targetId);
                 }

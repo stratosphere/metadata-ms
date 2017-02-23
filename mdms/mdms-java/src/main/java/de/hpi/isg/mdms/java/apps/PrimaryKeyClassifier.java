@@ -62,9 +62,9 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
         // Load the statistics.
         this.columnStatics = new Int2ObjectOpenHashMap<>();
         this.textColumnStatistics = new Int2ObjectOpenHashMap<>();
-        final Collection<? extends Constraint> constraints = this.metadataStore
+        final Collection<?> constraints = this.metadataStore
                 .getConstraintCollection(this.parameters.statisticsCollectionId).getConstraints();
-        for (Constraint constraint : constraints) {
+        for (Object constraint : constraints) {
             if (constraint instanceof ColumnStatistics) {
                 ColumnStatistics columnStatistics = (ColumnStatistics) constraint;
                 this.columnStatics.put(columnStatistics.getColumnId(), columnStatistics);
@@ -77,7 +77,7 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
 
     @Override
     protected void executeAppLogic() throws Exception {
-        final ConstraintCollection<? extends Constraint> uccCollection = this.metadataStore
+        final ConstraintCollection<?> uccCollection = this.metadataStore
                 .getConstraintCollection(this.parameters.uccCollectionId);
 
         // Group the UCCs by their table.

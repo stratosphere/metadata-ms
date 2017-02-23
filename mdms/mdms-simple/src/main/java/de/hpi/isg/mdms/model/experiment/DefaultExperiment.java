@@ -26,7 +26,7 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
 public class DefaultExperiment extends AbstractIdentifiable implements Experiment{
 	
 	private static final long serialVersionUID = 5894427384713010467L;
-		private final Set<ConstraintCollection<? extends Constraint>> constraintsCollections;
+		private final Set<ConstraintCollection<?>> constraintsCollections;
 	    private final Algorithm algorithm;
 	    private final Map<String, String> parameters;
 		private final Set<Annotation> annotations;
@@ -39,7 +39,7 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	    private final DefaultMetadataStore metadataStore;
 
 	    
-	public DefaultExperiment(DefaultMetadataStore metadataStore, int id, Algorithm algorithm, Set<ConstraintCollection<? extends Constraint>> constraintCollections,
+	public DefaultExperiment(DefaultMetadataStore metadataStore, int id, Algorithm algorithm, Set<ConstraintCollection<?>> constraintCollections,
 			Map<String, String> parameters, Set<Annotation> annotation) {
 		super(id);
 		this.metadataStore = metadataStore;
@@ -77,12 +77,12 @@ public class DefaultExperiment extends AbstractIdentifiable implements Experimen
 	}
 
 	@Override
-	public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
+	public Collection<ConstraintCollection<?>> getConstraintCollections() {
 		return Collections.unmodifiableCollection(this.constraintsCollections);
 	}
 
 	@Override
-	public void add(ConstraintCollection<? extends Constraint> constraintCollection) {
+	public void add(ConstraintCollection<?> constraintCollection) {
 		this.constraintsCollections.add(constraintCollection);		
 	}
 

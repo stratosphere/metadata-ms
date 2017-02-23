@@ -413,7 +413,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection<? extends Constraint>> result;
+            Collection<ConstraintCollection<?>> result;
 
             // S1 in S2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -470,7 +470,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection<? extends Constraint>> result;
+            Collection<ConstraintCollection<?>> result;
 
             // S1 in T2?
             result = store1.getConstraintCollectionByTarget(dummySchema);
@@ -521,7 +521,7 @@ public class DefaultMetadataStoreTest {
             Table dummyTable2 = dummySchema2.addTable(store1, "table2", null, mock(Location.class));
             Column dummyCol2 = dummyTable2.addColumn(store1, "col2", null, 1);
 
-            Collection<ConstraintCollection<? extends Constraint>> result;
+            Collection<ConstraintCollection<?>> result;
 
             // S1 in C2?
             result = store1.getConstraintCollectionByTarget(dummySchema);

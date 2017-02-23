@@ -7,6 +7,7 @@ import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
 import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.targets.Target;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -17,7 +18,7 @@ import java.util.Set;
  * @author fabian
  */
 
-public class DefaultConstraintCollection<T extends Constraint> extends AbstractIdentifiable implements ConstraintCollection<T> {
+public class DefaultConstraintCollection<T extends Serializable> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -6633086023388829925L;
     private final Set<T> constraints;
@@ -71,9 +72,11 @@ public class DefaultConstraintCollection<T extends Constraint> extends AbstractI
 
     @Override
     public void add(T constraint) {
-        for (int id : constraint.getAllTargetIds()) {
-            if (!this.metadataStore.hasTargetWithId(id)) {
-                throw new NotAllTargetsInStoreException(id);
+        if (constraint instanceof Constraint) {
+            for (int id : ((Constraint) constraint).getAllTargetIds()) {
+                if (!this.metadataStore.hasTargetWithId(id)) {
+                    throw new NotAllTargetsInStoreException(id);
+                }
             }
         }
 

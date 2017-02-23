@@ -8,6 +8,7 @@ import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.flink.readwrite.FlinkMetdataStoreAdapter;
 import de.hpi.isg.mdms.flink.serializer.*;
 import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.targets.Column;
@@ -119,7 +120,7 @@ public class FlinkWriteConstraintTest {
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollection(dummyConstraintCollection.getId()).getConstraints().size() == dvos.size());
-        assertTrue(IntArrayList.wrap(store.getConstraintCollections().iterator().next().getConstraints().iterator().next().getAllTargetIds()).contains(dvos.get(0).f0));
+        assertTrue(IntArrayList.wrap(((Constraint) store.getConstraintCollections().iterator().next().getConstraints().iterator().next()).getAllTargetIds()).contains(dvos.get(0).f0));
     }
 
 
@@ -167,7 +168,7 @@ public class FlinkWriteConstraintTest {
 
         assertEquals(store.getConstraintCollection(dummyConstraintCollection.getId()), dummyConstraintCollection);
         assertTrue(store.getConstraintCollections().iterator().next().getConstraints().size() == uccs.size());
-        assertTrue(IntArrayList.wrap(store.getConstraintCollections().iterator().next().getConstraints().iterator().next()
+        assertTrue(IntArrayList.wrap(((Constraint) store.getConstraintCollections().iterator().next().getConstraints().iterator().next())
                 .getAllTargetIds()).contains(uccs.get(0).f0[0]));
 
     }

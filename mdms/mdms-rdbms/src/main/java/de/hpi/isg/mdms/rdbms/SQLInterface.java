@@ -8,7 +8,6 @@ import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -32,17 +31,16 @@ public interface SQLInterface {
 
     /**
      * Initializes an empty {@link de.hpi.isg.mdms.model.MetadataStore}. All Tables are dropped first if they exist. Creates all base tables
-     * of a {@link RDBMSMetadataStore} and all tables used by it's known {@link ConstraintSQLSerializer}s.
+     * of a {@link RDBMSMetadataStore}.
      */
     void initializeMetadataStore() throws SQLException;
 
     /**
-     * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table and uses the corresponding {@link ConstraintSQLSerializer} to
-     * serialize constraint specific information.
+     * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table.
      *
      * @param constraint should be written
      */
-    <T extends Constraint> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException;
+    <T> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException;
 
     /**
      * Writes the given schema into the database.
@@ -65,14 +63,14 @@ public interface SQLInterface {
      *
      * @return the constraint collections
      */
-    Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections() throws SQLException;
+    Collection<ConstraintCollection<?>> getAllConstraintCollections() throws SQLException;
 
     /**
      * Adds a {@link ConstraintCollection} to the database.
      *
      * @param constraintCollection is the collection to be added
      */
-    void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException;
+    void addConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException;
 
     /**
      * Loads all schemas from the database.
@@ -139,7 +137,7 @@ public interface SQLInterface {
      * @param rdbmsConstraintCollection is the collection whose content is requested
      * @return the constraints within the constraint collection
      */
-    <T extends Constraint> Collection<T> getAllConstraintsForConstraintCollection(
+    <T> Collection<T> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection<T> rdbmsConstraintCollection) throws Exception;
 
     /**
@@ -181,7 +179,7 @@ public interface SQLInterface {
      * @param id of the constraint collection
      * @return the constraint collection
      */
-    ConstraintCollection<? extends Constraint> getConstraintCollectionById(int id) throws SQLException;
+    ConstraintCollection<?> getConstraintCollectionById(int id) throws SQLException;
 
     /**
      * Saves the configuration of a {@link de.hpi.isg.mdms.model.MetadataStore}.
@@ -211,8 +209,7 @@ public interface SQLInterface {
     void addCode(int code, String value);
 
     /**
-     * This function drops all base tables of the {@link de.hpi.isg.mdms.model.MetadataStore}. Also all {@link ConstraintSQLSerializer} are
-     * called to remove their tables.
+     * This function drops all base tables of the {@link de.hpi.isg.mdms.model.MetadataStore}.
      */
     void dropTablesIfExist() throws SQLException;
 
@@ -275,7 +272,7 @@ public interface SQLInterface {
     /**
      * Removes a {@link ConstraintCollection} and all included {@link Constraint}s.
      */
-    void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException;
+    void removeConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException;
 
     /**
      * Set whether the underlying DB should use journaling. Note that this experimental feature should not affect
@@ -346,7 +343,7 @@ public interface SQLInterface {
      * @param experiment the experiment whose constraint collections shall be loaded
      * @return a collection of constraint collections
      */
-    Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment) throws SQLException;
+    Set<ConstraintCollection<?>> getAllConstraintCollectionsForExperiment(RDBMSExperiment experiment) throws SQLException;
 
     /**
      * Return an algorithm by its id

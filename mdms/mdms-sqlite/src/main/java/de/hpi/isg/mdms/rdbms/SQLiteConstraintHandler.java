@@ -9,14 +9,11 @@ import de.hpi.isg.mdms.db.write.DatabaseWriter;
 import de.hpi.isg.mdms.db.write.PreparedStatementBatchWriter;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.RDBMSConstraintCollection;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.util.LRUCache;
 import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.sql.ResultSet;
@@ -51,14 +48,14 @@ public class SQLiteConstraintHandler {
 
     private int currentConstraintIdMax = -1;
 
-    private final DatabaseWriter<ConstraintCollection<? extends Constraint>> addConstraintCollectionWriter;
+    private final DatabaseWriter<ConstraintCollection<?>> addConstraintCollectionWriter;
     private final DatabaseWriter<ConstraintCollection<?>> deleteConstraintCollectionWriter;
     private final DatabaseQuery<Integer> constraintCollectionByIdQuery;
     private final DatabaseQuery<Void> allConstraintCollectionsQuery;
-    private final LRUCache<Integer, RDBMSConstraintCollection<? extends Constraint>> constraintCollectionCache = new LRUCache<>(100);
+    private final LRUCache<Integer, RDBMSConstraintCollection<?>> constraintCollectionCache = new LRUCache<>(100);
     private boolean isConstraintCollectionCacheComplete = false;
 
-    private final DatabaseWriter<Tuple2<ConstraintCollection<?>, Constraint>> addConstraintWriter;
+    private final DatabaseWriter<Tuple2<ConstraintCollection<?>, Object>> addConstraintWriter;
     private final DatabaseWriter<ConstraintCollection<?>> deleteConstraintsWriter;
     private final DatabaseQuery<Integer> constraintsByConstraintCollectionIdQuery;
 
@@ -74,7 +71,7 @@ public class SQLiteConstraintHandler {
         this.kryoPool = kryoPool;
 
         this.addConstraintCollectionWriter = this.databaseAccess.createBatchWriter(
-                new PreparedStatementBatchWriter.Factory<ConstraintCollection<? extends Constraint>>(
+                new PreparedStatementBatchWriter.Factory<ConstraintCollection<?>>(
                         "insert into [ConstraintCollection] ([id], [experimentId], [description], [data]) values (?, ?, ?, ?)",
                         (cc, preparedStatement) -> {
                             preparedStatement.setInt(1, cc.getId());
@@ -110,7 +107,7 @@ public class SQLiteConstraintHandler {
         ));
 
         this.addConstraintWriter = this.databaseAccess.createBatchWriter(
-                new PreparedStatementBatchWriter.Factory<Tuple2<ConstraintCollection<?>, Constraint>>(
+                new PreparedStatementBatchWriter.Factory<Tuple2<ConstraintCollection<?>, Object>>(
                         "insert into [Constraint] ([constraintCollection], [data]) values (?, ?)",
                         (params, preparedStatement) -> {
                             preparedStatement.setInt(1, params._1().getId());
@@ -140,7 +137,7 @@ public class SQLiteConstraintHandler {
      * @param constraint           is a constraint that shall be written
      * @param constraintCollection to which the {@code constraint} should belong
      */
-    public void writeConstraint(Constraint constraint, RDBMSConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
+    public void writeConstraint(Object constraint, RDBMSConstraintCollection<?> constraintCollection) throws SQLException {
         Validate.isAssignableFrom(constraintCollection.getConstraintClass(), constraint.getClass());
         this.addConstraintWriter.write(new Tuple2<>(constraintCollection, constraint));
     }
@@ -174,7 +171,7 @@ public class SQLiteConstraintHandler {
                 }
 
                 cc = new RDBMSConstraintCollection<>(
-                        id, description, experiment, scope, this.sqliteInterface, (Class<Constraint>) data.constraintClass
+                        id, description, experiment, scope, this.sqliteInterface, data.constraintClass
                 );
                 return cc;
             }
@@ -188,7 +185,7 @@ public class SQLiteConstraintHandler {
      *
      * @return the loaded collections
      */
-    public Collection<ConstraintCollection<? extends Constraint>> getAllConstraintCollections() throws SQLException {
+    public Collection<ConstraintCollection<?>> getAllConstraintCollections() throws SQLException {
         if (this.isConstraintCollectionCacheComplete) {
             return new ArrayList<>(this.constraintCollectionCache.values());
         }
@@ -213,7 +210,7 @@ public class SQLiteConstraintHandler {
                 }
 
                 RDBMSConstraintCollection<?> cc = new RDBMSConstraintCollection<>(
-                        id, description, experiment, scope, this.sqliteInterface, (Class<Constraint>) data.constraintClass
+                        id, description, experiment, scope, this.sqliteInterface, data.constraintClass
                 );
                 this.constraintCollectionCache.put(id, cc);
             }
@@ -224,12 +221,12 @@ public class SQLiteConstraintHandler {
     }
 
 
-    public void addConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
+    public void addConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
         this.addConstraintCollectionWriter.write(constraintCollection);
     }
 
     @SuppressWarnings("unchecked") // We check by hand.
-    public <T extends Constraint> Collection<T> getAllConstraintsForConstraintCollection(
+    public <T> Collection<T> getAllConstraintsForConstraintCollection(
             ConstraintCollection<?> constraintCollection) throws Exception {
         Collection<T> constraints = new HashSet<>();
         try {
@@ -240,7 +237,7 @@ public class SQLiteConstraintHandler {
 
         try (ResultSet rs = this.constraintsByConstraintCollectionIdQuery.execute(constraintCollection.getId())) {
             while (rs.next()) {
-                Constraint constraint = this.kryoPool.fromBytes(
+                Object constraint = this.kryoPool.fromBytes(
                         rs.getBytes(1),
                         constraintCollection.getConstraintClass()
                 );
@@ -251,7 +248,7 @@ public class SQLiteConstraintHandler {
         return constraints;
     }
 
-    public void removeConstraintCollection(ConstraintCollection<? extends Constraint> constraintCollection) throws SQLException {
+    public void removeConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
         // We need to avoid to batch inserts and deletes together.
         this.databaseAccess.flush(Arrays.asList("Constraint", "ConstraintCollection"));
 
@@ -265,9 +262,9 @@ public class SQLiteConstraintHandler {
         this.databaseAccess.flush(Arrays.asList("Constraint", "ConstraintCollection"));
     }
 
-    public Set<ConstraintCollection<? extends Constraint>> getAllConstraintCollectionsForExperiment(Experiment experiment) {
+    public Set<ConstraintCollection<?>> getAllConstraintCollectionsForExperiment(Experiment experiment) {
 //        try {
-//            Set<ConstraintCollection<? extends Constraint>> constraintCollections = new HashSet<>();
+//            Set<ConstraintCollection<?>> constraintCollections = new HashSet<>();
 //
 //            String sqlconstraintCollectionsForExperiment = String
 //                    .format("SELECT constraintCollection.id as id from constraintCollection where constraintCollection.experimentId = %d;",

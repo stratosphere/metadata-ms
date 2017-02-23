@@ -42,7 +42,7 @@ public class DVOFlinkSerializer implements AbstractFlinkSerializer<DistinctValue
 	public DataSet<Tuple3<Integer, Integer, Integer>> getConstraintsFromCollection(
 			ExecutionEnvironment executionEnvironment,
 			MetadataStore metadataStore,
-			ConstraintCollection<? extends Constraint> datasourceCollection) {
+			ConstraintCollection<?> datasourceCollection) {
 		
 		// Read data from a relational database using the JDBC input format
 		RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;

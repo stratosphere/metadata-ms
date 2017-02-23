@@ -26,7 +26,7 @@ import java.util.Collection;
  * @author Susanne Buelow
  * @author Sebastian Kruse
  */
-public class DependencyResultReceiver<T extends Constraint> implements AutoCloseable,
+public class DependencyResultReceiver<T> implements AutoCloseable,
         UniqueColumnCombinationResultReceiver, FunctionalDependencyResultReceiver, InclusionDependencyResultReceiver {
 
     private final ConstraintCollection<T> constraintCollection;
@@ -45,7 +45,7 @@ public class DependencyResultReceiver<T extends Constraint> implements AutoClose
     }
 
     @SuppressWarnings("unchecked") // We check type safety by hand.
-    private <S extends Constraint> ConstraintCollection<S> testAndCastConstraintCollection(Class<S> type) {
+    private <S> ConstraintCollection<S> testAndCastConstraintCollection(Class<S> type) {
         if (this.constraintCollection.getConstraintClass() != type) {
             throw new IllegalArgumentException(String.format("Conflicting constraint types: %s and %s",
                     this.constraintCollection.getConstraintClass(), type

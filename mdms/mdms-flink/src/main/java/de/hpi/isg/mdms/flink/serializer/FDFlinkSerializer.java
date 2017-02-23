@@ -48,7 +48,7 @@ public class FDFlinkSerializer implements AbstractFlinkSerializer<FunctionalDepe
     public DataSet<Tuple2<int[], Integer>> getConstraintsFromCollection(
             ExecutionEnvironment executionEnvironment,
             MetadataStore metadataStore,
-            ConstraintCollection<? extends Constraint> datasourceCollection) {
+            ConstraintCollection<?> datasourceCollection) {
 
         // Read data from a relational database using the JDBC input format
         RDBMSMetadataStore rdbms = (RDBMSMetadataStore) metadataStore;

@@ -16,7 +16,7 @@ import de.hpi.isg.mdms.model.targets.Target;
  *
  */
 
-public interface ConstraintCollection<T extends  Constraint> extends Identifiable, Described {
+public interface ConstraintCollection<T> extends Identifiable, Described {
     /**
      * This functions returns the corresponding {@link de.hpi.isg.mdms.model.experiment.Experiment}.
      * 

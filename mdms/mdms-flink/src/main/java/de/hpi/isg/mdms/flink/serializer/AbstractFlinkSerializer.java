@@ -8,12 +8,12 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple;
 
 
-public interface AbstractFlinkSerializer<T extends Constraint, F extends Tuple> {
+public interface AbstractFlinkSerializer<T, F extends Tuple> {
 
     DataSet<F> getConstraintsFromCollection(
             ExecutionEnvironment executionEnvironment,
             MetadataStore metadataStore,
-            ConstraintCollection<? extends Constraint> datasourceCollection);
+            ConstraintCollection<?> datasourceCollection);
 
     Runnable getAddRunnable(F tuple, ConstraintCollection<T> constraintCollection);
 }

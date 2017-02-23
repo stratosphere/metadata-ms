@@ -31,7 +31,7 @@ public class NoReferencingPKClassifier extends PartialForeignKeyClassifier {
      *
      * @param weight weight of the classifiers results
      */
-    public NoReferencingPKClassifier(double weight, ConstraintCollection<? extends Constraint> pkConstraintCollection) {
+    public NoReferencingPKClassifier(double weight, ConstraintCollection<?> pkConstraintCollection) {
         super(weight);
         this.pkColumnIds = new IntOpenHashSet();
         pkConstraintCollection.getConstraints().stream()

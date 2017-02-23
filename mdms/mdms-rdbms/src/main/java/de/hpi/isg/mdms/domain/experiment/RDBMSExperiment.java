@@ -29,7 +29,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSExperiment.class);
 
-	private  Set<ConstraintCollection<? extends Constraint>> constraintCollections = new HashSet<ConstraintCollection<? extends Constraint>>();
+	private  Set<ConstraintCollection<?>> constraintCollections = new HashSet<ConstraintCollection<?>>();
     private Algorithm algorithm;
     private Map<String, String> parameters = new HashMap<String, String>();
 	private Set<Annotation> annotations = new HashSet<Annotation>();
@@ -132,7 +132,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
 	}
 
 	@Override
-	public Collection<ConstraintCollection<? extends Constraint>> getConstraintCollections() {
+	public Collection<ConstraintCollection<?>> getConstraintCollections() {
 		ensureConstraintCollectionsLoaded();
 		return this.constraintCollections;
 	}
@@ -148,7 +148,7 @@ public class RDBMSExperiment extends AbstractIdentifiable implements Experiment{
     }
 
 	@Override
-	public void add(ConstraintCollection<? extends Constraint> constraintCollection) {
+	public void add(ConstraintCollection<?> constraintCollection) {
 		this.constraintCollections = null;
 		try {
 			this.sqlInterface.addConstraintCollection(constraintCollection);

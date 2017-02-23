@@ -16,7 +16,7 @@ import java.util.LinkedList;
  * @author sebastian.kruse
  * @since 20.02.2015
  */
-public class InMemoryConstraintCollection<T extends Constraint> implements ConstraintCollection<T> {
+public class InMemoryConstraintCollection<T> implements ConstraintCollection<T> {
 
     private final Collection<Target> scope;
     
@@ -45,11 +45,11 @@ public class InMemoryConstraintCollection<T extends Constraint> implements Const
         this.constrainttype = constrainttype;
     }
     
-    private final Collection<Constraint> constraints = new LinkedList<>();
+    private final Collection<T> constraints = new LinkedList<>();
     private String description = "in-memory metadata store";
 
     @Override
-    public Collection<T> getConstraints() {return (Collection<T>) this.constraints;
+    public Collection<T> getConstraints() {return this.constraints;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class InMemoryConstraintCollection<T extends Constraint> implements Const
     }
 
     @Override
-    public void add(Constraint constraint) {
+    public void add(T constraint) {
         this.constraints.add(constraint);
     }
 
