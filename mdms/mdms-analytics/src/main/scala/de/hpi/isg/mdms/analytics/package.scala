@@ -3,6 +3,7 @@ package de.hpi.isg.mdms
 import de.hpi.isg.mdms.analytics.rheem.MetadataStoreRheemWrapper
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
+import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
 
 import scala.language.implicitConversions
 
@@ -56,6 +57,48 @@ package object analytics {
   object TakeAllStrategy extends ConstraintCollectionConflictResolutionStrategy {
     override def resolve[T <: Constraint](conflictDomain: Seq[ConstraintCollection[T]]): Seq[ConstraintCollection[T]] =
       conflictDomain
+  }
+
+  /**
+    * Light-weight representation for a [[Target]].
+    *
+    * @param id   the [[Target]] ID
+    * @param name the [[Target]] name
+    */
+
+  case class TargetMock(id: Int, name: Int)
+
+  /**
+    * Light-weight representation for a [[Schema]].
+    *
+    * @param id     the [[Schema]] ID
+    * @param name   the [[Schema]] name
+    */
+  case class SchemaMock(id: Int, name: String) {
+    def this(schema: Schema) = this(schema.getId, schema.getName)
+  }
+
+  /**
+    * Light-weight representation for a [[Table]].
+    *
+    * @param id     the [[Table]] ID
+    * @param name   the [[Table]] name
+    * @param schema the name of the parent [[Schema]]
+    */
+  case class TableMock(id: Int, name: String, schema: String) {
+    def this(table: Table) = this(table.getId, table.getName, table.getSchema.getName)
+  }
+
+  /**
+    * Light-weight representation for a [[Column]].
+    *
+    * @param id     the [[Column]] ID
+    * @param name   the [[Column]] name
+    * @param schema the name of the parent [[Schema]]
+    * @param table the name of the parent [[Table]]
+    */
+  case class ColumnMock(id: Int, name: String, schema: String, table: String) {
+    def this(column: Column) = this(column.getId, column.getName, column.getTable.getSchema.getName, column.getTable.getName)
   }
 
 }

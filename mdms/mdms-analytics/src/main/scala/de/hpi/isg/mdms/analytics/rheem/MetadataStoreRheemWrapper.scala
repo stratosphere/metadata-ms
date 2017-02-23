@@ -23,7 +23,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type the type of the [[Constraint]]s in the [[ConstraintCollection]]s to match
     * @return [[DataQuanta]] of the [[Constraint]]s in the matching, resolved [[ConstraintCollection]]s
     */
-  def loadConstraints[Type <: Constraint : ClassTag]
+  def loadConstraints[Type : ClassTag]
   (scope: Target,
    conflictResolutionStrategy: ConstraintCollectionConflictResolutionStrategy = FailOnConflictStrategy)
   (implicit planBuilder: PlanBuilder):
@@ -43,7 +43,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type the type of the [[Constraint]]s in the [[ConstraintCollection]]s to match
     * @return the matching, resolved [[ConstraintCollection]]s
     */
-  def findConstraintCollections[Type <: Constraint : ClassTag]
+  def findConstraintCollections[Type : ClassTag]
   (scope: Target, conflictResolutionStrategy: ConstraintCollectionConflictResolutionStrategy = FailOnConflictStrategy):
   Seq[ConstraintCollection[Type]] = {
     val typeClass = classTag[Type].runtimeClass.asInstanceOf[java.lang.Class[Type]]
@@ -74,7 +74,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type [[Constraint]] type
     * @return the [[Constraint]]s of the [[ConstraintCollection]] as [[DataQuanta]]
     */
-  def loadConstraints[Type <: Constraint : ClassTag](constraintCollectionId: Int)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
+  def loadConstraints[Type : ClassTag](constraintCollectionId: Int)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
     val constraintCollection = metadataStore.getConstraintCollection(constraintCollectionId).asInstanceOf[ConstraintCollection[Type]]
     require(
       constraintCollection != null,
@@ -98,7 +98,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type of the [[Constraint]]s in the [[ConstraintCollection]]s
     * @return the [[DataQuanta]]
     */
-  def loadConstraints[Type <: Constraint : ClassTag](constraintCollections: ConstraintCollection[Type]*)(implicit planBuilder: PlanBuilder):
+  def loadConstraints[Type : ClassTag](constraintCollections: ConstraintCollection[Type]*)(implicit planBuilder: PlanBuilder):
   DataQuanta[Type] =
     constraintCollections.size match {
       case 0 => throw new NoConstraintCollectionException("No constraints given.")
@@ -122,14 +122,14 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @param target the [[Target]] or `null` if all [[Column]]s should be loaded
     * @return [[DataQuanta]] of column IDs and names
     */
-  def loadColumns(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
+  def loadColumns(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[ColumnMock] = {
     var columns: Iterable[Column] = target match {
       case null => metadataStore.getSchemas.flatMap(_.getTables).flatMap(_.getColumns)
       case column: Column => Seq(column)
       case table: Table => table.getColumns
       case schema: Schema => schema.getTables.flatMap(_.getColumns)
     }
-    val idsWithNames = columns.map(c => c.getId -> c.getNameWithTableName)
+    val idsWithNames = columns.map(c => new ColumnMock(c))
     planBuilder.loadCollection(idsWithNames)
   }
 
@@ -139,14 +139,14 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @param target the [[Target]] or `null` if all [[Table]]s should be loaded
     * @return [[DataQuanta]] of table IDs and names
     */
-  def loadTables(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
+  def loadTables(target: Target = null)(implicit planBuilder: PlanBuilder): DataQuanta[TableMock] = {
     var tables: Iterable[Table] = target match {
       case null => metadataStore.getSchemas.flatMap(_.getTables)
       case table: Table => Seq(table)
       case schema: Schema => schema.getTables
       case _ => throw new IllegalArgumentException("Could not identify tables.")
     }
-    val idsWithNames = tables.map(t => t.getId -> t.getName)
+    val idsWithNames = tables.map(t => new TableMock(t))
     planBuilder.loadCollection(idsWithNames)
   }
 
@@ -155,8 +155,8 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     *
     * @return [[DataQuanta]] of schema IDs and names
     */
-  def loadSchemata()(implicit planBuilder: PlanBuilder): DataQuanta[(Int, String)] = {
-    val idsWithNames = metadataStore.getSchemas.map(s => s.getId -> s.getName)
+  def loadSchemata()(implicit planBuilder: PlanBuilder): DataQuanta[SchemaMock] = {
+    val idsWithNames = metadataStore.getSchemas.map(s => new SchemaMock(s))
     planBuilder.loadCollection(idsWithNames)
   }
 
