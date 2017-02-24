@@ -1,6 +1,6 @@
 package de.hpi.isg.mdms
 
-import de.hpi.isg.mdms.analytics.rheem.{MetadataQuanta, MetadataStoreRheemWrapper}
+import de.hpi.isg.mdms.analytics.rheem.{JoinedDataQuanta, MetadataQuanta, MetadataStoreRheemWrapper}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
@@ -20,11 +20,15 @@ package object analytics {
     * @param metadataStore the [[MetadataStore]]
     * @return a [[MetadataStoreRheemWrapper]] exposing Rheem capabilities
     */
-  implicit def wrapForRheem(metadataStore: MetadataStore): MetadataStoreRheemWrapper =
+  implicit def pimpMetadataStore(metadataStore: MetadataStore): MetadataStoreRheemWrapper =
     new MetadataStoreRheemWrapper(metadataStore)
 
   implicit def pimpDataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]): MetadataQuanta[Out] =
     new MetadataQuanta(dataQuanta)
+
+  implicit def pimpJoinedDataQuanta[Out0: ClassTag, Out1: ClassTag]
+  (dataQuanta: DataQuanta[org.qcri.rheem.basic.data.Tuple2[Out0, Out1]]): JoinedDataQuanta[Out0, Out1] =
+    new JoinedDataQuanta(dataQuanta)
 
   /**
     * [[ConstraintCollectionConflictResolutionStrategy]] that always fails on conflicts.
