@@ -12,8 +12,8 @@ import de.hpi.isg.mdms.model.targets.Table;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Test suite for the {@link SimpleForeignKeyDetector} class.
@@ -94,7 +94,12 @@ public class SimpleForeignKeyDetectorTest {
         }
 
         List<SimpleForeignKeyDetector.ForeignKeyCandidate> fkCandidates = SimpleForeignKeyDetector.detect(
-                indCC, uniqueCC, tupleCountCC, statsCC, textStatsCC, false
+                indCC,
+                Collections.singleton(uniqueCC),
+                Collections.singleton(tupleCountCC),
+                Collections.singleton(statsCC),
+                Collections.singleton(textStatsCC),
+                false
         );
         DependencyPrettyPrinter prettyPrinter = new DependencyPrettyPrinter(metadataStore);
         for (SimpleForeignKeyDetector.ForeignKeyCandidate fkCandidate : fkCandidates) {

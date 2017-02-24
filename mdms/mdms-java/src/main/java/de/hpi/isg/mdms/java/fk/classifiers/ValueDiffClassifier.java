@@ -4,13 +4,13 @@ import de.hpi.isg.mdms.domain.constraints.NumberColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.TextColumnStatistics;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * This classifier assumes that the foreign key column and the referenced primary key column should have a similar
@@ -46,10 +46,11 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
     /**
      * Creates a new instance.
      *
-     * @param weight weight of the classifiers results
+     * @param weight               weight of the classifiers results
+     * @param textColumnStatistics the {@link TextColumnStatistics}
      */
     public ValueDiffClassifier(double weight,
-                               ConstraintCollection<TextColumnStatistics> textColumnStatisticsCollection,
+                               List<TextColumnStatistics> textColumnStatistics,
                                double minOverlapRatio,
                                double disqualifyingOverlapRatio) {
         super(weight);
@@ -61,7 +62,7 @@ public class ValueDiffClassifier extends PartialForeignKeyClassifier {
         this.columnAvgValue.defaultReturnValue(Double.NaN);
         this.columnValueStdDevs = new Int2DoubleOpenHashMap();
         this.columnValueStdDevs.defaultReturnValue(Double.NaN);
-        for (Object constraint : textColumnStatisticsCollection.getConstraints()) {
+        for (Object constraint : textColumnStatistics) {
             if (!(constraint instanceof NumberColumnStatistics)) continue;
             NumberColumnStatistics numberColumnStatistics = (NumberColumnStatistics) constraint;
             final int columnId = numberColumnStatistics.getColumnId();

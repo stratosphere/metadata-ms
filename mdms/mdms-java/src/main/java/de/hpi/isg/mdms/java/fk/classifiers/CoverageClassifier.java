@@ -1,19 +1,15 @@
 package de.hpi.isg.mdms.java.fk.classifiers;
 
 import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
-import de.hpi.isg.mdms.domain.constraints.DistinctValueCount;
 import de.hpi.isg.mdms.java.fk.ClassificationSet;
 import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
-import de.hpi.isg.mdms.model.constraints.Constraint;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.targets.Column;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.stream.Stream;
+import java.util.List;
 
 /**
  * This classifier distinguishes foreign key constraints by the fact that the foreign key should have a similar
@@ -40,11 +36,11 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
     private final double nonFkRatio;
 
     /**
-     *@author Lan Jiang
+     * @author Lan Jiang
      */
     public CoverageClassifier(double weight,
                               double fkRatio, double nonFkRatio,
-                              ConstraintCollection<ColumnStatistics> columnStatsConstraintCollection) {
+                              List<ColumnStatistics> columnStatistics) {
         super(weight);
 
         this.fkRatio = fkRatio;
@@ -58,8 +54,8 @@ public class CoverageClassifier extends PartialForeignKeyClassifier {
 //                        distinctValueCount.getTargetReference().getTargetId(),
 //                        distinctValueCount.getNumDistinctValues()));
 
-        this.distinctValues = new Int2LongOpenHashMap(columnStatsConstraintCollection.getConstraints().size());
-        columnStatsConstraintCollection.getConstraints()
+        this.distinctValues = new Int2LongOpenHashMap(columnStatistics.size());
+        columnStatistics
                 .forEach(distinctValueCount -> distinctValues.put(
                         distinctValueCount.getColumnId(),
                         distinctValueCount.getNumDistinctValues()

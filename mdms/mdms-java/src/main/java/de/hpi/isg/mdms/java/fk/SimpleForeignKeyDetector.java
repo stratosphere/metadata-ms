@@ -31,44 +31,67 @@ public class SimpleForeignKeyDetector {
     /**
      * Propose and score {@link SimpleForeignKeyDetector.ForeignKeyCandidate}s among the {@link InclusionDependency}s from the {@code indCC}.
      *
-     * @param indCC                a {@link ConstraintCollection} of {@link InclusionDependency}s
-     * @param uniqueCC             a {@link ConstraintCollection} of {@link UniqueColumnCombination}s
-     * @param tupleCountCC         a {@link ConstraintCollection} of {@link TupleCount}s
-     * @param statsCC              a {@link ConstraintCollection} of {@link ColumnStatistics}
-     * @param textStatsCC          a {@link ConstraintCollection} of {@link TextColumnStatistics}
+     * @param indCC                a{@link ConstraintCollection} of {@link InclusionDependency}s
+     * @param uniqueCCs            {@link ConstraintCollection}s of {@link UniqueColumnCombination}s
+     * @param tupleCountCCs        {@link ConstraintCollection}s of {@link TupleCount}s
+     * @param statsCCs             {@link ConstraintCollection}s of {@link ColumnStatistics}
+     * @param textStatsCCs         {@link ConstraintCollection}s of {@link TextColumnStatistics}
      * @param isNeglectEmptyTables whether empty {@link Table}s should not be considered
      * @return the {@link SimpleForeignKeyDetector.ForeignKeyCandidate}s
      */
     public static List<SimpleForeignKeyDetector.ForeignKeyCandidate> detect(
             ConstraintCollection<InclusionDependency> indCC,
-            ConstraintCollection<UniqueColumnCombination> uniqueCC,
-            ConstraintCollection<TupleCount> tupleCountCC,
-            ConstraintCollection<ColumnStatistics> statsCC,
-            ConstraintCollection<TextColumnStatistics> textStatsCC,
+            Collection<ConstraintCollection<UniqueColumnCombination>> uniqueCCs,
+            Collection<ConstraintCollection<TupleCount>> tupleCountCCs,
+            Collection<ConstraintCollection<ColumnStatistics>> statsCCs,
+            Collection<ConstraintCollection<TextColumnStatistics>> textStatsCCs,
             boolean isNeglectEmptyTables) {
 
         final MetadataStore metadataStore = indCC.getMetadataStore();
         final IdUtils idUtils = metadataStore.getIdUtils();
 
+        List<UniqueColumnCombination> uccs = (uniqueCCs == null || uniqueCCs.isEmpty()) ?
+                null :
+                uniqueCCs.stream()
+                        .flatMap(c -> c.getConstraints().stream())
+                        .collect(Collectors.toList());
+        List<TupleCount> tupleCounts = (tupleCountCCs == null || tupleCountCCs.isEmpty()) ?
+                null :
+                tupleCountCCs.stream()
+                        .flatMap(c -> c.getConstraints().stream())
+                        .collect(Collectors.toList());
+        List<ColumnStatistics> stats = (statsCCs == null || statsCCs.isEmpty()) ?
+                null :
+                statsCCs.stream()
+                        .flatMap(c -> c.getConstraints().stream())
+                        .collect(Collectors.toList());
+        List<TextColumnStatistics> textStats = (textStatsCCs == null || textStatsCCs.isEmpty()) ?
+                null :
+                textStatsCCs.stream()
+                        .flatMap(c -> c.getConstraints().stream())
+                        .collect(Collectors.toList());
+
         // Collect all not-null columns.
         logger.info("Detecting not-null columns...");
         IntSet nullableColumns = new IntOpenHashSet();
-        statsCC.getConstraints().stream()
+        if (stats != null) stats.stream()
                 .filter(columnStatistics -> columnStatistics.getNumNulls() > 0)
                 .forEach(columnStatistics -> nullableColumns.add(columnStatistics.getColumnId()));
 
         // Find PK candidates (by removing UCCs with nullable columns) and index them by their table.
         logger.info("Identifying PK candidates...");
-        final Map<Integer, List<UniqueColumnCombination>> tableUccs = uniqueCC.getConstraints().stream()
-                .filter(ucc -> Arrays.stream(ucc.getColumnIds()).noneMatch(nullableColumns::contains))
-                .collect(Collectors.groupingBy(
-                        ucc -> idUtils.getTableId(ucc.getAllTargetIds()[0]),
-                        Collectors.toList()));
+        final Map<Integer, List<UniqueColumnCombination>> tableUccs = (uccs == null || uccs.isEmpty()) ?
+                null :
+                uccs.stream()
+                        .filter(ucc -> Arrays.stream(ucc.getColumnIds()).noneMatch(nullableColumns::contains))
+                        .collect(Collectors.groupingBy(
+                                ucc -> idUtils.getTableId(ucc.getAllTargetIds()[0]),
+                                Collectors.toList()));
 
         final IntSet nonEmptyTableIds = new IntOpenHashSet();
-        if (isNeglectEmptyTables) {
+        if (isNeglectEmptyTables && tupleCounts != null) {
             logger.info("Loading tuple counts...");
-            tupleCountCC.getConstraints().stream()
+            tupleCounts.stream()
                     .filter(tupleCount -> tupleCount.getNumTuples() > 0)
                     .forEach(tupleCount -> nonEmptyTableIds.add(tupleCount.getTableId()));
             logger.info("Found {} non-empty tables.", nonEmptyTableIds.size());
@@ -84,10 +107,11 @@ public class SimpleForeignKeyDetector {
                     return nonEmptyTableIds.contains(depTableId) && nonEmptyTableIds.contains(refTableId);
                 })
                 .filter(ind -> {
+                    if (tableUccs == null) return true;
                     final int[] refColumnIds = ind.getReferencedColumnIds();
                     final int tableId = idUtils.getTableId(refColumnIds[0]);
-                    final List<UniqueColumnCombination> uccs = tableUccs.get(tableId);
-                    return uccs != null && uccs.stream()
+                    final List<UniqueColumnCombination> tableUccList = tableUccs.get(tableId);
+                    return tableUccList != null && tableUccList.stream()
                             .anyMatch(ucc -> uccIsReferenced(ucc, ind, true));
                 })
                 .collect(Collectors.toList());
@@ -106,14 +130,18 @@ public class SimpleForeignKeyDetector {
         // Set up the classifiers.
         final List<PartialForeignKeyClassifier> partialClassifiers = new LinkedList<>();
 //        this.partialClassifiers.add(new CoverageClassifier(1d, 0.99d, 0.99d, dvcCollection));
-        partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, statsCC));
+        if (stats != null) {
+            partialClassifiers.add(new CoverageClassifier(1d, 0.9d, 0.9d, stats));
+        }
 //        this.partialClassifiers.add(new CoverageClassifier(1d, 0.75d, 0.4d, dvcCollection));
 //        this.partialClassifiers.add(new DependentAndReferencedClassifier(1d, 2));
 //        this.partialClassifiers.add(new MultiDependentClassifier(1d, 2));
 //        this.partialClassifiers.add(new MultiReferencedClassifier(1d, 2));
 //        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.95, 0.5));
-        partialClassifiers.add(new ValueDiffClassifier(1d, textStatsCC, 0.9, 0.5));
-        partialClassifiers.add(new ValueDiffClassifier(Double.NaN, textStatsCC, 0.01, 0.3));
+        if (textStats != null) {
+            partialClassifiers.add(new ValueDiffClassifier(1d, textStats, 0.9, 0.5));
+            partialClassifiers.add(new ValueDiffClassifier(Double.NaN, textStats, 0.01, 0.3));
+        }
 //        this.partialClassifiers.add(new ValueDiffClassifier(1d, statsCollection, 0.75, 0.5));
         double tndWeight = 1.5d / 3;
         partialClassifiers.add(new TableNameDiffClassifier(tndWeight, 3, metadataStore));
@@ -153,7 +181,7 @@ public class SimpleForeignKeyDetector {
         Int2ObjectMap<IntSet> tablePrimaryKeys = new Int2ObjectOpenHashMap<>();
         IntSet usedDependentColumns = new IntOpenHashSet();
 
-        final List<SimpleForeignKeyDetector.ForeignKeyCandidate> foreignKeyRatings = indRatings.stream()
+        return indRatings.stream()
                 .filter(indRating -> {
                     // Check that none of the dependent attributes is part of an already picked IND.
                     if (Arrays.stream(indRating.ind.getDependentColumnIds())
@@ -180,8 +208,6 @@ public class SimpleForeignKeyDetector {
                     return true;
                 })
                 .collect(Collectors.toList());
-
-        return foreignKeyRatings;
     }
 
     /**
@@ -235,11 +261,11 @@ public class SimpleForeignKeyDetector {
      */
     public static class ForeignKeyCandidate {
 
-        private final InclusionDependency ind;
+        public final InclusionDependency ind;
 
-        private final double score;
+        public final double score;
 
-        private final Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning;
+        public final Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning;
 
         public ForeignKeyCandidate(InclusionDependency ind, double score,
                                    Map<UnaryForeignKeyCandidate, List<ClassificationSet>> reasoning) {
@@ -270,6 +296,11 @@ public class SimpleForeignKeyDetector {
             }
 
             return sb.toString();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("score(%s)=%,5f", this.ind, this.score);
         }
     }
 
