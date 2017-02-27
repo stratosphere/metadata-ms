@@ -45,11 +45,6 @@ public class IdentifierResolver {
     }
 
     private Column resolveColumn(Table table, String columnIdentifier) {
-        try {
-            return table.getColumnByName(columnIdentifier);
-        } catch (NoSuchElementException e) {
-                // Pass.
-        }
 
         // Detect Metanome's fallback column names.
         if (columnIdentifier.startsWith("column")) {
@@ -64,6 +59,11 @@ public class IdentifierResolver {
             } catch (NumberFormatException | NoSuchElementException e) {
                 // Pass.
             }
+        }
+        try {
+            return table.getColumnByName(columnIdentifier);
+        } catch (NoSuchElementException e) {
+                // Pass.
         }
 
         throw new IllegalArgumentException(String.format("Cannot find a column named \"%s\" in %s.", columnIdentifier, table));
