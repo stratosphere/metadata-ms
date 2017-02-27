@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Imports results in the user-readable Metanome format.
@@ -85,19 +87,30 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 constraintClass,
                 String.format("%s (%s)", this.parameters.getDescription(), new Date()))) {
 
-            this.parameters.resultFiles.stream()
-                    .map(File::new)
-                    .filter(file -> {
-                        this.getLogger().info("Loading {}.", file);
-                        return true;
-                    })
-                    .forEach(resultFile -> {
-                        try {
-                            resultReader.readAndLoad(resultFile, resultReceiver);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
+
+            for (String resultFile : this.parameters.resultFiles) {
+                Collection<File> fileCollection = discoverDependencyFiles(resultFile);
+                fileCollection.stream().forEach(file -> {
+                    try {
+                        resultReader.readAndLoad(file, resultReceiver);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            }
+//            this.parameters.resultFiles.stream()
+//                    .map(File::new)
+//                    .filter(file -> {
+//                        this.getLogger().info("Loading {}.", file);
+//                        return true;
+//                    })
+//                    .forEach(resultFile -> {
+//                        try {
+//                            resultReader.readAndLoad(resultFile, resultReceiver);
+//                        } catch (IOException e) {
+//                            throw new UncheckedIOException(e);
+//                        }
+//                    });
         }
 
         this.metadataStore.close();
@@ -142,10 +155,46 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }
-
-        } else {
+        } else if ("compact".equalsIgnoreCase(parameters.fileType)) {
+            switch (parameters.dependencyType) {
+                case "IND":
+                case "ind":
+                    return new de.hpi.isg.mdms.tools.metanome.compact.InclusionDependencyReader();
+                case "UCC":
+                case "ucc":
+                    return new de.hpi.isg.mdms.tools.metanome.compact.UniqueColumnCombinationReader();
+                case "FD":
+                case "fd":
+                    return new de.hpi.isg.mdms.tools.metanome.compact.FunctionalDependencyReader();
+                case "OD":
+                case "od":
+                    return new de.hpi.isg.mdms.tools.metanome.compact.OrderDependencyReader();
+                default:
+                    throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
+            }
+        }
+        else {
             throw new IllegalArgumentException(String.format("File type \"%s\" is currently not supported.", parameters.fileType));
         }
+    }
+
+    /**
+     * Discovers the dependency files in the given directory.
+     *
+     * @param inputDirectoryPath a directory with statistics files
+     * @return a mapping from statistics files to the names of the tables that they describe
+     */
+    private Collection<File> discoverDependencyFiles(String inputDirectoryPath) {
+        // Detect files to import.
+        File file = new File(inputDirectoryPath);
+        if (!file.isDirectory()) {
+            Collection<File> fileCollection = new ArrayList<>();
+            fileCollection.add(file);
+            return fileCollection;
+        }
+        File[] dependencyFiles = file.listFiles();
+        if (dependencyFiles == null) dependencyFiles = new File[0];
+        return Arrays.stream(dependencyFiles).collect(Collectors.toList());
     }
 
     @Override
