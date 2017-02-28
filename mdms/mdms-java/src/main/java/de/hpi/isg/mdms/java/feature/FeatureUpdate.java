@@ -1,11 +1,12 @@
-package de.hpi.isg.mdms.java.fk.feature;
+package de.hpi.isg.mdms.java.feature;
 
-import de.hpi.isg.mdms.java.fk.Instance;
+import de.hpi.isg.mdms.java.util.Dataset;
+import de.hpi.isg.mdms.java.util.Instance;
 
 import java.util.Collection;
 
 /**
- * This interface represents the value update of a feature for all the {@link Instance} in the {@link de.hpi.isg.mdms.java.fk.Dataset}.
+ * This interface represents the value update of a feature for all the {@link Instance} in the {@link Dataset}.
  * @author Lan Jiang
  */
 public interface FeatureUpdate {

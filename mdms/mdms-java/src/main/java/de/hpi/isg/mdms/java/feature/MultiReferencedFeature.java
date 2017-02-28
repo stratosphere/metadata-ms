@@ -1,7 +1,7 @@
-package de.hpi.isg.mdms.java.fk.feature;
+package de.hpi.isg.mdms.java.feature;
 
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
 import java.util.Collection;
@@ -11,11 +11,19 @@ import java.util.Collection;
  */
 public class MultiReferencedFeature extends Feature {
 
-    private final static String MULTI_REFERENCED_FEATURE_NAME = "MultiReferenced";
+    private final static String MULTI_REFERENCED_FEATURE_NAME = "multi_referenced";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = MULTI_REFERENCED_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
+
+        numINDs = instanceCollection.size();
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
@@ -30,7 +38,14 @@ public class MultiReferencedFeature extends Feature {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int refColumn = fkc.getReferencedColumnId();
             final int numReferences = columnNumReferences.get(refColumn);
-            instance.getFeatureVector().put(MULTI_REFERENCED_FEATURE_NAME, numReferences);
+//            double normalized = normalize(numReferences);
+            double normalized = numReferences;
+            instance.getFeatureVector().put(MULTI_REFERENCED_FEATURE_NAME, normalized);
         }
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }

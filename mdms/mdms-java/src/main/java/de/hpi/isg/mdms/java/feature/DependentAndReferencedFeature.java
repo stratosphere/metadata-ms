@@ -1,10 +1,8 @@
-package de.hpi.isg.mdms.java.fk.feature;
+package de.hpi.isg.mdms.java.feature;
 
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
@@ -13,11 +11,17 @@ import java.util.Collection;
  */
 public class DependentAndReferencedFeature extends Feature {
 
-    private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "DependentAndReferenced";
+    private final static String DEPENDENT_AND_REFERENCED_FEATURE_NAME = "dependent_and_referenced";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = DEPENDENT_AND_REFERENCED_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumReferences = new Int2IntOpenHashMap();
@@ -28,12 +32,17 @@ public class DependentAndReferencedFeature extends Feature {
             columnNumReferences.addTo(refColumn, 1);
         }
 
-        // Do the actual classification.
         for (Instance instance : instanceCollection) {
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();
             final int numReferences = columnNumReferences.get(depColumn);
-            instance.getFeatureVector().put(DEPENDENT_AND_REFERENCED_FEATURE_NAME, numReferences);
+            double normalized = numReferences;
+            instance.getFeatureVector().put(DEPENDENT_AND_REFERENCED_FEATURE_NAME, normalized);
         }
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }

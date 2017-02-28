@@ -1,25 +1,31 @@
-package de.hpi.isg.mdms.java.fk.feature;
+package de.hpi.isg.mdms.java.feature;
 
-import de.hpi.isg.mdms.java.fk.Instance;
-import de.hpi.isg.mdms.java.fk.UnaryForeignKeyCandidate;
+import de.hpi.isg.mdms.java.util.Instance;
+import de.hpi.isg.mdms.java.util.UnaryForeignKeyCandidate;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
 /**
  * Created by jianghm on 2016/10/18.
  */
-public class MultiDependentFeature extends Feature{
+public class MultiDependentFeature extends Feature {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+//    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final static String MULTI_DEPENDENT_FEATURE_NAME = "MultiDependent";
+    private final static String MULTI_DEPENDENT_FEATURE_NAME = "multi_dependent";
+
+    /**
+     * Stores the number of inds.
+     */
+    private int numINDs;
 
     @Override
     public void calcualteFeatureValue(Collection<Instance> instanceCollection) {
         featureName = MULTI_DEPENDENT_FEATURE_NAME;
+        featureType = FeatureType.Numeric;
+
+        numINDs = instanceCollection.size();
 
         // Count the number of references for the columns.
         Int2IntOpenHashMap columnNumDependentOccurrences = new Int2IntOpenHashMap();
@@ -34,8 +40,15 @@ public class MultiDependentFeature extends Feature{
             final UnaryForeignKeyCandidate fkc = instance.getForeignKeyCandidate();
             final int depColumn = fkc.getDependentColumnId();
             final int numDependentOccurrences = columnNumDependentOccurrences.get(depColumn);
-            instance.getFeatureVector().put(MULTI_DEPENDENT_FEATURE_NAME, numDependentOccurrences);
+            double normalized = normalize(numDependentOccurrences);
+//            double normalized = numDependentOccurrences;
+            instance.getFeatureVector().put(MULTI_DEPENDENT_FEATURE_NAME, normalized);
         }
 
+    }
+
+    @Override
+    public double normalize(double valueForNormalizing) {
+        return valueForNormalizing/(double)numINDs;
     }
 }
