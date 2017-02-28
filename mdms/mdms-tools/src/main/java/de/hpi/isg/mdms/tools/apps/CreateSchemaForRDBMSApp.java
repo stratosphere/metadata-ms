@@ -63,6 +63,7 @@ public class CreateSchemaForRDBMSApp extends MdmsAppTemplate<CreateSchemaForRDBM
         parameters.pgPassPath = pgpassPath;
         parameters.driverClassName = driverClassName;
         parameters.detection = detectionMethod;
+        parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         CreateSchemaForRDBMSApp app = new CreateSchemaForRDBMSApp(parameters);
         app.metadataStore = mds;

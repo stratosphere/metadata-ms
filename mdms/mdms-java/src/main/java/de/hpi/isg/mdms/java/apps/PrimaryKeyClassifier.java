@@ -105,7 +105,6 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
             getLogger().info("Added a constraint collection with the ID {}.", constraintCollection.getId());
             this.executionMetadata.addCustomData("constraintCollectionId", constraintCollection.getId());
         }
-        this.metadataStore.close();
     }
 
     @Override

@@ -114,7 +114,8 @@ public class MetadataStoreUtil {
             RDBMSMetadataStore metadataStore;
             try {
                 metadataStore = RDBMSMetadataStore.load(sqlInterface);
-            } catch (SQLException e) {
+                metadataStore.flush();
+            } catch (Exception e) {
                 throw new MetadataStoreException("Could not load the metadata store.", e);
             }
             metadataStore.setUseJournal(!metadataStoreParameters.isNotUseJournal);

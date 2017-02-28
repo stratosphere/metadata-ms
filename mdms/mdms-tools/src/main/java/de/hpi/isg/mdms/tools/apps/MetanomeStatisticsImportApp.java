@@ -5,28 +5,19 @@ import com.beust.jcommander.ParametersDelegate;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.targets.Table;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.StatisticsResultReceiver;
 import de.metanome.algorithm_integration.results.BasicStatistic;
 import de.metanome.algorithm_integration.results.JsonConverter;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * This class imports single column statistics from JSON files.
@@ -73,6 +64,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         parameters.inputDirectories = inputFiles;
         parameters.filePattern = filePattern;
         parameters.schemaName = schemaName;
+        parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         MetanomeStatisticsImportApp app = new MetanomeStatisticsImportApp(parameters);
         app.metadataStore = mds;
@@ -130,9 +122,6 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
             }
 
         }
-
-        // Finalize.
-        this.metadataStore.close();
     }
 
     /**
@@ -176,7 +165,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         public List<String> inputDirectories;
 
         @Parameter(names = "--file-pattern",
-        description = "matches statistics files in the input directory")
+                description = "matches statistics files in the input directory")
         public String filePattern = ".+";
 
         @Parameter(names = "--description",

@@ -67,6 +67,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         parameters.hasHeader = Boolean.toString(hasHeader);
         parameters.csvParameters.fieldSeparatorName = fieldSeparator;
         parameters.csvParameters.quoteCharName = quoteChar;
+        parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         CreateSchemaForCsvFilesApp app = new CreateSchemaForCsvFilesApp(parameters);
         app.metadataStore = mds;

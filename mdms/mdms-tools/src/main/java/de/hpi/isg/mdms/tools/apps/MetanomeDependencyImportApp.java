@@ -44,6 +44,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         parameters.fileType = fileType;
         parameters.dependencyType = type;
         parameters.scope = Collections.singletonList(schemaName);
+        parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         MetanomeDependencyImportApp app = new MetanomeDependencyImportApp(parameters);
         app.metadataStore = mds;
@@ -89,8 +90,8 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
 
             for (String resultFile : this.parameters.resultFiles) {
-                Collection<File> fileCollection = discoverDependencyFiles(resultFile);
-                fileCollection.stream().forEach(file -> {
+                Collection<File> fileCollection = this.discoverDependencyFiles(resultFile);
+                fileCollection.forEach(file -> {
                     try {
                         resultReader.readAndLoad(file, resultReceiver);
                     } catch (IOException e) {
@@ -113,7 +114,6 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 //                    });
         }
 
-        this.metadataStore.close();
     }
 
     /**
