@@ -30,7 +30,7 @@ public class DatabaseAccess implements AutoCloseable {
     /**
      * The connection to the database.
      */
-    private Connection connection;
+    private final Connection connection;
 
     /**
      * A set of writers that operate on specific tables, usually {@link BatchWriter}s.
@@ -94,7 +94,7 @@ public class DatabaseAccess implements AutoCloseable {
             return referencedTables;
         }
         try {
-            referencedTables = new HashSet<String>();
+            referencedTables = new HashSet<>();
             DatabaseMetaData metaData = this.connection.getMetaData();
             ResultSet resultSet = metaData.getImportedKeys(null, null, table);
             while (resultSet.next()) {

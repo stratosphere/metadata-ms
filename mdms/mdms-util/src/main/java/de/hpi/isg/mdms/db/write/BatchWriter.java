@@ -78,8 +78,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
     			    }
     			}
 		    } catch (SQLException e) {
-		        LOGGER.error("Exception in {}.", this);
-		        throw e;
+		        throw new SQLException(String.format("Could not flush %s.", this), e);
 		    }
 			long endTime = System.currentTimeMillis();
 			LOGGER.debug("Flushed {} statements from {} in {} ms ", batchSize, this, endTime - startTime);

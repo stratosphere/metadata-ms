@@ -28,23 +28,21 @@ import java.util.stream.Collectors;
  */
 public class RDBMSTable extends AbstractRDBMSTarget implements Table {
 
-    private static final long serialVersionUID = 8470123808962099640L;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSTable.class);
 
     private static final boolean USE_STICKY_CACHE = true;
 
     @ExcludeHashCodeEquals
-    private final Schema schema;
+    private final transient Schema schema;
 
     @ExcludeHashCodeEquals
-    private Reference<Collection<Column>> childColumnCache;
+    private transient Reference<Collection<Column>> childColumnCache;
 
     /**
      * Experimental: keep the garbage collector from deleting the child column cache by keeping a firm reference to it.
      */
     @ExcludeHashCodeEquals
-    private Collection<Column> stickyChildColumnCache;
+    private transient Collection<Column> stickyChildColumnCache;
 
     public static RDBMSTable buildAndRegisterAndAdd(final RDBMSMetadataStore observer, final Schema schema,
                                                     final int id,

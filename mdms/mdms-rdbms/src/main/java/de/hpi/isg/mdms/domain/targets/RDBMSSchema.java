@@ -21,21 +21,17 @@ import java.util.Collections;
 
 public class RDBMSSchema extends AbstractRDBMSTarget implements Schema {
 
-    private static final long serialVersionUID = -6940399614326634190L;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RDBMSSchema.class);
-
     /**
      * Stores the number of tables in this schema to quickly find free IDs for new tables.
      */
     @ExcludeHashCodeEquals
-    private int numTables = -1;
+    private transient int numTables = -1;
 
     @ExcludeHashCodeEquals
-    private final LRUCache<Integer, RDBMSTable> childTableCache = new LRUCache<>(1000);
+    private final transient LRUCache<Integer, RDBMSTable> childTableCache = new LRUCache<>(1000);
 
     @ExcludeHashCodeEquals
-    private boolean isChildTableCacheComplete;
+    private transient boolean isChildTableCacheComplete;
 
     private RDBMSSchema(RDBMSMetadataStore observer, int id, String name, String description, Location location,
                         boolean isFreshlyCreated) {
