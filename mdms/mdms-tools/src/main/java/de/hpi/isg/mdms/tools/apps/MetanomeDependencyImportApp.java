@@ -9,7 +9,6 @@ import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
@@ -19,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -33,17 +31,20 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
 
     public static void fromParameters(MetadataStore mds,
                                       String fileLocation,
+                                      String filePattern,
                                       String fileType,
-                                      String schemaName,
-                                      String type) throws Exception {
+                                      String dependencyType,
+                                      String scope,
+                                      String schemaName) throws Exception {
 
         MetanomeDependencyImportApp.Parameters parameters = new MetanomeDependencyImportApp.Parameters();
 
         parameters.schema = schemaName;
         parameters.resultFiles.add(fileLocation);
+        parameters.filePattern = filePattern;
         parameters.fileType = fileType;
-        parameters.dependencyType = type;
-        parameters.scope = Collections.singletonList(schemaName);
+        parameters.dependencyType = dependencyType;
+        parameters.scope = Collections.singletonList(scope);
         parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         MetanomeDependencyImportApp app = new MetanomeDependencyImportApp(parameters);
@@ -99,21 +100,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                     }
                 });
             }
-//            this.parameters.resultFiles.stream()
-//                    .map(File::new)
-//                    .filter(file -> {
-//                        this.getLogger().info("Loading {}.", file);
-//                        return true;
-//                    })
-//                    .forEach(resultFile -> {
-//                        try {
-//                            resultReader.readAndLoad(resultFile, resultReceiver);
-//                        } catch (IOException e) {
-//                            throw new UncheckedIOException(e);
-//                        }
-//                    });
         }
-
     }
 
     /**
@@ -172,8 +159,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }
-        }
-        else {
+        } else {
             throw new IllegalArgumentException(String.format("File type \"%s\" is currently not supported.", parameters.fileType));
         }
     }
@@ -188,11 +174,9 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         // Detect files to import.
         File file = new File(inputDirectoryPath);
         if (!file.isDirectory()) {
-            Collection<File> fileCollection = new ArrayList<>();
-            fileCollection.add(file);
-            return fileCollection;
+            return Collections.singleton(file);
         }
-        File[] dependencyFiles = file.listFiles();
+        File[] dependencyFiles = file.listFiles((dir, name) -> name.matches(this.parameters.filePattern));
         if (dependencyFiles == null) dependencyFiles = new File[0];
         return Arrays.stream(dependencyFiles).collect(Collectors.toList());
     }
@@ -237,6 +221,10 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         @Parameter(names = "--file-type",
                 description = "type of the files to import (friendly, JSON, compact)")
         public String fileType = "friendly";
+
+        @Parameter(names = "--file-pattern",
+                description = "matches statistics files in the input directory")
+        public String filePattern = ".+";
 
         /**
          * @return the user-specified description or a default one

@@ -23,7 +23,6 @@ import java.util.Set;
  */
 public class MetanomeDependencyImportAppTest {
 
-
     @Test
     public void testImportFdsFromJson() throws Exception {
         DefaultMetadataStore metadataStore = new DefaultMetadataStore();
@@ -41,9 +40,11 @@ public class MetanomeDependencyImportAppTest {
         MetanomeDependencyImportApp.fromParameters(
                 metadataStore,
                 inputFile.getAbsolutePath(),
+                ".+",
                 "json",
+                "FD",
                 "WDC",
-                "FD"
+                "WDC"
         );
 
         Collection<ConstraintCollection<FunctionalDependency>> constraintCollections =
@@ -110,9 +111,11 @@ public class MetanomeDependencyImportAppTest {
         MetanomeDependencyImportApp.fromParameters(
                 metadataStore,
                 inputFile.getAbsolutePath(),
+                ".+",
                 "json",
+                "IND",
                 "SG",
-                "IND"
+                "SG"
         );
 
         Collection<ConstraintCollection<InclusionDependency>> constraintCollections =
@@ -162,9 +165,11 @@ public class MetanomeDependencyImportAppTest {
         MetanomeDependencyImportApp.fromParameters(
                 metadataStore,
                 inputFile.getAbsolutePath(),
+                ".+",
                 "json",
+                "UCC",
                 "schema",
-                "UCC"
+                "schema"
         );
 
         Collection<ConstraintCollection<UniqueColumnCombination>> constraintCollections =
