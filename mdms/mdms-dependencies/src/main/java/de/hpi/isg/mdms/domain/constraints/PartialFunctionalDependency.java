@@ -57,6 +57,14 @@ public class PartialFunctionalDependency extends AbstractHashCodeAndEquals imple
         return allIds;
     }
 
+    public double getError() {
+        return this.error;
+    }
+
+    public double getScore() {
+        return this.score;
+    }
+
     @Override
     public String toString() {
         return String.format("%s \u2192 %d", Arrays.toString(this.lhsColumnIds), this.rhsColumnId);
