@@ -14,7 +14,7 @@ import java.util.Collection;
 /**
  * A {@link OmniscientResultReceiver} implementaiton that writes any result into a {@link ConstraintCollection}.
  */
-public class MetacrateResultReceiver implements OmniscientResultReceiver {
+public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCloseable {
 
     private final MetadataStore metadataStore;
 
@@ -155,5 +155,13 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver {
      */
     public MetadataStore getMetadataStore() {
         return this.metadataStore;
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (this.statisticsResultReceiver != null) this.statisticsResultReceiver.close();
+        if (this.fdResultReceiver != null) this.fdResultReceiver.close();
+        if (this.uccResultReceiver != null) this.uccResultReceiver.close();
+        if (this.indResultReceiver != null) this.indResultReceiver.close();
     }
 }
