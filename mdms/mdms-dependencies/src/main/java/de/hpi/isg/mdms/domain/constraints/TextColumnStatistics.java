@@ -1,11 +1,12 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 
 /**
  * This constraint class encapsulates string-specific single column statistics.
  */
-public class TextColumnStatistics implements Constraint {
+public class TextColumnStatistics extends AbstractHashCodeAndEquals implements Constraint {
 
     /**
      * Special values in a column.
