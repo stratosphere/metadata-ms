@@ -18,7 +18,6 @@ import java.util.Collection;
  */
 public class MetanomeStatisticsImportAppTest {
 
-
     @Test
     public void testImportTestFile() throws Exception {
         DefaultMetadataStore metadataStore = new DefaultMetadataStore();
@@ -92,6 +91,12 @@ public class MetanomeStatisticsImportAppTest {
         Assert.assertEquals(149968, columnStatistics.getNumDistinctValues());
         Assert.assertEquals(1, columnStatistics.getFillStatus(), 0d);
         Assert.assertEquals(0, columnStatistics.getNumNulls());
+        Assert.assertTrue(Double.isNaN(columnStatistics.getEntropy()));
+        columnStatistics = statisticsConstraintCollection.getConstraints().stream()
+                .filter(cs -> cs.getColumnId() == column4.getId())
+                .findFirst()
+                .orElseThrow(AssertionError::new);
+        Assert.assertEquals(2d, columnStatistics.getEntropy(), 0);
 
         // Check that we have all the text constraints.
         Collection<ConstraintCollection<TextColumnStatistics>> textConstraintCollections =
@@ -128,6 +133,7 @@ public class MetanomeStatisticsImportAppTest {
         Assert.assertEquals(0.0, numberColumnStatistics.getMinValue(), 0d);
         Assert.assertEquals(24.0, numberColumnStatistics.getMaxValue(), 0d);
         Assert.assertEquals(12.0067, numberColumnStatistics.getAverage(), 1e-5);
+
     }
 
 }

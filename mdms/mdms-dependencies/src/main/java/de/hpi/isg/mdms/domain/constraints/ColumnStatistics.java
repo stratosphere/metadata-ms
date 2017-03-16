@@ -13,7 +13,7 @@ public class ColumnStatistics extends AbstractHashCodeAndEquals implements Const
 
     private long numNulls = -1, numDistinctValues = -1;
 
-    private double fillStatus = Double.NaN, uniqueness = Double.NaN;
+    private double fillStatus = Double.NaN, uniqueness = Double.NaN, entropy = Double.NaN;
 
     public List<ColumnStatistics.ValueOccurrence> topKFrequentValues;
 
@@ -53,6 +53,14 @@ public class ColumnStatistics extends AbstractHashCodeAndEquals implements Const
 
     public void setUniqueness(double uniqueness) {
         this.uniqueness = uniqueness;
+    }
+
+    public void setEntropy(double entropy) {
+        this.entropy = entropy;
+    }
+
+    public double getEntropy() {
+        return this.entropy;
     }
 
     public List<ColumnStatistics.ValueOccurrence> getTopKFrequentValues() {

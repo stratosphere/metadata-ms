@@ -133,6 +133,10 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
             columnStatistics.setNumDistinctValues(((BasicStatisticValueInteger) statistics.get("Number of Distinct Values")).getValue());
             isColumnStatisticsEmpty = false;
         }
+        if (statistics.containsKey("Entropy")) {
+            columnStatistics.setEntropy(((BasicStatisticValueDouble) statistics.get("Entropy")).getValue());
+            isColumnStatisticsEmpty = false;
+        }
 
         // Find the most frequent values.
         final OptionalInt maxK = statistics.keySet().stream()
