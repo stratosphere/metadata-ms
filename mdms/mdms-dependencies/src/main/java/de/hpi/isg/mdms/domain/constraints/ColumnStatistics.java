@@ -8,6 +8,15 @@ import java.util.List;
  * This constraint class encapsulates various general single column statistics.
  */
 public class ColumnStatistics implements Constraint {
+    private double entropy;
+
+    public double getEntropy() {
+        return entropy;
+    }
+
+    public void setEntropy(double entropy) {
+        this.entropy = entropy;
+    }
 
     private long numNulls = -1, numDistinctValues = -1;
 
