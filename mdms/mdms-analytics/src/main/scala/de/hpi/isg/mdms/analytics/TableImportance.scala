@@ -18,54 +18,58 @@ class TableImportance() {
             tupleCount: ConstraintCollection[TupleCount],
             inclusionDependency: ConstraintCollection[InclusionDependency],
             metadataStore: MetadataStore
-            ) :DataQuanta[(Int, Int, Double)] = {
+           ) :DataQuanta[(Int, Int, Double)] = {
 
     implicit val planBuilder = new PlanBuilder(new RheemContext().withPlugin(Java.basicPlugin))
 
-    // numJoinEdges ... total number of join edges
-    val numJoinEdges = metadataStore.loadConstraints(inclusionDependency)
+    // q ... total number of join edges
+    val q = metadataStore.loadConstraints(inclusionDependency)
       .map(ind => (ind.getDependentColumnIds.apply(0),1))
       .reduceByKey(_._1,(a,b)=>(a._1,a._2+b._2))
 
-    // numJoinEdgesEntropy ... product of q and entropy (for each column)
-    val numJoinEdgesEntropy = metadataStore.loadConstraints(columnStatistics)
+    // qEnt ... product of q and entropy (for each column)
+    val qEnt = metadataStore.loadConstraints(columnStatistics)
       .map(cs => (cs.getColumnId,cs.getEntropy))
-      .keyBy(cs => cs._1).keyJoin(numJoinEdges.keyBy(_._1)).assemble((cs,nJE) => (nJE._1,cs._2*nJE._2))
+      .keyBy(a => a._1).keyJoin(q.keyBy(_._1)).assemble((a,b)=>(b._1,a._2*b._2))
 
-    // numJoinEdgesEntropyTable ... product of q and entropy summed over the entire table
-    val numJoinEdgesEntropyTable = numJoinEdgesEntropy
+    // qEntT ... product of q and entropy summed over the entire table
+    val qEntT = qEnt
       .map(cs => (idUtils.getTableId(cs._1),cs._2))
       .reduceByKey(_._2,(a,b)=>(a._1,a._2+b._2))
 
-    // numTuples ... number of tuples of table
-    val numTuples = metadataStore.loadConstraints(tupleCount)
-      .map(tp => (tp.getTableId,tp.getNumTuples))
+    // R ... number of tuples of table
+    val R = metadataStore.loadConstraints(tupleCount)
+      .map(tp => (tp.getTableId, tp.getNumTuples))
 
-    // numJoinEdgesEntropyRTable ... sum of log(numTuples) and numJoinEdgesEntropyTable
-    val numJoinEdgesEntropyRTable = numJoinEdgesEntropyTable
-        .keyBy(cs => cs._1).keyJoin(numTuples.keyBy(_._1)).assemble((cs,ra) => (ra._1,cs._2 + math.log(ra._2)))
+    // logRqEntT ... sum of log(numTuples) and qEntT
+    val logRqEntT = qEntT
+      .keyBy(a => a._1).keyJoin(R.keyBy(_._1)).assemble((a,b) => (b._1,a._2 + math.log(b._2)))
 
-    // ent ... entropy (mapped over table ids!)
-    val entropy = metadataStore.loadConstraints(columnStatistics)
-      .map(cs => (idUtils.getTableId(cs.getColumnId),cs.getEntropy))
+    // edgeCol ... Start and target of edge (COLUMN-ID used here)
+    val edgeCol = metadataStore.loadConstraints(inclusionDependency)
+      .map(ind => (ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)))
 
-    // probability ... probability of each table
-    val probTable = entropy
-      .keyBy(cs => cs._1).keyJoin(numJoinEdgesEntropyRTable.keyBy(_._1))
-      .assemble((cs,nJEERT) => (cs._1,cs._2/nJEERT._2))
+    // Entropy of each column
+    val entCol = metadataStore.loadConstraints(columnStatistics)
+      .map(ind => (ind.getColumnId, ind.getEntropy))
 
-    // start_target ... Start and target of edge
-    val edgeStartTarget = metadataStore.loadConstraints(inclusionDependency)
-      .map(ind => (idUtils.getTableId(ind.getDependentColumnIds.apply(0)),
-        idUtils.getTableId(ind.getReferencedColumnIds.apply(0))))
+    // Entropy of each edge (stored with Tablr ID)
+    val entEdgeTab = entCol.keyBy(a => a._1).keyJoin(edgeCol.keyBy(_._1)).
+      assemble((a,b) => (b._1, a._2)).distinct
+      .map(ind => (idUtils.getTableId(ind._1), ind._2))
 
-    // Create Tuple with [Start, Target, Probability]
-    val startEdgeProbTable = edgeStartTarget
-      .keyBy(cs => cs._1).keyJoin(probTable.keyBy(_._1)).assemble((cs,qa) => (cs._1,cs._2,qa._2))
+    // probCol ... probability of each Column
+    val probCol = entEdgeTab
+      .keyBy(a => a._1).keyJoin(logRqEntT.keyBy(_._1))
+      .assemble((a,b) => (a._1,a._2/b._2))
+
+    // Create tuple with [Start, Target, Probability]
+    val probColEdge = edgeCol.map(ind => (idUtils.getTableId(ind._1), idUtils.getTableId(ind._2)))
+      .keyBy(a => a._1).keyJoin(probCol.keyBy(_._1)).assemble((a,b) => (a._1,a._2,b._2))
 
     // Calculate the probability P[R,S]
-    val probabilityRS = startEdgeProbTable.
-      filter(cs => cs._1 != cs._2).reduceByKey(t=>(t._1,t._2),(a,b)=>(a._1,a._2,a._3+b._3))
+    val probabilityRS = probColEdge.
+      filter(a => a._1 != a._2).reduceByKey(t=>(t._1,t._2),(a,b)=>(a._1,a._2,a._3+b._3))
 
     // Getting dummy values for P[R,R]
     val dummyProbabilityRR = metadataStore.loadTables().map(tableMock=>(tableMock.id,tableMock.id,0.0))
