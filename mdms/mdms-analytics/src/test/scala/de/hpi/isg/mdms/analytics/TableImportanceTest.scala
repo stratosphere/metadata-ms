@@ -43,59 +43,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
     store.close()
     testDb.delete()
   }
-  test("Testing if sum of each row is 1.0") {
-    val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
-    store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
-    val dummySchema = store.addSchema("PDB", null, new DefaultLocation)
-    val R = dummySchema.addTable(store, "R", null, new DefaultLocation)
-    val A = R.addColumn(store, "A", null, 1)
-    val S = dummySchema.addTable(store, "S", null, new DefaultLocation)
-    val B = S.addColumn(store, "B", null, 2)
-    val T = dummySchema.addTable(store, "T", null, new DefaultLocation)
-    val C = T.addColumn(store, "C", null, 3)
-
-    val tupleCountR = new TupleCount(R.getId, 6)
-    val tupleCountS = new TupleCount(S.getId, 2)
-    val tupleCountT = new TupleCount(T.getId, 4)
-    val tc = store.createConstraintCollection(null, classOf[TupleCount], dummySchema)
-    tc.add(tupleCountR)
-    tc.add(tupleCountS)
-    tc.add(tupleCountT)
-
-
-    val columnStatisticsA = new ColumnStatistics(A.getId)
-    val columnStatisticsB = new ColumnStatistics(B.getId)
-    val columnStatisticsC = new ColumnStatistics(C.getId)
-
-    columnStatisticsA.setEntropy(0.6)
-    columnStatisticsB.setEntropy(0.34)
-    columnStatisticsC.setEntropy(0.1)
-    val cc = store.createConstraintCollection(null, classOf[ColumnStatistics], dummySchema)
-    cc.add(columnStatisticsA)
-    cc.add(columnStatisticsB)
-    cc.add(columnStatisticsC)
-
-    val inclDepAB = new InclusionDependency(A.getId, B.getId)
-    val inclDepBA = new InclusionDependency(B.getId, A.getId)
-    val inclDepAC = new InclusionDependency(A.getId, C.getId)
-    val id = store.createConstraintCollection(null, classOf[InclusionDependency], dummySchema)
-    id.add(inclDepAB)
-    id.add(inclDepAC)
-    id.add(inclDepBA)
-
-    val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
-
-    val tableImportance = new TableImportance
-
-    val probabilityMatrix = tableImportance.apply(idUtils, cc, tc, id, store)
-
-    val testRowSum = probabilityMatrix.reduceByKey(_._1, (a, b) => (a._1, a._1, a._3 + b._3))
-      .map(t => t._3).collect().toSeq
-
-    assert(Seq(1.0, 1.0, 1.0) == testRowSum)
-  }
-
-  test("Testing if prob matrix matches manually calculated one"){
+  test("Testing probability matrix"){
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
     val dummySchema = store.addSchema("PDB", null, new DefaultLocation)
@@ -170,8 +118,17 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
     val PI_S_S = 1 - PI_S_T - PI_S_TR
     val PI_T_T = 1 - PI_T_TR
     val PI_TR_TR = 1 - 0
-    
+
+    // testing if matrix calculates manually one
     assert(Seq(PI_TR_TR, PI_S_S, PI_T_T, PI_T_TR, PI_S_T, PI_S_TR) == probabilityMatrix)
+
+    // testing if rows sum up to 1
+    val testRowSum = tableImportance.apply(idUtils, cc, tc, id, store)
+    .reduceByKey(_._1, (a, b) => (a._1, a._1, a._3 + b._3))
+    .map(t => t._3).collect().toSeq
+   // testRowSum.collect().foreach(println)
+    assert(Seq(1.0, 1.0, 1.0) == testRowSum)
+
   }
 
 }
