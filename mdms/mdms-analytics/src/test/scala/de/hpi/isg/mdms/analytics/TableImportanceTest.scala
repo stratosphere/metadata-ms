@@ -13,9 +13,11 @@ import de.hpi.isg.mdms.model.targets.Schema
 import de.hpi.isg.mdms.rdbms.SQLiteInterface
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 import de.hpi.isg.mdms.analytics
+import de.hpi.isg.mdms.model.MetadataStore
+import org.qcri.rheem.api.DataQuanta
 
 
-class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
+class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
   var testDb: File = _
   var store: RDBMSMetadataStore = _
   var schema: Schema = _
@@ -43,7 +45,8 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
     store.close()
     testDb.delete()
   }
-  test("Testing probability matrix"){
+
+  test("Testing probability matrix") {
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
     val dummySchema = store.addSchema("PDB", null, new DefaultLocation)
@@ -104,13 +107,13 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
 
     val tableImportance = new TableImportance
 
-    val probabilityMatrix = tableImportance.apply(idUtils, cc, tc, id, store)
+    val probabilityMatrix = tableImportance.probMatrix(idUtils, cc, tc, id, store)
       .map(t => t._3).collect()
 
     // Calculate probability matrix manually
-    val P_S_Symb_T_S_Symb = ent_S_Symb/(math.log(numTupleS) + 2*ent_S_Symb)
-    val P_S_Symb_TR_S_Symb = ent_S_Symb/(math.log(numTupleS) + 2*ent_S_Symb)
-    val P_T_ID_TR_T_ID = ent_T_ID/(math.log(numTupleT) + ent_T_ID)
+    val P_S_Symb_T_S_Symb = ent_S_Symb / (math.log(numTupleS) + 2 * ent_S_Symb)
+    val P_S_Symb_TR_S_Symb = ent_S_Symb / (math.log(numTupleS) + 2 * ent_S_Symb)
+    val P_T_ID_TR_T_ID = ent_T_ID / (math.log(numTupleT) + ent_T_ID)
 
     val PI_S_T = P_S_Symb_T_S_Symb
     val PI_S_TR = P_S_Symb_TR_S_Symb
@@ -123,14 +126,86 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach{
     assert(Seq(PI_TR_TR, PI_S_S, PI_T_T, PI_T_TR, PI_S_T, PI_S_TR) == probabilityMatrix)
 
     // testing if rows sum up to 1
-    val testRowSum = tableImportance.apply(idUtils, cc, tc, id, store)
-    .reduceByKey(_._1, (a, b) => (a._1, a._1, a._3 + b._3))
-    .map(t => t._3).collect().toSeq
-   // testRowSum.collect().foreach(println)
+    val testRowSum = tableImportance.probMatrix(idUtils, cc, tc, id, store)
+      .reduceByKey(_._1, (a, b) => (a._1, a._1, a._3 + b._3))
+      .map(t => t._3).collect().toSeq
     assert(Seq(1.0, 1.0, 1.0) == testRowSum)
-
   }
 
+  test("Testing talbe importance") {
+    val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
+    store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
+    val dummySchema = store.addSchema("PDB", null, new DefaultLocation)
+
+    val S = dummySchema.addTable(store, "S", null, new DefaultLocation)
+    val S_Symb = S.addColumn(store, "S_Symb", null, 1)
+
+    val T = dummySchema.addTable(store, "T", null, new DefaultLocation)
+    val T_S_Symb = T.addColumn(store, "T_S_Symb", null, 2)
+    val T_ID = T.addColumn(store, "T_ID", null, 3)
+
+    val TR = dummySchema.addTable(store, "TR", null, new DefaultLocation)
+    val TR_T_ID = TR.addColumn(store, "TR_T_ID", null, 4)
+    val TR_S_Symb = TR.addColumn(store, "TR_S_Symb", null, 5)
+
+    val numTupleS = 6
+    val numTupleT = 2
+    val numTupleTR = 4
+    val tupleCountS = new TupleCount(S.getId, numTupleS)
+    val tupleCountT = new TupleCount(T.getId, numTupleT)
+    val tupleCountTR = new TupleCount(TR.getId, numTupleTR)
+    val tc = store.createConstraintCollection(null, classOf[TupleCount], dummySchema)
+    tc.add(tupleCountS)
+    tc.add(tupleCountT)
+    tc.add(tupleCountTR)
+
+    val columnStatisticsS_Symb = new ColumnStatistics(S_Symb.getId)
+    val columnStatisticsT_S_Symb = new ColumnStatistics(T_S_Symb.getId)
+    val columnStatisticsT_ID = new ColumnStatistics(T_ID.getId)
+    val columnStatisticsTR_T_ID = new ColumnStatistics(TR_T_ID.getId)
+    val columnStatisticsTR_S_Symb = new ColumnStatistics(TR_S_Symb.getId)
+    val ent_S_Symb = 0.6
+    val ent_T_S_Symb = 0.6
+    val ent_T_ID = 0.3
+    val ent_TR_T_ID = 0.1
+    val ent_TR_S_Symb = 0.7
+    columnStatisticsS_Symb.setEntropy(ent_S_Symb)
+    columnStatisticsT_S_Symb.setEntropy(ent_T_S_Symb)
+    columnStatisticsT_ID.setEntropy(ent_T_ID)
+    columnStatisticsTR_T_ID.setEntropy(ent_TR_T_ID)
+    columnStatisticsTR_S_Symb.setEntropy(ent_TR_S_Symb)
+    val cc = store.createConstraintCollection(null, classOf[ColumnStatistics], dummySchema)
+    cc.add(columnStatisticsS_Symb)
+    cc.add(columnStatisticsT_S_Symb)
+    cc.add(columnStatisticsT_ID)
+    cc.add(columnStatisticsTR_T_ID)
+    cc.add(columnStatisticsTR_S_Symb)
+
+    val inclDep_S_Symb_T_S_Symb = new InclusionDependency(S_Symb.getId, T_S_Symb.getId)
+    val inclDep_S_Symb_TR_S_Symb = new InclusionDependency(S_Symb.getId, TR_S_Symb.getId)
+    val inclDep_T_ID_TR_T_ID = new InclusionDependency(T_ID.getId, TR_T_ID.getId)
+    val inclDep_TR_T_ID_S_Symb = new InclusionDependency(TR_T_ID.getId, S_Symb.getId)
+    val id = store.createConstraintCollection(null, classOf[InclusionDependency], dummySchema)
+    id.add(inclDep_S_Symb_T_S_Symb)
+    id.add(inclDep_S_Symb_TR_S_Symb)
+    id.add(inclDep_T_ID_TR_T_ID)
+
+    val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
+
+    val tableImportance = new TableImportance
+
+    val probabilityMatrix = tableImportance.probMatrix(idUtils, cc, tc, id, store)
+
+    val V = tableImportance.tableImport(probabilityMatrix, tc, store, idUtils, cc)
+      .map(t => t._2).collect().toList
+
+    // Test ranking of table importance
+    // 1st rank: TR
+    // 2nd rank: T
+    // 3rd rand: S
+    assert(V(2) > V(1) && V(0) > V(1))
+
+  }
 }
 
 
