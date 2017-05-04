@@ -7,15 +7,13 @@ import de.hpi.isg.mdms.model.util.IdUtils
 import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 
 class TableImportance()(implicit planBuilder: PlanBuilder) {
-
+  // Calculating the probability matrix
   def probMatrix(idUtils: IdUtils,
                  columnStatistics: ConstraintCollection[ColumnStatistics],
                  tupleCount: ConstraintCollection[TupleCount],
                  inclusionDependency: ConstraintCollection[InclusionDependency],
                  metadataStore: MetadataStore
                 ): DataQuanta[(Int, Int, Double)] = {
-
-
     // q ... total number of join edges
     val q = metadataStore.loadConstraints(inclusionDependency)
       .map(ind => (ind.getDependentColumnIds.apply(0), 1))
@@ -47,12 +45,6 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
     val entCol = metadataStore.loadConstraints(columnStatistics)
       .map(ind => (ind.getColumnId, ind.getEntropy))
 
-    // Entropy of each edge (stored with Table ID)
-    /*val entEdgeT = entCol
-      .keyBy(_._1).keyJoin(edgeCol.keyBy(_._1)).assemble((a, b) => (b._1, a._2))
-      .distinct
-      .map(a => (idUtils.getTableId(a._1), a._2))*/
-
     val entEdgeT = edgeCol
       .keyBy(_._1).keyJoin(entCol.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
       .map(a => (idUtils.getTableId(a._1), idUtils.getTableId(a._2), a._3))
@@ -82,6 +74,21 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
     return probability
   }
 
+  /**
+    * Finding the table importance
+    *
+    * @param probMatrix stores the probability matrix
+    * @param tupleCount is the constraint collection tuple count
+    * @param metadataStore  is the metadata store
+    * @param idUtils utility tools
+    * @param columnStatistics is constraint collection column statistics
+    * @param epsilon if Euclidean Distance between V and V+1  is
+    *                lower epsilon, the stationary distribution is reached
+    * @param numIteration is the maximum number of iteration
+    * @param maxnumOrEpsilon true: solution is found if maximum number of iteration is reached
+    *                        false: solution is found if changes of solution vector is below a critical threshold
+    * @return the solution vector containing the table importance
+    */
   def tableImport(probMatrix: DataQuanta[(Int, Int, Double)],
                   tupleCount: ConstraintCollection[TupleCount],
                   metadataStore: MetadataStore,
@@ -92,19 +99,16 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
                   maxnumOrEpsilon: Boolean = true): DataQuanta[(Int, Double)] = {
     val Vinitial = initiateVector(tupleCount, metadataStore, idUtils, columnStatistics)
     // Looping until reaching chosen max number of iteration
-    return if (maxnumOrEpsilon) {
-      Vinitial.repeat(numIteration, Vold => iteratingImportance(probMatrix, Vold))
-    }
+    if (maxnumOrEpsilon) Vinitial.repeat(numIteration, Vold => iteratingImportance(probMatrix, Vold))
     // Looping until changes of vectors is below a critical threshold
-    else {
-      Vinitial.doWhile[Double](_.head < epsilon, { Vold =>
+    else Vinitial.doWhile[Double](_.head < epsilon, { Vold =>
         val Vnew = iteratingImportance(probMatrix, Vold)
         val Vdiff = diffV(Vnew, Vold).map(a => math.sqrt(a))
         (Vnew, Vdiff.filter { x => println(x); true })
       })
-    }
   }
 
+  // Calculating the the product of the probability vector and the solution vector
   def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
                           V: DataQuanta[(Int, Double)]): DataQuanta[(Int, Double)] = {
     return probMatrix
@@ -113,17 +117,18 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
       .map(a => (a._2, a._3))
   }
 
+  // Calculating the Euclidean Distance between the solution vector V and V+1
   def diffV(Vnew: DataQuanta[(Int, Double)], Vold: DataQuanta[(Int, Double)]): DataQuanta[(Double)] = {
     val diffVnewVold = Vnew.keyBy(_._1).keyJoin(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
       .map(a => ((a._1 - a._2) * (a._1 - a._2))).reduce(_ + _)
     return diffVnewVold
   }
 
+  // Initiating the solution vector
   def initiateVector(tupleCount: ConstraintCollection[TupleCount],
                      metadataStore: MetadataStore,
                      idUtils: IdUtils,
-                     columnStatistics: ConstraintCollection[ColumnStatistics]): DataQuanta[(Int, Double)] = {
-    //implicit val planBuilder = new PlanBuilder(new RheemContext().withPlugin(Java.basicPlugin))
+                     columnStatistics: ConstraintCollection[ColumnStatistics]):DataQuanta[(Int, Double)] = {
     // R ... number of tuples of table
     val R = metadataStore.loadConstraints(tupleCount)
       .map(tp => (tp.getTableId, tp.getNumTuples))
