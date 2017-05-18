@@ -264,9 +264,6 @@ public class ForeignKeyClassifier extends MdmsAppTemplate<ForeignKeyClassifier.P
 
 
         }
-
-        this.metadataStore.close();
-
     }
 
     /**

@@ -1,26 +1,20 @@
 package de.hpi.isg.mdms.domain.constraints;
 
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This constraint class encapsulates various general single column statistics.
  */
-public class ColumnStatistics implements Constraint {
-    private double entropy;
 
-    public double getEntropy() {
-        return entropy;
-    }
-
-    public void setEntropy(double entropy) {
-        this.entropy = entropy;
-    }
+public class ColumnStatistics extends AbstractHashCodeAndEquals implements Constraint {
 
     private long numNulls = -1, numDistinctValues = -1;
 
-    private double fillStatus = Double.NaN, uniqueness = Double.NaN;
+    private double fillStatus = Double.NaN, uniqueness = Double.NaN, entropy = Double.NaN;
 
     public List<ColumnStatistics.ValueOccurrence> topKFrequentValues;
 
@@ -60,6 +54,14 @@ public class ColumnStatistics implements Constraint {
 
     public void setUniqueness(double uniqueness) {
         this.uniqueness = uniqueness;
+    }
+
+    public void setEntropy(double entropy) {
+        this.entropy = entropy;
+    }
+
+    public double getEntropy() {
+        return this.entropy;
     }
 
     public List<ColumnStatistics.ValueOccurrence> getTopKFrequentValues() {
@@ -106,6 +108,20 @@ public class ColumnStatistics implements Constraint {
         public int compareTo(ColumnStatistics.ValueOccurrence that) {
             int result = Long.compare(this.getNumOccurrences(), that.getNumOccurrences());
             return result == 0 ? this.getValue().compareTo(that.getValue()) : result;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || this.getClass() != o.getClass()) return false;
+            final ColumnStatistics.ValueOccurrence that = (ColumnStatistics.ValueOccurrence) o;
+            return this.numOccurrences == that.numOccurrences &&
+                    Objects.equals(this.value, that.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.value, this.numOccurrences);
         }
     }
 

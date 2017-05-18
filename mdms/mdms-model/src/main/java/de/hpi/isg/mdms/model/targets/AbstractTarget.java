@@ -19,7 +19,7 @@ public abstract class AbstractTarget extends AbstractIdentifiableAndNamed implem
     private static final long serialVersionUID = -583488154227852034L;
 
     @ExcludeHashCodeEquals
-    private final Observer observer;
+    private final transient Observer observer;
 
     @Printable
     private final Location location;

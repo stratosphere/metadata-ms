@@ -24,10 +24,10 @@ public abstract class AbstractRDBMSTarget extends AbstractTarget {
 
     @ExcludeHashCodeEquals
     // private Reference<IntCollection> childIdCache;
-    private IntCollection childIdCache;
+    private transient IntCollection childIdCache;
 
     @ExcludeHashCodeEquals
-    protected final RDBMSMetadataStore metadataStore;
+    protected final transient RDBMSMetadataStore metadataStore;
 
     public AbstractRDBMSTarget(RDBMSMetadataStore observer, int id, String name, String description, Location location,
             boolean isFreshlyCreated) {

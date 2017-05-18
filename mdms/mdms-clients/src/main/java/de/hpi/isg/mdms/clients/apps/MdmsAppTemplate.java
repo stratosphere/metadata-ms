@@ -73,6 +73,23 @@ public abstract class MdmsAppTemplate<TParameters> extends AppTemplate<TParamete
     protected void onExit() {
         super.onExit();
 
+        if (this.metadataStore != null) {
+            if (this.getMetadataStoreParameters().isCloseMetadataStore) {
+                try {
+                    this.metadataStore.close();
+                } catch (Exception e) {
+                    this.logger.error("Closing the metadata store failed.", e);
+                }
+            } else {
+                try {
+                    this.metadataStore.flush();
+                } catch (Exception e) {
+                    this.logger.error("Flushing the metadata store failed.", e);
+                }
+
+            }
+        }
+
         if (this.getMetadataStoreParameters().isForceQuit) {
             this.logger.info("Forcing application to quit...");
             System.exit(0);

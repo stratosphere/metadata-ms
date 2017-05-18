@@ -48,4 +48,11 @@ public class PartialUniqueColumnCombination extends AbstractHashCodeAndEquals im
         return this.columnIds.length;
     }
 
+    public double getError() {
+        return this.error;
+    }
+
+    public double getScore() {
+        return this.score;
+    }
 }

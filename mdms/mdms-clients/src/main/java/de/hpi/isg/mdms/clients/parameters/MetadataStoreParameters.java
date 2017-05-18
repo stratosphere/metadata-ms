@@ -22,5 +22,11 @@ public class MetadataStoreParameters {
 
     @Parameter(names = { "--no-journal"}, description = "for RDBMSMetadataStores avoid using journaling")
     public boolean isNotUseJournal = false;
+
+    /**
+     * This field is not accessible from command-line. Internal invocations of applications here allow to keep
+     * a {@link de.hpi.isg.mdms.model.MetadataStore} open after the application has finished.
+     */
+    public boolean isCloseMetadataStore = true;
     
 }
