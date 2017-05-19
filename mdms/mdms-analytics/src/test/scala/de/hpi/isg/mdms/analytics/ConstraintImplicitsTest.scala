@@ -13,7 +13,6 @@ import de.hpi.isg.mdms.model.targets.Schema
 import de.hpi.isg.mdms.rdbms.SQLiteInterface
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
-
 class ConstraintImplicitsTest extends FunSuite with BeforeAndAfterEach {
 
   var testDb: File = _

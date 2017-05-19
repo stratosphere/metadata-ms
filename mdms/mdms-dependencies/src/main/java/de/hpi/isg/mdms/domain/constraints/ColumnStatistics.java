@@ -9,6 +9,7 @@ import java.util.Objects;
 /**
  * This constraint class encapsulates various general single column statistics.
  */
+
 public class ColumnStatistics extends AbstractHashCodeAndEquals implements Constraint {
 
     private long numNulls = -1, numDistinctValues = -1;
