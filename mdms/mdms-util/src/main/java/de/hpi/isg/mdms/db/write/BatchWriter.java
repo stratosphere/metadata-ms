@@ -88,7 +88,7 @@ public abstract class BatchWriter<T> extends DependentWriter<T> {
 			for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
 				sb.append("\n\t").append(stackTraceElement);
 			}
-			LOGGER.warn("Attempted to flush empty batch writer {}. {}", this, sb);
+			LOGGER.debug("Attempted to flush empty batch writer {}. {}", this, sb);
 		}
 		this.curBatchSize = 0;
 	}
