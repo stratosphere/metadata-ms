@@ -8,6 +8,7 @@ import org.qcri.rheem.api.DataQuanta
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import scala.collection.JavaConversions._
 
 /**
   * Provides utilities to analyze metadata store contents.
@@ -29,6 +30,19 @@ package object analytics {
   implicit def pimpJoinedDataQuanta[Out0: ClassTag, Out1: ClassTag]
   (dataQuanta: DataQuanta[org.qcri.rheem.basic.data.Tuple2[Out0, Out1]]): JoinedDataQuanta[Out0, Out1] =
     new JoinedDataQuanta(dataQuanta)
+
+  /**
+    * Collects all [[Column]]s contained by the given `targets`.
+    * @param targets any kind of [[Target]]s or `null`
+    * @return a [[Set]] of all contained [[Column]]s.
+    */
+  def collectColumns(targets: Target*): Set[Column] =
+    targets.flatMap {
+      case column: Column => Seq(column)
+      case table: Table => collectColumns(table.getColumns.toSeq: _*)
+      case schema: Schema => collectColumns(schema.getTables.toSeq: _*)
+      case null => Seq()
+    }.toSet
 
   /**
     * [[ConstraintCollectionConflictResolutionStrategy]] that always fails on conflicts.
