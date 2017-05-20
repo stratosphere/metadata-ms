@@ -94,19 +94,21 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
         Random random = new Random(this.parameters.seed);
         List<ToDoubleFunction<int[]>> projections = new ArrayList<>(this.parameters.numSketchDimensions);
         for (int sketchDimension = 0; sketchDimension < this.parameters.numSketchDimensions; sketchDimension++) {
-            final double[] projectionVector = new double[this.parameters.numQGramDimensions];
+            final int[] projectionVector = new int[this.parameters.numQGramDimensions];
             for (int qGramDimension = 0; qGramDimension < this.parameters.numQGramDimensions; qGramDimension++) {
-                projectionVector[qGramDimension] = random.nextGaussian();
+                projectionVector[qGramDimension] = random.nextInt() * 2 - 1;
             }
             projections.add(
                     sketchDimension,
                     qGramVector -> {
                         assert projectionVector.length == qGramVector.length;
                         double dotProduct = 0d;
+                        long qGramVectorSum = 0;
                         for (int i = 0; i < projectionVector.length; i++) {
                             dotProduct += projectionVector[i] * qGramVector[i];
+                            qGramVectorSum += qGramVector[i];
                         }
-                        return dotProduct;
+                        return dotProduct / qGramVectorSum;
                     }
             );
         }
