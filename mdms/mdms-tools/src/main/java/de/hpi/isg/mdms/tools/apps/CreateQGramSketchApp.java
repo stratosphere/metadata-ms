@@ -96,7 +96,7 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
         for (int sketchDimension = 0; sketchDimension < this.parameters.numSketchDimensions; sketchDimension++) {
             final int[] projectionVector = new int[this.parameters.numQGramDimensions];
             for (int qGramDimension = 0; qGramDimension < this.parameters.numQGramDimensions; qGramDimension++) {
-                projectionVector[qGramDimension] = random.nextInt() * 2 - 1;
+                projectionVector[qGramDimension] = random.nextInt(2) * 2 - 1;
             }
             projections.add(
                     sketchDimension,
