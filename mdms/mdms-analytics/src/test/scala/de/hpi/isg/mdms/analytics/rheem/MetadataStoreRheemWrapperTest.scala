@@ -1,7 +1,6 @@
 package de.hpi.isg.mdms.analytics.rheem
 
 import de.hpi.isg.mdms.analytics._
-import de.hpi.isg.mdms.analytics.util.TestUtil
 import de.hpi.isg.mdms.domain.constraints.{FunctionalDependency, UniqueColumnCombination}
 import org.junit.{Assert, Test}
 import org.mockito.Mockito

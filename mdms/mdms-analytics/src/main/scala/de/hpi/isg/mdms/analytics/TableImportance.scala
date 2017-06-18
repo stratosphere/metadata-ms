@@ -127,7 +127,6 @@ object TableImportance {
     }).map { case (tableId, score) => TableImportance(tableId, score) }
   }
 
-
   // Calculating the the product of the probability vector and the solution vector
   private def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
                           V: DataQuanta[(Int, Double)]): DataQuanta[(Int, Double)] = {

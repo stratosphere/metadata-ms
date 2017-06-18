@@ -4,7 +4,6 @@ import java.io.{File, IOException}
 import java.sql.DriverManager
 
 import de.hpi.isg.mdms.analytics.ConstraintImplicits.ConstraintCollectionQueryObject
-import de.hpi.isg.mdms.analytics.util.TestUtil
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore
 import de.hpi.isg.mdms.domain.constraints.{InclusionDependency, ColumnStatistics}
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
