@@ -34,8 +34,6 @@ public class OrderDependency extends AbstractHashCodeAndEquals implements Constr
     }
 
     public OrderDependency(int[] determinantColumns, int[] dependentColumns) {
-        Validate.isTrue(determinantColumns.length == dependentColumns.length);
-        Validate.isTrue(ReferenceUtils.isSorted(determinantColumns));
         this.determinantColumns = determinantColumns;
         this.dependentColumns = dependentColumns;
     }
