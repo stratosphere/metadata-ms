@@ -26,6 +26,7 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.tools.sqlParser.TableCreationStatementParser;
 import de.hpi.isg.mdms.tools.util.CsvUtils;
 import org.apache.flink.core.fs.Path;
 
@@ -34,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -76,6 +78,11 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
     @Override
     protected void executeProgramLogic(final List<Path> files) throws Exception {
+        HashMap<String, List<String>> columnNamesMap = null;
+        if (!this.parameters.sqlFile.isEmpty()) {
+            TableCreationStatementParser sqlParser = new TableCreationStatementParser();
+            columnNamesMap = sqlParser.getColumnNameMap(this.parameters.sqlFile);
+        }
 
         final NameProvider nameProvider = this.parameters.createNameProvider();
 
@@ -91,7 +98,6 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
                 DefaultLocation.createForFile(this.parameters.inputFiles.get(0)) : null;
         final Schema schema = this.metadataStore.addSchema(schemaName, "", schemaLocation);
         logger.info("added schema {} with ID {}", schema.getName(), schema.getId());
-
         for (final Path file : files) {
             final String tableName = nameProvider.provideTableName(file);
             final AbstractCsvLocation tableLocation = new CsvFileLocation();
@@ -114,7 +120,11 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
                 final String attributeName;
                 if (tableLocation.getHasHeader()) {
                     attributeName = columnNames[attributeIndex];
-                } else {
+                }
+                else if (columnNamesMap!=null && columnNamesMap.get(tableName)!=null && columnNamesMap.get(tableName).size()>attributeIndex) {
+                        attributeName = columnNamesMap.get(tableName).get(attributeIndex);
+                }
+                else {
                     attributeName = nameProvider.provideColumnName(attributeIndex);
                 }
                 final Column column = table.addColumn(this.metadataStore, attributeName, "", attributeIndex);
@@ -180,6 +190,9 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
         @Parameter(names = {"--has-header"}, description = "whether the first line of the file shall be used to identify the column names (true, false)")
         public String hasHeader = "false";
+
+        @Parameter(names = {"--sql-file"}, description = "an additional sql file containing CREATE TABLE statements to help identifying the column names")
+        public String sqlFile = "";
 
         @Parameter(names = {"--name-provider"},
                 description = "how to generate names for the schema elements (sodap/metanome)",

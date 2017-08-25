@@ -11,6 +11,25 @@
 
     <artifactId>mdms-tools</artifactId>
 
+    <build>
+        <plugins>
+            <!-- trigger run with mvn process-resources; then see target/generated-sources/antlr4 -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -28,6 +47,11 @@
         <dependency>
             <groupId>de.metanome</groupId>
             <artifactId>backend</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.3</version>
         </dependency>
 
         <dependency>
@@ -50,6 +74,7 @@
             <artifactId>mdms-flink</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
+
     </dependencies>
 
 
