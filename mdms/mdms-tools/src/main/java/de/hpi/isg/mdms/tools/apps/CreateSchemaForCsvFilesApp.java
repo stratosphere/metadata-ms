@@ -26,15 +26,14 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import de.hpi.isg.mdms.tools.sqlParser.TableCreationStatementParser;
 import de.hpi.isg.mdms.tools.util.CsvUtils;
 import org.apache.flink.core.fs.Path;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * This job creates a {@link Schema} for the given files and saves it to a {@link MetadataStore}.
@@ -56,6 +55,16 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
     public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
                                       String fieldSeparator, String quoteChar, boolean hasHeader) throws Exception {
+        fromParameters(mds, fileLocation, schemaName, fieldSeparator, quoteChar, hasHeader, null);
+    }
+
+    public static void fromParameters(MetadataStore mds,
+                                      String fileLocation,
+                                      String schemaName,
+                                      String fieldSeparator,
+                                      String quoteChar,
+                                      boolean hasHeader,
+                                      String sqlFile) throws Exception {
 
         CreateSchemaForCsvFilesApp.Parameters parameters = new CreateSchemaForCsvFilesApp.Parameters();
 
@@ -68,6 +77,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         parameters.csvParameters.fieldSeparatorName = fieldSeparator;
         parameters.csvParameters.quoteCharName = quoteChar;
         parameters.metadataStoreParameters.isCloseMetadataStore = false;
+        parameters.sqlFile = sqlFile;
 
         CreateSchemaForCsvFilesApp app = new CreateSchemaForCsvFilesApp(parameters);
         app.metadataStore = mds;
@@ -77,6 +87,11 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
     @Override
     protected void executeProgramLogic(final List<Path> files) throws Exception {
+        Map<String, List<String>> sqlFileColumnNames = null;
+        if (this.parameters.sqlFile != null && !this.parameters.sqlFile.isEmpty()) {
+            TableCreationStatementParser sqlParser = new TableCreationStatementParser();
+            sqlFileColumnNames = sqlParser.getColumnNameMap(this.parameters.sqlFile);
+        }
 
         final NameProvider nameProvider = this.parameters.createNameProvider();
 
@@ -92,7 +107,6 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
                 DefaultLocation.createForFile(this.parameters.inputFiles.get(0)) : null;
         final Schema schema = this.metadataStore.addSchema(schemaName, "", schemaLocation);
         logger.info("added schema {} with ID {}", schema.getName(), schema.getId());
-
         for (final Path file : files) {
             final String tableName = nameProvider.provideTableName(file);
             final AbstractCsvLocation tableLocation = new CsvFileLocation();
@@ -105,16 +119,37 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
             tableLocation.setNullString(this.parameters.csvParameters.getNullString());
             final Table table = schema.addTable(this.metadataStore, tableName, "", tableLocation);
             logger.info("added table {} with ID {}", table.getName(), table.getId());
+
+            // Try to load column names from header.
             String[] columnNames = new String[0];
             if (tableLocation.getHasHeader()) {
                 columnNames = CsvUtils.getColumnNames(file, this.parameters.csvParameters.getFieldSeparatorChar(),
                         this.parameters.csvParameters.getQuoteChar(), null);
             }
+
+            // Try to load column names from the SQL file.
+            List<String> sqlColumnNames = Collections.emptyList();
+            if (sqlFileColumnNames != null) {
+                List<String> tempColumnNames = sqlFileColumnNames.get(tableName.toLowerCase());
+                if (tempColumnNames == null) {
+                    // See if the table name likely comprises a file extension (such as .csv).
+                    // As a heuristic, the file name extension should be 1-3 characters long.
+                    int stopIndex = tableName.lastIndexOf('.');
+                    if (stopIndex != -1 && stopIndex < tableName.length() - 1 && stopIndex >= tableName.length() - 4) {
+                        tempColumnNames = sqlFileColumnNames.get(tableName.substring(0, stopIndex).toLowerCase());
+                    }
+                }
+                if (tempColumnNames != null) sqlColumnNames = tempColumnNames;
+            }
+
+            // Create the columns and try to provide meaningful names.
             final int numAttributes = this.attributeIndexer.getNumAttributes(tableName);
             for (int attributeIndex = 0; attributeIndex < numAttributes; attributeIndex++) {
                 final String attributeName;
                 if (tableLocation.getHasHeader()) {
                     attributeName = columnNames[attributeIndex];
+                } else if (sqlColumnNames.size() > attributeIndex) {
+                    attributeName = sqlColumnNames.get(attributeIndex);
                 } else {
                     attributeName = nameProvider.provideColumnName(attributeIndex);
                 }
@@ -181,6 +216,9 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
         @Parameter(names = {"--has-header"}, description = "whether the first line of the file shall be used to identify the column names (true, false)")
         public String hasHeader = "false";
+
+        @Parameter(names = {"--sql-file"}, description = "an additional sql file containing CREATE TABLE statements to help identifying the column names")
+        public String sqlFile = "";
 
         @Parameter(names = {"--name-provider"},
                 description = "how to generate names for the schema elements (sodap/metanome)",
