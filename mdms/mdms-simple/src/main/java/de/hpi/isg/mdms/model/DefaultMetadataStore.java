@@ -255,7 +255,7 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<ConstraintCollection<?>> getConstraintCollections() {
-        return (Collection<ConstraintCollection<?>>) (Collection) this.constraintCollections;
+        return this.constraintCollections;
     }
 
     @Override
@@ -265,33 +265,28 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         }
         return null;
     }
-
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
-        Validate.isTrue(Serializable.class.isAssignableFrom(cls), "DefaultMetadataStore requires serializable metadata.");
-
-        // Make sure that the given targets are actually compatible with this kind of metadata store.
-        for (Target target : scope) {
-            Validate.isAssignableFrom(AbstractTarget.class, target.getClass());
+    public ConstraintCollection<?> getConstraintCollection(String userDefinedId) {
+        for (ConstraintCollection<?> constraintCollection : this.constraintCollections) {
+            if (userDefinedId.equals(constraintCollection.getUserDefinedId())) return constraintCollection;
         }
-        ConstraintCollection<T> constraintCollection = (ConstraintCollection<T>) new DefaultConstraintCollection(
-                this,
-                this.getUnusedConstraintCollectonId(),
-                new HashSet<>(),
-                new HashSet<>(Arrays.asList(scope)),
-                cls
-        );
-        constraintCollection.setDescription(description);
-        this.constraintCollections.add(constraintCollection);
-        return constraintCollection;
+        return null;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> ConstraintCollection<T> createConstraintCollection(String description,
-                                                                  Experiment experiment, Class<T> cls, Target... scope) {
+    public <T> ConstraintCollection<T> createConstraintCollection(String userDefinedId,
+                                                                  String description,
+                                                                  Experiment experiment,
+                                                                  Class<T> cls,
+                                                                  Target... scope) {
         Validate.isTrue(Serializable.class.isAssignableFrom(cls), "DefaultMetadataStore requires serializable metadata.");
+
+        if (userDefinedId != null && this.getConstraintCollection(userDefinedId) != null) {
+            throw new IdAlreadyInUseException(String.format(
+                    "Constraint collection ID already in use: \"%s\".", userDefinedId
+            ));
+        }
 
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
@@ -300,13 +295,15 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
         ConstraintCollection<T> constraintCollection = ((ConstraintCollection<T>) new DefaultConstraintCollection(
                 this,
                 this.getUnusedConstraintCollectonId(),
+                userDefinedId,
+                description,
                 new HashSet<T>(),
                 new HashSet<>(Arrays.asList(scope)),
                 experiment,
                 cls
         ));
         this.constraintCollections.add(constraintCollection);
-        experiment.add(constraintCollection);
+        if (experiment != null) experiment.add(constraintCollection);
         return constraintCollection;
     }
 

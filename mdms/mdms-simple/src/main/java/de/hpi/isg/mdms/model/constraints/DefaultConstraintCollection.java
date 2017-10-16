@@ -21,7 +21,11 @@ import java.util.Set;
 public class DefaultConstraintCollection<T extends Serializable> extends AbstractIdentifiable implements ConstraintCollection<T> {
 
     private static final long serialVersionUID = -6633086023388829925L;
+
+    private final String userDefinedId;
+
     private final Set<T> constraints;
+
     private final Set<Target> scope;
 
     private String description;
@@ -34,25 +38,23 @@ public class DefaultConstraintCollection<T extends Serializable> extends Abstrac
     @ExcludeHashCodeEquals
     private final DefaultMetadataStore metadataStore;
 
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
-                                       Set<Target> scope, Experiment experiment, Class<T> constrainttype) {
+    public DefaultConstraintCollection(DefaultMetadataStore metadataStore,
+                                       int id,
+                                       String userDefinedId,
+                                       String description,
+                                       Set<T> constraints,
+                                       Set<Target> scope,
+                                       Experiment experiment,
+                                       Class<T> constrainttype) {
         super(id);
         this.metadataStore = metadataStore;
+        this.userDefinedId = userDefinedId;
+        this.description = description;
         this.constraints = constraints;
         this.scope = scope;
         this.experiment = experiment;
         this.constrainttype = constrainttype;
 
-    }
-
-    public DefaultConstraintCollection(DefaultMetadataStore metadataStore, int id, Set<T> constraints,
-                                       Set<Target> scope, Class<T> constrainttype) {
-        super(id);
-        this.metadataStore = metadataStore;
-        this.constraints = constraints;
-        this.scope = scope;
-        this.experiment = null;
-        this.constrainttype = constrainttype;
     }
 
     @Override
@@ -67,7 +69,7 @@ public class DefaultConstraintCollection<T extends Serializable> extends Abstrac
 
     @Override
     public String toString() {
-        return "DefaultConstraintCollection [constraints=" + constraints + ", scope=" + scope + "]";
+        return "DefaultConstraintCollection[constraints=" + constraints + ", scope=" + scope + "]";
     }
 
     @Override
@@ -86,6 +88,11 @@ public class DefaultConstraintCollection<T extends Serializable> extends Abstrac
     @Override
     public DefaultMetadataStore getMetadataStore() {
         return this.metadataStore;
+    }
+
+    @Override
+    public String getUserDefinedId() {
+        return this.userDefinedId;
     }
 
     public String getDescription() {

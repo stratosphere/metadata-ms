@@ -258,6 +258,11 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
+    public ConstraintCollection<?> getConstraintCollectionByUserDefinedId(String userDefinedId) throws SQLException {
+        return this.constraintHandler.getConstraintCollectionByUserDefinedId(userDefinedId);
+    }
+
+    @Override
     public <T> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException {
         this.constraintHandler.writeConstraint(constraint, (RDBMSConstraintCollection<T>) constraintCollection);
     }

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.model;
 
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.common.Observer;
 import de.hpi.isg.mdms.model.constraints.Constraint;
@@ -15,7 +16,6 @@ import de.hpi.isg.mdms.model.util.IdUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -51,12 +51,20 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     Collection<ConstraintCollection<?>> getConstraintCollections();
 
     /**
-     * Returns a particular {@link ConstraintCollection} with the given id.
+     * Returns a particular {@link ConstraintCollection} with the given ID.
      *
-     * @param id
-     * @return the {@link ConstraintCollection} with the given id, <code>null</code> if no exists with given id.
+     * @param id the ID
+     * @return the {@link ConstraintCollection} with the given ID, <code>null</code> if no exists with given ID.
      */
-    ConstraintCollection<?> getConstraintCollection(int id);
+    <T> ConstraintCollection<T> getConstraintCollection(int id);
+
+    /**
+     * Returns a particular {@link ConstraintCollection} with the given user-defined ID.
+     *
+     * @param userDefinedId the user-defined ID
+     * @return the {@link ConstraintCollection} with the given ID, <code>null</code> if no exists with given ID.
+     */
+    <T> ConstraintCollection<T> getConstraintCollection(String userDefinedId);
 
     /**
      * Retrieve all {@link ConstraintCollection}s in this instance that have the given scope.
@@ -331,15 +339,35 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
+     *
+     * @param userDefinedId a user-defined ID for the new {@link ConstraintCollection} or {@code null}
+     * @param description   a description for the new {@link ConstraintCollection}
+     * @param experiment    an {@link Experiment} to associate the {@link ConstraintCollection} with or {@code null}
+     * @param cls           the {@link Class} of {@link Constraint}s to store in the {@link ConstraintCollection}
+     * @param scope         the {@link Target}s which the {@link Constraint}s address
+     * @return the new {@link ConstraintCollection}
+     * @throws IdAlreadyInUseException if the user-define ID already exists
      */
-    <T> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope);
+    <T> ConstraintCollection<T> createConstraintCollection(String userDefinedId,
+                                                           String description,
+                                                           Experiment experiment,
+                                                           Class<T> cls,
+                                                           Target... scope) throws IdAlreadyInUseException;
+    /**
+     * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
+     * collection of known {@link ConstraintCollection}s.
+     */
+    default <T> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope) {
+        return this.createConstraintCollection(null, description, experiment, cls, scope);
+    }
 
     /**
      * This method creates a new {@link ConstraintCollection} that will also be added to this {@link MetadataStore}s
      * collection of known {@link ConstraintCollection}s.
      */
-    <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope);
-
+    default <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
+        return this.createConstraintCollection(null, description, null, cls, scope);
+    }
 
     /**
      * Returns the {@link de.hpi.isg.mdms.model.util.IdUtils} of this store.

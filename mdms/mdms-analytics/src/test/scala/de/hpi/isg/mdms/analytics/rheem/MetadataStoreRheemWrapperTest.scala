@@ -8,6 +8,7 @@ import org.mockito.Mockito
 import org.qcri.rheem.api.PlanBuilder
 import org.qcri.rheem.core.api.RheemContext
 import org.qcri.rheem.java.Java
+import scala.collection.JavaConversions._
 
 /**
   * Tests the [[MetadataStoreRheemWrapper]] class.
@@ -60,6 +61,24 @@ class MetadataStoreRheemWrapperTest {
     val table2 = store.getTableByName("schema1.table2")
     implicit val planBuilder = Mockito.mock(classOf[PlanBuilder])
     store.loadConstraints[FunctionalDependency](table2)
+  }
+
+  @Test
+  def shouldLoadConstraintCollectionsByUserDefinedId(): Unit = {
+    val (store, ccFd1, _) = TestUtil.metadataStoreFixture2
+    val rheemContext = new RheemContext().withPlugin(Java.basicPlugin)
+    implicit val planBuilder = new PlanBuilder(rheemContext)
+    val fds = store.loadConstraints[FunctionalDependency]("ccFd1").collect()
+    Assert.assertEquals(ccFd1.getConstraints.toSet, fds.toSet)
+  }
+
+  @Test(expected = classOf[NoConstraintCollectionException])
+  def shouldFailOnOnMissingConstraintCollectionsForUserDefinedId(): Unit = {
+    val (store, ccFd1, ccFd2) = TestUtil.metadataStoreFixture2
+
+    val table2 = store.getTableByName("schema1.table2")
+    implicit val planBuilder = Mockito.mock(classOf[PlanBuilder])
+    store.loadConstraints[FunctionalDependency]("ccFd42")
   }
 
   @Test

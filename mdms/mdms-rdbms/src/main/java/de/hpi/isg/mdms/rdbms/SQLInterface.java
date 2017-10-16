@@ -8,6 +8,7 @@ import de.hpi.isg.mdms.domain.experiment.RDBMSExperiment;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
+import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -36,7 +37,7 @@ public interface SQLInterface {
     void initializeMetadataStore() throws SQLException;
 
     /**
-     * Writes a {@link de.hpi.isg.mdms.model.constraints.Constraint} to the constraint table.
+     * Writes a {@link Constraint} to the constraint table.
      *
      * @param constraint should be written
      */
@@ -131,7 +132,7 @@ public interface SQLInterface {
     boolean checkAllTablesExistence() throws SQLException;
 
     /**
-     * Returns a {@link java.util.Collection} of all {@link de.hpi.isg.mdms.model.constraints.Constraint}s in a
+     * Returns a {@link java.util.Collection} of all {@link Constraint}s in a
      * {@link de.hpi.isg.mdms.model.constraints.ConstraintCollection}.
      *
      * @param rdbmsConstraintCollection is the collection whose content is requested
@@ -180,6 +181,14 @@ public interface SQLInterface {
      * @return the constraint collection
      */
     ConstraintCollection<?> getConstraintCollectionById(int id) throws SQLException;
+
+    /**
+     * Returns a {@link ConstraintCollection} for a given id, <code>null</code> if no such exists.
+     *
+     * @param userDefinedId of the constraint collection
+     * @return the constraint collection
+     */
+    ConstraintCollection<?> getConstraintCollectionByUserDefinedId(String userDefinedId) throws SQLException;
 
     /**
      * Saves the configuration of a {@link de.hpi.isg.mdms.model.MetadataStore}.
