@@ -11,8 +11,8 @@ import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.tools.metanome.DependencyResultReceiver;
-import de.hpi.isg.mdms.tools.metanome.ResultReader;
+import de.hpi.isg.mdms.metanome.DependencyResultReceiver;
+import de.hpi.isg.mdms.metanome.ResultReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -111,16 +111,16 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
             switch (parameters.dependencyType) {
                 case "IND":
                 case "ind":
-                    return new de.hpi.isg.mdms.tools.metanome.friendly.InclusionDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.friendly.InclusionDependencyReader();
                 case "UCC":
                 case "ucc":
-                    return new de.hpi.isg.mdms.tools.metanome.friendly.UniqueColumnCombinationReader();
+                    return new de.hpi.isg.mdms.metanome.friendly.UniqueColumnCombinationReader();
                 case "FD":
                 case "fd":
-                    return new de.hpi.isg.mdms.tools.metanome.friendly.FunctionalDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.friendly.FunctionalDependencyReader();
                 case "OD":
                 case "od":
-                    return new de.hpi.isg.mdms.tools.metanome.friendly.OrderDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.friendly.OrderDependencyReader();
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }
@@ -129,16 +129,16 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
             switch (parameters.dependencyType) {
                 case "IND":
                 case "ind":
-                    return new de.hpi.isg.mdms.tools.metanome.json.InclusionDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.json.InclusionDependencyReader();
                 case "UCC":
                 case "ucc":
-                    return new de.hpi.isg.mdms.tools.metanome.json.UniqueColumnCombinationReader();
+                    return new de.hpi.isg.mdms.metanome.json.UniqueColumnCombinationReader();
                 case "FD":
                 case "fd":
-                    return new de.hpi.isg.mdms.tools.metanome.json.FunctionalDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.json.FunctionalDependencyReader();
                 case "OD":
                 case "od":
-                    return new de.hpi.isg.mdms.tools.metanome.json.OrderDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.json.OrderDependencyReader();
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }
@@ -146,16 +146,16 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
             switch (parameters.dependencyType) {
                 case "IND":
                 case "ind":
-                    return new de.hpi.isg.mdms.tools.metanome.compact.InclusionDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.compact.InclusionDependencyReader();
                 case "UCC":
                 case "ucc":
-                    return new de.hpi.isg.mdms.tools.metanome.compact.UniqueColumnCombinationReader();
+                    return new de.hpi.isg.mdms.metanome.compact.UniqueColumnCombinationReader();
                 case "FD":
                 case "fd":
-                    return new de.hpi.isg.mdms.tools.metanome.compact.FunctionalDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.compact.FunctionalDependencyReader();
                 case "OD":
                 case "od":
-                    return new de.hpi.isg.mdms.tools.metanome.compact.OrderDependencyReader();
+                    return new de.hpi.isg.mdms.metanome.compact.OrderDependencyReader();
                 default:
                     throw new IllegalArgumentException("Unknown dependency type: " + parameters.dependencyType);
             }

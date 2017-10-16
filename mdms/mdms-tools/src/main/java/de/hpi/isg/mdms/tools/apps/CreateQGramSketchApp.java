@@ -18,21 +18,22 @@ import com.beust.jcommander.ParametersDelegate;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
+import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.constraints.Vector;
-import de.hpi.isg.mdms.flink.location.CsvFileLocation;
+import de.hpi.isg.mdms.flink.location.CsvDataSourceBuilders;
 import de.hpi.isg.mdms.flink.util.FileUtils;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import org.apache.flink.core.fs.Path;
 
 import java.io.BufferedReader;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.ToDoubleFunction;
@@ -132,7 +133,7 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
             CSVParser csvParser = new CSVParser(csvFileLocation.getFieldSeparator(), csvFileLocation.getQuoteChar(), '\0', false, true);
             try (BufferedReader bufferedReader = new BufferedReader(
                     csvFileLocation.getEncoding().applyTo(
-                            FileUtils.open(csvFileLocation.getPath(), null)
+                            FileUtils.open(new Path(csvFileLocation.getPath()), null)
                     ))) {
 
                 // Go over the file and collect the q-grams.

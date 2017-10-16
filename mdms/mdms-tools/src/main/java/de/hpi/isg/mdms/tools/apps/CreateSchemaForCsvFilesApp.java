@@ -14,11 +14,12 @@ package de.hpi.isg.mdms.tools.apps;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
+import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.flink.location.AbstractCsvLocation;
-import de.hpi.isg.mdms.flink.location.CsvFileLocation;
+import de.hpi.isg.mdms.clients.location.AbstractCsvLocation;
+import de.hpi.isg.mdms.flink.location.CsvDataSourceBuilders;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
@@ -109,7 +110,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         logger.info("added schema {} with ID {}", schema.getName(), schema.getId());
         for (final Path file : files) {
             final String tableName = nameProvider.provideTableName(file);
-            final AbstractCsvLocation tableLocation = new CsvFileLocation();
+            final CsvFileLocation tableLocation = new CsvFileLocation();
             String path = file.toString();
             tableLocation.setPath(path);
             tableLocation.setFieldSeparator(this.parameters.csvParameters.getFieldSeparatorChar());

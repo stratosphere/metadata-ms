@@ -23,14 +23,14 @@ import java.util.Collection;
 /**
  * This interface describes methods to build {@link DataSet}s in Flink programs for a specific type of {@link Target}
  * with a certain {@link Location} type.
- * 
+ *
  * @author Sebastian Kruse
  */
-public interface DataSourceBuilder<TTarget extends Target, TLocation extends Location, DataSetElement> {
+public interface DataSourceBuilder<DataSetElement> {
 
-	DataSet<DataSetElement> buildDataSource(ExecutionEnvironment env,
-											Collection<TTarget> targets,
-											MetadataStore metadataStore,
-											boolean isAllowingEmptyFields);
+    DataSet<DataSetElement> buildDataSource(ExecutionEnvironment env,
+                                            Collection<? extends Target> targets,
+                                            MetadataStore metadataStore,
+                                            boolean isAllowingEmptyFields);
 
 }
