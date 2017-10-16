@@ -14,13 +14,12 @@ package de.hpi.isg.mdms.tools.apps;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
+import de.hpi.isg.mdms.clients.location.MergedCsvFileLocation;
+import de.hpi.isg.mdms.clients.location.MergedCsvFilePartitionLocation;
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.flink.functions.ParsePlainCsvRows;
-import de.hpi.isg.mdms.flink.location.MergedCsvFileLocation;
-import de.hpi.isg.mdms.flink.location.MergedCsvFilePartitionLocation;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
 import de.hpi.isg.mdms.flink.readwrite.RemoteCollectorImpl;
 import de.hpi.isg.mdms.model.MetadataStore;

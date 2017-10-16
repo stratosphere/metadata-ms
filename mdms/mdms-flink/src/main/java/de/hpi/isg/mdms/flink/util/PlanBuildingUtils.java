@@ -1,9 +1,9 @@
 package de.hpi.isg.mdms.flink.util;
 
+import de.hpi.isg.mdms.clients.location.AbstractCsvLocation;
 import de.hpi.isg.mdms.flink.data.Tuple;
-import de.hpi.isg.mdms.flink.location.CellLocation;
+import de.hpi.isg.mdms.flink.location.CsvDataSourceBuilders;
 import de.hpi.isg.mdms.flink.location.DataSourceBuilder;
-import de.hpi.isg.mdms.flink.location.TupleLocation;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Table;
@@ -77,22 +77,19 @@ public class PlanBuildingUtils {
 																	MetadataStore metadataStore, boolean isAllowingEmptyFields) {
 
 		// Partition tables by their DataSourceBuilder.
-		Map<DataSourceBuilder<Table, ? extends CellLocation, Tuple2<Integer, String>>, List<Table>> tablesByDataSourceBuilder = new HashMap<>();
+		Map<DataSourceBuilder<Tuple2<Integer, String>>, List<Table>> tablesByDataSourceBuilder = new HashMap<>();
 		for (Table table : tables) {
 			Location location = table.getLocation();
-			if (!(location instanceof CellLocation)) {
-				throw new IllegalArgumentException(String.format("%s for %s is not a CellLocation.", location, table));
-			}
-			DataSourceBuilder<Table, CellLocation, Tuple2<Integer, String>> dataSourceBuilder = ((CellLocation) location)
-					.getCellDataSourceBuilder();
+			Validate.isInstanceOf(AbstractCsvLocation.class, location);
+			DataSourceBuilder<Tuple2<Integer, String>> dataSourceBuilder =
+					CsvDataSourceBuilders.getCellDataSourceBuilder((AbstractCsvLocation) location);
 			CollectionUtils.putIntoList(tablesByDataSourceBuilder, dataSourceBuilder, table);
 		}
 
 		// Build the datasets with the different DataSourceBuilders.
 		List<DataSet<Tuple2<Integer, String>>> dataSets = new ArrayList<>();
-		for (Entry<DataSourceBuilder<Table, ? extends CellLocation, Tuple2<Integer, String>>, List<Table>> entry : tablesByDataSourceBuilder
-				.entrySet()) {
-			DataSourceBuilder<Table, ? extends CellLocation, Tuple2<Integer, String>> dataSourceBuilder = entry.getKey();
+		for (Entry<DataSourceBuilder<Tuple2<Integer, String>>, List<Table>> entry : tablesByDataSourceBuilder.entrySet()) {
+			DataSourceBuilder<Tuple2<Integer, String>> dataSourceBuilder = entry.getKey();
 			DataSet<Tuple2<Integer, String>> dataSet = dataSourceBuilder.buildDataSource(env, entry.getValue(), metadataStore, isAllowingEmptyFields);
 			dataSets.add(dataSet);
 		}
@@ -123,23 +120,19 @@ public class PlanBuildingUtils {
 												   MetadataStore metadataStore, boolean isAllowingEmptyFields) {
 	    
 	    // Partition tables by their DataSourceBuilder.
-	    Map<DataSourceBuilder<Table, ? extends TupleLocation, Tuple>, List<Table>> tablesByDataSourceBuilder = new HashMap<>();
-	    for (Table table : tables) {
-	        Location location = table.getLocation();
-	        if (!(location instanceof TupleLocation)) {
-	            throw new IllegalArgumentException(String.format("%s for %s is not a TupleLocation.", location, table));
-	        }
-	        DataSourceBuilder<Table, TupleLocation, Tuple> dataSourceBuilder =
-	                ((TupleLocation) location).getTupleDataSourceBuilder();
+	    Map<DataSourceBuilder<Tuple>, List<Table>> tablesByDataSourceBuilder = new HashMap<>();
+		for (Table table : tables) {
+			Location location = table.getLocation();
+			Validate.isInstanceOf(AbstractCsvLocation.class, location);
+			DataSourceBuilder<Tuple> dataSourceBuilder =
+					CsvDataSourceBuilders.getTupleDataSourceBuilder((AbstractCsvLocation) location);
 	        CollectionUtils.putIntoList(tablesByDataSourceBuilder, dataSourceBuilder, table);
 	    }
 	    
 	    // Build the datasets with the different DataSourceBuilders.
 	    List<DataSet<Tuple>> dataSets = new ArrayList<>();
-	    for (Entry<DataSourceBuilder<Table, ? extends TupleLocation, Tuple>, List<Table>> entry :
-	        tablesByDataSourceBuilder.entrySet()) {
-	        
-	        DataSourceBuilder<Table, ? extends TupleLocation, Tuple> dataSourceBuilder = entry.getKey();
+	    for (Entry<DataSourceBuilder<Tuple>, List<Table>> entry : tablesByDataSourceBuilder.entrySet()) {
+	        DataSourceBuilder<Tuple> dataSourceBuilder = entry.getKey();
 	        DataSet<Tuple> dataSet = dataSourceBuilder.buildDataSource(env, entry.getValue(), metadataStore, isAllowingEmptyFields);
 	        dataSets.add(dataSet);
 	    }

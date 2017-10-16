@@ -10,27 +10,24 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
-package de.hpi.isg.mdms.flink.location;
+package de.hpi.isg.mdms.clients.location;
 
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.targets.Target;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
-
-import java.util.Collection;
+import de.hpi.isg.mdms.model.location.DefaultLocation;
 
 /**
- * This interface describes methods to build {@link DataSet}s in Flink programs for a specific type of {@link Target}
- * with a certain {@link Location} type.
+ * This {@link de.hpi.isg.mdms.model.location.Location} type is associated with a file path.
  *
  * @author Sebastian Kruse
  */
-public interface DataSourceBuilder<DataSetElement> {
+@SuppressWarnings("serial")
+public class FileLocation extends DefaultLocation {
 
-    DataSet<DataSetElement> buildDataSource(ExecutionEnvironment env,
-                                            Collection<? extends Target> targets,
-                                            MetadataStore metadataStore,
-                                            boolean isAllowingEmptyFields);
+    public void setPath(String path) {
+        this.set(PATH, path);
+    }
+
+    public String getPath() {
+        return this.get(PATH);
+    }
 
 }

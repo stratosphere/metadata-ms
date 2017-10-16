@@ -8,7 +8,7 @@ import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.tools.metanome.StatisticsResultReceiver;
+import de.hpi.isg.mdms.metanome.StatisticsResultReceiver;
 import de.metanome.algorithm_integration.results.BasicStatistic;
 import de.metanome.algorithm_integration.results.JsonConverter;
 

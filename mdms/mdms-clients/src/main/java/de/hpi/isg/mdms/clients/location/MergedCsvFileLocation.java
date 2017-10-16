@@ -10,27 +10,20 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
-package de.hpi.isg.mdms.flink.location;
-
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.targets.Target;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
-
-import java.util.Collection;
+package de.hpi.isg.mdms.clients.location;
 
 /**
- * This interface describes methods to build {@link DataSet}s in Flink programs for a specific type of {@link Target}
- * with a certain {@link Location} type.
+ * Describes the location of a merged CSV file, which is a CSV file where
+ * <ul>
+ * <li>the first field in each row is the ID of a table to which this row belongs and</li>
+ * <li>the remainder fields form the tuple.</li>
+ * </ul>
+ * As such, a {@link MergedCsvFileLocation} can comprise multiple {@link de.hpi.isg.mdms.model.targets.Table}s and
+ * perhaps a whole {@link de.hpi.isg.mdms.model.targets.Schema}.
  *
  * @author Sebastian Kruse
  */
-public interface DataSourceBuilder<DataSetElement> {
-
-    DataSet<DataSetElement> buildDataSource(ExecutionEnvironment env,
-                                            Collection<? extends Target> targets,
-                                            MetadataStore metadataStore,
-                                            boolean isAllowingEmptyFields);
+@SuppressWarnings("serial")
+public class MergedCsvFileLocation extends AbstractCsvLocation {
 
 }

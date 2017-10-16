@@ -103,6 +103,7 @@
         <module>mdms-java</module>
         <module>mdms-cli</module>
         <module>mdms-analytics</module>
+        <module>mdms-metanome</module>
     </modules>
 
     <profiles>
