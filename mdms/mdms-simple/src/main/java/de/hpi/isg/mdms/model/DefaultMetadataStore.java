@@ -282,6 +282,12 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
                                                                   Target... scope) {
         Validate.isTrue(Serializable.class.isAssignableFrom(cls), "DefaultMetadataStore requires serializable metadata.");
 
+        if (userDefinedId != null && this.getConstraintCollection(userDefinedId) != null) {
+            throw new IdAlreadyInUseException(String.format(
+                    "Constraint collection ID already in use: \"%s\".", userDefinedId
+            ));
+        }
+
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractTarget.class, target.getClass());

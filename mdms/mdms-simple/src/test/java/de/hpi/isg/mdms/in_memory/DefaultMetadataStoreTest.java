@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.in_memory;
 
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.MetadataStoreNotFoundException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
@@ -678,5 +679,15 @@ public class DefaultMetadataStoreTest {
             ConstraintCollection<UniqueColumnCombination> loadedCC = store1.getConstraintCollection("my-uccs");
             assertNull(loadedCC);
         }
+    }
+
+    @Test(expected = IdAlreadyInUseException.class)
+    public void testDuplicateUserDefinedIdsForConstraintCollectionsFails() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Schema dummySchema = store1.addSchema("schema1", null, mock(Location.class));
+
+        store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
+        store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
+
     }
 }
