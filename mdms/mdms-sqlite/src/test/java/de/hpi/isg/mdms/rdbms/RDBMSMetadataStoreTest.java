@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.rdbms;
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.*;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -11,6 +12,7 @@ import de.hpi.isg.mdms.model.experiment.Experiment;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
 import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
+import de.hpi.isg.mdms.model.targets.DefaultSchema;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import org.junit.After;
@@ -24,6 +26,7 @@ import java.sql.*;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -133,6 +136,21 @@ public class RDBMSMetadataStoreTest {
         Collection<?> constraints = constraintCollection.getConstraints();
         assertTrue(constraints.contains(dummyTypeConstraint1));
         assertTrue(constraintCollection.getConstraints().contains(dummyTypeConstraint2));
+    }
+
+    @Test
+    public void testGetConstraintCollectionByUserDefinedId() throws SQLException {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        final Schema dummySchema = store1.addSchema("schema1", null, mock(Location.class));
+        ConstraintCollection<InclusionDependency> cc = store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
+        {
+            ConstraintCollection<InclusionDependency> loadedCC = store1.getConstraintCollection("my-inds");
+            assertEquals(cc.getId(), loadedCC.getId());
+        }
+        {
+            ConstraintCollection<UniqueColumnCombination> loadedCC = store1.getConstraintCollection("my-uccs");
+            assertNull(loadedCC);
+        }
     }
 
     @Test

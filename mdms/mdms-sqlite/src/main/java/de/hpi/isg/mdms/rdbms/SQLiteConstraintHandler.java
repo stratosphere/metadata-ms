@@ -51,6 +51,7 @@ public class SQLiteConstraintHandler {
     private final DatabaseWriter<ConstraintCollection<?>> addConstraintCollectionWriter;
     private final DatabaseWriter<ConstraintCollection<?>> deleteConstraintCollectionWriter;
     private final DatabaseQuery<Integer> constraintCollectionByIdQuery;
+    private final DatabaseQuery<String> constraintCollectionByUserDefinedIdQuery;
     private final DatabaseQuery<Void> allConstraintCollectionsQuery;
     private final LRUCache<Integer, RDBMSConstraintCollection<?>> constraintCollectionCache = new LRUCache<>(100);
     private boolean isConstraintCollectionCacheComplete = false;
@@ -103,6 +104,11 @@ public class SQLiteConstraintHandler {
         this.constraintCollectionByIdQuery = this.databaseAccess.createQuery(new StrategyBasedPreparedQuery.Factory<>(
                 "select * from [ConstraintCollection] where [id]=?",
                 PreparedStatementAdapter.SINGLE_INT_ADAPTER,
+                "ConstraintCollection"
+        ));
+        this.constraintCollectionByUserDefinedIdQuery = this.databaseAccess.createQuery(new StrategyBasedPreparedQuery.Factory<>(
+                "select * from [ConstraintCollection] where [userDefinedId]=?",
+                PreparedStatementAdapter.SINGLE_STRING_ADAPTER,
                 "ConstraintCollection"
         ));
         this.allConstraintCollectionsQuery = this.databaseAccess.createQuery(new StrategyBasedPreparedQuery.Factory<>(
@@ -181,6 +187,45 @@ public class SQLiteConstraintHandler {
                         id, userDefinedId, description, experiment, scope, this.sqliteInterface, data.constraintClass
                 );
                 return cc;
+            }
+        }
+
+        return null;
+    }
+    /**
+     * Loads a constraint collection with the given user-defined ID. The scope is not loaded, though.
+     *
+     * @param userDefinedId is the user-defined ID of the collection
+     * @return the loaded collection or {@code null} if there is no constraint collection with the associated ID
+     */
+    @SuppressWarnings("unchecked")
+    public RDBMSConstraintCollection<?> getConstraintCollectionByUserDefinedId(String userDefinedId) throws SQLException {
+        for (RDBMSConstraintCollection<?> cc : this.constraintCollectionCache.values()) {
+            if (userDefinedId.equals(cc.getUserDefinedId())) return cc;
+        }
+
+        try (ResultSet rs = this.constraintCollectionByUserDefinedIdQuery.execute(userDefinedId)) {
+            if (rs.next()) {
+                final int id = rs.getInt(1);
+
+                Validate.isTrue(userDefinedId.equals(rs.getString(2)));
+
+                int experimentId = rs.getInt(3);
+                Experiment experiment = this.metadataStore.getExperimentById(experimentId);
+
+                String description = rs.getString(4);
+
+                SQLiteConstraintHandler.ConstraintCollectionData data = this.kryoPool.fromBytes(
+                        rs.getBytes(5), SQLiteConstraintHandler.ConstraintCollectionData.class
+                );
+                Set<Target> scope = new HashSet<>(data.scopeIds.length);
+                for (int scopeId : data.scopeIds) {
+                    scope.add(this.metadataStore.getTargetById(scopeId));
+                }
+
+                return new RDBMSConstraintCollection<>(
+                        id, userDefinedId, description, experiment, scope, this.sqliteInterface, data.constraintClass
+                );
             }
         }
 

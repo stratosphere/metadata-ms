@@ -51,12 +51,20 @@ public interface MetadataStore extends Serializable, Observer<Target> {
     Collection<ConstraintCollection<?>> getConstraintCollections();
 
     /**
-     * Returns a particular {@link ConstraintCollection} with the given id.
+     * Returns a particular {@link ConstraintCollection} with the given ID.
      *
-     * @param id
-     * @return the {@link ConstraintCollection} with the given id, <code>null</code> if no exists with given id.
+     * @param id the ID
+     * @return the {@link ConstraintCollection} with the given ID, <code>null</code> if no exists with given ID.
      */
-    ConstraintCollection<?> getConstraintCollection(int id);
+    <T> ConstraintCollection<T> getConstraintCollection(int id);
+
+    /**
+     * Returns a particular {@link ConstraintCollection} with the given user-defined ID.
+     *
+     * @param userDefinedId the user-defined ID
+     * @return the {@link ConstraintCollection} with the given ID, <code>null</code> if no exists with given ID.
+     */
+    <T> ConstraintCollection<T> getConstraintCollection(String userDefinedId);
 
     /**
      * Retrieve all {@link ConstraintCollection}s in this instance that have the given scope.

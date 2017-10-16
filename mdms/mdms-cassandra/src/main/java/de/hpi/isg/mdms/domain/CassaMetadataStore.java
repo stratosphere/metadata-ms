@@ -226,6 +226,11 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
         //TODO
         return null;
     }
+    @Override
+    public ConstraintCollection<?> getConstraintCollection(String userDefinedId) {
+        //TODO
+        return null;
+    }
 
 
     @Override

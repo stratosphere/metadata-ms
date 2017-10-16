@@ -255,13 +255,20 @@ public class DefaultMetadataStore extends AbstractHashCodeAndEquals implements M
 
     @Override
     public Collection<ConstraintCollection<?>> getConstraintCollections() {
-        return (Collection<ConstraintCollection<?>>) (Collection) this.constraintCollections;
+        return this.constraintCollections;
     }
 
     @Override
     public ConstraintCollection<?> getConstraintCollection(int id) {
         for (ConstraintCollection<?> constraintCollection : this.constraintCollections) {
             if (constraintCollection.getId() == id) return constraintCollection;
+        }
+        return null;
+    }
+    @Override
+    public ConstraintCollection<?> getConstraintCollection(String userDefinedId) {
+        for (ConstraintCollection<?> constraintCollection : this.constraintCollections) {
+            if (userDefinedId.equals(constraintCollection.getUserDefinedId())) return constraintCollection;
         }
         return null;
     }

@@ -87,11 +87,11 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
     */
   def storeConstraintCollection(store: MetadataStore,
                                 scope: Iterable[Target],
-                                userDefinedId: String = null,
+                                userDefinedId: Option[String] = None,
                                 description: String = "(no description)",
                                 experiment: Option[Experiment] = None): ConstraintCollection[Out] = {
     val cls = implicitly[ClassTag[Out]].runtimeClass.asInstanceOf[Class[Out]]
-    val cc = store.createConstraintCollection(userDefinedId, description, experiment.orNull, cls, scope.toSeq: _*)
+    val cc = store.createConstraintCollection(userDefinedId.orNull, description, experiment.orNull, cls, scope.toSeq: _*)
     this.store(cc)
     cc
   }

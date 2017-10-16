@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -660,6 +661,22 @@ public class DefaultMetadataStoreTest {
                     Assert.assertFalse(store1.getConstraintCollections().contains(o));
                 }
             }
+        }
+    }
+
+    @Test
+    public void testGetConstraintCollectionByUserDefinedId() {
+        final MetadataStore store1 = new DefaultMetadataStore();
+        final Schema dummySchema = store1.addSchema("schema1", null, mock(Location.class));
+
+        ConstraintCollection<InclusionDependency> cc = store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
+        {
+            ConstraintCollection<InclusionDependency> loadedCC = store1.getConstraintCollection("my-inds");
+            assertEquals(cc.getId(), loadedCC.getId());
+        }
+        {
+            ConstraintCollection<UniqueColumnCombination> loadedCC = store1.getConstraintCollection("my-uccs");
+            assertNull(loadedCC);
         }
     }
 }

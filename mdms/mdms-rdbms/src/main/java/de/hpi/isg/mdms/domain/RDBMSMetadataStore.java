@@ -244,6 +244,15 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         }
     }
 
+    @Override
+    public ConstraintCollection<?> getConstraintCollection(String userDefinedId) {
+        try {
+            return this.sqlInterface.getConstraintCollectionByUserDefinedId(userDefinedId);
+        } catch (SQLException e) {
+            throw new MetadataStoreException(e);
+        }
+    }
+
     public SQLInterface getSQLInterface() {
         return this.sqlInterface;
     }
