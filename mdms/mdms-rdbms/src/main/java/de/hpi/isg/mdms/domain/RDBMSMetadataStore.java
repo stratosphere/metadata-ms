@@ -7,6 +7,7 @@ import de.hpi.isg.mdms.domain.targets.AbstractRDBMSTarget;
 import de.hpi.isg.mdms.domain.targets.RDBMSColumn;
 import de.hpi.isg.mdms.domain.targets.RDBMSSchema;
 import de.hpi.isg.mdms.domain.targets.RDBMSTable;
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.MetadataStoreException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.MetadataStore;
@@ -267,6 +268,13 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
                                                                   Experiment experiment,
                                                                   Class<T> cls,
                                                                   Target... scope) {
+        // Make sure that the user-defined ID does not yet exist.
+        if (userDefinedId != null && this.getConstraintCollection(userDefinedId) != null) {
+            throw new IdAlreadyInUseException(String.format(
+                    "Constraint collection ID already in use: \"%s\".", userDefinedId
+            ));
+        }
+
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());

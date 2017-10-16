@@ -688,6 +688,6 @@ public class DefaultMetadataStoreTest {
 
         store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
         store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
-
     }
+
 }

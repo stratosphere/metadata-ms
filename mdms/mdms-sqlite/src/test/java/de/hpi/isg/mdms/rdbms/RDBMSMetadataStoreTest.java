@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.rdbms;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.*;
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
 import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
@@ -151,6 +152,14 @@ public class RDBMSMetadataStoreTest {
             ConstraintCollection<UniqueColumnCombination> loadedCC = store1.getConstraintCollection("my-uccs");
             assertNull(loadedCC);
         }
+    }
+
+    @Test(expected = IdAlreadyInUseException.class)
+    public void testDuplicateUserDefinedIdsForConstraintCollectionsFails() throws SQLException {
+        final MetadataStore store1 = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection));
+        final Schema dummySchema = store1.addSchema("schema1", null, mock(Location.class));
+        store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
+        store1.createConstraintCollection("my-inds", null, null, InclusionDependency.class, dummySchema);
     }
 
     @Test
