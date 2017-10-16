@@ -65,7 +65,6 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     metadataStore.getIncludedConstraintCollections(typeClass, scope).toSeq
   }
 
-
   /**
     * Provide the [[Constraint]]s of a [[ConstraintCollection]].
     *
@@ -88,6 +87,19 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
 
     // TODO: Depending on the underlying storage, there might be more efficient ways to ship the constraints to Rheem.
     planBuilder.loadCollection(constraintCollection.getConstraints)
+  }
+
+  /**
+    * Provide the [[Constraint]]s of a [[ConstraintCollection]].
+    *
+    * @param constraintCollectionId the user-defined ID of the [[ConstraintCollection]]
+    * @param planBuilder            required to set up the Rheem plan
+    * @tparam Type [[Constraint]] type
+    * @return the [[Constraint]]s of the [[ConstraintCollection]] as [[DataQuanta]]
+    */
+  def loadConstraints[Type : ClassTag](constraintCollectionId: String)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
+    val constraintCollection = Option(metadataStore.getConstraintCollection(constraintCollectionId).asInstanceOf[ConstraintCollection[Type]])
+    loadConstraints(constraintCollection.toSeq: _*)
   }
 
   /**

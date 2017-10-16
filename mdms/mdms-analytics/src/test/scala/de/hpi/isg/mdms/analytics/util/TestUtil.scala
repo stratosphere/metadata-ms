@@ -122,7 +122,7 @@ object TestUtil {
     addSchemata(store, 2, 3, 10)
 
     // Add some constraints.
-    val ccFd1 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
+    val ccFd1 = store.createConstraintCollection("ccFd1", "FDs on schema1.table1", null, classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
     ccFd1.add(
       new FunctionalDependency(
         Array(store.getColumnByName("schema1.table1.column0")).map(_.getId),
@@ -137,7 +137,7 @@ object TestUtil {
     )
 
     // Add some more constraints.
-    val ccFd2 = store.createConstraintCollection("FDs on schema1.table1", classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
+    val ccFd2 = store.createConstraintCollection("ccFd2", "FDs on schema1.table1", null, classOf[FunctionalDependency], store.getTableByName("schema1.table1"))
     ccFd2.add(
       new FunctionalDependency(
         Array(store.getColumnByName("schema1.table1.column0")).map(_.getId),
