@@ -12,7 +12,6 @@ import de.hpi.isg.mdms.exceptions.NameAmbigousException;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
 import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Algorithm;
 import de.hpi.isg.mdms.model.experiment.Experiment;
@@ -254,14 +253,20 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
         return this.randomGenerator.nextInt(Integer.MAX_VALUE);
     }
 
-    public <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
+    public <T> ConstraintCollection<T> createConstraintCollection(String userDefinedId,
+                                                                  String description,
+                                                                  Experiment experiment,
+                                                                  Class<T> cls,
+                                                                  Target... scope) {
         // Make sure that the given targets are actually compatible with this kind of metadata store.
         for (Target target : scope) {
             Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
         }
         ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection<>(
                 this.getUnusedConstraintCollectonId(),
+                userDefinedId,
                 description,
+                experiment,
                 new HashSet<>(Arrays.asList(scope)),
                 this.getSQLInterface(),
                 cls
@@ -430,32 +435,6 @@ public class RDBMSMetadataStore extends AbstractHashCodeAndEquals implements Met
             throw new MetadataStoreException(e);
         }
         return experiment;
-    }
-
-    @Override
-    public <T> ConstraintCollection<T> createConstraintCollection(
-            String description,Experiment experiment, Class<T> cls, Target... scope) {
-        // Make sure that the given targets are actually compatible with this kind of metadata store.
-        for (Target target : scope) {
-            Validate.isAssignableFrom(AbstractRDBMSTarget.class, target.getClass());
-        }
-        ConstraintCollection<T> constraintCollection = new RDBMSConstraintCollection<>(
-                this.getUnusedConstraintCollectonId(),
-                description,
-                experiment,
-                new HashSet<>(Arrays.asList(scope)),
-                this.getSQLInterface(),
-                cls
-        );
-
-        // Store the constraint collection in the DB.
-        try {
-            this.sqlInterface.addConstraintCollection(constraintCollection);
-        } catch (SQLException e) {
-            throw new MetadataStoreException(e);
-        }
-
-        return constraintCollection;
     }
 
     @Override

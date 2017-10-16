@@ -1,33 +1,34 @@
 package de.hpi.isg.mdms.domain;
 
-import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
-import de.hpi.isg.mdms.model.experiment.Algorithm;
-import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.model.location.Location;
-import de.hpi.isg.mdms.model.MetadataStore;
-import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
-import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
-import de.hpi.isg.mdms.model.targets.Schema;
-import de.hpi.isg.mdms.model.util.IdUtils;
-import de.hpi.isg.mdms.rdbms.util.LocationCache;
-import de.hpi.isg.mdms.exceptions.NameAmbigousException;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Constraints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import de.hpi.isg.mdms.exceptions.IdAlreadyInUseException;
+import de.hpi.isg.mdms.exceptions.NameAmbigousException;
+import de.hpi.isg.mdms.model.MetadataStore;
+import de.hpi.isg.mdms.model.common.AbstractHashCodeAndEquals;
+import de.hpi.isg.mdms.model.common.ExcludeHashCodeEquals;
+import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
+import de.hpi.isg.mdms.model.experiment.Algorithm;
+import de.hpi.isg.mdms.model.experiment.Experiment;
+import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Schema;
+import de.hpi.isg.mdms.model.targets.Target;
+import de.hpi.isg.mdms.model.util.IdUtils;
+import de.hpi.isg.mdms.rdbms.util.LocationCache;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * The cassandra implementation of the {@link MetadataStore} for storing the data inside of a cassandra database.
@@ -43,13 +44,14 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassaMetadataStore.class);
 
-	private static final String SETUP_SCRIPT_RESOURCE_PATH = "/schema_creation.cql";;
+    private static final String SETUP_SCRIPT_RESOURCE_PATH = "/schema_creation.cql";
+    ;
 
-    
-	static Cluster cluster;
-	static Session session;
-	
-	static String host = "localhost";
+
+    static Cluster cluster;
+    static Session session;
+
+    static String host = "localhost";
 
     @ExcludeHashCodeEquals
     transient final Random randomGenerator = new Random();
@@ -65,7 +67,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     public static CassaMetadataStore createNewInstance(String host, int numTableBitsInIds,
-            int numColumnBitsInIds) {
+                                                       int numColumnBitsInIds) {
         Map<String, String> configuration = new HashMap<>();
         configuration.put(NUM_TABLE_BITS_IN_IDS_KEY, String.valueOf(numTableBitsInIds));
         configuration.put(NUM_COLUMN_BITS_IN_IDS_KEY, String.valueOf(numColumnBitsInIds));
@@ -73,79 +75,80 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     public static CassaMetadataStore createNewInstance(String host,
-            Map<String, String> configuration) {
-    	
-		cluster = Cluster.builder().addContactPoint(host).withPort(9042)
-				.withRetryPolicy(DefaultRetryPolicy.INSTANCE)
-				.withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
-				.build();
+                                                       Map<String, String> configuration) {
 
-		cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(3000);
-		for ( KeyspaceMetadata keyspace : cluster.getMetadata().getKeyspaces()) {
-			if (keyspace.getName().equals("metadatastore")){
-				LOGGER.warn("The metadata store will be overwritten.");
-				session = cluster.connect();
-				session.execute("DROP KEYSPACE metadatastore");
-			};
-		}
-		
-		 try {
-			String cqlCreateTables = loadResource(SETUP_SCRIPT_RESOURCE_PATH);
-			session = cluster.connect();
+        cluster = Cluster.builder().addContactPoint(host).withPort(9042)
+                .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
+                .withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
+                .build();
 
-			if (host.equals("localhost")){
-				session.execute("CREATE KEYSPACE metadatastore WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};");	
-			} else {
-				session.execute("CREATE KEYSPACE metadatastore WITH replication = {'class':'NetworkTopologyStrategy', 'DC1':1};");				
-			}
-			
-			
-			session = cluster.connect("metadatastore");
-			String[] statements = cqlCreateTables.split(";");
-			for (String statement : statements){
-				session.execute(statement);				
-			}
-		 } catch (IOException e) {
-			 System.out.println("exception");
-			e.printStackTrace();
-		}
-		session = cluster.connect("metadatastore");
+        cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(3000);
+        for (KeyspaceMetadata keyspace : cluster.getMetadata().getKeyspaces()) {
+            if (keyspace.getName().equals("metadatastore")) {
+                LOGGER.warn("The metadata store will be overwritten.");
+                session = cluster.connect();
+                session.execute("DROP KEYSPACE metadatastore");
+            }
+            ;
+        }
+
+        try {
+            String cqlCreateTables = loadResource(SETUP_SCRIPT_RESOURCE_PATH);
+            session = cluster.connect();
+
+            if (host.equals("localhost")) {
+                session.execute("CREATE KEYSPACE metadatastore WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};");
+            } else {
+                session.execute("CREATE KEYSPACE metadatastore WITH replication = {'class':'NetworkTopologyStrategy', 'DC1':1};");
+            }
+
+
+            session = cluster.connect("metadatastore");
+            String[] statements = cqlCreateTables.split(";");
+            for (String statement : statements) {
+                session.execute(statement);
+            }
+        } catch (IOException e) {
+            System.out.println("exception");
+            e.printStackTrace();
+        }
+        session = cluster.connect("metadatastore");
         CassaMetadataStore metadataStore = new CassaMetadataStore(host);
         return metadataStore;
     }
 
     public static CassaMetadataStore load(String host) {
-    	cluster = Cluster.builder().addContactPoint(host)
-				.withRetryPolicy(DefaultRetryPolicy.INSTANCE)
-				.withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
-				.build();
-    	session = cluster.connect("metadatastore");
+        cluster = Cluster.builder().addContactPoint(host)
+                .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
+                .withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
+                .build();
+        session = cluster.connect("metadatastore");
 
-    	CassaMetadataStore metadataStore = new CassaMetadataStore(host);
+        CassaMetadataStore metadataStore = new CassaMetadataStore(host);
         metadataStore.fillLocationCache();
         return metadataStore;
     }
 
     private CassaMetadataStore(String host) {
-    	this.host = host;
-    	this.cluster = Cluster.builder().addContactPoint(host).withPort(9042)
-				.withRetryPolicy(DefaultRetryPolicy.INSTANCE)
-				.withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
-				.build();
-    	this.cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(1000);
-    	this.session = cluster.connect("metadatastore");
+        this.host = host;
+        this.cluster = Cluster.builder().addContactPoint(host).withPort(9042)
+                .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
+                .withLoadBalancingPolicy(new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
+                .build();
+        this.cluster.getConfiguration().getSocketOptions().setConnectTimeoutMillis(1000);
+        this.session = cluster.connect("metadatastore");
         this.idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS);
     }
 
     @SuppressWarnings("unchecked")
     private void fillLocationCache() {
-    	//TODO: implement
+        //TODO: implement
     }
 
     @Override
     public Schema addSchema(final String name, final String description, final Location location) {
         //TODO
-    	return null;
+        return null;
     }
 
     @Override
@@ -160,19 +163,19 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public Schema getSchemaByName(final String schemaName) throws NameAmbigousException {
         //TODO
-    	return null;
+        return null;
     }
 
     @Override
     public Collection<Schema> getSchemas() {
         //TODO
-    	return null;
+        return null;
     }
 
     @Override
     public int getUnusedSchemaId() {
         //TODO
-    	return 0;
+        return 0;
     }
 
     @Override
@@ -188,7 +191,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     @Override
     public int getUnusedTableId(final Schema schema) {
         //TODO
-    	return 0;
+        return 0;
     }
 
     @Override
@@ -198,13 +201,13 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     private boolean idIsInUse(final int id) {
         //TODO
-    	return false;
+        return false;
     }
 
     @Override
     public void registerTargetObject(final Target target) {
         // Register the Location type of the target.
-    	//TODO
+        //TODO
     }
 
     @Override
@@ -214,14 +217,14 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public Collection<ConstraintCollection<?>> getConstraintCollections() {
-    	//TODO
-    	return null;
+        //TODO
+        return null;
     }
 
     @Override
     public ConstraintCollection<?> getConstraintCollection(int id) {
-    	//TODO
-    	return null;
+        //TODO
+        return null;
     }
 
 
@@ -261,14 +264,20 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
     }
 
     @Override
+    public <T> ConstraintCollection<T> createConstraintCollection(String userDefinedId, String description, Experiment experiment, Class<T> cls, Target... scope) throws IdAlreadyInUseException {
+        // TODO
+        return null;
+    }
+
+    @Override
     public <T> ConstraintCollection<T> createConstraintCollection(String description, Experiment experiment, Class<T> cls, Target... scope) {
         return null;
     }
 
     @Override
     public <T> ConstraintCollection<T> createConstraintCollection(String description, Class<T> cls, Target... scope) {
-    	//TODO
-    	return null;
+        //TODO
+        return null;
     }
 
     /**
@@ -308,19 +317,19 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void flush() throws Exception {
-    	//TODO
+        //TODO
     }
 
     @Override
     public Collection<Schema> getSchemasByName(String schemaName) {
-    	//TODO
-    	return null;
+        //TODO
+        return null;
     }
 
     @Override
     public Schema getSchemaById(int schemaId) {
-    	//TODO
-    	return null;
+        //TODO
+        return null;
     }
 
     @Override
@@ -336,7 +345,7 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
 
     @Override
     public void removeConstraintCollection(ConstraintCollection<?> constraintCollection) {
-       //TODO
+        //TODO
     }
 
     /**
@@ -352,13 +361,13 @@ public class CassaMetadataStore extends AbstractHashCodeAndEquals implements Met
         }
     }
 
-	@Override
-	public void close() {
-		CassaMetadataStore.cluster.close();
-		CassaMetadataStore.session.close();
+    @Override
+    public void close() {
+        CassaMetadataStore.cluster.close();
+        CassaMetadataStore.session.close();
 
-		
-	}
+
+    }
 
     @Override
     public void removeAlgorithm(Algorithm algorithm) {

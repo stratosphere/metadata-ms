@@ -78,21 +78,20 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   /**
     * Store the given this [[DataQuanta]] in a new [[ConstraintCollection]] within the `store`.
     *
-    * @param store       in which the [[DataQuanta]] should be stored
-    * @param scope       of the new [[ConstraintCollection]]
-    * @param description for the new [[ConstraintCollection]]
-    * @param experiment  an optional [[Experiment]] to which the [[ConstraintCollection]] should belong
+    * @param store         in which the [[DataQuanta]] should be stored
+    * @param scope         of the new [[ConstraintCollection]]
+    * @param userDefinedId an optional ID to identify the [[ConstraintCollection]]
+    * @param description   for the new [[ConstraintCollection]]
+    * @param experiment    an optional [[Experiment]] to which the [[ConstraintCollection]] should belong
     * @return the [[ConstraintCollection]]
     */
   def storeConstraintCollection(store: MetadataStore,
                                 scope: Iterable[Target],
+                                userDefinedId: String = null,
                                 description: String = "(no description)",
                                 experiment: Option[Experiment] = None): ConstraintCollection[Out] = {
     val cls = implicitly[ClassTag[Out]].runtimeClass.asInstanceOf[Class[Out]]
-    val cc = experiment match {
-      case None => store.createConstraintCollection(description, cls, scope.toSeq: _*)
-      case Some(exp) => store.createConstraintCollection(description, exp, cls, scope.toSeq: _*)
-    }
+    val cc = store.createConstraintCollection(userDefinedId, description, experiment.orNull, cls, scope.toSeq: _*)
     this.store(cc)
     cc
   }

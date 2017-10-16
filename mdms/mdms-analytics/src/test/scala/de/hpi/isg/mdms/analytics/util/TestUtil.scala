@@ -35,7 +35,7 @@ object TestUtil {
   def emptyConstraintCollection[T <: Constraint : ClassTag](store: RDBMSMetadataStore, schema: Schema): ConstraintCollection[T] = {
     val classTag = implicitly[ClassTag[T]]
     val constraintClass = classTag.runtimeClass.asInstanceOf[Class[T]]
-    new InMemoryConstraintCollection(store, schema, constraintClass)
+    new InMemoryConstraintCollection(store, null, schema, constraintClass)
   }
 
   def basicINDJoinCSSetup(store: RDBMSMetadataStore, schema: Schema): (ConstraintCollection[InclusionDependency], ConstraintCollection[ColumnStatistics]) = {

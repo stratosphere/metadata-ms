@@ -72,17 +72,22 @@ public class SQLiteConstraintHandler {
 
         this.addConstraintCollectionWriter = this.databaseAccess.createBatchWriter(
                 new PreparedStatementBatchWriter.Factory<ConstraintCollection<?>>(
-                        "insert into [ConstraintCollection] ([id], [experimentId], [description], [data]) values (?, ?, ?, ?)",
+                        "insert into [ConstraintCollection] ([id], [userDefinedId], [experimentId], [description], [data]) values (?, ?, ?, ?, ?)",
                         (cc, preparedStatement) -> {
                             preparedStatement.setInt(1, cc.getId());
-                            if (cc.getExperiment() == null) {
-                                preparedStatement.setNull(2, Types.INTEGER);
+                            if (cc.getUserDefinedId() == null) {
+                                preparedStatement.setNull(2, Types.VARCHAR);
                             } else {
-                                preparedStatement.setInt(2, cc.getExperiment().getId());
+                                preparedStatement.setString(2, cc.getUserDefinedId());
                             }
-                            preparedStatement.setString(3, cc.getDescription());
+                            if (cc.getExperiment() == null) {
+                                preparedStatement.setNull(3, Types.INTEGER);
+                            } else {
+                                preparedStatement.setInt(3, cc.getExperiment().getId());
+                            }
+                            preparedStatement.setString(4, cc.getDescription());
                             preparedStatement.setBytes(
-                                    4,
+                                    5,
                                     this.kryoPool.toBytesWithoutClass(new SQLiteConstraintHandler.ConstraintCollectionData(cc))
                             );
                         },
@@ -157,13 +162,15 @@ public class SQLiteConstraintHandler {
             if (rs.next()) {
                 Validate.isTrue(id == rs.getInt(1));
 
-                int experimentId = rs.getInt(2);
+                String userDefinedId = rs.getString(2);
+
+                int experimentId = rs.getInt(3);
                 Experiment experiment = this.metadataStore.getExperimentById(experimentId);
 
-                String description = rs.getString(3);
+                String description = rs.getString(4);
 
                 SQLiteConstraintHandler.ConstraintCollectionData data = this.kryoPool.fromBytes(
-                        rs.getBytes(4), SQLiteConstraintHandler.ConstraintCollectionData.class
+                        rs.getBytes(5), SQLiteConstraintHandler.ConstraintCollectionData.class
                 );
                 Set<Target> scope = new HashSet<>(data.scopeIds.length);
                 for (int scopeId : data.scopeIds) {
@@ -171,7 +178,7 @@ public class SQLiteConstraintHandler {
                 }
 
                 cc = new RDBMSConstraintCollection<>(
-                        id, description, experiment, scope, this.sqliteInterface, data.constraintClass
+                        id, userDefinedId, description, experiment, scope, this.sqliteInterface, data.constraintClass
                 );
                 return cc;
             }
@@ -196,13 +203,15 @@ public class SQLiteConstraintHandler {
                 Integer id = rs.getInt(1);
                 if (this.constraintCollectionCache.containsKey(id)) continue;
 
-                int experimentId = rs.getInt(2);
+                String userDefinedId = rs.getString(2);
+
+                int experimentId = rs.getInt(3);
                 Experiment experiment = this.metadataStore.getExperimentById(experimentId);
 
-                String description = rs.getString(3);
+                String description = rs.getString(4);
 
                 SQLiteConstraintHandler.ConstraintCollectionData data = this.kryoPool.fromBytes(
-                        rs.getBytes(4), SQLiteConstraintHandler.ConstraintCollectionData.class
+                        rs.getBytes(5), SQLiteConstraintHandler.ConstraintCollectionData.class
                 );
                 Set<Target> scope = new HashSet<>(data.scopeIds.length);
                 for (int scopeId : data.scopeIds) {
@@ -210,7 +219,7 @@ public class SQLiteConstraintHandler {
                 }
 
                 RDBMSConstraintCollection<?> cc = new RDBMSConstraintCollection<>(
-                        id, description, experiment, scope, this.sqliteInterface, data.constraintClass
+                        id, userDefinedId, description, experiment, scope, this.sqliteInterface, data.constraintClass
                 );
                 this.constraintCollectionCache.put(id, cc);
             }

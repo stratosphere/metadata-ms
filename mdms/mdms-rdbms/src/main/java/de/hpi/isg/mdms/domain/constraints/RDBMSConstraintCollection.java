@@ -32,6 +32,8 @@ public class RDBMSConstraintCollection<T> extends AbstractIdentifiable implement
 
     public static final boolean IS_CHECK_CONSTRAINT_TARGETS = false;
 
+    private final String userDefinedId;
+
     private Collection<T> constraints;
 
     private Collection<Target> scope;
@@ -48,17 +50,9 @@ public class RDBMSConstraintCollection<T> extends AbstractIdentifiable implement
     @ExcludeHashCodeEquals
     private SQLInterface sqlInterface;
 
-    public RDBMSConstraintCollection(int id, String description, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
+    public RDBMSConstraintCollection(int id, String userDefinedId, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
         super(id);
-        this.scope = scope;
-        this.scopeIdSet = rebuildScopeSet(scope);
-        this.sqlInterface = sqlInterface;
-        this.description = description != null ? description : "";
-        this.constrainttype = constrainttype;
-    }
-
-    public RDBMSConstraintCollection(int id, String description, Experiment experiment, Set<Target> scope, SQLInterface sqlInterface, Class<T> constrainttype) {
-        super(id);
+        this.userDefinedId = userDefinedId;
         this.scope = scope;
         this.scopeIdSet = rebuildScopeSet(scope);
         this.sqlInterface = sqlInterface;
@@ -75,20 +69,6 @@ public class RDBMSConstraintCollection<T> extends AbstractIdentifiable implement
         }
         return set;
     }
-
-    public RDBMSConstraintCollection(int id, String description, SQLInterface sqlInterface) {
-        super(id);
-        this.sqlInterface = sqlInterface;
-        this.description = description;
-    }
-
-    public RDBMSConstraintCollection(int id, String description, Experiment experiment, SQLInterface sqlInterface) {
-        super(id);
-        this.sqlInterface = sqlInterface;
-        this.description = description;
-        this.experiment = experiment;
-    }
-
 
     @Override
     public Collection<T> getConstraints() {
@@ -193,4 +173,8 @@ public class RDBMSConstraintCollection<T> extends AbstractIdentifiable implement
         return this.constrainttype;
     }
 
+    @Override
+    public String getUserDefinedId() {
+        return this.userDefinedId;
+    }
 }

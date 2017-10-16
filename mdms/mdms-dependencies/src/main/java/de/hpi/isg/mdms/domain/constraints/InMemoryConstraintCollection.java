@@ -1,9 +1,8 @@
 package de.hpi.isg.mdms.domain.constraints;
 
-import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.experiment.Experiment;
-import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Target;
 
 import java.util.Collection;
@@ -18,8 +17,10 @@ import java.util.LinkedList;
  */
 public class InMemoryConstraintCollection<T> implements ConstraintCollection<T> {
 
+    private final String userDefinedId;
+
     private final Collection<Target> scope;
-    
+
     private final Experiment experiment;
 
     private final Class<T> constrainttype;
@@ -27,29 +28,32 @@ public class InMemoryConstraintCollection<T> implements ConstraintCollection<T> 
     private final MetadataStore metadataStore;
 
 
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Target scope, Class<T> constrainttype) {
-        this(metadataStore, Collections.singleton(scope), constrainttype);
+    public InMemoryConstraintCollection(MetadataStore metadataStore, String userDefinedId, Target scope, Class<T> constrainttype) {
+        this(metadataStore, userDefinedId, Collections.singleton(scope), constrainttype);
     }
-    
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Collection<Target> scope, Class<T>  constrainttype) {
+
+    public InMemoryConstraintCollection(MetadataStore metadataStore, String userDefinedId, Collection<Target> scope, Class<T> constrainttype) {
         this.metadataStore = metadataStore;
+        this.userDefinedId = userDefinedId;
         this.scope = scope;
         this.experiment = null;
         this.constrainttype = constrainttype;
     }
 
-    public InMemoryConstraintCollection(MetadataStore metadataStore, Experiment experiment, Collection<Target> scope, Class<T>  constrainttype) {
+    public InMemoryConstraintCollection(MetadataStore metadataStore, String userDefinedId, Experiment experiment, Collection<Target> scope, Class<T> constrainttype) {
         this.metadataStore = metadataStore;
+        this.userDefinedId = userDefinedId;
         this.scope = scope;
         this.experiment = experiment;
         this.constrainttype = constrainttype;
     }
-    
+
     private final Collection<T> constraints = new LinkedList<>();
     private String description = "in-memory metadata store";
 
     @Override
-    public Collection<T> getConstraints() {return this.constraints;
+    public Collection<T> getConstraints() {
+        return this.constraints;
     }
 
     @Override
@@ -81,14 +85,19 @@ public class InMemoryConstraintCollection<T> implements ConstraintCollection<T> 
     public int getId() {
         return 0;
     }
-    
-	@Override
-	public Experiment getExperiment() {
-		return this.experiment;
-	}
 
     @Override
-    public Class<T> getConstraintClass(){
+    public String getUserDefinedId() {
+        return this.userDefinedId;
+    }
+
+    @Override
+    public Experiment getExperiment() {
+        return this.experiment;
+    }
+
+    @Override
+    public Class<T> getConstraintClass() {
         return this.constrainttype;
     }
 }

@@ -31,6 +31,7 @@ CREATE INDEX "Target_Parent_Index" ON "Target"("parent");
 CREATE TABLE "ConstraintCollection"
 (
 	"id" integer NOT NULL,
+	"userDefinedId" text UNIQUE,
 	"experimentId" integer,
 	"description" text,
 	"data" blob,
