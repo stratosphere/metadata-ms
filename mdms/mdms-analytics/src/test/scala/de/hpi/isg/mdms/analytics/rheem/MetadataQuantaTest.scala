@@ -1,6 +1,7 @@
 package de.hpi.isg.mdms.analytics.rheem
 
 import de.hpi.isg.mdms.analytics._
+import de.hpi.isg.mdms.analytics.util.TestUtil
 import de.hpi.isg.mdms.model.DefaultMetadataStore
 import org.junit.{Assert, Test}
 import org.qcri.rheem.api.PlanBuilder
