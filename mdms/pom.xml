@@ -104,6 +104,7 @@
         <module>mdms-cli</module>
         <module>mdms-analytics</module>
         <module>mdms-metanome</module>
+        <module>mdms-jupyter</module>
     </modules>
 
     <profiles>
@@ -269,6 +270,13 @@
                 <groupId>org.qcri.rheem</groupId>
                 <artifactId>rheem-java</artifactId>
                 <version>${rheem.version}</version>
+            </dependency>
+
+            <!-- Jupyter -->
+            <dependency>
+                <groupId>org.jupyter-scala</groupId>
+                <artifactId>scala-api_${scala.version}</artifactId>
+                <version>0.4.2</version>
             </dependency>
 
             <dependency>
