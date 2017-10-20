@@ -11,6 +11,13 @@ import de.hpi.isg.mdms.model.MetadataStore
 package object jupyter {
 
   /**
+    * Provides an instance of [[OutputUtils]] for nicely formatted output
+    * @param publish the Jupyter output adapter
+    * @return the [[OutputUtils]]
+    */
+  def output(implicit publish: Publish) = new OutputUtils(publish)
+
+  /**
     * Creates a new [[MetadataStore]].
     *
     * @param storageBackend in which the new instance should be created
@@ -60,14 +67,6 @@ package object jupyter {
       case _ => sys.error("Cannot handle storage backend")
     }
     MetadataStoreUtil.loadMetadataStore(params)
-  }
-
-  /**
-    * Print the Metacrate logo.
-    */
-  def printLogo()(implicit publish: Publish): Unit = {
-    val logo = ResourceManager.getBinary("/metacrate-logo.png")
-    publish.png(logo)
   }
 
 }
