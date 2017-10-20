@@ -63,7 +63,7 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
                                          finisher: (Out, ColumnMock) => NewOut): DataQuanta[NewOut] = {
     implicit val planBuilder = dataQuanta.planBuilder
     val columns = metadataStore.loadColumns(null)
-    dataQuanta.keyBy(idExtractor).keyJoin(columns.keyBy(_.id)).assemble(finisher)
+    dataQuanta.keyBy(idExtractor).join(columns.keyBy(_.id)).assemble(finisher)
   }
 
   /**

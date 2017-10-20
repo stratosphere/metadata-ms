@@ -86,7 +86,7 @@
         <metanome.version>1.1-SNAPSHOT</metanome.version>
         <scala.version>2.11.8</scala.version>
         <scala.major.version>2.11</scala.major.version>
-        <rheem.version>0.2.0</rheem.version>
+        <rheem.version>0.3.0</rheem.version>
     </properties>
 
     <modules>
@@ -274,7 +274,7 @@
             </dependency>
             <dependency>
                 <groupId>org.qcri.rheem</groupId>
-                <artifactId>rheem-api</artifactId>
+                <artifactId>rheem-api_${scala.major.version}</artifactId>
                 <version>${rheem.version}</version>
             </dependency>
             <dependency>
@@ -293,6 +293,11 @@
                 <groupId>org.jupyter-scala</groupId>
                 <artifactId>scala-api_${scala.version}</artifactId>
                 <version>0.4.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.plotly-scala</groupId>
+                <artifactId>plotly-jupyter-scala_${scala.major.version}</artifactId>
+                <version>0.3.1</version>
             </dependency>
 
             <dependency>

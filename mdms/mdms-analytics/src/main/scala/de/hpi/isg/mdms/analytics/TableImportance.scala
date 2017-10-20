@@ -42,7 +42,7 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
     // qEnt ... product of q and entropy (for each column)
     val qEnt = metadataStore.loadConstraints(columnStatistics)
       .map(cs => (cs.getColumnId, cs.getEntropy))
-      .keyBy(_._1).keyJoin(q.keyBy(_._1)).assemble((a, b) => (b._1, a._2 * b._2))
+      .keyBy(_._1).join(q.keyBy(_._1)).assemble((a, b) => (b._1, a._2 * b._2))
 
     // qEntT ... product of q and entropy summed over the entire table
     val qEntT = qEnt
@@ -55,7 +55,7 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
 
     // logRqEntT ... sum of log(numTuples) and qEntT
     val logRqEntT = qEntT
-      .keyBy(_._1).keyJoin(numberTuples.keyBy(_._1)).assemble((a, b) => (a._1, a._2 + math.log(b._2)))
+      .keyBy(_._1).join(numberTuples.keyBy(_._1)).assemble((a, b) => (a._1, a._2 + math.log(b._2)))
 
     // edgeCol ... Start and target of edge (COLUMN-ID used here)
     val edgeCol = metadataStore.loadConstraints(inclusionDependency)
@@ -67,12 +67,12 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
       .map(ind => (ind.getColumnId, ind.getEntropy))
 
     val entEdgeT = edgeCol
-      .keyBy(_._1).keyJoin(entCol.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
+      .keyBy(_._1).join(entCol.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
       .map(a => (idUtils.getTableId(a._1), idUtils.getTableId(a._2), a._3))
 
     // probT ... probability of each table
     val probT = entEdgeT
-      .keyBy(_._1).keyJoin(logRqEntT.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 / b._2))
+      .keyBy(_._1).join(logRqEntT.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 / b._2))
 
     // Calculate the probability P[R,S]
     val probabilityRS = probT
@@ -133,14 +133,14 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
   def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
                           V: DataQuanta[(Int, Double)]): DataQuanta[(Int, Double)] = {
     return probMatrix
-      .keyBy(a => a._1).keyJoin(V.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
+      .keyBy(a => a._1).join(V.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
       .reduceByKey((_._2), (a, b) => (a._1, a._2, a._3 + b._3))
       .map(a => (a._2, a._3))
   }
 
   // Calculating the Euclidean Distance between the solution vector V and V+1
   def diffV(Vnew: DataQuanta[(Int, Double)], Vold: DataQuanta[(Int, Double)]): DataQuanta[(Double)] = {
-    val diffVnewVold = Vnew.keyBy(_._1).keyJoin(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
+    val diffVnewVold = Vnew.keyBy(_._1).join(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
       .map(a => ((a._1 - a._2) * (a._1 - a._2))).reduce(_ + _)
     return diffVnewVold
   }
@@ -158,7 +158,7 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
       .map(cs => (idUtils.getTableId(cs.getColumnId), cs.getEntropy))
       .reduceByKey(_._1, (a, b) => (a._1, a._1 + a._2))
     // Combining R + entropy
-    val Rentropy = numberTuples.keyBy(a => a._1).keyJoin(entropy.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
+    val Rentropy = numberTuples.keyBy(a => a._1).join(entropy.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
     //return Rentropy.map(a => (a._1, 1));
     return Rentropy.map(a => (a._1, a._2));
   }

@@ -67,7 +67,7 @@
         </dependency>
         <dependency>
             <groupId>org.qcri.rheem</groupId>
-            <artifactId>rheem-api</artifactId>
+            <artifactId>rheem-api_${scala.major.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
