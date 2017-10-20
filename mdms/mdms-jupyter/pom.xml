@@ -33,6 +33,27 @@
 
     <dependencies>
         <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-model</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-util</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-tools</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-clients</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.jupyter-scala</groupId>
             <artifactId>scala-api_${scala.version}</artifactId>
         </dependency>
