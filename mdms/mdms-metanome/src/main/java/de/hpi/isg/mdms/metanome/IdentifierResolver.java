@@ -40,6 +40,16 @@ public class IdentifierResolver {
      * @throws IllegalArgumentException if the {@link Column} could not be found
      */
     public Column resolveColumn(ColumnIdentifier columnIdentifier) throws IllegalArgumentException {
+        if (columnIdentifier.getTableIdentifier() == null || columnIdentifier.getTableIdentifier().isEmpty()) {
+            throw new IllegalArgumentException(String.format(
+                    "Missing table identifier in %s.", columnIdentifier
+            ));
+        }
+        if (columnIdentifier.getColumnIdentifier() == null || columnIdentifier.getColumnIdentifier().isEmpty()) {
+            throw new IllegalArgumentException(String.format(
+                    "Missing column identifier in %s.", columnIdentifier
+            ));
+        }
         Table table = this.resolveTable(columnIdentifier.getTableIdentifier());
         return this.resolveColumn(table, columnIdentifier.getColumnIdentifier());
     }
