@@ -4,6 +4,10 @@ import _root_.jupyter.api.Publish
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters
 import de.hpi.isg.mdms.clients.util.MetadataStoreUtil
 import de.hpi.isg.mdms.model.MetadataStore
+import org.qcri.rheem.api.DataQuanta
+
+import scala.languageFeature.implicitConversions
+import scala.reflect.ClassTag
 
 /**
   * This package object provides the Metacrate-speficif API for Jupyter.
@@ -11,11 +15,25 @@ import de.hpi.isg.mdms.model.MetadataStore
 package object jupyter {
 
   /**
-    * Provides an instance of [[OutputUtils]] for nicely formatted output
+    * Tells whether the notebook should run offline.
+    */
+  var offline = true
+
+  /**
+    * Provides an instance of [[OutputUtils]] for nicely formatted output.
+    *
     * @param publish the Jupyter output adapter
     * @return the [[OutputUtils]]
     */
   def output(implicit publish: Publish) = new OutputUtils(publish)
+
+  /**
+    * Provides an instance of [[Visualizations]] for plotting, e.g., charts.
+    *
+    * @param publish the Jupyter output adapter
+    * @return the [[Visualizations]]
+    */
+  def visualizations(implicit publish: Publish) = new Visualizations(publish)
 
   /**
     * Creates a new [[MetadataStore]].
@@ -68,6 +86,17 @@ package object jupyter {
     }
     MetadataStoreUtil.loadMetadataStore(params)
   }
+
+  implicit class PairDataQuantaWrapper[T: ClassTag, U: ClassTag](dataQuanta: DataQuanta[(T, U)]) {
+
+    def plotBarChart(title: String = null,
+                     xaxisTitle: String = null,
+                     yaxisTitle: String = null)
+                    (implicit publish: Publish): Unit =
+      visualizations.plotBarChart(dataQuanta.collect(), title, xaxisTitle, yaxisTitle)
+
+  }
+
 
 }
 
