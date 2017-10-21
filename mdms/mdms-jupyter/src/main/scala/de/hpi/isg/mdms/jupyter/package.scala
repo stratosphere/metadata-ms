@@ -5,6 +5,7 @@ import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters
 import de.hpi.isg.mdms.clients.util.MetadataStoreUtil
 import de.hpi.isg.mdms.model.MetadataStore
 import org.qcri.rheem.api.DataQuanta
+import plotly.element.ScatterMode
 
 import scala.languageFeature.implicitConversions
 import scala.reflect.ClassTag
@@ -87,13 +88,87 @@ package object jupyter {
     MetadataStoreUtil.loadMetadataStore(params)
   }
 
+  /**
+    * This class adds additional methods to [[DataQuanta]] of 2-tuples.
+    *
+    * @param dataQuanta the [[DataQuanta]]
+    */
   implicit class PairDataQuantaWrapper[T: ClassTag, U: ClassTag](dataQuanta: DataQuanta[(T, U)]) {
 
+    /**
+      * Plot a bar chart from the [[DataQuanta]]. The tuples are interpreted as `(x, y)` data points.
+      *
+      * @param title      optional title of the part chart
+      * @param xaxisTitle optional title for the x-axis
+      * @param yaxisTitle optional title for the y-axis
+      * @param publish    adapter for Jupyter-Scala
+      */
     def plotBarChart(title: String = null,
                      xaxisTitle: String = null,
                      yaxisTitle: String = null)
                     (implicit publish: Publish): Unit =
       visualizations.plotBarChart(dataQuanta.collect(), title, xaxisTitle, yaxisTitle)
+
+    /**
+      * Plot a scatter chart from the [[DataQuanta]]. The tuples are interpreted as `(x, y)` data points.
+      *
+      * @param title      optional title of the part chart
+      * @param xaxisTitle optional title for the x-axis
+      * @param yaxisTitle optional title for the y-axis
+      * @param mode       optional [[ScatterMode]] (by default [[ScatterMode.Markers]])
+      * @param publish    adapter for Jupyter-Scala
+      */
+    def plotScatterChart(title: String = null,
+                         xaxisTitle: String = null,
+                         yaxisTitle: String = null,
+                         mode: ScatterMode = ScatterMode(ScatterMode.Markers))
+                        (implicit publish: Publish): Unit = {
+      val (x, y) = dataQuanta.collect().unzip
+      visualizations.plotScatterChart(
+        x = Visualizations.asSequence(x),
+        y = Visualizations.asSequence(y),
+        text = null,
+        title = title,
+        xaxisTitle = xaxisTitle,
+        yaxisTitle = yaxisTitle,
+        mode = mode
+      )
+    }
+
+  }
+
+  /**
+    * This class adds additional methods to [[DataQuanta]] of 3-tuples.
+    *
+    * @param dataQuanta the [[DataQuanta]]
+    */
+  implicit class TripleDataQuantaWrapper[T: ClassTag, U: ClassTag, V: ClassTag](dataQuanta: DataQuanta[(T, U, V)]) {
+
+    /**
+      * Plot a scatter chart from the [[DataQuanta]]. The tuples are interpreted as `(x, y, hover text)` data points.
+      *
+      * @param title      optional title of the part chart
+      * @param xaxisTitle optional title for the x-axis
+      * @param yaxisTitle optional title for the y-axis
+      * @param mode       optional [[ScatterMode]] (by default [[ScatterMode.Markers]])
+      * @param publish    adapter for Jupyter-Scala
+      */
+    def plotScatterChart(title: String = null,
+                         xaxisTitle: String = null,
+                         yaxisTitle: String = null,
+                         mode: ScatterMode = ScatterMode(ScatterMode.Markers))
+                        (implicit publish: Publish): Unit = {
+      val (x, y, z) = dataQuanta.collect().unzip3
+      visualizations.plotScatterChart(
+        x = Visualizations.asSequence(x),
+        y = Visualizations.asSequence(y),
+        text = z.map(e => if (e == null) null else e.toString).toSeq,
+        title = title,
+        xaxisTitle = xaxisTitle,
+        yaxisTitle = yaxisTitle,
+        mode = mode
+      )
+    }
 
   }
 
