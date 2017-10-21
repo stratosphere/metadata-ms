@@ -1,14 +1,14 @@
 package de.hpi.isg.mdms
 
-import de.hpi.isg.mdms.analytics.rheem.{JoinedDataQuanta, MetadataQuanta, MetadataStoreRheemWrapper}
+import de.hpi.isg.mdms.analytics.rheem.{MetadataQuanta, MetadataStoreRheemWrapper}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
 import org.qcri.rheem.api.DataQuanta
 
+import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.collection.JavaConversions._
 
 /**
   * Provides utilities to analyze metadata store contents.
@@ -27,12 +27,9 @@ package object analytics {
   implicit def pimpDataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]): MetadataQuanta[Out] =
     new MetadataQuanta(dataQuanta)
 
-  implicit def pimpJoinedDataQuanta[Out0: ClassTag, Out1: ClassTag]
-  (dataQuanta: DataQuanta[org.qcri.rheem.basic.data.Tuple2[Out0, Out1]]): JoinedDataQuanta[Out0, Out1] =
-    new JoinedDataQuanta(dataQuanta)
-
   /**
     * Collects all [[Column]]s contained by the given `targets`.
+    *
     * @param targets any kind of [[Target]]s or `null`
     * @return a [[Set]] of all contained [[Column]]s.
     */

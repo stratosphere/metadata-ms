@@ -67,15 +67,6 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   }
 
   /**
-    * Assigns this instance a key extractor, which enables some key-based operations.
-    *
-    * @see KeyedDataQuanta
-    * @param keyExtractor extracts the key from the [[DataQuanta]]
-    * @return the [[KeyedDataQuanta]]
-    */
-  def keyBy[Key: ClassTag](keyExtractor: Out => Key) = new KeyedDataQuanta[Out, Key](dataQuanta, keyExtractor)
-
-  /**
     * Store the given this [[DataQuanta]] in a new [[ConstraintCollection]] within the `store`.
     *
     * @param store         in which the [[DataQuanta]] should be stored
