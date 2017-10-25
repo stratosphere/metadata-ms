@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.java.apps;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
+import de.hpi.isg.mdms.clients.apps.AppExecutionMetadata;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
@@ -10,7 +11,7 @@ import de.hpi.isg.mdms.domain.constraints.ColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.TextColumnStatistics;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter;
-import de.hpi.isg.mdms.model.constraints.Constraint;
+import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.targets.Target;
 import de.hpi.isg.mdms.model.util.IdUtils;
@@ -44,6 +45,44 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
      */
     private Int2ObjectMap<TextColumnStatistics> textColumnStatistics;
 
+    /**
+     * Runs this app programmatically.
+     *
+     * @param mds                on which the app should be run
+     * @param uccCCId            the ID for a {@link UniqueColumnCombination} {@link ConstraintCollection} to be classified
+     * @param statisticsCCId     the ID for a {@link ColumnStatistics} {@link ConstraintCollection}
+     * @param textStatisticsCCId the ID for a {@link TextColumnStatistics} {@link ConstraintCollection}
+     * @param resultId           a user-defined ID for the {@link ConstraintCollection} with primary keys or {@code null}
+     * @return the ID of the created {@link ConstraintCollection}
+     * @throws Exception
+     */
+    public static int fromParameters(MetadataStore mds,
+                                     int uccCCId,
+                                     int statisticsCCId,
+                                     int textStatisticsCCId,
+                                     String resultId) throws Exception {
+
+        PrimaryKeyClassifier.Parameters parameters = new PrimaryKeyClassifier.Parameters();
+
+        parameters.uccCollectionId = uccCCId;
+        parameters.statisticsCollectionId = statisticsCCId;
+        parameters.textStatisticsCollectionId = textStatisticsCCId;
+        parameters.resultId = resultId;
+        parameters.metadataStoreParameters.isCloseMetadataStore = false;
+
+        PrimaryKeyClassifier app = new PrimaryKeyClassifier(parameters);
+        app.metadataStore = mds;
+
+        app.run();
+
+        AppExecutionMetadata executionMetadata = app.getExecutionMetadata();
+        if (!executionMetadata.isAppSuccess()) {
+            throw new RuntimeException("The primary key classification failed.");
+        }
+
+        return (int) executionMetadata.getCustomData().get("constraintCollectionId");
+    }
+
     public PrimaryKeyClassifier(final PrimaryKeyClassifier.Parameters parameters) {
         super(parameters);
     }
@@ -61,17 +100,16 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
 
         // Load the statistics.
         this.columnStatics = new Int2ObjectOpenHashMap<>();
+        for (ColumnStatistics statistic : this.metadataStore
+                .<ColumnStatistics>getConstraintCollection(this.parameters.statisticsCollectionId)
+                .getConstraints()) {
+            this.columnStatics.put(statistic.getColumnId(), statistic);
+        }
         this.textColumnStatistics = new Int2ObjectOpenHashMap<>();
-        final Collection<?> constraints = this.metadataStore
-                .getConstraintCollection(this.parameters.statisticsCollectionId).getConstraints();
-        for (Object constraint : constraints) {
-            if (constraint instanceof ColumnStatistics) {
-                ColumnStatistics columnStatistics = (ColumnStatistics) constraint;
-                this.columnStatics.put(columnStatistics.getColumnId(), columnStatistics);
-            } else if (constraint instanceof TextColumnStatistics) {
-                TextColumnStatistics textColumnStatistics = (TextColumnStatistics) constraint;
-                this.textColumnStatistics.put(textColumnStatistics.getColumnId(), textColumnStatistics);
-            }
+        for (TextColumnStatistics statistic : this.metadataStore
+                .<TextColumnStatistics>getConstraintCollection(this.parameters.textStatisticsCollectionId)
+                .getConstraints()) {
+            this.textColumnStatistics.put(statistic.getColumnId(), statistic);
         }
     }
 
@@ -97,7 +135,10 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
                     this.prettyPrinter.prettyPrint(pk)));
         } else {
             final ConstraintCollection<UniqueColumnCombination> constraintCollection = this.metadataStore.createConstraintCollection(
-                    String.format("Primary keys (%s)", new Date()), UniqueColumnCombination.class,
+                    this.parameters.resultId,
+                    String.format("Primary keys (%s)", new Date()),
+                    null,
+                    UniqueColumnCombination.class,
                     uccCollection.getScope().toArray(new Target[uccCollection.getScope().size()]));
             pkStream.forEach(constraintCollection::add);
             this.metadataStore.flush();
@@ -208,10 +249,19 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
                 required = true)
         public int statisticsCollectionId;
 
+        @Parameter(names = {"--statistics"},
+                description = "ID of the constraint collection that contains single text column statistics",
+                required = true)
+        public int textStatisticsCollectionId;
+
         @Parameter(names = {"--uccs"},
                 description = "ID of the constraint collection that contains unique column combinations",
                 required = true)
         public int uccCollectionId;
+
+        @Parameter(names = {"--result-id"},
+                description = "user-defined ID for the constraint collection with the primary keys")
+        public String resultId;
 
         @Parameter(names = "--dry-run",
                 description = "do not create a constraint collection for the foreign keys",
