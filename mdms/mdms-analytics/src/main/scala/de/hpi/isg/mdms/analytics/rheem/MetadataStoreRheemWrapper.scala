@@ -23,7 +23,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type the type of the [[Constraint]]s in the [[ConstraintCollection]]s to match
     * @return [[DataQuanta]] of the [[Constraint]]s in the matching, resolved [[ConstraintCollection]]s
     */
-  def loadConstraints[Type : ClassTag]
+  def loadConstraints[Type: ClassTag]
   (scope: Target,
    conflictResolutionStrategy: ConstraintCollectionConflictResolutionStrategy = FailOnConflictStrategy)
   (implicit planBuilder: PlanBuilder):
@@ -36,6 +36,24 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
   }
 
   /**
+    * Retrieve a [[ConstraintCollection]]s and resolves potential conflicts if multiple ones are found.
+    *
+    * @param scope                      of the [[ConstraintCollection]]s
+    * @param conflictResolutionStrategy decides how to act in the presence of multiple matching [[ConstraintCollection]]s
+    * @tparam Type the type of the [[Constraint]]s in the [[ConstraintCollection]]s to match
+    * @return the matching, resolved [[ConstraintCollection]]
+    */
+  def findConstraintCollection[Type: ClassTag]
+  (scope: Target, conflictResolutionStrategy: ConstraintCollectionConflictResolutionStrategy = FailOnConflictStrategy):
+  ConstraintCollection[Type] = {
+    val typeClass = classTag[Type].runtimeClass.asInstanceOf[java.lang.Class[Type]]
+    val constraintCollections = metadataStore.getConstraintCollectionByConstraintTypeAndScope(typeClass, scope).toSeq
+    val resolvedConstraintCollections = conflictResolutionStrategy.resolve[Type](constraintCollections)
+    require(resolvedConstraintCollections.size == 1, s"Found ${resolvedConstraintCollections.size} constraint collections.")
+    resolvedConstraintCollections.head
+  }
+
+  /**
     * Retrieves all [[ConstraintCollection]]s and resolves potential conflicts if multiple ones are found.
     *
     * @param scope                      of the [[ConstraintCollection]]s
@@ -43,7 +61,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type the type of the [[Constraint]]s in the [[ConstraintCollection]]s to match
     * @return the matching, resolved [[ConstraintCollection]]s
     */
-  def findConstraintCollections[Type : ClassTag]
+  def findConstraintCollections[Type: ClassTag]
   (scope: Target, conflictResolutionStrategy: ConstraintCollectionConflictResolutionStrategy = FailOnConflictStrategy):
   Seq[ConstraintCollection[Type]] = {
     val typeClass = classTag[Type].runtimeClass.asInstanceOf[java.lang.Class[Type]]
@@ -73,7 +91,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type [[Constraint]] type
     * @return the [[Constraint]]s of the [[ConstraintCollection]] as [[DataQuanta]]
     */
-  def loadConstraints[Type : ClassTag](constraintCollectionId: Int)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
+  def loadConstraints[Type: ClassTag](constraintCollectionId: Int)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
     val constraintCollection = metadataStore.getConstraintCollection(constraintCollectionId).asInstanceOf[ConstraintCollection[Type]]
     require(
       constraintCollection != null,
@@ -97,7 +115,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type [[Constraint]] type
     * @return the [[Constraint]]s of the [[ConstraintCollection]] as [[DataQuanta]]
     */
-  def loadConstraints[Type : ClassTag](constraintCollectionId: String)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
+  def loadConstraints[Type: ClassTag](constraintCollectionId: String)(implicit planBuilder: PlanBuilder): DataQuanta[Type] = {
     val constraintCollection = Option(metadataStore.getConstraintCollection(constraintCollectionId).asInstanceOf[ConstraintCollection[Type]])
     loadConstraints(constraintCollection.toSeq: _*)
   }
@@ -110,7 +128,7 @@ class MetadataStoreRheemWrapper(metadataStore: MetadataStore) {
     * @tparam Type of the [[Constraint]]s in the [[ConstraintCollection]]s
     * @return the [[DataQuanta]]
     */
-  def loadConstraints[Type : ClassTag](constraintCollections: ConstraintCollection[Type]*)(implicit planBuilder: PlanBuilder):
+  def loadConstraints[Type: ClassTag](constraintCollections: ConstraintCollection[Type]*)(implicit planBuilder: PlanBuilder):
   DataQuanta[Type] =
     constraintCollections.size match {
       case 0 => throw new NoConstraintCollectionException("No constraints given.")
