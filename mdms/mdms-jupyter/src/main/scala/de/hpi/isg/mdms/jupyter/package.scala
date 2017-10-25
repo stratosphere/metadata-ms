@@ -93,6 +93,43 @@ package object jupyter {
     *
     * @param dataQuanta the [[DataQuanta]]
     */
+  implicit class GenericDataQuantaWrapper[T: ClassTag](dataQuanta: DataQuanta[T]) {
+
+    /**
+      * Plot a bar chart from the [[DataQuanta]]. The tuples are interpreted as `(x, y)` data points.
+      *
+      * @param format   optional formatter for the data points
+      * @param after    optional text to display after the list
+      * @param before   optional text to display before the list
+      * @param ordering an optional plotting ordering
+      * @param publish  adapter for Jupyter-Scala
+      */
+    def printList(format: T => String = (t: T) => t.toString,
+                  before: String = null,
+                  after: String = null,
+                  ordering: Ordering[T] = null)
+                 (implicit publish: Publish): Unit = {
+
+      val data = ordering match {
+        case null => dataQuanta.collect()
+        case someOrdering => dataQuanta.collect().toSeq.sorted(someOrdering)
+      }
+      output.list(
+        elements = data,
+        before = Option(before),
+        after = Option(after),
+        format = format
+      )
+    }
+
+  }
+
+
+  /**
+    * This class adds additional methods to [[DataQuanta]] of 2-tuples.
+    *
+    * @param dataQuanta the [[DataQuanta]]
+    */
   implicit class PairDataQuantaWrapper[T: ClassTag, U: ClassTag](dataQuanta: DataQuanta[(T, U)]) {
 
     /**
@@ -101,7 +138,7 @@ package object jupyter {
       * @param title      optional title of the part chart
       * @param xaxisTitle optional title for the x-axis
       * @param yaxisTitle optional title for the y-axis
-      * @param ordering    an optional plotting ordering
+      * @param ordering   an optional plotting ordering
       * @param publish    adapter for Jupyter-Scala
       */
     def plotBarChart(title: String = null,
