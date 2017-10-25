@@ -101,13 +101,15 @@ package object jupyter {
       * @param title      optional title of the part chart
       * @param xaxisTitle optional title for the x-axis
       * @param yaxisTitle optional title for the y-axis
+      * @param ordering    an optional plotting ordering
       * @param publish    adapter for Jupyter-Scala
       */
     def plotBarChart(title: String = null,
                      xaxisTitle: String = null,
-                     yaxisTitle: String = null)
+                     yaxisTitle: String = null,
+                     ordering: Ordering[(T, U)] = null)
                     (implicit publish: Publish): Unit =
-      visualizations.plotBarChart(dataQuanta.collect(), title, xaxisTitle, yaxisTitle)
+      visualizations.plotBarChart(dataQuanta.collect(), title, xaxisTitle, yaxisTitle, ordering)
 
     /**
       * Plot a scatter chart from the [[DataQuanta]]. The tuples are interpreted as `(x, y)` data points.

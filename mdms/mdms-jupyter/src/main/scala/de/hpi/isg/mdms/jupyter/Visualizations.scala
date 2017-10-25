@@ -21,13 +21,19 @@ class Visualizations(publish: Publish) {
     * @param data       `(x, y)` tuples to plot
     * @param title      an optional title for the chart
     * @param xaxisTitle an optional title for the x-axis
-    * @param yaxisTitle an optional tile for the y-axis
+    * @param yaxisTitle an optional title for the y-axis
+    * @param ordering    an optional plotting ordering
     */
   def plotBarChart[T: ClassTag, V: ClassTag](data: Traversable[(T, V)],
                                              title: String = null,
                                              xaxisTitle: String = null,
-                                             yaxisTitle: String = null): Unit = {
-    val (x, y) = data.unzip
+                                             yaxisTitle: String = null,
+                                             ordering: Ordering[(T, V)] = null): Unit = {
+    var orderedData = ordering match {
+      case null => data
+      case someOrdering => data.toSeq.sorted(someOrdering)
+    }
+    val (x, y) = orderedData.unzip
     plotBarChart(x, y, title, xaxisTitle, yaxisTitle)
   }
 
@@ -38,7 +44,7 @@ class Visualizations(publish: Publish) {
     * @param y          the y values
     * @param title      an optional title for the chart
     * @param xaxisTitle an optional title for the x-axis
-    * @param yaxisTitle an optional tile for the y-axis
+    * @param yaxisTitle an optional title for the y-axis
     */
   def plotBarChart(x: Sequence,
                    y: Sequence,
@@ -64,7 +70,7 @@ class Visualizations(publish: Publish) {
     * @param y          the y values
     * @param title      an optional title for the chart
     * @param xaxisTitle an optional title for the x-axis
-    * @param yaxisTitle an optional tile for the y-axis
+    * @param yaxisTitle an optional title for the y-axis
     */
   def plotScatterChart(x: Sequence,
                        y: Sequence,
