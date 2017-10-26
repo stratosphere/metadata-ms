@@ -51,6 +51,8 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
 
     private ConstraintCollection<TupleCount> constraintCollectionTupleCount;
 
+    private ConstraintCollection<DistinctValueCount> constraintCollectionDistinctValueCounts;
+
     private final Target[] scope;
 
     private final MetadataStore metadataStore;
@@ -83,6 +85,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
         Map<String, BasicStatisticValue> statistics = basicStatistic.getStatisticMap();
 
         this.handleTupleCount(statistics, column);
+        this.handleDistinctValueCount(statistics, column);
         this.handleTypeConstraint(statistics, column);
         this.handleColumnStatistics(statistics, column);
         this.handleTextColumnStatistics(statistics, column);
@@ -90,7 +93,7 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     }
 
     /**
-     * Extract a {@link TypeConstraint}.
+     * Extract a {@link TupleCount}.
      */
     private void handleTupleCount(Map<String, BasicStatisticValue> statistics, Column column) {
         // Handle the tuple count.
@@ -98,6 +101,19 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
         if (isFirstColumn && statistics.containsKey("Number of Tuples")) {
             this.getConstraintCollectionTupleCount().add(new TupleCount(
                     column.getTable().getId(), ((BasicStatisticValueLong) statistics.get("Number of Tuples")).getValue().intValue()
+            ));
+        }
+    }
+
+    /**
+     * Extract a {@link TupleCount}.
+     */
+    private void handleDistinctValueCount(Map<String, BasicStatisticValue> statistics, Column column) {
+        // Handle the tuple count.
+        if (statistics.containsKey("Number of Distinct Values")) {
+            this.getConstraintCollectionDistinctValueCounts().add(new DistinctValueCount(
+                    column.getId(),
+                    ((BasicStatisticValueInteger) statistics.get("Number of Distinct Values")).getValue()
             ));
         }
     }
@@ -233,6 +249,14 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
             );
         }
         return this.constraintCollectionTupleCount;
+    }
+    public ConstraintCollection<DistinctValueCount> getConstraintCollectionDistinctValueCounts() {
+        if (this.constraintCollectionDistinctValueCounts == null) {
+            this.constraintCollectionDistinctValueCounts = this.metadataStore.createConstraintCollection(
+                    this.resultDescription + " (distinct value counts)", DistinctValueCount.class, this.scope
+            );
+        }
+        return this.constraintCollectionDistinctValueCounts;
     }
 
     public ConstraintCollection<ColumnStatistics> getConstraintCollectionColumnStatistics() {
