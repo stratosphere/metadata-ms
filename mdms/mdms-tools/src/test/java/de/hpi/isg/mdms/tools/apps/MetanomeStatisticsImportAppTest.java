@@ -72,6 +72,21 @@ public class MetanomeStatisticsImportAppTest {
                 .orElseThrow(AssertionError::new);
         Assert.assertEquals("INT", typeConstraint1.getType());
 
+        // Check that we have all the distinct values.
+        Collection<ConstraintCollection<DistinctValueCount>> distinctValueConstraintCollections =
+                metadataStore.getConstraintCollectionByConstraintTypeAndScope(
+                        DistinctValueCount.class,
+                        schema
+                );
+        Assert.assertEquals(1, typeConstraintCollections.size());
+        ConstraintCollection<DistinctValueCount> distinctValueConstraintCollection = distinctValueConstraintCollections.iterator().next();
+        Assert.assertEquals(8, distinctValueConstraintCollection.getConstraints().size());
+        DistinctValueCount dvCount1 = distinctValueConstraintCollection.getConstraints().stream()
+                .filter(typeConstraint -> typeConstraint.getColumnId() == column1.getId())
+                .findAny()
+                .orElseThrow(AssertionError::new);
+        Assert.assertEquals(150000, dvCount1.getNumDistinctValues());
+
         // Check that we have all the general statistics.
         Collection<ConstraintCollection<ColumnStatistics>> columnStatisticsCollections =
                 metadataStore.getConstraintCollectionByConstraintTypeAndScope(ColumnStatistics.class, schema);
