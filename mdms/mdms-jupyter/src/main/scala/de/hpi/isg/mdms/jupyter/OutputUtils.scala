@@ -94,7 +94,7 @@ class OutputUtils(publish: Publish) {
     * Print the Metacrate logo.
     */
   def showLogo(): Unit = {
-    val logo = ResourceManager.getBinary("/metacrate-logo.png")
+    val logo = ResourceManager.getBinary("/metacrate/logo.png")
 
     publish.png(logo)
   }

@@ -22,7 +22,7 @@ class Visualizations(publish: Publish) {
     * @param title      an optional title for the chart
     * @param xaxisTitle an optional title for the x-axis
     * @param yaxisTitle an optional title for the y-axis
-    * @param ordering    an optional plotting ordering
+    * @param ordering   an optional plotting ordering
     */
   def plotBarChart[T: ClassTag, V: ClassTag](data: Traversable[(T, V)],
                                              title: String = null,
@@ -94,11 +94,70 @@ class Visualizations(publish: Publish) {
     plotly.JupyterScala.plot(data = Seq(trace), layout = layout)(publish)
   }
 
+  /**
+    * Plot a directed graph.
+    *
+    * @param nodes        the vertices of the graph as `(label, size)` tuples
+    * @param links        the edges of the graph as `(label, label)` tuples
+    * @param width        optional width of the graph
+    * @param height       optional height of the graph
+    * @param linkDistance optional link distance setting
+    * @param charge       optional node charge setting (usually negative)
+    * @param publish      Jupyter-scala capability
+    */
+  def plotDirectedGraph(nodes: Iterable[(String, Int)],
+                        links: Iterable[(String, String)],
+                        width: String = "100%",
+                        height: String = "100%",
+                        linkDistance: Int = 100,
+                        charge: Int = -300)
+                       (implicit publish: Publish) = {
+
+    ensureD3Initialized(publish)
+
+    // Initialize the canvas.
+    val svgId = addSvg(height = height)
+
+    // Build the nodes array.
+    val jsNodes = {
+      val jsonNodes = nodes.map { case (name, size) => s"""{name:"$name",size:$size}""" }
+      s"[${jsonNodes.mkString(",")}]"
+    }
+
+    // Build the links array.
+    val jsLinks = {
+      val jsonLinks = links.map { case (src, dest) => s"""{source:"$src",target:"$dest"}""" }
+      s"[${jsonLinks.mkString(",")}]"
+    }
+
+
+    val frontendVariables = Map(
+      "svgId" -> svgId,
+      "nodes" -> jsNodes,
+      "links" -> jsLinks,
+      "linkDistance" -> linkDistance.toString,
+      "charge" -> charge.toString,
+      "pathStyle" -> s"$svgId-path",
+      "circleStyle" -> s"$svgId-circle",
+      "textStyle" -> s"$svgId-text"
+    )
+
+    // Initialize the styles.
+    val styleHtml = ResourceManager.get("/metacrate/directed-graph.html", frontendVariables)
+    publish.html(styleHtml)
+
+    // Build the JS script.
+    val js = ResourceManager.get("/metacrate/directed-graph.js", frontendVariables)
+    publish.js(js)
+  }
+
 }
 
 protected[jupyter] object Visualizations {
 
   private var isPlotlyScalaInitialized = false
+
+  private var isD3Initialized = false
 
   /**
     * Makes sure that plotly-scala is initialized. If it already is, nothing happens.
@@ -109,6 +168,17 @@ protected[jupyter] object Visualizations {
     if (!isPlotlyScalaInitialized) {
       plotly.JupyterScala.init(offline)(publish)
       isPlotlyScalaInitialized = true
+    }
+
+  /**
+    * Makes sure that d3 is initialized. If it already is, nothing happens.
+    *
+    * @param publish jupyter-scala capability
+    */
+  private def ensureD3Initialized(publish: Publish): Unit =
+    if (!isD3Initialized) {
+      val js = ResourceManager.get("/metacrate/init-d3.js")
+      publish.js(js)
     }
 
 

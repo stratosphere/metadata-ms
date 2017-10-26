@@ -1,10 +1,13 @@
 package de.hpi.isg.mdms
 
+import _root_.java.util.concurrent.atomic.AtomicInteger
+
 import _root_.jupyter.api.Publish
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters
 import de.hpi.isg.mdms.clients.util.MetadataStoreUtil
 import de.hpi.isg.mdms.model.MetadataStore
-import org.qcri.rheem.api.DataQuanta
+import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
+import org.qcri.rheem.core.api.RheemContext
 import plotly.element.ScatterMode
 
 import scala.languageFeature.implicitConversions
@@ -19,6 +22,11 @@ package object jupyter {
     * Tells whether the notebook should run offline.
     */
   var offline = true
+
+  /**
+    * Provides IDs for Jupyter HTML elements.
+    */
+  private var idCounter = new AtomicInteger
 
   /**
     * Provides an instance of [[OutputUtils]] for nicely formatted output.
@@ -87,6 +95,36 @@ package object jupyter {
     }
     MetadataStoreUtil.loadMetadataStore(params)
   }
+
+  /**
+    * This function makes queries in Jupyter notebooks look a bit nicer.
+    *
+    * @param f            the user-defined query
+    * @param rheemContext that provides the execution facilities
+    * @tparam T the return type of the query
+    * @return the query result
+    */
+  def query[T](f: PlanBuilder => T)(implicit rheemContext: RheemContext): T = f(new PlanBuilder(rheemContext))
+
+  /**
+    * Adds a new `svg` element to the notebook with a new ID.
+    *
+    * @return the ID of the new element
+    */
+  private[jupyter] def addSvg(width: String = "100%",
+                              height: String = "100%")
+                             (implicit publish: Publish): String = {
+    val id = s"metacrate-svg-${idCounter.getAndAdd(1)}"
+    publish.html(s"""<svg id="$id" style="width: $width; height: $height"></svg>""")
+    id
+  }
+
+  /**
+    * Provide the next ID for HTML elements.
+    *
+    * @return the ID
+    */
+  private[jupyter] def nextId() = idCounter.getAndAdd(1)
 
   /**
     * This class adds additional methods to [[DataQuanta]] of 2-tuples.
