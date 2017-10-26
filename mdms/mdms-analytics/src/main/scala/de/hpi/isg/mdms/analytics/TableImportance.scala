@@ -3,38 +3,39 @@ package de.hpi.isg.mdms.analytics
 import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InclusionDependency, TupleCount}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
-import de.hpi.isg.mdms.model.util.IdUtils
 import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 
 /**
+  * Implementation of the table importance algorithm described in
+  * <p>Summarizing relational databases. <i>Yang et al.</i>, Proceedings of the VLDB Endowment 2(1), 2009.</p>
+  *
   * @author Marius Walter
-  *         Implementation of the  approach by Yang et al., 2009, to determine the table importances.
-  * @param planBuilder
   */
-class TableImportance()(implicit planBuilder: PlanBuilder) {
+object TableImportance {
+
   /** Calculating the probability matrix, later used for calculating the table importance.
-    * The approach is based on by Yang et al., 2009
     *
-    * @param idUtils             utility tools
-    * @param columnStatistics    is constraint collection column statistics
-    * @param tupleCount          is constraint collection tuple count
-    * @param inclusionDependency is constraint collection inclusion dependency
-    * @param metadataStore       is the meta data store
+    * @param columnStatistics is constraint collection column statistics
+    * @param tupleCounts      is constraint collection tuple count
+    * @param foreignKeys      foreign keys of the schema
+    * @param metadataStore    is the meta data store
     * @return the probability matrix
     */
-  def probMatrix(idUtils: IdUtils,
-                 columnStatistics: ConstraintCollection[ColumnStatistics],
-                 tupleCount: ConstraintCollection[TupleCount],
-                 inclusionDependency: ConstraintCollection[InclusionDependency],
-                 metadataStore: MetadataStore
-                ): DataQuanta[(Int, Int, Double)] = {
+  def tableTransitionMatrix(columnStatistics: ConstraintCollection[ColumnStatistics],
+                            tupleCounts: ConstraintCollection[TupleCount],
+                            foreignKeys: ConstraintCollection[InclusionDependency])
+                           (implicit metadataStore: MetadataStore, planBuilder: PlanBuilder)
+  : DataQuanta[(Int, Int, Double)] = {
+
+    val idUtils = metadataStore.getIdUtils
+
     // q ... total number of join edges
     // get the number of dependent columns
-    val q1 = metadataStore.loadConstraints(inclusionDependency)
+    val q1 = metadataStore.loadConstraints(foreignKeys)
       .map(ind => (ind.getDependentColumnIds.apply(0), 1))
       .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
     // get the number of referenced columns
-    val q2 = metadataStore.loadConstraints(inclusionDependency)
+    val q2 = metadataStore.loadConstraints(foreignKeys)
       .map(ind => (ind.getReferencedColumnIds.apply(0), 1))
       .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
     val q = q1.union(q2)
@@ -50,7 +51,7 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
       .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
 
     // numberTuples ... number of tuples of table
-    val numberTuples = metadataStore.loadConstraints(tupleCount)
+    val numberTuples = metadataStore.loadConstraints(tupleCounts)
       .map(tp => (tp.getTableId, tp.getNumTuples))
 
     // logRqEntT ... sum of log(numTuples) and qEntT
@@ -58,9 +59,9 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
       .keyBy(_._1).join(numberTuples.keyBy(_._1)).assemble((a, b) => (a._1, a._2 + math.log(b._2)))
 
     // edgeCol ... Start and target of edge (COLUMN-ID used here)
-    val edgeCol = metadataStore.loadConstraints(inclusionDependency)
+    val edgeCol = metadataStore.loadConstraints(foreignKeys)
       .map(ind => (ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)))
-      .flatMap(ind => (Seq(ind, ind.swap)))
+      .flatMap(ind => Seq(ind, ind.swap))
 
     // Entropy of each column
     val entCol = metadataStore.loadConstraints(columnStatistics)
@@ -92,45 +93,43 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
     val probability = probabilityRR.union(probabilityRS)
 
     // Return probability matrix
-    return probability
+    probability
   }
 
   /**
     * Finding the table importance based on the approach by Yang et al., 2009
     *
     * @param tupleCount       is the constraint collection tuple count
-    * @param metadataStore    is the metadata store
-    * @param idUtils          utility tools
     * @param columnStatistics is constraint collection column statistics
     * @param epsilon          if Euclidean Distance between V and V+1  is
     *                         lower epsilon, the stationary distribution is reached
     * @param maxNumIteration  maximum Number of Iterations
     * @return the solution vector containing the table importance
     */
-  def tableImport(tupleCount: ConstraintCollection[TupleCount],
-                  inclusionDependency: ConstraintCollection[InclusionDependency],
-                  columnStatistics: ConstraintCollection[ColumnStatistics],
-                  metadataStore: MetadataStore,
-                  idUtils: IdUtils,
-                  epsilon: Option[Double],
-                  maxNumIteration: Option[Int])
-  : DataQuanta[(Int, Double)] = {
+  def calculate(tupleCount: ConstraintCollection[TupleCount],
+                inclusionDependency: ConstraintCollection[InclusionDependency],
+                columnStatistics: ConstraintCollection[ColumnStatistics],
+                epsilon: Option[Double],
+                maxNumIteration: Option[Int])
+               (implicit metadataStore: MetadataStore, planBuilder: PlanBuilder)
+  : DataQuanta[TableImportance] = {
     // Calculating the probability matrix
-    val probabilityMatrix = probMatrix(idUtils, columnStatistics, tupleCount, inclusionDependency, metadataStore)
+    val probabilityMatrix = tableTransitionMatrix(columnStatistics, tupleCount, inclusionDependency)
     // Setting up the initial solution vector
-    val Vinitial = initiateVector(tupleCount, metadataStore, idUtils, columnStatistics)
-    maxNumIteration match {
+    val Vinitial = initiateVector(tupleCount, metadataStore, columnStatistics)
+    (maxNumIteration match {
       case Some(maxNumIteration) => Vinitial.repeat(maxNumIteration, Vold => iteratingImportance(probabilityMatrix, Vold))
       case None => Vinitial.doWhile[Double](_.head < epsilon.getOrElse(1e-10), { Vold =>
         val Vnew = iteratingImportance(probabilityMatrix, Vold)
         val Vdiff = diffV(Vnew, Vold).map(a => math.sqrt(a))
-        (Vnew, Vdiff.filter { x => println(x); true })})
-    }
+        (Vnew, Vdiff.filter { x => println(x); true })
+      })
+    }).map { case (tableId, score) => TableImportance(tableId, score) }
   }
 
 
   // Calculating the the product of the probability vector and the solution vector
-  def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
+  private def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
                           V: DataQuanta[(Int, Double)]): DataQuanta[(Int, Double)] = {
     return probMatrix
       .keyBy(a => a._1).join(V.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
@@ -139,17 +138,19 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
   }
 
   // Calculating the Euclidean Distance between the solution vector V and V+1
-  def diffV(Vnew: DataQuanta[(Int, Double)], Vold: DataQuanta[(Int, Double)]): DataQuanta[(Double)] = {
-    val diffVnewVold = Vnew.keyBy(_._1).join(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
+  private def diffV(Vnew: DataQuanta[(Int, Double)],
+            Vold: DataQuanta[(Int, Double)]): DataQuanta[(Double)] =
+    Vnew.keyBy(_._1).join(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
       .map(a => ((a._1 - a._2) * (a._1 - a._2))).reduce(_ + _)
-    return diffVnewVold
-  }
+
 
   // Initiating the solution vector
-  def initiateVector(tupleCount: ConstraintCollection[TupleCount],
-                     metadataStore: MetadataStore,
-                     idUtils: IdUtils,
-                     columnStatistics: ConstraintCollection[ColumnStatistics]): DataQuanta[(Int, Double)] = {
+  private def initiateVector(tupleCount: ConstraintCollection[TupleCount],
+                             metadataStore: MetadataStore,
+                             columnStatistics: ConstraintCollection[ColumnStatistics])
+                             (implicit planBuilder: PlanBuilder):
+  DataQuanta[(Int, Double)] = {
+    val idUtils = metadataStore.getIdUtils
     // numberTuples ... number of tuples of table
     val numberTuples = metadataStore.loadConstraints(tupleCount)
       .map(tp => (tp.getTableId, tp.getNumTuples))
@@ -160,6 +161,8 @@ class TableImportance()(implicit planBuilder: PlanBuilder) {
     // Combining R + entropy
     val Rentropy = numberTuples.keyBy(a => a._1).join(entropy.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
     //return Rentropy.map(a => (a._1, 1));
-    return Rentropy.map(a => (a._1, a._2));
+    Rentropy.map(a => (a._1, a._2));
   }
 }
+
+case class TableImportance(tableId: Int, score: Double)

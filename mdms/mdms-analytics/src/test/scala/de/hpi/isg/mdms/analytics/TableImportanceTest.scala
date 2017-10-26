@@ -20,7 +20,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
   val rheemConfig = new Configuration
   val rheemCtx = new RheemContext(rheemConfig).withPlugin(Java.basicPlugin).withPlugin(Java.graphPlugin)
   var testDb: File = _
-  var store: RDBMSMetadataStore = _
+  implicit var store: RDBMSMetadataStore = _
   var schema: Schema = _
   var constraintCollection: ConstraintCollection[InclusionDependency] = _
 
@@ -48,8 +48,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
   }
 
   test("Testing probability matrix") {
-    implicit val planBuilder = new PlanBuilder(rheemCtx)
-    val tableImportance = new TableImportance
+    implicit val planBuilder: PlanBuilder = new PlanBuilder(rheemCtx)
 
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
@@ -109,7 +108,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
 
     val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
 
-    val probabilityMatrix = tableImportance.probMatrix(idUtils, cc, tc, id, store)
+    val probabilityMatrix = TableImportance.tableTransitionMatrix(cc, tc, id)
       .map(ind => (ind._3)).collect().toSeq
 
     // Calculate probability matrix manually
@@ -145,7 +144,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
     }
     assert(diff < 1e-10)
     // testing if rows sum up to 1
-    val testRowSum = tableImportance.probMatrix(idUtils, cc, tc, id, store)
+    val testRowSum = TableImportance.tableTransitionMatrix(cc, tc, id)
       .reduceByKey(_._1, (a, b) => (a._1, a._1, a._3 + b._3))
       .map(t => t._3).collect().toSeq
 
@@ -153,8 +152,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
   }
 
   test("Testing table importance") {
-    implicit val planBuilder = new PlanBuilder(rheemCtx)
-    val tableImportance = new TableImportance
+    implicit val planBuilder: PlanBuilder = new PlanBuilder(rheemCtx)
 
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
@@ -214,10 +212,10 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
 
     val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
 
-    val probabilityMatrix = tableImportance.probMatrix(idUtils, cc, tc, id, store)
+    val probabilityMatrix = TableImportance.tableTransitionMatrix(cc, tc, id)
 
-    val V = tableImportance.tableImport(tc, id, cc, store, idUtils, Some(1e-10), None)
-      .map(t => t._2).collect().toList
+    val V = TableImportance.calculate(tc, id, cc, Some(1e-10), None)
+      .map(t => t.score).collect().toList
 
     // Test ranking of table importance
     // 1st rank: S
@@ -227,8 +225,7 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
   }
 
   test("Testing if importance 1") {
-    implicit val planBuilder = new PlanBuilder(rheemCtx)
-    val tableImportance = new TableImportance
+    implicit val planBuilder: PlanBuilder = new PlanBuilder(rheemCtx)
 
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
@@ -266,15 +263,14 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
 
     val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
 
-    val V = tableImportance.tableImport(tc, id, cc, store, idUtils, Some(1e-10), None)
-      .map(t => t._2).collect().toList
+    val V = TableImportance.calculate(tc, id, cc, Some(1e-10), None)
+      .map(t => t.score).collect().toList
 
     assert(V(0) < V(1))
   }
 
   test("Testing if importance flow 2") {
-    implicit val planBuilder = new PlanBuilder(rheemCtx)
-    val tableImportance = new TableImportance
+    implicit val planBuilder: PlanBuilder = new PlanBuilder(rheemCtx)
 
     val connection = DriverManager.getConnection("jdbc:sqlite:" + testDb.toURI.getPath)
     store = RDBMSMetadataStore.createNewInstance(new SQLiteInterface(connection))
@@ -363,8 +359,8 @@ class TableImportanceTest extends FunSuite with BeforeAndAfterEach {
 
     val idUtils = new IdUtils(IdUtils.DEFAULT_NUM_TABLE_BITS, IdUtils.DEFAULT_NUM_COLUMN_BITS)
 
-    val V = tableImportance.tableImport(tc, id, cc, store, idUtils, Some(1e-10), None)
-      .map(t => t._2).collect().toList
+    val V = TableImportance.calculate(tc, id, cc, Some(1e-10), None)
+      .map(t => t.score).collect().toList
 
     assert(V(0) > V(1))
   }
