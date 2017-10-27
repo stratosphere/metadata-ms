@@ -8,31 +8,31 @@ import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 
 class TableClustering {
 
-  def clustering(numberClusters: Int,
-                 tableImportance: DataQuanta[(Int, Double)],
-                 cs: ConstraintCollection[ColumnStatistics],
-                 tp: ConstraintCollection[TupleCount],
-                 id: ConstraintCollection[InclusionDependency],
-                 store: MetadataStore,
-                 matchingFraction: DataQuanta[(Int, Double)],
-                 fanout: DataQuanta[(Int, Double)])
-                (implicit planBuilder: PlanBuilder)
-  : DataQuanta[(Int, Int)] = {
-
-    val tableSimilarity = new TableSimilarity
-
-    val iniCluster = getInitialCluster(tableImportance) // setup initial clusters
-    val similarity = tableSimilarity.getStrength(store.getIdUtils, cs, tp, id, store, matchingFraction, fanout)
-
-    sys.error("Not yet implemented.")
-  }
-
-  def getInitialCluster(tableImportance: DataQuanta[(Int, Double)]): DataQuanta[(Int, Int)] = {
-    val initialCluster = tableImportance.reduce((a, b) => if (a._2 > b._2) a else b)
-      .map(x => (0, x._1))
-
-    return initialCluster
-  }
+//  def clustering(numberClusters: Int,
+//                 tableImportance: DataQuanta[(Int, Double)],
+//                 cs: ConstraintCollection[ColumnStatistics],
+//                 tp: ConstraintCollection[TupleCount],
+//                 id: ConstraintCollection[InclusionDependency],
+//                 store: MetadataStore,
+//                 matchingFraction: DataQuanta[(Int, Double)],
+//                 fanout: DataQuanta[(Int, Double)])
+//                (implicit planBuilder: PlanBuilder)
+//  : DataQuanta[(Int, Int)] = {
+//
+//    val tableSimilarity = new TableSimilarity
+//
+//    val iniCluster = getInitialCluster(tableImportance) // setup initial clusters
+//    val similarity = tableSimilarity.getStrength(store.getIdUtils, cs, tp, id, store, matchingFraction, fanout)
+//
+//    sys.error("Not yet implemented.")
+//  }
+//
+//  def getInitialCluster(tableImportance: DataQuanta[(Int, Double)]): DataQuanta[(Int, Int)] = {
+//    val initialCluster = tableImportance.reduce((a, b) => if (a._2 > b._2) a else b)
+//      .map(x => (0, x._1))
+//
+//    return initialCluster
+//  }
 }
 
 //work on the selection of the centroid selection
