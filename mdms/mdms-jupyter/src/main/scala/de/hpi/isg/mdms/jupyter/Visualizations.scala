@@ -151,6 +151,45 @@ class Visualizations(publish: Publish) {
     publish.js(js)
   }
 
+  /**
+    * Plot a tile matrix.
+    *
+    * @param nodes   the domain for the axes: `(name, id)`
+    * @param values  the coordinate values: `(source id, target id, distance)`
+    * @param publish to plot
+    */
+  def plotHeatMap(nodes: Iterable[(String, Int)],
+                  values: Iterable[(Int, Int, Double)],
+                  width: Int)
+                 (implicit publish: Publish) = {
+
+    // Convert the input data to JSON.
+    val jsNodes = nodes.map {
+      case (name, id) => s"""{"name":"$name", "id":$id}"""
+    }.mkString("[", ",", "]")
+
+    val jsDistances = values.map {
+      case (source, target, value) => s"""{"source":$source, "target":$target, "value":$value}"""
+    }.mkString("[", ",", "]")
+
+    // Publish the style sheet.
+    val html = ResourceManager.get("/metacrate/tile-matrix.html")
+    publish.html(html)
+
+    // Create the SVG element.
+    val svgId = addSvg()
+
+
+    // Publish the script with the data.
+    val js = ResourceManager.get("/metacrate/tile-matrix.js", Map(
+      "nodes" -> jsNodes,
+      "links" -> jsDistances,
+      "svgId" -> svgId,
+      "width" -> width.toString
+    ))
+    publish.js(js)
+  }
+
 }
 
 protected[jupyter] object Visualizations {

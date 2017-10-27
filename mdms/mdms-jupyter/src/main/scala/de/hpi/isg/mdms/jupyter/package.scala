@@ -247,6 +247,32 @@ package object jupyter {
       )
     }
 
+
+    /**
+      * Plot a heat map from the [[DataQuanta]]. The tuples are interpreted as `(x, y, heat)` data points.
+      *
+      * @param width   the width of the heat map
+      * @param publish adapter for Jupyter-Scala
+      */
+    def plotHeatMap(width: Int = 500)(implicit publish: Publish): Unit = {
+      val vClass = scala.reflect.classTag[V].runtimeClass
+      val vFunction: V => Double =
+        if (vClass == classOf[_root_.java.lang.Double]) (v: V) => v.asInstanceOf[_root_.java.lang.Double].doubleValue
+        else if (vClass == classOf[Double]) (v: V) => v.asInstanceOf[Double]
+        else throw new IllegalArgumentException(s"Unsupported value type: $vClass.")
+      val heats = dataQuanta.collect()
+      val nodeIds = heats.flatMap { case (x, y, _) => Seq(x, y) }
+        .toSet
+        .zipWithIndex
+        .toMap
+      val encodedHeats = heats.map { case (x, y, heat) => (nodeIds(x), nodeIds(y), vFunction(heat)) }
+      visualizations.plotHeatMap(
+        nodes = nodeIds.map { case (k, v) => (k.toString, v) },
+        values = encodedHeats,
+        width = width
+      )
+    }
+
   }
 
 
