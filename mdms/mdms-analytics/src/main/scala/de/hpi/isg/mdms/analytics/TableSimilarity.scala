@@ -8,8 +8,24 @@ import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
+/**
+  * This object provides methods to determine the similarity among tables as described in
+  * <p>Yang, X., Procopiuc, C.M. and Srivastava, D., 2009. Summarizing relational databases. Proceedings of the VLDB Endowment, 2(1), pp.634-645.</p>
+  *
+  */
 object TableSimilarity {
 
+  /**
+    * Calculate table similarities.
+    *
+    * @param foreignKeys      foreign keys among the tables
+    * @param columnStatistics statistics for the involved tables
+    * @param tupleCounts      tuple counts for the involved tables
+    * @param transitiveHull   whether to calculate the similarities not only for adjacent tables
+    * @param store            that contains all the metadata
+    * @param planBuilder      to execute Rheem
+    * @return the calculated table similarities as [[DataQuanta]]; only such table pairs where the left table ID is smaller are listed
+    */
   def calculate(foreignKeys: ConstraintCollection[InclusionDependency],
                 columnStatistics: ConstraintCollection[ColumnStatistics],
                 tupleCounts: ConstraintCollection[TupleCount],
@@ -135,55 +151,14 @@ object TableSimilarity {
     }
   }
 
-
-  //  def getFanout(tupleCount: ConstraintCollection[TupleCount],
-  //                metadataStore: MetadataStore
-  //               ): DataQuanta[(Int, Double)] = {
-  //    val numberTuples = metadataStore.loadConstraints(tupleCount)
-  //      .map(tp => (tp.getTableId, tp.getNumTuples.toDouble))
-  //
-  //    return numberTuples
-  //  }
-  //
-  //  def getStrength(idUtils: IdUtils,
-  //                  columnStatistics: ConstraintCollection[ColumnStatistics],
-  //                  tupleCount: ConstraintCollection[TupleCount],
-  //                  inclusionDependency: ConstraintCollection[InclusionDependency],
-  //                  metadataStore: MetadataStore,
-  //                  matchingFraction: DataQuanta[(Int, Double)],
-  //                  fanout: DataQuanta[(Int, Double)]
-  //                 ): DataQuanta[(Int, Int, Double)] = {
-  //
-  //    val strength1 = metadataStore.loadConstraints(inclusionDependency)
-  //      .map(ind => (ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)))
-  //      .flatMap(ind => Seq(ind, ind.swap))
-  //      .keyBy(_._1).join(matchingFraction.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
-  //      .keyBy(_._2).join(matchingFraction.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
-  //
-  //    val strength2 = metadataStore.loadConstraints(inclusionDependency)
-  //      .map(ind => (ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)))
-  //      .flatMap(ind => Seq(ind, ind.swap))
-  //      .keyBy(_._1).join(fanout.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
-  //      .keyBy(_._2).join(fanout.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
-  //
-  //    val strength = strength1
-  //      .keyBy(_._1).join(strength2.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 / b._3))
-  //      .map(x => (idUtils.getTableId(x._1), idUtils.getTableId(x._2), x._3))
-  //      .reduce((a, b) => if (a._2 > b._2) a else b)
-  //
-  //    val dummyStrength = metadataStore.loadTables().map(tableMock => (tableMock.id, tableMock.id, 1.0))
-  //
-  //    return strength.union(dummyStrength)
-  //  }
-  //
-  //  def distance(strength: DataQuanta[(Int, Int, Double)])
-  //  : DataQuanta[(Int, Int, Double)] = {
-  //
-  //    return strength.map(x => (x._1, x._2, 1.0 - x._3))
-  //  }
-
-
 }
 
+/**
+  * Describes the similarity between two tables.
+  *
+  * @param tableId1   the ID of the one table
+  * @param tableId2   the ID of the other table
+  * @param similarity the similarity score
+  */
 case class TableSimilarity(tableId1: Int, tableId2: Int, similarity: Double)
 

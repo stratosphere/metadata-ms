@@ -13,6 +13,7 @@ import scala.collection.JavaConversions._
   * <p>Summarizing relational databases. <i>Yang et al.</i>, Proceedings of the VLDB Endowment 2(1), 2009.</p>
   *
   * @author Marius Walter
+  * @author Sebastian Kruse
   */
 object TableImportance {
 
@@ -186,6 +187,13 @@ object TableImportance {
     }
   }
 
+  /**
+    * Perform one iteration step to bring intermediate importances closer to their final value.
+    *
+    * @param tableImportances the current table importances
+    * @param transitions      the transition matrix
+    * @return the new table importances
+    */
   private def evolveImportances(tableImportances: DataQuanta[TableImportance],
                                 transitions: DataQuanta[Transition]): DataQuanta[TableImportance] = {
     transitions.keyBy(_.source).join(tableImportances.keyBy(_.tableId))
@@ -197,6 +205,12 @@ object TableImportance {
 
 }
 
+/**
+  * Describes the importance of a table.
+  *
+  * @param tableId the ID of the described table
+  * @param score   the importance score
+  */
 case class TableImportance(tableId: Int, score: Double) {
   def +(that: TableImportance): TableImportance = {
     require(this.tableId == that.tableId)
