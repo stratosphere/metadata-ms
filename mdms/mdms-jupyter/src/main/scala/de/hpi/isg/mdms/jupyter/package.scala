@@ -10,6 +10,7 @@ import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 import org.qcri.rheem.core.api.RheemContext
 import plotly.element.ScatterMode
 
+import scala.language.implicitConversions
 import scala.languageFeature.implicitConversions
 import scala.reflect.ClassTag
 
@@ -162,6 +163,15 @@ package object jupyter {
 
   }
 
+  /**
+    * Convert [[DataQuanta]] to an [[Iterable]].
+    * @param dataQuanta the [[DataQuanta]]
+    * @tparam T the type of the contained data quanta
+    * @return the converted [[Iterable]]
+    */
+  implicit def collectDataQuanta[T](dataQuanta: DataQuanta[T]): Iterable[T] =
+    if (dataQuanta == null) null else dataQuanta.collect()
+
 
   /**
     * This class adds additional methods to [[DataQuanta]] of 2-tuples.
@@ -271,6 +281,19 @@ package object jupyter {
         values = encodedHeats,
         width = width
       )
+    }
+
+  }
+
+  implicit class GraphEdgeDataQuanta(dataQuanta: DataQuanta[GraphEdge]) {
+
+    def plotDirectedGraph(nodes: DataQuanta[GraphVertex] = null,
+                          width: String = "100%",
+                          height: String = "100%",
+                          linkDistance: Int = 100,
+                          charge: Int = -300)
+                         (implicit publish: Publish): Unit = {
+      visualizations.plotDirectedGraph(this.dataQuanta, nodes, width, height, linkDistance, charge)
     }
 
   }

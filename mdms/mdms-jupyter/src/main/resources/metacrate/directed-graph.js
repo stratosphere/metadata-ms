@@ -9,8 +9,9 @@ requirejs(["d3"], function (d3) {
         link.target = nodes.find(function (n) { return n.name == link.target; });
     }
 
-    var svg = d3.select("#$svgId")
-    var parentDiv = svg[0][0].parentNode
+    var svg = d3.select("#$svgId");
+    var parentDiv = svg[0][0].parentNode;
+    var nodeColors = d3.scale.category20();
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
@@ -46,6 +47,7 @@ requirejs(["d3"], function (d3) {
         .enter().append("circle")
         .attr("class", "$circleStyle")
         .attr("r", function(d) { return d.size; })
+        .attr("fill", function (d) { return nodeColors(d.color); })
         .call(force.drag);
 
     var text = svg.append("g").selectAll("text")

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.jupyter
 
+import de.hpi.isg.mdms.jupyter.json.{JsonSerializable, JsonSerializer}
 import jupyter.api.Publish
 import plotly.element.ScatterMode
 import plotly.layout.{Axis, Layout}
@@ -105,8 +106,8 @@ class Visualizations(publish: Publish) {
     * @param charge       optional node charge setting (usually negative)
     * @param publish      Jupyter-scala capability
     */
-  def plotDirectedGraph(nodes: Iterable[(String, Int)],
-                        links: Iterable[(String, String)],
+  def plotDirectedGraph(links: Iterable[GraphEdge],
+                        nodes: Iterable[GraphVertex] = null,
                         width: String = "100%",
                         height: String = "100%",
                         linkDistance: Int = 100,
@@ -119,17 +120,13 @@ class Visualizations(publish: Publish) {
     val svgId = addSvg(height = height)
 
     // Build the nodes array.
-    val jsNodes = {
-      val jsonNodes = nodes.map { case (name, size) => s"""{name:"$name",size:$size}""" }
-      s"[${jsonNodes.mkString(",")}]"
-    }
+    val jsNodes = JsonSerializer.toJson({
+      if (nodes == null) links.flatMap(edge => Seq(edge.destination, edge.source)).map(name => GraphVertex(name)).toSet
+      else nodes
+    })
 
     // Build the links array.
-    val jsLinks = {
-      val jsonLinks = links.map { case (src, dest) => s"""{source:"$src",target:"$dest"}""" }
-      s"[${jsonLinks.mkString(",")}]"
-    }
-
+    val jsLinks = JsonSerializer.toJson(links)
 
     val frontendVariables = Map(
       "svgId" -> svgId,
@@ -237,4 +234,12 @@ protected[jupyter] object Visualizations {
     else Sequence.fromStringSeq(iterable.map(v => if (v == null) null else v.toString).toSeq)
   }
 
+}
+
+case class GraphEdge(source: String, destination: String) extends JsonSerializable {
+  override def toJson: String = s"""{source:"${JsonSerializer.escape(source)}",target:"${JsonSerializer.escape(destination)}"}"""
+}
+
+case class GraphVertex(name: String, size: Int = 5, color: Int = 0) extends JsonSerializable {
+  override def toJson: String = s"""{name:"${JsonSerializer.escape(name)}",size:$size,color:$color}"""
 }
