@@ -2,7 +2,8 @@
 var groups = $groups,
     transitions = $transitions,
     diameter = $diameter,
-    svgId = "$svgId";
+    svgId = "$svgId",
+    scaleByWeight = $scaleByGroups;
 
 // Calculate the transition matrix.
 var matrix = [];
@@ -17,6 +18,12 @@ for (var y = 0; y < groups.length; y++) {
             if (transition.source === source.name && transition.destination === destination.name) sum += transition.value;
         }
         row.push(sum);
+    }
+    var rowSum = d3.sum(row);
+    if (scaleByWeight && rowSum !== 0) {
+        for (var i = 0; i < row.length; i++) {
+            row[i] *= source.weight / rowSum;
+        }
     }
     matrix.push(row);
 }

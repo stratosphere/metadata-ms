@@ -331,11 +331,19 @@ package object jupyter {
     /**
       * Plot a chord diagram from the [[DataQuanta]].
       *
+      * @param groups        optional groups to consider (with optional weight)
+      * @param scaleByGroups whether to scale the sections by the `groups` weights
+      * @param diameter      optional diameter of the diagram
+      *
       */
-    def plotChordDiagram(diameter: Int = 700)
+    def plotChordDiagram(groups: DataQuanta[Category] = null,
+                         scaleByGroups: Boolean = false,
+                         diameter: Int = 700)
                         (implicit publish: Publish) = {
       visualizations.plotChordDiagram(
         transitions = dataQuanta,
+        groups = groups,
+        scaleByGroups = scaleByGroups,
         diameter = diameter
       )
 

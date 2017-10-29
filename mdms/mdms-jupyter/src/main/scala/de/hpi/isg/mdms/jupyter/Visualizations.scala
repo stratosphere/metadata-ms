@@ -192,18 +192,23 @@ class Visualizations(publish: Publish) {
   /**
     * Plot a chord diagram.
     *
-    * @param transitions that make up the chords
-    * @param diameter    the diameter of the chord diagram
-    * @param publish     to plot
+    * @param transitions   that make up the chords
+    * @param groups        optional groups to consider (with optional weight)
+    * @param scaleByGroups whether to scale the sections by the `groups` weights
+    * @param diameter      the diameter of the chord diagram
+    * @param publish       to plot
     */
   def plotChordDiagram(transitions: Iterable[Transition],
+                       groups: Iterable[Category] = null,
+                       scaleByGroups: Boolean = false,
                        diameter: Int = 700)
                       (implicit publish: Publish) = {
 
     // Convert the input data to JSON.
     val jsTransitions = JsonSerializer.toJson(transitions)
     val jsGroups = JsonSerializer.toJson(
-      transitions.flatMap(t => Seq(t.source, t.destination)).toSet.map((name: String) => Category(name = name))
+      if (groups != null) groups
+      else transitions.flatMap(t => Seq(t.source, t.destination)).toSet.map((name: String) => Category(name = name))
     )
 
     // Publish the style sheet.
@@ -216,6 +221,7 @@ class Visualizations(publish: Publish) {
     // Publish the script with the data.
     val js = ResourceManager.get("/metacrate/chord-diagram.js", Map(
       "groups" -> jsGroups,
+      "scaleByGroups" -> scaleByGroups.toString,
       "transitions" -> jsTransitions,
       "diameter" -> diameter.toString,
       "svgId" -> svgId
@@ -293,11 +299,11 @@ case class Tile(row: String, column: String, opacity: Double = 1d, color: Int = 
   override def toJson: String = s"""{row:"${esc(row)}",column:"${esc(column)}",opacity:$opacity,color:$color}"""
 }
 
-case class Category(name: String, order: Int = 0) extends JsonSerializable {
+case class Category(name: String, order: Int = 0, weight: Double = 1d) extends JsonSerializable {
 
   import JsonSerializer.{escape => esc}
 
-  override def toJson: String = s"""{name:"${esc(name)}",order:$order}"""
+  override def toJson: String = s"""{name:"${esc(name)}",order:$order,weight:$weight}"""
 }
 
 case class Transition(source: String, destination: String, value: Double = 1d) extends JsonSerializable {
