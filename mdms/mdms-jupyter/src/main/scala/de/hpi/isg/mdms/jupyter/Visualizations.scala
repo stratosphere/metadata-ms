@@ -189,6 +189,40 @@ class Visualizations(publish: Publish) {
     publish.js(js)
   }
 
+  /**
+    * Plot a chord diagram.
+    *
+    * @param transitions that make up the chords
+    * @param diameter    the diameter of the chord diagram
+    * @param publish     to plot
+    */
+  def plotChordDiagram(transitions: Iterable[Transition],
+                       diameter: Int = 700)
+                      (implicit publish: Publish) = {
+
+    // Convert the input data to JSON.
+    val jsTransitions = JsonSerializer.toJson(transitions)
+    val jsGroups = JsonSerializer.toJson(
+      transitions.flatMap(t => Seq(t.source, t.destination)).toSet.map((name: String) => Category(name = name))
+    )
+
+    // Publish the style sheet.
+    val html = ResourceManager.get("/metacrate/chord-diagram.html")
+    publish.html(html)
+
+    // Create the SVG element.
+    val svgId = addSvg()
+
+    // Publish the script with the data.
+    val js = ResourceManager.get("/metacrate/chord-diagram.js", Map(
+      "groups" -> jsGroups,
+      "transitions" -> jsTransitions,
+      "diameter" -> diameter.toString,
+      "svgId" -> svgId
+    ))
+    publish.js(js)
+  }
+
 }
 
 protected[jupyter] object Visualizations {
@@ -264,4 +298,11 @@ case class Category(name: String, order: Int = 0) extends JsonSerializable {
   import JsonSerializer.{escape => esc}
 
   override def toJson: String = s"""{name:"${esc(name)}",order:$order}"""
+}
+
+case class Transition(source: String, destination: String, value: Double = 1d) extends JsonSerializable {
+
+  import JsonSerializer.{escape => esc}
+
+  override def toJson: String = s"""{source:"${esc(source)}",destination:"${esc(destination)}",value:$value}"""
 }

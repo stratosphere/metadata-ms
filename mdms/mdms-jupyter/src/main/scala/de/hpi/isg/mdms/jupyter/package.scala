@@ -298,7 +298,7 @@ package object jupyter {
   implicit class TileDataQuanta(dataQuanta: DataQuanta[Tile]) {
 
     /**
-      * Plot a heat map from the [[DataQuanta]]. The tuples are interpreted as `(x, y, opacity)` data points.
+      * Plot a heat map from the [[DataQuanta]].
       *
       * @param rows    optional rows for the grid (e.g., to order or project the grid)
       * @param columns optional columns for the grid (e.g., to order or project the grid)
@@ -324,6 +324,22 @@ package object jupyter {
       )
     }
 
+  }
+
+  implicit class TransitionDataQuanta(dataQuanta: DataQuanta[Transition]) {
+
+    /**
+      * Plot a chord diagram from the [[DataQuanta]].
+      *
+      */
+    def plotChordDiagram(diameter: Int = 700)
+                        (implicit publish: Publish) = {
+      visualizations.plotChordDiagram(
+        transitions = dataQuanta,
+        diameter = diameter
+      )
+
+    }
 
   }
 
