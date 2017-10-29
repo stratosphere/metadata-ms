@@ -1,65 +1,60 @@
 requirejs(["d3"], function (d3) {
+    // Collect larger inputs.
+    var tiles = $tiles,
+        rows = $rows,
+        columns = $columns;
 
-    var nodes = $nodes; // nodes should be of the form {"id":..., "name":...}
-    var links = $links; // links should be of the form {"source":..., "target":..., "value":...}
-
-    // Convert the node IDs to indices.
-    var id2index = {};
-    nodes.forEach(function (node, index) {
-        id2index[node.id] = index;
-        node.index = index;
+    // Order and index the columns and rows.
+    var compareCategories = function (a, b) {
+        var result = d3.ascending(a.order, b.order);
+        if (result) return result;
+        return d3.ascending(a.name, b.name);
+    }
+    rows.sort(compareCategories);
+    var rowsByName = {};
+    rows.forEach(function (d, i) {
+        rowsByName[d.name] = d;
+        d.index = i;
     });
-    links.forEach(function (link) {
-        link.source = id2index[link.source];
-        link.target = id2index[link.target];
+    columns.sort(compareCategories);
+    var columnsByName = {};
+    columns.forEach(function (d, i) {
+        columnsByName[d.name] = d;
+        d.index = i;
     });
 
-    var margin = {top: 120, right: 100, bottom: 10, left: 120},
+    // Create the matrix.
+    var matrix = [];
+    for (var y = 0; y < rows.length; y++) {
+        matrix[y] = []
+        for (var x = 0; x < columns.length; x++) {
+            matrix[y].push(null);
+        }
+    }
+    tiles.forEach(function (tile) {
+        tile.y = rowsByName[tile.row].index;
+        tile.x = columnsByName[tile.column].index;
+        matrix[tile.y][tile.x] = tile;
+        matrix[tile.y].title = tile.row;
+        matrix[tile.y][tile.x].title = tile.column;
+    });
+
+    var margin = {top: $marginTop, right: 0, bottom: 0, left: $marginLeft},
         width = $width,
-        height = $width;
-
-    var x = d3.scale.ordinal().rangeBands([0, width]),
-        // opacity = d3.scale.linear().domain([0, 1]).range([0, 1]).clamp(true),
-        opacity = function (d) {
-            return 1;
-        },
-        color = d3.scale.linear().domain([0, 1]).range(['#e2e2e2', '#2b65c4']).clamp(true);
+        height = $height;
 
     var svg = d3.select("#$svgId")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .style("margin-left", margin.left + "px")
-        .style("margin-top", margin.top + "px")
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    // Create the matrix.
-    var matrix = [],
-        n = nodes.length;
-    nodes.forEach(function (node, i) {
-        matrix[i] = d3.range(n).map(function (j) {
-            return {x: j, y: i, z: i == j ? 1 : 0};
-        });
-    });
-
-    // Convert links to matrix; count character occurrences.
-    links.forEach(function (link) {
-        matrix[link.source][link.target].z = link.value;
-        matrix[link.target][link.source].z = link.value;
-    });
-
-    // Precompute the orders.
-    var orders = {
-        name: d3.range(n).sort(function (a, b) {
-            return d3.ascending(nodes[a].name, nodes[b].name);
-        }),
-        id: d3.range(n).sort(function (a, b) {
-            return nodes[a].id - nodes[b].id;
-        })
-    };
 
     // The default sort order.
-    x.domain(orders.name);
+    var x = d3.scale.ordinal().rangeBands([0, width]).domain(d3.range(0, rows.length)),
+        y = d3.scale.ordinal().rangeBands([0, height]).domain(d3.range(0, columns.length)),
+        color = d3.scale.category10();
+
 
     svg.append("rect")
         .attr("class", "background")
@@ -71,7 +66,7 @@ requirejs(["d3"], function (d3) {
         .enter().append("g")
         .attr("class", "row")
         .attr("transform", function (d, i) {
-            return "translate(0," + x(i) + ")";
+            return "translate(0," + y(i) + ")";
         })
         .each(createRow);
 
@@ -84,7 +79,7 @@ requirejs(["d3"], function (d3) {
         .attr("dy", ".32em")
         .attr("text-anchor", "end")
         .text(function (d, i) {
-            return nodes[i].name;
+            return rows[i].name;
         });
 
     var column = svg.selectAll(".column")
@@ -104,13 +99,13 @@ requirejs(["d3"], function (d3) {
         .attr("dy", ".32em")
         .attr("text-anchor", "start")
         .text(function (d, i) {
-            return nodes[i].name;
+            return columns[i].name;
         });
 
     function createRow(row) {
-        var cell = d3.select(this).selectAll(".cell")
+        d3.select(this).selectAll(".cell")
             .data(row.filter(function (d) {
-                return d.z;
+                return d !== null;
             }))
             .enter().append("rect")
             .attr("class", "cell")
@@ -118,12 +113,12 @@ requirejs(["d3"], function (d3) {
                 return x(d.x);
             })
             .attr("width", x.rangeBand())
-            .attr("height", x.rangeBand())
+            .attr("height", y.rangeBand())
             .style("fill-opacity", function (d) {
-                return opacity(d.z);
+                return d.opacity;
             })
             .style("fill", function (d) {
-                return color(d.z);
+                return color(d.color);
             })
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
@@ -132,16 +127,16 @@ requirejs(["d3"], function (d3) {
     function mouseover(p) {
         // d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
         // d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
-        d3.selectAll(".row text").style("visibility", function (d, i) {
+        d3.select("#$svgId").selectAll(".row text").style("visibility", function (d, i) {
             return i == p.y ? "visible" : "hidden";
         });
-        d3.selectAll(".column text").style("visibility", function (d, i) {
+        d3.select("#$svgId").selectAll(".column text").style("visibility", function (d, i) {
             return i == p.x ? "visible" : "hidden";
         });
     }
 
     function mouseout() {
-        d3.selectAll(".row text").style("visibility", "visible");
-        d3.selectAll(".column text").style("visibility", "visible");
+        d3.select("#$svgId").selectAll(".row text").style("visibility", "visible");
+        d3.select("#$svgId").selectAll(".column text").style("visibility", "visible");
     }
 });

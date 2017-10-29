@@ -149,25 +149,24 @@ class Visualizations(publish: Publish) {
   }
 
   /**
-    * Plot a tile matrix.
+    * Plot a grid.
     *
-    * @param nodes   the domain for the axes: `(name, id)`
-    * @param values  the coordinate values: `(source id, target id, distance)`
+    * @param tiles   that make up the grid
     * @param publish to plot
     */
-  def plotHeatMap(nodes: Iterable[(String, Int)],
-                  values: Iterable[(Int, Int, Double)],
-                  width: Int)
-                 (implicit publish: Publish) = {
+  def plotGrid(tiles: Iterable[Tile],
+               width: Int = 500,
+               height: Int = 500,
+               marginLeft: Int = 200,
+               marginTop: Int = 200,
+               rows: Iterable[Category] = null,
+               columns: Iterable[Category] = null)
+              (implicit publish: Publish) = {
 
     // Convert the input data to JSON.
-    val jsNodes = nodes.map {
-      case (name, id) => s"""{"name":"$name", "id":$id}"""
-    }.mkString("[", ",", "]")
-
-    val jsDistances = values.map {
-      case (source, target, value) => s"""{"source":$source, "target":$target, "value":$value}"""
-    }.mkString("[", ",", "]")
+    val jsTiles = JsonSerializer.toJson(tiles)
+    val jsRows = JsonSerializer.toJson(if (rows == null) tiles.map(tile => Category(tile.row)).toSet else rows)
+    val jsColumns = JsonSerializer.toJson(if (columns == null) tiles.map(tile => Category(tile.column)).toSet else columns)
 
     // Publish the style sheet.
     val html = ResourceManager.get("/metacrate/tile-matrix.html")
@@ -176,13 +175,16 @@ class Visualizations(publish: Publish) {
     // Create the SVG element.
     val svgId = addSvg()
 
-
     // Publish the script with the data.
     val js = ResourceManager.get("/metacrate/tile-matrix.js", Map(
-      "nodes" -> jsNodes,
-      "links" -> jsDistances,
+      "tiles" -> jsTiles,
+      "rows" -> jsRows,
+      "columns" -> jsColumns,
       "svgId" -> svgId,
-      "width" -> width.toString
+      "width" -> width.toString,
+      "height" -> height.toString,
+      "marginLeft" -> marginLeft.toString,
+      "marginTop" -> marginTop.toString
     ))
     publish.js(js)
   }
@@ -237,9 +239,29 @@ protected[jupyter] object Visualizations {
 }
 
 case class GraphEdge(source: String, destination: String) extends JsonSerializable {
-  override def toJson: String = s"""{source:"${JsonSerializer.escape(source)}",target:"${JsonSerializer.escape(destination)}"}"""
+
+  import JsonSerializer.{escape => esc}
+
+  override def toJson: String = s"""{source:"${esc(source)}",target:"${esc(destination)}"}"""
 }
 
 case class GraphVertex(name: String, size: Int = 5, color: Int = 0) extends JsonSerializable {
-  override def toJson: String = s"""{name:"${JsonSerializer.escape(name)}",size:$size,color:$color}"""
+
+  import JsonSerializer.{escape => esc}
+
+  override def toJson: String = s"""{name:"${esc(name)}",size:$size,color:$color}"""
+}
+
+case class Tile(row: String, column: String, opacity: Double = 1d, color: Int = 0) extends JsonSerializable {
+
+  import JsonSerializer.{escape => esc}
+
+  override def toJson: String = s"""{row:"${esc(row)}",column:"${esc(column)}",opacity:$opacity,color:$color}"""
+}
+
+case class Category(name: String, order: Int = 0) extends JsonSerializable {
+
+  import JsonSerializer.{escape => esc}
+
+  override def toJson: String = s"""{name:"${esc(name)}",order:$order}"""
 }

@@ -165,6 +165,7 @@ package object jupyter {
 
   /**
     * Convert [[DataQuanta]] to an [[Iterable]].
+    *
     * @param dataQuanta the [[DataQuanta]]
     * @tparam T the type of the contained data quanta
     * @return the converted [[Iterable]]
@@ -259,27 +260,23 @@ package object jupyter {
 
 
     /**
-      * Plot a heat map from the [[DataQuanta]]. The tuples are interpreted as `(x, y, heat)` data points.
+      * Plot a heat map from the [[DataQuanta]]. The tuples are interpreted as `(x, y, opacity)` data points.
       *
       * @param width   the width of the heat map
       * @param publish adapter for Jupyter-Scala
       */
-    def plotHeatMap(width: Int = 500)(implicit publish: Publish): Unit = {
+    def plotGrid(width: Int = 500, height: Int = 500)(implicit publish: Publish): Unit = {
       val vClass = scala.reflect.classTag[V].runtimeClass
       val vFunction: V => Double =
         if (vClass == classOf[_root_.java.lang.Double]) (v: V) => v.asInstanceOf[_root_.java.lang.Double].doubleValue
         else if (vClass == classOf[Double]) (v: V) => v.asInstanceOf[Double]
         else throw new IllegalArgumentException(s"Unsupported value type: $vClass.")
       val heats = dataQuanta.collect()
-      val nodeIds = heats.flatMap { case (x, y, _) => Seq(x, y) }
-        .toSet
-        .zipWithIndex
-        .toMap
-      val encodedHeats = heats.map { case (x, y, heat) => (nodeIds(x), nodeIds(y), vFunction(heat)) }
-      visualizations.plotHeatMap(
-        nodes = nodeIds.map { case (k, v) => (k.toString, v) },
-        values = encodedHeats,
-        width = width
+      val tiles = heats.map { case (x, y, heat) => Tile(x.toString, y.toString, opacity = vFunction(heat)) }
+      visualizations.plotGrid(
+        tiles = tiles,
+        width = width,
+        height = height
       )
     }
 
@@ -298,6 +295,37 @@ package object jupyter {
 
   }
 
+  implicit class TileDataQuanta(dataQuanta: DataQuanta[Tile]) {
+
+    /**
+      * Plot a heat map from the [[DataQuanta]]. The tuples are interpreted as `(x, y, opacity)` data points.
+      *
+      * @param rows    optional rows for the grid (e.g., to order or project the grid)
+      * @param columns optional columns for the grid (e.g., to order or project the grid)
+      * @param width   the width of the heat map
+      * @param height  the width of the heat map
+      * @param publish adapter for Jupyter-Scala
+      */
+    def plotGrid(rows: DataQuanta[Category] = null,
+                 columns: DataQuanta[Category] = null,
+                 width: Int = 500,
+                 height: Int = 500,
+                 marginTop: Int = 200,
+                 marginLeft: Int = 200)
+                (implicit publish: Publish): Unit = {
+      visualizations.plotGrid(
+        tiles = dataQuanta,
+        rows = rows,
+        columns = columns,
+        width = width,
+        height = height,
+        marginLeft = marginLeft,
+        marginTop = marginTop
+      )
+    }
+
+
+  }
 
 }
 
