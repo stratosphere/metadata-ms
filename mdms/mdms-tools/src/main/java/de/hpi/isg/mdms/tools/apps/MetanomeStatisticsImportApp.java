@@ -51,11 +51,12 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         super(parameters);
     }
 
-    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName) throws Exception {
-        fromParameters(mds, fileLocation, ".+", schemaName, null);
-    }
-
-    public static void fromParameters(MetadataStore mds, String fileLocation, String filePattern, String schemaName, String scope) throws Exception {
+    public static void fromParameters(MetadataStore mds,
+                                      String fileLocation,
+                                      String filePattern,
+                                      String schemaName,
+                                      String scope,
+                                      String userDefinedIdPrefix) throws Exception {
 
         MetanomeStatisticsImportApp.Parameters parameters = new MetanomeStatisticsImportApp.Parameters();
 
@@ -65,6 +66,7 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         parameters.filePattern = filePattern;
         parameters.schemaName = schemaName;
         parameters.scope = scope;
+        parameters.userDefinedIdPrefix = userDefinedIdPrefix;
         parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         MetanomeStatisticsImportApp app = new MetanomeStatisticsImportApp(parameters);
@@ -88,7 +90,11 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         JsonConverter<BasicStatistic> jsonConverter = new JsonConverter<>();
 
         try (StatisticsResultReceiver resultReceiver = new StatisticsResultReceiver(
-                this.metadataStore, schema, Collections.singletonList(scope), String.format("Statistics for %s", schema.getName())
+                this.metadataStore,
+                schema,
+                Collections.singletonList(scope),
+                this.parameters.userDefinedIdPrefix,
+                String.format("Statistics for %s", schema.getName())
         )) {
 
             for (String inputDirectoryPath : this.parameters.inputDirectories) {
@@ -170,13 +176,15 @@ public class MetanomeStatisticsImportApp extends MdmsAppTemplate<MetanomeStatist
         public String filePattern = ".+";
 
         @Parameter(names = "--description",
-                description = "description for the imported constraint collection",
-                required = false)
+                description = "description for the imported constraint collection")
         public String description;
 
+        @Parameter(names = "--id-prefix",
+                description = "prefix for user-defined IDs of the constraint collections")
+        public String userDefinedIdPrefix;
+
         @Parameter(names = "--encoding",
-                description = "encoding of the statistics files",
-                required = false)
+                description = "encoding of the statistics files")
         public String encoding = "ISO-8859-1";
 
         /**

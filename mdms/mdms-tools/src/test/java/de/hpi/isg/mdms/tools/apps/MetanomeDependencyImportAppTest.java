@@ -44,7 +44,8 @@ public class MetanomeDependencyImportAppTest {
                 "json",
                 "FD",
                 "WDC",
-                "WDC"
+                "WDC",
+                null
         );
 
         Collection<ConstraintCollection<FunctionalDependency>> constraintCollections =
@@ -115,7 +116,8 @@ public class MetanomeDependencyImportAppTest {
                 "json",
                 "IND",
                 "SG",
-                "SG"
+                "SG",
+                null
         );
 
         Collection<ConstraintCollection<InclusionDependency>> constraintCollections =
@@ -169,7 +171,8 @@ public class MetanomeDependencyImportAppTest {
                 "json",
                 "UCC",
                 "schema",
-                "schema"
+                "schema",
+                null
         );
 
         Collection<ConstraintCollection<UniqueColumnCombination>> constraintCollections =

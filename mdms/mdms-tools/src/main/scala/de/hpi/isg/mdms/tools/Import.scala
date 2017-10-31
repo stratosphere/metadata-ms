@@ -9,9 +9,9 @@ import de.hpi.isg.mdms.tools.apps.{CreateSchemaForCsvFilesApp, MetanomeDependenc
 import scala.reflect.ClassTag
 
 /**
-  * This object is simply a Scala-friendly facade for the Java-based tools.
+  * This object is simply a Scala-friendly facade for the Java-based import tools.
   */
-object MetacrateTools {
+object Import {
 
   /**
     * Create a [[Schema]] within a [[MetadataStore]] by inspecting CSV files.
@@ -46,9 +46,15 @@ object MetacrateTools {
   def importMetanomeStatistics(fileLocation: String,
                                schema: Schema,
                                filePattern: String = ".+",
-                               scope: Option[Target] = None)
+                               userDefinedIdPrefix: String = null,
+                               scope: Target = null)
                               (implicit mds: MetadataStore): Unit = {
-    MetanomeStatisticsImportApp.fromParameters(mds, fileLocation, filePattern, schema.getName, scope.getOrElse(schema).getName)
+    MetanomeStatisticsImportApp.fromParameters(mds,
+      fileLocation,
+      filePattern,
+      schema.getName,
+      Option(scope).getOrElse(schema).getName,
+      userDefinedIdPrefix)
   }
 
   /**
@@ -64,7 +70,8 @@ object MetacrateTools {
                                                                           fileType: MetanomeFormat,
                                                                           schema: Schema,
                                                                           filePattern: String = ".+",
-                                                                          scope: Option[Target] = None)
+                                                                          userDefinedIdPrefix: String = null,
+                                                                          scope: Target = null)
                                                                          (implicit mds: MetadataStore): Unit = {
     val dependencyClass = scala.reflect.classTag[DependencyType].runtimeClass
     val dependencyTypeParameter =
@@ -74,7 +81,15 @@ object MetacrateTools {
       else if (dependencyClass == classOf[UniqueColumnCombination]) "UCC"
       else sys.error("Unsupported dependency type.")
 
-    MetanomeDependencyImportApp.fromParameters(mds, fileLocation, filePattern, fileType.name, dependencyTypeParameter, scope.getOrElse(schema).getName, schema.getName)
+    MetanomeDependencyImportApp.fromParameters(mds,
+      fileLocation,
+      filePattern,
+      fileType.name,
+      dependencyTypeParameter,
+      Option(scope).getOrElse(schema).getName,
+      schema.getName,
+      userDefinedIdPrefix
+    )
   }
 
   /** Describes a certain Metanome result file format. */

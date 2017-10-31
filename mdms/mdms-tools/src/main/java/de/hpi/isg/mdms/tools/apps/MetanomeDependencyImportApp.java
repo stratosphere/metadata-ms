@@ -8,11 +8,11 @@ import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.constraints.FunctionalDependency;
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
+import de.hpi.isg.mdms.metanome.DependencyResultReceiver;
+import de.hpi.isg.mdms.metanome.ResultReader;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Target;
-import de.hpi.isg.mdms.metanome.DependencyResultReceiver;
-import de.hpi.isg.mdms.metanome.ResultReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +35,8 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                                       String fileType,
                                       String dependencyType,
                                       String scope,
-                                      String schemaName) throws Exception {
+                                      String schemaName,
+                                      String userDefinedIdPrefix) throws Exception {
 
         MetanomeDependencyImportApp.Parameters parameters = new MetanomeDependencyImportApp.Parameters();
 
@@ -45,6 +46,7 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         parameters.fileType = fileType;
         parameters.dependencyType = dependencyType;
         parameters.scope = Collections.singletonList(scope);
+        parameters.userDefinedIdPrefix = userDefinedIdPrefix;
         parameters.metadataStoreParameters.isCloseMetadataStore = false;
 
         MetanomeDependencyImportApp app = new MetanomeDependencyImportApp(parameters);
@@ -87,7 +89,11 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
                 schema,
                 scope,
                 constraintClass,
-                String.format("%s (%s)", this.parameters.getDescription(), new Date()))) {
+                String.format("%s (%s)", this.parameters.getDescription(), new Date()),
+                this.parameters.userDefinedIdPrefix == null ?
+                        null :
+                        this.parameters.userDefinedIdPrefix + this.parameters.dependencyType.toLowerCase() + "s"
+        )) {
 
 
             for (String resultFile : this.parameters.resultFiles) {
@@ -225,6 +231,10 @@ public class MetanomeDependencyImportApp extends MdmsAppTemplate<MetanomeDepende
         @Parameter(names = "--file-pattern",
                 description = "matches statistics files in the input directory")
         public String filePattern = ".+";
+
+        @Parameter(names = "--id-prefix",
+                description = "prefix for user-defined IDs of the constraint collections")
+        public String userDefinedIdPrefix;
 
         /**
          * @return the user-specified description or a default one

@@ -36,10 +36,11 @@ public class DependencyResultReceiver<T> implements AutoCloseable,
                                     Schema schema,
                                     Collection<Target> scope,
                                     Class<T> constraintClass,
-                                    String resultDescription) {
+                                    String resultDescription,
+                                    String userDefinedId) {
         this.identifierResolver = new IdentifierResolver(metadatastore, schema);
         this.constraintCollection = metadatastore.createConstraintCollection(
-                resultDescription, constraintClass, scope.toArray(scope.toArray(new Target[scope.size()]))
+                userDefinedId, resultDescription, null, constraintClass, scope.toArray(scope.toArray(new Target[scope.size()]))
         );
     }
 
