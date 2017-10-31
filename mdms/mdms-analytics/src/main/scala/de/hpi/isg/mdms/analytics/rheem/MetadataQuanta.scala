@@ -67,6 +67,28 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   }
 
   /**
+    * Resolve some [[Target]] ID in the [[DataQuanta]]. This method might not work in all scenarios, in which other
+    * resulution methods can be applied, such as [[resolveColumnIds()]].
+    *
+    * @param udf      creates new data quanta from the old one using a resolution function
+    * @param metadataStore in which the [[Target]]s reside
+    * @return [[DataQuanta]] with resolved [[Target]] IDs
+    */
+  def resolveIds[NewOut: ClassTag](udf: (Out, Int => String) => NewOut)
+                                        (implicit metadataStore: MetadataStore):
+  DataQuanta[NewOut] = {
+    def resolver(id: Int): String = {
+      metadataStore.getTargetById(id) match {
+        case null => "(invalid ID)"
+        case schema: Schema => schema.getName
+        case table: Table => table.getName
+        case column: Column => column.getNameWithTableName
+      }
+    }
+    dataQuanta.map { dataQuantum => udf(dataQuantum, resolver) }
+  }
+
+  /**
     * Store the given this [[DataQuanta]] in a new [[ConstraintCollection]] within the `store`.
     *
     * @param scope         of the new [[ConstraintCollection]]
