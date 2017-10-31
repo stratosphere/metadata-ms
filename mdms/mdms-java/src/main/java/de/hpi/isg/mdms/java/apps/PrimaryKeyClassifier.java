@@ -36,14 +36,9 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
     private DependencyPrettyPrinter prettyPrinter;
 
     /**
-     * Statistics to use them in the classification process. Loaded before job execution.
+     * Provides features etc. to perform the classifiation. Loaded before job execution.
      */
-    private Int2ObjectMap<ColumnStatistics> columnStatics;
-
-    /**
-     * Statistics to use them in the classification process. Loaded before job execution.
-     */
-    private Int2ObjectMap<TextColumnStatistics> textColumnStatistics;
+    private ClassificationContext classificationContext;
 
     /**
      * Runs this app programmatically.
@@ -99,24 +94,15 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
         this.prettyPrinter = new DependencyPrettyPrinter(this.metadataStore);
 
         // Load the statistics.
-        this.columnStatics = new Int2ObjectOpenHashMap<>();
-        for (ColumnStatistics statistic : this.metadataStore
-                .<ColumnStatistics>getConstraintCollection(this.parameters.statisticsCollectionId)
-                .getConstraints()) {
-            this.columnStatics.put(statistic.getColumnId(), statistic);
-        }
-        this.textColumnStatistics = new Int2ObjectOpenHashMap<>();
-        for (TextColumnStatistics statistic : this.metadataStore
-                .<TextColumnStatistics>getConstraintCollection(this.parameters.textStatisticsCollectionId)
-                .getConstraints()) {
-            this.textColumnStatistics.put(statistic.getColumnId(), statistic);
-        }
+        this.classificationContext = new ClassificationContext(this.metadataStore.getIdUtils(),
+                this.metadataStore.getConstraintCollection(this.parameters.statisticsCollectionId),
+                this.metadataStore.getConstraintCollection(this.parameters.textStatisticsCollectionId)
+        );
     }
 
     @Override
     protected void executeAppLogic() throws Exception {
-        final ConstraintCollection<?> uccCollection = this.metadataStore
-                .getConstraintCollection(this.parameters.uccCollectionId);
+        final ConstraintCollection<?> uccCollection = this.metadataStore.getConstraintCollection(this.parameters.uccCollectionId);
 
         // Group the UCCs by their table.
         final IdUtils idUtils = this.metadataStore.getIdUtils();
@@ -128,7 +114,8 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
                     return idUtils.getTableId(anyColumnid);
                 })).values();
 
-        final Stream<UniqueColumnCombination> pkStream = uccGroups.stream().map(this::determinePrimaryKey);
+        final Stream<UniqueColumnCombination> pkStream = uccGroups.stream()
+                .map(uccGroup -> determinePrimaryKey(uccGroup, this.classificationContext));
 
         if (this.parameters.isDryRun) {
             pkStream.forEach(pk -> System.out.format("Designate %s as primary key.\n",
@@ -148,16 +135,41 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
         }
     }
 
+    public static Collection<UniqueColumnCombination> classifyPrimaryKeys(
+            MetadataStore store,
+            ConstraintCollection<UniqueColumnCombination> uccCollection,
+            ConstraintCollection<ColumnStatistics> columnStatistics,
+            ConstraintCollection<TextColumnStatistics> textStatistics
+    ) {
+
+        // Group the UCCs by their table.
+        final IdUtils idUtils = store.getIdUtils();
+        final Collection<List<UniqueColumnCombination>> uccGroups = uccCollection.getConstraints().stream()
+                .collect(Collectors.groupingBy(ucc -> {
+                    final int anyColumnid = ucc.getAllTargetIds()[0];
+                    return idUtils.getTableId(anyColumnid);
+                })).values();
+
+        // Create a classification context.
+        final ClassificationContext ctx = new ClassificationContext(idUtils, columnStatistics, textStatistics);
+
+        // Perform the classification.
+        return uccGroups.stream()
+                .map(uccGroup -> determinePrimaryKey(uccGroup, ctx))
+                .collect(Collectors.toList());
+    }
+
     @Override
     protected boolean isCleanUpRequested() {
         return false;
     }
 
-    private UniqueColumnCombination determinePrimaryKey(Collection<UniqueColumnCombination> uccs) {
+    private static UniqueColumnCombination determinePrimaryKey(Collection<UniqueColumnCombination> uccs,
+                                                               ClassificationContext ctx) {
         double bestScore = -1d;
         UniqueColumnCombination bestUcc = null;
         for (UniqueColumnCombination ucc : uccs) {
-            double score = calculateKeyScoreOf(ucc);
+            double score = calculateKeyScoreOf(ucc, ctx);
             if (score > bestScore) {
                 bestUcc = ucc;
                 bestScore = score;
@@ -169,16 +181,18 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
     /**
      * Calculates the key score of a UCC by aggregating partial key scores.
      */
-    private double calculateKeyScoreOf(UniqueColumnCombination ucc) {
-        if (containsNullValues(ucc)) return 0d;
-        return (this.calculateKeyLengthScore(ucc) +
-                this.calculateKeyPositionScore(ucc)) / 3;
+    private static double calculateKeyScoreOf(UniqueColumnCombination ucc,
+                                              ClassificationContext ctx) {
+        if (containsNullValues(ucc, ctx)) return 0d;
+        return (calculateKeyLengthScore(ucc, ctx) +
+                calculateKeyPositionScore(ucc, ctx)) / 3;
     }
 
     /**
      * Calculate key scores based on their length. The shorter, the better.
      */
-    private double calculateKeyLengthScore(UniqueColumnCombination ucc) {
+    private static double calculateKeyLengthScore(UniqueColumnCombination ucc,
+                                                  ClassificationContext ctx) {
         int length = ucc.getArity();
         return (length == 0) ? 0 : (1.0d / length);
     }
@@ -187,35 +201,40 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
      * Calculate key scores based on their placement in the table. The more to the left, the better. The more contiguous,
      * the better.
      */
-    private double calculateKeyPositionScore(UniqueColumnCombination ucc) {
-        return (this.calculateLeftScore(ucc) + this.calculateCoherenceScore(ucc)) / 2;
+    private static double calculateKeyPositionScore(UniqueColumnCombination ucc,
+                                                    ClassificationContext ctx) {
+        return (calculateLeftScore(ucc, ctx) + calculateCoherenceScore(ucc, ctx)) / 2;
     }
 
     /**
      * Calculates partial key score based on the position of the left-most column.
      */
-    private double calculateLeftScore(UniqueColumnCombination ucc) {
-        int attributesLeft = this.getMinColumnIndex(ucc);
+    private static double calculateLeftScore(UniqueColumnCombination ucc,
+                                             ClassificationContext ctx) {
+        int attributesLeft = getMinColumnIndex(ucc, ctx);
         return (attributesLeft == 0) ? 1 : (1.0d / (attributesLeft + 1));
     }
 
     /**
      * Calculates a partial key score based on the "contingency" of its columns in the table.
      */
-    private double calculateCoherenceScore(UniqueColumnCombination ucc) {
-        int gapSize = this.getGapSum(ucc);
+    private static double calculateCoherenceScore(UniqueColumnCombination ucc,
+                                                  ClassificationContext ctx) {
+        int gapSize = getGapSum(ucc, ctx);
         return (gapSize == 0) ? 1 : (1.0d / (gapSize + 1));
     }
 
-    private int getMinColumnIndex(UniqueColumnCombination ucc) {
+    private static int getMinColumnIndex(UniqueColumnCombination ucc,
+                                         ClassificationContext ctx) {
         return Arrays.stream(ucc.getAllTargetIds())
-                .map(this.metadataStore.getIdUtils()::getLocalColumnId)
+                .map(ctx.idUtils::getLocalColumnId)
                 .min().orElseThrow(IllegalArgumentException::new);
     }
 
-    private int getMaxColumnIndex(UniqueColumnCombination ucc) {
+    private static int getMaxColumnIndex(UniqueColumnCombination ucc,
+                                         ClassificationContext ctx) {
         return Arrays.stream(ucc.getAllTargetIds())
-                .map(this.metadataStore.getIdUtils()::getLocalColumnId)
+                .map(ctx.idUtils::getLocalColumnId)
                 .max().orElseThrow(IllegalArgumentException::new);
     }
 
@@ -223,20 +242,46 @@ public class PrimaryKeyClassifier extends MdmsAppTemplate<PrimaryKeyClassifier.P
      * Calculate the number of attributes between the left-most and right-most attribute of a UCC that
      * are not used in the UCC.
      */
-    private int getGapSum(UniqueColumnCombination ucc) {
-        final int numSpannedColumns = getMaxColumnIndex(ucc) - this.getMinColumnIndex(ucc) + 1;
+    private static int getGapSum(UniqueColumnCombination ucc,
+                                 ClassificationContext ctx) {
+        final int numSpannedColumns = getMaxColumnIndex(ucc, ctx) - getMinColumnIndex(ucc, ctx) + 1;
         return numSpannedColumns - ucc.getArity();
     }
 
     /**
      * Checks whether any of the columns in the {@code ucc} contains {@code NULL} values.
      */
-    private boolean containsNullValues(UniqueColumnCombination ucc) {
+    private static boolean containsNullValues(UniqueColumnCombination ucc,
+                                              ClassificationContext ctx) {
         return Arrays.stream(ucc.getAllTargetIds())
                 .anyMatch(columnId -> {
-                    final ColumnStatistics columnStatistics = this.columnStatics.get(columnId);
+                    final ColumnStatistics columnStatistics = ctx.columnStatistics.get(columnId);
                     return columnStatistics != null && columnStatistics.getNumNulls() > 0;
                 });
+    }
+
+    private static class ClassificationContext {
+
+        public ClassificationContext(IdUtils idUtils,
+                                     ConstraintCollection<ColumnStatistics> columnStatistics,
+                                     ConstraintCollection<TextColumnStatistics> textColumnStatistics) {
+            this.idUtils = idUtils;        // Load the statistics.
+            this.columnStatistics = new Int2ObjectOpenHashMap<>();
+            for (ColumnStatistics statistic : columnStatistics.getConstraints()) {
+                this.columnStatistics.put(statistic.getColumnId(), statistic);
+            }
+            this.textColumnStatistics = new Int2ObjectOpenHashMap<>();
+            for (TextColumnStatistics statistic : textColumnStatistics.getConstraints()) {
+                this.textColumnStatistics.put(statistic.getColumnId(), statistic);
+            }
+        }
+
+        final IdUtils idUtils;
+
+        final Int2ObjectMap<ColumnStatistics> columnStatistics;
+
+        final Int2ObjectMap<TextColumnStatistics> textColumnStatistics;
+
     }
 
     /**

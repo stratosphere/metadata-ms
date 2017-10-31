@@ -16,15 +16,12 @@ object DependencyClassifiers {
 
   def classifyPrimaryKeys(uccs: ConstraintCollection[UniqueColumnCombination],
                           statistics: ConstraintCollection[ColumnStatistics],
-                          textStatistics: ConstraintCollection[TextColumnStatistics],
-                          resultId: String = null)
+                          textStatistics: ConstraintCollection[TextColumnStatistics])
                          (implicit store: MetadataStore, planBuilder: PlanBuilder):
-  ConstraintCollection[UniqueColumnCombination] = {
-    val resultCCId = PrimaryKeyClassifier.fromParameters(
-      store, uccs.getId, statistics.getId, textStatistics.getId, resultId
-    )
-    store.getConstraintCollection[UniqueColumnCombination](resultCCId)
-  }
+  DataQuanta[UniqueColumnCombination] = planBuilder.loadCollection(
+    PrimaryKeyClassifier.classifyPrimaryKeys(store, uccs, statistics, textStatistics)
+  )
+
 
   def classifyForeignKeys(inds: ConstraintCollection[InclusionDependency],
                           uccs: Iterable[ConstraintCollection[UniqueColumnCombination]],
