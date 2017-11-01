@@ -17,16 +17,6 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.2</version>
-                <executions>
-                    <execution>
-                        <id>scala-package</id>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -58,6 +48,12 @@
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>de.hpi.isg</groupId>
+            <artifactId>mdms-java</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.continuum.bokeh</groupId>
             <artifactId>bokeh_${scala.major.version}</artifactId>
             <version>0.7</version>
@@ -77,7 +73,7 @@
         </dependency>
         <dependency>
             <groupId>org.qcri.rheem</groupId>
-            <artifactId>rheem-api</artifactId>
+            <artifactId>rheem-api_${scala.major.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

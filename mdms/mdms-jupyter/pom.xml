@@ -9,43 +9,22 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mdms-tools</artifactId>
+    <artifactId>mdms-jupyter</artifactId>
 
     <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
-            <!-- trigger run with mvn process-resources; then see target/generated-sources/antlr4 -->
-            <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <configuration>
-                    <compileOrder>JavaThenScala</compileOrder>
-                </configuration>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>de.hpi.isg</groupId>
             <artifactId>mdms-model</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-clients</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -55,18 +34,22 @@
         </dependency>
         <dependency>
             <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-metanome</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>de.hpi.isg</groupId>
-            <artifactId>mdms-flink</artifactId>
+            <artifactId>mdms-clients</artifactId>
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>org.qcri.rheem</groupId>
+            <artifactId>rheem-api_${scala.major.version}</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jupyter-scala</groupId>
+            <artifactId>scala-api_${scala.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.plotly-scala</groupId>
+            <artifactId>plotly-jupyter-scala_${scala.major.version}</artifactId>
         </dependency>
     </dependencies>
 

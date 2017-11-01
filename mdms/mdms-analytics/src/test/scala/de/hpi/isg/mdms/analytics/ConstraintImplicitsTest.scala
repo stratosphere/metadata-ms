@@ -6,7 +6,7 @@ import java.sql.DriverManager
 import de.hpi.isg.mdms.analytics.ConstraintImplicits.ConstraintCollectionQueryObject
 import de.hpi.isg.mdms.analytics.util.TestUtil
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore
-import de.hpi.isg.mdms.domain.constraints.{InclusionDependency, ColumnStatistics}
+import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InclusionDependency}
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
 import de.hpi.isg.mdms.model.location.DefaultLocation
 import de.hpi.isg.mdms.model.targets.Schema

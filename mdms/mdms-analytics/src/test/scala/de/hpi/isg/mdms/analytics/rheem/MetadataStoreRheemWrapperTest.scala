@@ -8,6 +8,7 @@ import org.mockito.Mockito
 import org.qcri.rheem.api.PlanBuilder
 import org.qcri.rheem.core.api.RheemContext
 import org.qcri.rheem.java.Java
+
 import scala.collection.JavaConversions._
 
 /**

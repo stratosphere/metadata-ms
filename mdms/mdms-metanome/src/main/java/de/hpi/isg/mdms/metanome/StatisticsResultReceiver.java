@@ -57,6 +57,8 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
 
     private final MetadataStore metadataStore;
 
+    private final String userDefinedIdPrefix;
+
     private final String resultDescription;
 
     private final IdentifierResolver identifierResolver;
@@ -64,9 +66,11 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public StatisticsResultReceiver(MetadataStore metadataStore,
                                     Schema schema,
                                     Collection<Target> scope,
+                                    String userDefinedIdPrefix,
                                     String resultDescription) {
         this.identifierResolver = new IdentifierResolver(metadataStore, schema);
         this.metadataStore = metadataStore;
+        this.userDefinedIdPrefix = userDefinedIdPrefix;
         this.resultDescription = resultDescription;
         this.scope = scope.toArray(scope.toArray(new Target[scope.size()]));
     }
@@ -245,15 +249,24 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TupleCount> getConstraintCollectionTupleCount() {
         if (this.constraintCollectionTupleCount == null) {
             this.constraintCollectionTupleCount = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (tuple counts)", TupleCount.class, this.scope
+                    this.getUserDefinedId("tuple-counts"),
+                    this.resultDescription + " (tuple counts)",
+                    null,
+                    TupleCount.class,
+                    this.scope
             );
         }
         return this.constraintCollectionTupleCount;
     }
+
     public ConstraintCollection<DistinctValueCount> getConstraintCollectionDistinctValueCounts() {
         if (this.constraintCollectionDistinctValueCounts == null) {
             this.constraintCollectionDistinctValueCounts = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (distinct value counts)", DistinctValueCount.class, this.scope
+                    this.getUserDefinedId("distinct-values"),
+                    this.resultDescription + " (distinct value counts)",
+                    null,
+                    DistinctValueCount.class,
+                    this.scope
             );
         }
         return this.constraintCollectionDistinctValueCounts;
@@ -262,7 +275,11 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<ColumnStatistics> getConstraintCollectionColumnStatistics() {
         if (this.constraintCollectionColumnStatistics == null) {
             this.constraintCollectionColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (column statistics)", ColumnStatistics.class, this.scope
+                    this.getUserDefinedId("column-stats"),
+                    this.resultDescription + " (column statistics)",
+                    null,
+                    ColumnStatistics.class,
+                    this.scope
             );
         }
         return this.constraintCollectionColumnStatistics;
@@ -271,7 +288,11 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TypeConstraint> getConstraintCollectionTypeConstraints() {
         if (this.constraintCollectionTypeConstraints == null) {
             this.constraintCollectionTypeConstraints = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (type constraints)", TypeConstraint.class, this.scope
+                    this.getUserDefinedId("datatypes"),
+                    this.resultDescription + " (type constraints)",
+                    null,
+                    TypeConstraint.class,
+                    this.scope
             );
         }
         return this.constraintCollectionTypeConstraints;
@@ -280,7 +301,11 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<NumberColumnStatistics> getConstraintCollectionNumberColumnStatistics() {
         if (this.constraintCollectionNumberColumnStatistics == null) {
             this.constraintCollectionNumberColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (number statistics)", NumberColumnStatistics.class, this.scope
+                    this.getUserDefinedId("number-stats"),
+                    this.resultDescription + " (number statistics)",
+                    null,
+                    NumberColumnStatistics.class,
+                    this.scope
             );
         }
         return this.constraintCollectionNumberColumnStatistics;
@@ -289,10 +314,24 @@ public class StatisticsResultReceiver implements AutoCloseable, BasicStatisticsR
     public ConstraintCollection<TextColumnStatistics> getConstraintCollectionTextColumnStatistics() {
         if (this.constraintCollectionTextColumnStatistics == null) {
             this.constraintCollectionTextColumnStatistics = this.metadataStore.createConstraintCollection(
-                    this.resultDescription + " (text statistics)", TextColumnStatistics.class, this.scope
+                    this.getUserDefinedId("text-stats"),
+                    this.resultDescription + " (text statistics)",
+                    null,
+                    TextColumnStatistics.class,
+                    this.scope
             );
         }
         return this.constraintCollectionTextColumnStatistics;
+    }
+
+    /**
+     * Create a user-defined ID for a new {@link ConstraintCollection}.
+     *
+     * @param suffix the suffix of the ID
+     * @return a user-defined ID or {@code null}
+     */
+    private String getUserDefinedId(String suffix) {
+        return this.userDefinedIdPrefix == null ? null : this.userDefinedIdPrefix + suffix;
     }
 
     @Override

@@ -18,7 +18,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
 
     private final MetadataStore metadataStore;
 
-    private final String descriptionPattern;
+    private final String descriptionPattern, userDefinedIdPrefix;
 
     private final Collection<Target> scope;
 
@@ -37,10 +37,28 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
                                    Schema schema,
                                    Collection<Target> scope,
                                    String descriptionPattern) {
+        this(metadataStore, schema, scope, descriptionPattern, null);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param metadataStore      to which results should be written
+     * @param schema             the {@link Schema} in which the results reside
+     * @param scope              of the to be created {@link ConstraintCollection}s
+     * @param descriptionPattern with one {@code %s} that should be replaced by the type of result for each
+     *                           {@link ConstraintCollection}
+     */
+    public MetacrateResultReceiver(MetadataStore metadataStore,
+                                   Schema schema,
+                                   Collection<Target> scope,
+                                   String descriptionPattern,
+                                   String userDefinedIdPrefix) {
         this.metadataStore = metadataStore;
         this.schema = schema;
         this.scope = scope;
         this.descriptionPattern = descriptionPattern;
+        this.userDefinedIdPrefix = userDefinedIdPrefix;
     }
 
     private StatisticsResultReceiver statisticsResultReceiver;
@@ -51,6 +69,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
                 this.metadataStore,
                 this.schema,
                 this.scope,
+                this.userDefinedIdPrefix,
                 String.format(this.descriptionPattern, "statistics")
         );
         this.statisticsResultReceiver.receiveResult(statistic);
@@ -80,7 +99,8 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
                 this.schema,
                 this.scope,
                 de.hpi.isg.mdms.domain.constraints.FunctionalDependency.class,
-                String.format(this.descriptionPattern, "FDs")
+                String.format(this.descriptionPattern, "FDs"),
+                this.userDefinedIdPrefix == null ? null : this.userDefinedIdPrefix + "fds"
         );
         this.fdResultReceiver.receiveResult(functionalDependency);
     }
@@ -99,7 +119,8 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
                 this.schema,
                 this.scope,
                 de.hpi.isg.mdms.domain.constraints.InclusionDependency.class,
-                String.format(this.descriptionPattern, "INDs")
+                String.format(this.descriptionPattern, "INDs"),
+                this.userDefinedIdPrefix == null ? null : this.userDefinedIdPrefix + "inds"
         );
         this.indResultReceiver.receiveResult(inclusionDependency);
     }
@@ -138,7 +159,8 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
                 this.schema,
                 this.scope,
                 de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination.class,
-                String.format(this.descriptionPattern, "UCCs")
+                String.format(this.descriptionPattern, "UCCs"),
+                this.userDefinedIdPrefix == null ? null : this.userDefinedIdPrefix + "uccs"
         );
         this.uccResultReceiver.receiveResult(uniqueColumnCombination);
     }

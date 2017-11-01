@@ -3,163 +3,217 @@ package de.hpi.isg.mdms.analytics
 import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InclusionDependency, TupleCount}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
-import de.hpi.isg.mdms.model.util.IdUtils
 import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
+import org.qcri.rheem.core.optimizer.ProbabilisticDoubleInterval
+
+import scala.collection.JavaConversions._
 
 /**
+  * Implementation of the table importance algorithm described in
+  * <p>Summarizing relational databases. <i>Yang et al.</i>, Proceedings of the VLDB Endowment 2(1), 2009.</p>
+  *
   * @author Marius Walter
-  *         Implementation of the  approach by Yang et al., 2009, to determine the table importances.
-  * @param planBuilder
+  * @author Sebastian Kruse
   */
-class TableImportance()(implicit planBuilder: PlanBuilder) {
-  /** Calculating the probability matrix, later used for calculating the table importance.
-    * The approach is based on by Yang et al., 2009
+object TableImportance {
+
+  /**
+    * Calculate the information content of database tables.
     *
-    * @param idUtils             utility tools
-    * @param columnStatistics    is constraint collection column statistics
-    * @param tupleCount          is constraint collection tuple count
-    * @param inclusionDependency is constraint collection inclusion dependency
-    * @param metadataStore       is the meta data store
-    * @return the probability matrix
+    * @param columnStatistics is a constraint collection column statistics
+    * @param tupleCounts      is a constraint collection tuple count
+    * @param metadataStore    is the [[MetadataStore]]
+    * @param planBuilder      allows to execute Rheem
+    * @return [[DataQuanta]] containing of `(table ID, information content)` tuples
     */
-  def probMatrix(idUtils: IdUtils,
-                 columnStatistics: ConstraintCollection[ColumnStatistics],
-                 tupleCount: ConstraintCollection[TupleCount],
-                 inclusionDependency: ConstraintCollection[InclusionDependency],
-                 metadataStore: MetadataStore
-                ): DataQuanta[(Int, Int, Double)] = {
-    // q ... total number of join edges
-    // get the number of dependent columns
-    val q1 = metadataStore.loadConstraints(inclusionDependency)
-      .map(ind => (ind.getDependentColumnIds.apply(0), 1))
-      .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
-    // get the number of referenced columns
-    val q2 = metadataStore.loadConstraints(inclusionDependency)
-      .map(ind => (ind.getReferencedColumnIds.apply(0), 1))
-      .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
-    val q = q1.union(q2)
+  def calculateInformationContent(columnStatistics: ConstraintCollection[ColumnStatistics],
+                                  tupleCounts: ConstraintCollection[TupleCount])
+                                 (implicit metadataStore: MetadataStore,
+                                  planBuilder: PlanBuilder)
+  : DataQuanta[(Int, Double)] = {
 
-    // qEnt ... product of q and entropy (for each column)
-    val qEnt = metadataStore.loadConstraints(columnStatistics)
-      .map(cs => (cs.getColumnId, cs.getEntropy))
-      .keyBy(_._1).keyJoin(q.keyBy(_._1)).assemble((a, b) => (b._1, a._2 * b._2))
+    val idUtils = metadataStore.getIdUtils
 
-    // qEntT ... product of q and entropy summed over the entire table
-    val qEntT = qEnt
-      .map(cs => (idUtils.getTableId(cs._1), cs._2))
-      .reduceByKey(_._1, (a, b) => (a._1, a._2 + b._2))
+    // Calculate the sum of column entropies.
+    val columnEntropy = metadataStore.loadConstraints(columnStatistics)
+      .map(stat => (idUtils.getTableId(stat.getColumnId), math.max(stat.getEntropy, 1)))
+      .reduceByKey(_._1, { case (entropy1, entropy2) => (entropy1._1, entropy1._2 + entropy2._2) })
 
-    // numberTuples ... number of tuples of table
-    val numberTuples = metadataStore.loadConstraints(tupleCount)
-      .map(tp => (tp.getTableId, tp.getNumTuples))
+    // Calculate the key entropy for the table.
+    val rowEntropy = metadataStore.loadConstraints(tupleCounts)
+      .map(count => (count.getTableId, if (count.getNumTuples > 0) math.log(count.getNumTuples) / math.log(2) else 0))
 
-    // logRqEntT ... sum of log(numTuples) and qEntT
-    val logRqEntT = qEntT
-      .keyBy(_._1).keyJoin(numberTuples.keyBy(_._1)).assemble((a, b) => (a._1, a._2 + math.log(b._2)))
+    // Merge the two entropies.
+    columnEntropy.keyBy(_._1)
+      .join(rowEntropy.keyBy(_._1))
+      .assemble { case (entropy1, entropy2) => (entropy1._1, math.max(entropy1._2 + entropy2._2, 1)) }
+  }
 
-    // edgeCol ... Start and target of edge (COLUMN-ID used here)
-    val edgeCol = metadataStore.loadConstraints(inclusionDependency)
-      .map(ind => (ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)))
-      .flatMap(ind => (Seq(ind, ind.swap)))
+  /**
+    * Describes an entry in the table transition matrix.
+    *
+    * @param source      the source table ID
+    * @param dest        the destination table ID
+    * @param probability the probability of the transition
+    */
+  case class Transition(source: Int, dest: Int, probability: Double) {
+    def +(that: Transition): Transition = {
+      require(this.source == that.source && this.dest == that.dest)
+      Transition(source, dest, this.probability + that.probability)
+    }
+  }
 
-    // Entropy of each column
-    val entCol = metadataStore.loadConstraints(columnStatistics)
-      .map(ind => (ind.getColumnId, ind.getEntropy))
+  /** Calculating the probability matrix, later used for calculating the table importance.
+    *
+    * @param columnStatistics is constraint collection column statistics
+    * @param tupleCounts      is constraint collection tuple count
+    * @param foreignKeys      foreign keys of the schema
+    * @param metadataStore    is the [[MetadataStore]]
+    * @return the probability matrix as [[DataQuanta]] of `(source table ID, target table ID, transition weight)` tuples
+    */
+  def calculateTableTransitions(columnStatistics: ConstraintCollection[ColumnStatistics],
+                                tupleCounts: ConstraintCollection[TupleCount],
+                                foreignKeys: ConstraintCollection[InclusionDependency])
+                               (implicit metadataStore: MetadataStore,
+                                planBuilder: PlanBuilder)
+  : DataQuanta[Transition] = {
 
-    val entEdgeT = edgeCol
-      .keyBy(_._1).keyJoin(entCol.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
-      .map(a => (idUtils.getTableId(a._1), idUtils.getTableId(a._2), a._3))
+    val idUtils = metadataStore.getIdUtils
 
-    // probT ... probability of each table
-    val probT = entEdgeT
-      .keyBy(_._1).keyJoin(logRqEntT.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 / b._2))
+    // Load the various column entropies.
+    val columnEntropies = metadataStore.loadConstraints(columnStatistics)
+      .map(stat => (stat.getColumnId, math.max(stat.getEntropy, 1))) // We use a minimum entropy to avoid one-way edges.
 
-    // Calculate the probability P[R,S]
-    val probabilityRS = probT
-      .filter(a => a._1 != a._2).reduceByKey(t => (t._1, t._2), (a, b) => (a._1, a._2, a._3 + b._3))
+    val columnFrequencies = metadataStore.loadConstraints(foreignKeys)
+      .flatMap(ind => Seq(ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)),
+        selectivity = ProbabilisticDoubleInterval.ofExactly(2)
+      )
+      .map(column => (column, 1))
+      .reduceByKey(_._1, { case ((column, count1), (_, count2)) => (column, count1 + count2) })
 
-    // Getting dummy values for P[R,R]
-    val dummyProbabilityRR = metadataStore.loadTables().map(tableMock => (tableMock.id, tableMock.id, 0.0))
+    // Determine the "key entropies".
+    val keyEntropies = metadataStore.loadConstraints(tupleCounts)
+      .map(count => (count.getTableId, if (count.getNumTuples > 0) math.log(count.getNumTuples) / math.log(2) else 0))
 
-    // Union between P[R,S] + (dummy) P[R,R]
-    val dummyProbabilityRSRR = probabilityRS.union(dummyProbabilityRR)
+    // Determine the information mass of each table.
+    val informationMasses = columnEntropies.keyBy(_._1).join(columnFrequencies.keyBy(_._1))
+      .assemble { case ((column, entropy), (_, frequency)) => (column, entropy * (frequency + 1)) }
+      .map { case (columnId, entropy) => (idUtils.getTableId(columnId), entropy) }
+      .union(keyEntropies)
+      .reduceByKey(_._1, { case (entropy1, entropy2) => (entropy1._1, entropy1._2 + entropy2._2) })
 
-    // Calculate final P[R,R]
-    val probabilityRR = dummyProbabilityRSRR.reduceByKey(_._1, (a, b) => (a._1, a._2, a._3 + b._3))
-      .map(a => (a._1, a._1, 1.0 - a._3))
+    // Calculate the non-reflexive transition probabilities.
+    val nonReflexiveTransitions = metadataStore.loadConstraints(foreignKeys)
+      .flatMap(ind => Seq((ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)),
+        (ind.getReferencedColumnIds.apply(0), ind.getDependentColumnIds.apply(0))),
+        selectivity = ProbabilisticDoubleInterval.ofExactly(2)
+      ).withName("Make FKs undirected")
 
-    // Union between P[R,S] + P[R,R]
-    val probability = probabilityRR.union(probabilityRS)
+      .map { case (sourceColumn, destColumn) =>
+        (idUtils.getTableId(sourceColumn), idUtils.getTableId(destColumn), sourceColumn)
+      }.withName("Generalize join edges to table transitions")
 
-    // Return probability matrix
-    return probability
+      .keyBy(_._3).join(columnEntropies.keyBy(_._1))
+      .assemble { case ((sourceTable, destTable, _), (_, entropy)) => (sourceTable, destTable, entropy) }
+      .withName("Find entropy for join edge")
+
+      .keyBy(_._1).join(informationMasses.keyBy(_._1))
+      .assemble { case ((sourceTable, destTable, entropy), (_, mass)) =>
+        Transition(sourceTable, destTable, if (mass > 0) entropy / mass else 0)
+      }
+      .withName("Calculate join edge probability")
+
+      .reduceByKey(transition => (transition.source, transition.dest), _ + _)
+      .withName("Add co-occurring join edges")
+
+    // Calculate the reflexive transition probabilities.
+    val reflexiveTransitions = informationMasses.keyBy(_._1).coGroup(nonReflexiveTransitions.keyBy(_.source))
+      .assemble { case (masses, transitions) =>
+        var reflexiveProbability = 1d
+        if (transitions != null) {
+          for (transition: Transition <- transitions) reflexiveProbability -= transition.probability
+        }
+        val tableId = masses.head._1
+        Transition(tableId, tableId, reflexiveProbability)
+      }
+
+    nonReflexiveTransitions.union(reflexiveTransitions)
   }
 
   /**
     * Finding the table importance based on the approach by Yang et al., 2009
     *
-    * @param tupleCount       is the constraint collection tuple count
-    * @param metadataStore    is the metadata store
-    * @param idUtils          utility tools
+    * @param tupleCounts      is the constraint collection tuple count
     * @param columnStatistics is constraint collection column statistics
-    * @param epsilon          if Euclidean Distance between V and V+1  is
-    *                         lower epsilon, the stationary distribution is reached
-    * @param maxNumIteration  maximum Number of Iterations
+    * @param epsilon          if the Chebyshev distance between two subsequent solutions is
+    *                         lower than `epsilon`, the stationary distribution is reached
+    * @param iterations       number of iterations
     * @return the solution vector containing the table importance
     */
-  def tableImport(tupleCount: ConstraintCollection[TupleCount],
-                  inclusionDependency: ConstraintCollection[InclusionDependency],
-                  columnStatistics: ConstraintCollection[ColumnStatistics],
-                  metadataStore: MetadataStore,
-                  idUtils: IdUtils,
-                  epsilon: Option[Double],
-                  maxNumIteration: Option[Int])
-  : DataQuanta[(Int, Double)] = {
+  def calculate(foreignKeys: ConstraintCollection[InclusionDependency],
+                tupleCounts: ConstraintCollection[TupleCount],
+                columnStatistics: ConstraintCollection[ColumnStatistics],
+                epsilon: Double = Double.NaN,
+                iterations: Int = 20)
+               (implicit metadataStore: MetadataStore,
+                planBuilder: PlanBuilder)
+  : DataQuanta[TableImportance] = {
+
     // Calculating the probability matrix
-    val probabilityMatrix = probMatrix(idUtils, columnStatistics, tupleCount, inclusionDependency, metadataStore)
+    val transistions = calculateTableTransitions(columnStatistics, tupleCounts, foreignKeys)
+
     // Setting up the initial solution vector
-    val Vinitial = initiateVector(tupleCount, metadataStore, idUtils, columnStatistics)
-    maxNumIteration match {
-      case Some(maxNumIteration) => Vinitial.repeat(maxNumIteration, Vold => iteratingImportance(probabilityMatrix, Vold))
-      case None => Vinitial.doWhile[Double](_.head < epsilon.getOrElse(1e-10), { Vold =>
-        val Vnew = iteratingImportance(probabilityMatrix, Vold)
-        val Vdiff = diffV(Vnew, Vold).map(a => math.sqrt(a))
-        (Vnew, Vdiff.filter { x => println(x); true })})
+    val initialTableImportances = calculateInformationContent(columnStatistics, tupleCounts)
+      .map { case (tableId, importance) => TableImportance(tableId, importance) }
+
+    // Do the iterative calculation.
+    if (!epsilon.isNaN) {
+      initialTableImportances.doWhile[Double](_.head < epsilon, { tableImportances =>
+        val newTableImportances = evolveImportances(tableImportances, transistions)
+
+        val delta = newTableImportances.keyBy(_.tableId).join(tableImportances.keyBy(_.tableId))
+          .assemble { case (newTableImportance, oldTableImportance) =>
+            math.abs(newTableImportance.score - oldTableImportance.score)
+          }
+          .reduce(math.max)
+
+
+        (newTableImportances, delta)
+      })
+    } else {
+      initialTableImportances.repeat(iterations, { tableImportances =>
+        evolveImportances(tableImportances, transistions)
+      })
     }
   }
 
-
-  // Calculating the the product of the probability vector and the solution vector
-  def iteratingImportance(probMatrix: DataQuanta[(Int, Int, Double)],
-                          V: DataQuanta[(Int, Double)]): DataQuanta[(Int, Double)] = {
-    return probMatrix
-      .keyBy(a => a._1).keyJoin(V.keyBy(_._1)).assemble((a, b) => (a._1, a._2, a._3 * b._2))
-      .reduceByKey((_._2), (a, b) => (a._1, a._2, a._3 + b._3))
-      .map(a => (a._2, a._3))
+  /**
+    * Perform one iteration step to bring intermediate importances closer to their final value.
+    *
+    * @param tableImportances the current table importances
+    * @param transitions      the transition matrix
+    * @return the new table importances
+    */
+  private def evolveImportances(tableImportances: DataQuanta[TableImportance],
+                                transitions: DataQuanta[Transition]): DataQuanta[TableImportance] = {
+    transitions.keyBy(_.source).join(tableImportances.keyBy(_.tableId))
+      .assemble { case (transition, tableImportance) =>
+        TableImportance(transition.dest, tableImportance.score * transition.probability)
+      }
+      .reduceByKey(_.tableId, _ + _)
   }
 
-  // Calculating the Euclidean Distance between the solution vector V and V+1
-  def diffV(Vnew: DataQuanta[(Int, Double)], Vold: DataQuanta[(Int, Double)]): DataQuanta[(Double)] = {
-    val diffVnewVold = Vnew.keyBy(_._1).keyJoin(Vold.keyBy(_._1)).assemble((a, b) => (a._2, b._2))
-      .map(a => ((a._1 - a._2) * (a._1 - a._2))).reduce(_ + _)
-    return diffVnewVold
-  }
+}
 
-  // Initiating the solution vector
-  def initiateVector(tupleCount: ConstraintCollection[TupleCount],
-                     metadataStore: MetadataStore,
-                     idUtils: IdUtils,
-                     columnStatistics: ConstraintCollection[ColumnStatistics]): DataQuanta[(Int, Double)] = {
-    // numberTuples ... number of tuples of table
-    val numberTuples = metadataStore.loadConstraints(tupleCount)
-      .map(tp => (tp.getTableId, tp.getNumTuples))
-    // entropy ... entropy for each table and summed up
-    val entropy = metadataStore.loadConstraints(columnStatistics)
-      .map(cs => (idUtils.getTableId(cs.getColumnId), cs.getEntropy))
-      .reduceByKey(_._1, (a, b) => (a._1, a._1 + a._2))
-    // Combining R + entropy
-    val Rentropy = numberTuples.keyBy(a => a._1).keyJoin(entropy.keyBy(_._1)).assemble((a, b) => (a._1, a._2, b._2))
-    //return Rentropy.map(a => (a._1, 1));
-    return Rentropy.map(a => (a._1, a._2));
+/**
+  * Describes the importance of a table.
+  *
+  * @param tableId the ID of the described table
+  * @param score   the importance score
+  */
+case class TableImportance(tableId: Int, score: Double) {
+  def +(that: TableImportance): TableImportance = {
+    require(this.tableId == that.tableId)
+    TableImportance(tableId, this.score + that.score)
   }
 }

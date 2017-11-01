@@ -39,6 +39,7 @@ public class MetanomeStatisticsImportAppTest {
                 inputFile.getParentFile().getAbsolutePath(),
                 ".*-statistics\\.json",
                 "TPC-H",
+                null,
                 null
         );
 
