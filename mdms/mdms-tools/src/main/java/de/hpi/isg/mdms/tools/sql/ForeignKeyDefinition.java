@@ -23,6 +23,22 @@ public class ForeignKeyDefinition {
         this.refColumnNames = refColumnNames;
     }
 
+    public String getDepTableName() {
+        return depTableName;
+    }
+
+    public String getRefTableName() {
+        return refTableName;
+    }
+
+    public List<String> getDepColumnNames() {
+        return depColumnNames;
+    }
+
+    public List<String> getRefColumnNames() {
+        return refColumnNames;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
