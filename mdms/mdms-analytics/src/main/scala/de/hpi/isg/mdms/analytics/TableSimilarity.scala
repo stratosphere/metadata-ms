@@ -62,10 +62,12 @@ object TableSimilarity {
     val tupleCountMap = tupleCounts.getConstraints
       .map(tc => (tc.getTableId, tc.getNumTuples))
       .toMap
+      .withDefaultValue(0)
 
     val distinctValuesMap = columnStatistics.getConstraints
       .map(stat => (stat.getColumnId, stat.getNumDistinctValues))
       .toMap
+      .withDefaultValue(0L)
 
     val idUtils = store.getIdUtils
     foreignKeys.getConstraints.map { ind =>
@@ -89,8 +91,11 @@ object TableSimilarity {
       val refTable = idUtils.getTableId(ref)
       val tupleCountsA = tupleCountMap(depTable)
       val tupleCountsB = tupleCountMap(refTable)
-      (math.min(depTable, refTable), math.max(depTable, refTable)) ->
-        distinctValuesA.toDouble * distinctValuesA / tupleCountsA / tupleCountsB
+      (
+        (math.min(depTable, refTable), math.max(depTable, refTable)),
+        if (tupleCountsA == 0 || tupleCountsB == 0) 0d
+        else distinctValuesA.toDouble * distinctValuesA / tupleCountsA / tupleCountsB
+      )
     }
       .filter { case ((src, dest), _) => src != dest }
       .groupBy(_._1)

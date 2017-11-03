@@ -5,8 +5,10 @@ requirejs(["d3"], function (d3) {
         links = $links;
     for (var i = 0; i < links.length; i++) {
         var link = links[i];
-        link.source = nodes.find(function (n) { return n.name == link.source; });
-        link.target = nodes.find(function (n) { return n.name == link.target; });
+        link.source = nodes.find(function (n) { return n.name === link.source; });
+        link.target = nodes.find(function (n) { return n.name === link.target; });
+        // Handle missing nodes.
+        if (link.source === undefined || link.target === undefined) links.splice(i--, 1);
     }
 
     var svg = d3.select("#$svgId");
