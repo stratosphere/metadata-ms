@@ -4,6 +4,8 @@ import de.hpi.isg.mdms.model.constraints.Constraint;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Target;
 
+import java.util.Arrays;
+
 /**
  * Utilities for managing {@link Target} IDs for {@link Constraint}s.
  */
@@ -39,6 +41,10 @@ public class ReferenceUtils {
             if (ids[i - 1] > ids[i]) return false;
         }
         return true;
+    }
+
+    public static void ensureSorted(int[] ids) {
+        if (!isSorted(ids)) Arrays.sort(ids);
     }
 
     /**

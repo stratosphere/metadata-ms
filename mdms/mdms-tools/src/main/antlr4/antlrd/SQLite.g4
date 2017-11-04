@@ -82,6 +82,7 @@ alter_table_stmt
  : K_ALTER K_TABLE ( database_name '.' )? table_name
    ( K_RENAME K_TO new_table_name
    | K_ADD K_COLUMN? column_def
+   | K_ADD table_constraint // Added.
    )
  ;
 
@@ -677,7 +678,7 @@ transaction_name
 
 any_name
  : IDENTIFIER
- | keyword
+// | keyword // I don't know why a keyword could be a name, but it seems to inhibit the correct parsing of table_constraint.
  | STRING_LITERAL
  | '(' any_name ')'
  ;
@@ -860,6 +861,10 @@ BLOB_LITERAL
 
 SINGLE_LINE_COMMENT
  : '--' ~[\r\n]* -> channel(HIDDEN)
+ ;
+
+META_COMMAND // Added: handle things like \set or \quit commands.
+ : '\\' ~[\r\n]* -> channel(HIDDEN)
  ;
 
 MULTILINE_COMMENT

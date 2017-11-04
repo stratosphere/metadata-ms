@@ -27,7 +27,8 @@ object TableImportance {
     * @return [[DataQuanta]] containing of `(table ID, information content)` tuples
     */
   def calculateInformationContent(columnStatistics: ConstraintCollection[ColumnStatistics],
-                                  tupleCounts: ConstraintCollection[TupleCount])
+                                  tupleCounts: ConstraintCollection[TupleCount],
+                                  foreignKeys: ConstraintCollection[InclusionDependency] = null)
                                  (implicit metadataStore: MetadataStore,
                                   planBuilder: PlanBuilder)
   : DataQuanta[(Int, Double)] = {
@@ -44,9 +45,19 @@ object TableImportance {
       .map(count => (count.getTableId, if (count.getNumTuples > 0) math.log(count.getNumTuples) / math.log(2) else 0))
 
     // Merge the two entropies.
-    columnEntropy.keyBy(_._1)
+    val importances = columnEntropy.keyBy(_._1)
       .join(rowEntropy.keyBy(_._1))
       .assemble { case (entropy1, entropy2) => (entropy1._1, math.max(entropy1._2 + entropy2._2, 1)) }
+
+    // If foreign keys are given, supply importances for empty tables.
+    if (foreignKeys != null)
+      metadataStore.loadConstraints(foreignKeys)
+          .flatMap(fk =>  Seq(idUtils.getTableId(fk.getDependentColumnIds()(0)), idUtils.getTableId(fk.getReferencedColumnIds()(0))))
+      .distinct
+      .map(_ -> 0d)
+      .union(importances)
+      .reduceByKey(_._1, { case ((table, i1), (_, i2)) => (table, i1 + i2)})
+    else importances
   }
 
   /**
@@ -84,7 +95,14 @@ object TableImportance {
     val columnEntropies = metadataStore.loadConstraints(columnStatistics)
       .map(stat => (stat.getColumnId, math.max(stat.getEntropy, 1))) // We use a minimum entropy to avoid one-way edges.
 
-    val columnFrequencies = metadataStore.loadConstraints(foreignKeys)
+    // Find the relevant foreign keys (which are placed between non-empty tables).
+    val nonEmptyTableIds = tupleCounts.getConstraints.filterNot(_.getNumTuples == 0).map(_.getTableId).toSet
+    val relevantForeignKeys = metadataStore.loadConstraints(foreignKeys)
+      .filter(ind => nonEmptyTableIds(idUtils.getTableId(ind.getDependentColumnIds()(0))) &&
+        nonEmptyTableIds(idUtils.getTableId(ind.getReferencedColumnIds()(0))))
+
+    // Determine how often each column appears in a (relevant) join relationship.
+    val columnFrequencies = relevantForeignKeys
       .flatMap(ind => Seq(ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)),
         selectivity = ProbabilisticDoubleInterval.ofExactly(2)
       )
@@ -103,7 +121,7 @@ object TableImportance {
       .reduceByKey(_._1, { case (entropy1, entropy2) => (entropy1._1, entropy1._2 + entropy2._2) })
 
     // Calculate the non-reflexive transition probabilities.
-    val nonReflexiveTransitions = metadataStore.loadConstraints(foreignKeys)
+    val nonReflexiveTransitions = relevantForeignKeys
       .flatMap(ind => Seq((ind.getDependentColumnIds.apply(0), ind.getReferencedColumnIds.apply(0)),
         (ind.getReferencedColumnIds.apply(0), ind.getDependentColumnIds.apply(0))),
         selectivity = ProbabilisticDoubleInterval.ofExactly(2)
@@ -127,13 +145,16 @@ object TableImportance {
       .withName("Add co-occurring join edges")
 
     // Calculate the reflexive transition probabilities.
-    val reflexiveTransitions = informationMasses.keyBy(_._1).coGroup(nonReflexiveTransitions.keyBy(_.source))
-      .assemble { case (masses, transitions) =>
+    val reflexiveTransitions = metadataStore.loadConstraints(foreignKeys)
+      .flatMap(fk => Seq(idUtils.getTableId(fk.getDependentColumnIds()(0)), idUtils.getTableId(fk.getReferencedColumnIds()(0))))
+      .distinct
+      .keyBy(id => id).coGroup(nonReflexiveTransitions.keyBy(_.source))
+      .assemble { case (tableIds, transitions) =>
         var reflexiveProbability = 1d
         if (transitions != null) {
           for (transition: Transition <- transitions) reflexiveProbability -= transition.probability
         }
-        val tableId = masses.head._1
+        val tableId = tableIds.head
         Transition(tableId, tableId, reflexiveProbability)
       }
 
@@ -163,7 +184,7 @@ object TableImportance {
     val transistions = calculateTableTransitions(columnStatistics, tupleCounts, foreignKeys)
 
     // Setting up the initial solution vector
-    val initialTableImportances = calculateInformationContent(columnStatistics, tupleCounts)
+    val initialTableImportances = calculateInformationContent(columnStatistics, tupleCounts, foreignKeys)
       .map { case (tableId, importance) => TableImportance(tableId, importance) }
 
     // Do the iterative calculation.

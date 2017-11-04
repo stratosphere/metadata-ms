@@ -18,8 +18,6 @@ import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.CsvParameters;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
-import de.hpi.isg.mdms.clients.location.AbstractCsvLocation;
-import de.hpi.isg.mdms.flink.location.CsvDataSourceBuilders;
 import de.hpi.isg.mdms.flink.parameters.FlinkParameters;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
@@ -27,7 +25,7 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
-import de.hpi.isg.mdms.tools.sqlParser.TableCreationStatementParser;
+import de.hpi.isg.mdms.tools.sql.SQLParser;
 import de.hpi.isg.mdms.tools.util.CsvUtils;
 import org.apache.flink.core.fs.Path;
 
@@ -90,8 +88,8 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
     protected void executeProgramLogic(final List<Path> files) throws Exception {
         Map<String, List<String>> sqlFileColumnNames = null;
         if (this.parameters.sqlFile != null && !this.parameters.sqlFile.isEmpty()) {
-            TableCreationStatementParser sqlParser = new TableCreationStatementParser();
-            sqlFileColumnNames = sqlParser.getColumnNameMap(this.parameters.sqlFile);
+            SQLParser sqlParser = new SQLParser();
+            sqlFileColumnNames = sqlParser.parseSchema(this.parameters.sqlFile);
         }
 
         final NameProvider nameProvider = this.parameters.createNameProvider();

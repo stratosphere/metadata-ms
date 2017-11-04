@@ -3,15 +3,34 @@ package de.hpi.isg.mdms.tools
 import de.hpi.isg.mdms.domain.constraints.{FunctionalDependency, InclusionDependency, OrderDependency, UniqueColumnCombination}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
+import de.hpi.isg.mdms.model.location.DefaultLocation
 import de.hpi.isg.mdms.model.targets.{Column, Schema, Target}
-import de.hpi.isg.mdms.tools.apps.{CreateSchemaForCsvFilesApp, MetanomeDependencyImportApp, MetanomeStatisticsImportApp}
+import de.hpi.isg.mdms.tools.apps.{CreateSchemaForCsvFilesApp, MetanomeDependencyImportApp, MetanomeStatisticsImportApp, SqlImportApp}
 
+import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 
 /**
   * This object is simply a Scala-friendly facade for the Java-based import tools.
   */
 object Import {
+
+  /**
+    * Create a [[Schema]] within a [[MetadataStore]] by inspecting a SQL.
+    *
+    * @param schemaName        the name of the [[Schema]]
+    * @param sqlFileLocation   the location of the SQL file
+    * @param schemaDescription an optional description of the [[Schema]]
+    * @param store             the [[MetadataStore]]
+    */
+  def createSchemaFromSqlFile(schemaName: String,
+                              sqlFileLocation: String,
+                              schemaDescription: String = null)
+                             (implicit store: MetadataStore): Schema = {
+    val schema = store.addSchema(schemaName, schemaDescription, new DefaultLocation)
+    SqlImportApp.importTables(store, schema, Seq(sqlFileLocation))
+    schema
+  }
 
   /**
     * Create a [[Schema]] within a [[MetadataStore]] by inspecting CSV files.
@@ -29,9 +48,9 @@ object Import {
                                fieldSeparator: String = ",",
                                quoteChar: String = "\"",
                                hasHeader: Boolean = false,
-                               sqlFile: Option[String] = None)
+                               sqlFile: String = null)
                               (implicit mds: MetadataStore): Unit = {
-    CreateSchemaForCsvFilesApp.fromParameters(mds, fileLocation, schemaName, fieldSeparator, quoteChar, hasHeader, sqlFile.orNull)
+    CreateSchemaForCsvFilesApp.fromParameters(mds, fileLocation, schemaName, fieldSeparator, quoteChar, hasHeader, sqlFile)
   }
 
   /**
@@ -90,6 +109,56 @@ object Import {
       schema.getName,
       userDefinedIdPrefix
     )
+  }
+
+  /** Imports primary keys from a SQL file into a [[ConstraintCollection]].
+    *
+    * @param sqlFile       from which the primary key definitions should be read
+    * @param schema        to which the SQL file belongs
+    * @param userDefinedId an optional user-defined ID for the created [[ConstraintCollection]]
+    * @param scope         optional scope for the [[ConstraintCollection]]; defaults to `schema`
+    * @param mds           in which the [[ConstraintCollection]] should be created
+    */
+  def importPrimaryKeyDefinitions(sqlFile: String,
+                                  schema: Schema,
+                                  userDefinedId: String = null,
+                                  scope: Target = null)
+                                 (implicit mds: MetadataStore): Unit = {
+    val pks = SqlImportApp.loadPrimaryKeys(schema, Seq(sqlFile))
+    val constraintCollection = mds.createConstraintCollection(
+      userDefinedId,
+      s"Primary keys loaded from $sqlFile",
+      null,
+      classOf[UniqueColumnCombination],
+      Option(scope) getOrElse schema
+    )
+    pks.foreach(constraintCollection.add)
+    mds.flush()
+  }
+
+  /** Imports foreign keys from a SQL file into a [[ConstraintCollection]].
+    *
+    * @param sqlFile       from which the foreign key definitions should be read
+    * @param schema        to which the SQL file belongs
+    * @param userDefinedId an optional user-defined ID for the created [[ConstraintCollection]]
+    * @param scope         optional scope for the [[ConstraintCollection]]; defaults to `schema`
+    * @param mds           in which the [[ConstraintCollection]] should be created
+    */
+  def importForeignKeyDefinitions(sqlFile: String,
+                                  schema: Schema,
+                                  userDefinedId: String = null,
+                                  scope: Target = null)
+                                 (implicit mds: MetadataStore): Unit = {
+    val fks = SqlImportApp.loadForeignKeys(schema, Seq(sqlFile))
+    val constraintCollection = mds.createConstraintCollection(
+      userDefinedId,
+      s"Foreign keys loaded from $sqlFile",
+      null,
+      classOf[InclusionDependency],
+      Option(scope) getOrElse schema
+    )
+    fks.foreach(constraintCollection.add)
+    mds.flush()
   }
 
   /** Describes a certain Metanome result file format. */
