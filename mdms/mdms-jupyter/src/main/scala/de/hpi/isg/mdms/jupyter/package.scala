@@ -351,5 +351,34 @@ package object jupyter {
 
   }
 
+  implicit class PathDataQuanta(dataQuanta: DataQuanta[Path]) {
+
+    /**
+      * Plot a sunburst chart from the [[dataQuanta]].
+      *
+      * @param width             of the sunburn chart
+      * @param height            of the sunburn chart
+      * @param showLegend        whether to a legend should be displayed
+      * @param reverseBreadcrumb whether the breadcrumb should be displayed in reverse order
+      * @param publish           the Jupyter adapter
+      *
+      */
+    def plotSunburst(width: Int = 700,
+                     height: Int = 600,
+                     showLegend: Boolean = false,
+                     reverseBreadcrumb: Boolean = false)
+                    (implicit publish: Publish): Unit = {
+      visualizations.plotSunburst(
+        paths = dataQuanta.collect(),
+        width = width,
+        height = height,
+        showLegend = showLegend,
+        reverseBreadcrumb = reverseBreadcrumb
+      )
+
+    }
+
+  }
+
 }
 

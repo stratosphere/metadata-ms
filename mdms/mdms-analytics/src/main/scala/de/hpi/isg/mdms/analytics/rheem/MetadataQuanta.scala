@@ -5,7 +5,7 @@ import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.experiment.Experiment
 import de.hpi.isg.mdms.model.targets.{Column, Schema, Table, Target}
-import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
+import org.qcri.rheem.api.DataQuanta
 
 import scala.reflect.ClassTag
 
@@ -70,23 +70,15 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
     * Resolve some [[Target]] ID in the [[DataQuanta]]. This method might not work in all scenarios, in which other
     * resulution methods can be applied, such as [[resolveColumnIds()]].
     *
-    * @param udf      creates new data quanta from the old one using a resolution function
+    * @param udf           creates new data quanta from the old one using a resolution function
     * @param metadataStore in which the [[Target]]s reside
     * @return [[DataQuanta]] with resolved [[Target]] IDs
     */
-  def resolveIds[NewOut: ClassTag](udf: (Out, Int => String) => NewOut)
-                                        (implicit metadataStore: MetadataStore):
-  DataQuanta[NewOut] = {
-    def resolver(id: Int): String = {
-      metadataStore.getTargetById(id) match {
-        case null => "(invalid ID)"
-        case schema: Schema => schema.getName
-        case table: Table => table.getName
-        case column: Column => column.getNameWithTableName
-      }
-    }
-    dataQuanta.map { dataQuantum => udf(dataQuantum, resolver) }
-  }
+  def resolveIds[NewOut: ClassTag](udf: (Out, IdResolver) => NewOut)
+                                  (implicit metadataStore: MetadataStore):
+  DataQuanta[NewOut] =
+    dataQuanta.map { dataQuantum => udf(dataQuantum, new IdResolver(metadataStore)) }
+
 
   /**
     * Store the given this [[DataQuanta]] in a new [[ConstraintCollection]] within the `store`.
@@ -119,5 +111,35 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   def store(constraintCollection: ConstraintCollection[Out]): Unit = {
     dataQuanta.foreach((quantum: Out) => constraintCollection.add(quantum))
   }
+
+}
+
+/**
+  * Utility to inject into [[MetadataQuanta.resolveIds]]
+  *
+  * @param store for which IDs should be resolved
+  */
+class IdResolver(store: MetadataStore) {
+
+  /**
+    * Resolve a [[Target]] ID.
+    *
+    * @param id         the ID of the [[Target]]
+    * @param withTable  whether the parent [[Table]] name should be included (for [[Column]]s)
+    * @param withSchema whether the parent [[Table]] name should be included (for [[Table]]s and [[Column]]s)
+    * @return the name of the resolved [[Target]] or a fallback value
+    */
+  def apply(id: Int, withTable: Boolean = true, withSchema: Boolean = false): String =
+    store.getTargetById(id) match {
+      case null => "(invalid ID)"
+      case schema: Schema => schema.getName
+      case table: Table =>
+        if (withSchema) s"${table.getSchema.getName}.${table.getName}"
+        else table.getName
+      case column: Column =>
+        if (withSchema) s"${column.getTable.getSchema.getName}.${column.getTable.getName}.${column.getName}"
+        else if (withTable) column.getNameWithTableName
+        else column.getName
+    }
 
 }

@@ -1,5 +1,6 @@
 package de.hpi.isg.mdms.jupyter
 
+import de.hpi.isg.mdms.jupyter.json.JsonSerializer._
 import de.hpi.isg.mdms.jupyter.json.{JsonSerializable, JsonSerializer}
 import jupyter.api.Publish
 import plotly.element.ScatterMode
@@ -229,6 +230,41 @@ class Visualizations(publish: Publish) {
     publish.js(js)
   }
 
+  /**
+    * Plot a sunburst chart.
+    *
+    * @param paths             that make up the sections of the sunburst
+    * @param width             of the sunburn chart
+    * @param height            of the sunburn chart
+    * @param showLegend        whether to a legend should be displayed
+    * @param reverseBreadcrumb whether the breadcrumb should be displayed in reverse order
+    * @param publish           the Jupyter adapter
+    *
+    */
+  def plotSunburst(paths: Iterable[Path],
+                   width: Int = 700,
+                   height: Int = 600,
+                   showLegend: Boolean = false,
+                   reverseBreadcrumb: Boolean = false)
+                  (implicit publish: Publish): Unit = {
+
+    val jsVariables = Map(
+      "id" -> nextId().toString,
+      "width" -> width.toString,
+      "height" -> height.toString,
+      "paths" -> JsonSerializer.toJson(paths),
+      "showLegend" -> showLegend.toString,
+      "reverseLegend" -> reverseBreadcrumb.toString
+    )
+
+    // Publish the style sheet.
+    val html = ResourceManager.get("/metacrate/sunburst.html", jsVariables)
+    publish.html(html)
+
+    val js = ResourceManager.get("/metacrate/sunburst.js", jsVariables)
+    publish.js(js)
+  }
+
 }
 
 protected[jupyter] object Visualizations {
@@ -311,4 +347,10 @@ case class Transition(source: String, destination: String, value: Double = 1d) e
   import JsonSerializer.{escape => esc}
 
   override def toJson: String = s"""{source:"${esc(source)}",destination:"${esc(destination)}",value:$value}"""
+}
+
+case class Path(elements: Seq[String]) extends JsonSerializable {
+
+  override def toJson: String = s"""${JsonSerializer.toJson(elements)(stringToJson)}"""
+
 }

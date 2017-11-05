@@ -1,0 +1,41 @@
+<div id="main">
+    <div id="sequence-$id"></div>
+    <div id="chart-$id"></div>
+</div>
+<div id="sidebar-$id" style="display:none">
+    <input type="checkbox" id="togglelegend-$id"> Legend
+    <br/>
+    <div id="legend-$id" style="visibility: hidden;"></div>
+</div>
+
+<style>
+
+    #sidebar-$id {
+        float: right;
+        width: 100px;
+    }
+
+    #sequence-$id {
+        width: 100%;
+        height: 50px;
+        fill: #eee;
+    }
+
+    #legend-$id {
+        padding: 10px 0 0 3px;
+    }
+
+    #sequence-$id text,
+    #legend-$id text {
+        font-weight: 600;
+        fill: #fff;
+    }
+
+    #chart-$id {
+        position: relative;
+    }
+
+    #chart-$id path {
+        stroke: #fff;
+    }
+</style>
