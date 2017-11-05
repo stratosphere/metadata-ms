@@ -291,8 +291,9 @@ protected[jupyter] object Visualizations {
     */
   private def ensureD3Initialized(publish: Publish): Unit =
     if (!isD3Initialized) {
-      val js = ResourceManager.get("/metacrate/init-d3.js")
+      val js = if (offline) ResourceManager.get("/d3.min.js") else ResourceManager.get("/metacrate/init-d3.js")
       publish.js(js)
+      isD3Initialized = true
     }
 
 
