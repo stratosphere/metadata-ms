@@ -10,6 +10,7 @@ import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 import org.qcri.rheem.core.api.RheemContext
 import plotly.element.ScatterMode
 
+import scala.collection.GenSeq
 import scala.language.implicitConversions
 import scala.languageFeature.implicitConversions
 import scala.reflect.ClassTag
@@ -158,6 +159,35 @@ package object jupyter {
         before = Option(before),
         after = Option(after),
         format = format
+      )
+    }
+
+    /**
+      * Plot a table from the [[DataQuanta]].
+      *
+      * @param format   optional formatter for the data points
+      * @param after    optional text to display after the list
+      * @param before   optional text to display before the list
+      * @param ordering an optional plotting ordering
+      * @param columns  column definitions as pairs of title and extractor function
+      * @param publish  adapter for Jupyter-Scala
+      */
+    def printTable(format: T => String = (t: T) => t.toString,
+                   before: String = null,
+                   after: String = null,
+                   ordering: Ordering[T] = null,
+                   columns: GenSeq[(String, T => Any)])
+                  (implicit publish: Publish): Unit = {
+
+      val data = ordering match {
+        case null => dataQuanta.collect()
+        case someOrdering => dataQuanta.collect().toSeq.sorted(someOrdering)
+      }
+      output.table(
+        elements = data,
+        before = Option(before),
+        after = Option(after),
+        columns = columns
       )
     }
 
