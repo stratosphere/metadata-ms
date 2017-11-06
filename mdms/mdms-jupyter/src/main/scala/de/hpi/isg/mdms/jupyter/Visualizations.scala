@@ -164,6 +164,8 @@ class Visualizations(publish: Publish) {
                columns: Iterable[Category] = null)
               (implicit publish: Publish) = {
 
+    ensureD3Initialized(publish)
+
     // Convert the input data to JSON.
     val jsTiles = JsonSerializer.toJson(tiles)
     val jsRows = JsonSerializer.toJson(if (rows == null) tiles.map(tile => Category(tile.row)).toSet else rows)
@@ -204,6 +206,8 @@ class Visualizations(publish: Publish) {
                        scaleByGroups: Boolean = false,
                        diameter: Int = 700)
                       (implicit publish: Publish) = {
+
+    ensureD3Initialized(publish)
 
     // Convert the input data to JSON.
     val jsTransitions = JsonSerializer.toJson(transitions)
@@ -247,6 +251,8 @@ class Visualizations(publish: Publish) {
                    showLegend: Boolean = false,
                    reverseBreadcrumb: Boolean = false)
                   (implicit publish: Publish): Unit = {
+
+    ensureD3Initialized(publish)
 
     val jsVariables = Map(
       "id" -> nextId().toString,
