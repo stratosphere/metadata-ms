@@ -22,7 +22,6 @@ import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
 import de.hpi.isg.mdms.domain.constraints.Vector;
-import de.hpi.isg.mdms.flink.location.CsvDataSourceBuilders;
 import de.hpi.isg.mdms.flink.util.FileUtils;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
@@ -30,10 +29,12 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import org.apache.flink.core.fs.Path;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.function.ToDoubleFunction;
@@ -80,7 +81,17 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
         // Detect the schema.
         Schema schema = this.metadataStore.getSchemaByName(this.parameters.schemaName);
 
-        // Create a ConstraintCollection.
+        // Do the profiling.
+        Collection<Vector> vectors = profileQGramSketches(
+                this.metadataStore,
+                schema,
+                this.parameters.numSketchDimensions,
+                this.parameters.numQGramDimensions,
+                this.parameters.seed,
+                this.parameters.q
+        );
+
+        // Store the results.
         String ccDescription = String.format(
                 "Q-gram sketches (q=%d, dim=%d, seed=%d)",
                 this.parameters.q,
@@ -90,13 +101,41 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
         ConstraintCollection<Vector> constraintCollection = this.metadataStore.createConstraintCollection(
                 ccDescription, Vector.class, schema
         );
+        vectors.forEach(constraintCollection::add);
+        this.metadataStore.flush();
+        this.logger.info(String.format("Saved constraint collection %d.", constraintCollection.getId()));
+
+        // Add some metadata about the program results.
+        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_RESULT_KEY, constraintCollection.getId());
+    }
+
+    /**
+     * Profile all tables of a {@link Schema} for q-grams.
+     *
+     * @param store               within which the {@code schema} resides
+     * @param schema              the {@link Schema} whose (CSV) tables should be profiled
+     * @param numSketchDimensions the number of dimensions to sketch the space of q-grams
+     * @param numQGramDimensions  the dimensionality of the resulting q-gram {@link Vector}s
+     * @param seed                to create random transformation matrix from the sketch space to the q-gram vector space
+     * @param q                   the size of the q-grams
+     * @return the q-gram {@link Vector}s
+     */
+    public static Collection<Vector> profileQGramSketches(
+            MetadataStore store,
+            Schema schema,
+            int numSketchDimensions,
+            int numQGramDimensions,
+            int seed,
+            int q) {
+
+        List<Vector> qGramVectors = new ArrayList<>();
 
         // Initialize the random projections.
-        Random random = new Random(this.parameters.seed);
-        List<ToDoubleFunction<int[]>> projections = new ArrayList<>(this.parameters.numSketchDimensions);
-        for (int sketchDimension = 0; sketchDimension < this.parameters.numSketchDimensions; sketchDimension++) {
-            final int[] projectionVector = new int[this.parameters.numQGramDimensions];
-            for (int qGramDimension = 0; qGramDimension < this.parameters.numQGramDimensions; qGramDimension++) {
+        Random random = new Random(seed);
+        List<ToDoubleFunction<int[]>> projections = new ArrayList<>(numSketchDimensions);
+        for (int sketchDimension = 0; sketchDimension < numSketchDimensions; sketchDimension++) {
+            final int[] projectionVector = new int[numQGramDimensions];
+            for (int qGramDimension = 0; qGramDimension < numQGramDimensions; qGramDimension++) {
                 projectionVector[qGramDimension] = random.nextInt(2) * 2 - 1;
             }
             projections.add(
@@ -116,21 +155,29 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
 
         // Initialize a hash function to map the q-grams to positions in the
         HashFunction hashFunction = Hashing.murmur3_32();
-        byte[] qGram = new byte[this.parameters.q * 2];
+        byte[] qGram = new byte[q * 2];
 
         // Go over the files and create the sketches.
         for (Table table : schema.getTables()) {
             // Get the CSV file location.
             Location location = table.getLocation();
             if (!(location instanceof CsvFileLocation)) {
-                this.logger.error("Cannot process {} at {}. Only CSV files are supported. Skipping...", table, location);
+                LoggerFactory.getLogger(CreateQGramSketchApp.class).error(
+                        "Cannot process {} at {}. Only CSV files are supported. Skipping...", table, location
+                );
                 continue;
             }
             CsvFileLocation csvFileLocation = (CsvFileLocation) location;
 
             // Prepare the q-gram vector calculation.
-            int[][] qGramVectors = new int[table.getColumns().size()][this.parameters.numQGramDimensions];
-            CSVParser csvParser = new CSVParser(csvFileLocation.getFieldSeparator(), csvFileLocation.getQuoteChar(), '\0', false, true);
+            int[][] qGramMatrix = new int[table.getColumns().size()][numQGramDimensions];
+            CSVParser csvParser = new CSVParser(
+                    csvFileLocation.getFieldSeparator(),
+                    csvFileLocation.getQuoteChar(),
+                    '\0',
+                    false,
+                    true
+            );
             try (BufferedReader bufferedReader = new BufferedReader(
                     csvFileLocation.getEncoding().applyTo(
                             FileUtils.open(new Path(csvFileLocation.getPath()), null)
@@ -141,14 +188,14 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] fields = csvParser.parseLine(line);
-                    for (int fieldIndex = 0; fieldIndex < Math.max(fields.length, qGramVectors.length); fieldIndex++) {
+                    for (int fieldIndex = 0; fieldIndex < Math.max(fields.length, qGramMatrix.length); fieldIndex++) {
                         String field = fields[fieldIndex];
                         if (field == null || field.isEmpty()) continue;
 
                         // Create the q-grams.
-                        for (int start = 1 - this.parameters.q; start < field.length(); start++) {
+                        for (int start = 1 - q; start < field.length(); start++) {
                             // Assemble the q-gram.
-                            for (int offset = 0; offset < this.parameters.q; offset++) {
+                            for (int offset = 0; offset < q; offset++) {
                                 int pos = start + offset;
                                 char c = pos < 0 || pos >= field.length() ? '\0' : field.charAt(pos);
                                 qGram[2 * offset] = (byte) (c >>> 8);
@@ -156,37 +203,32 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                             }
 
                             // Put it into the q-gram vector.
-                            int qQgramPosition = Math.abs(hashFunction.hashBytes(qGram).asInt()) % this.parameters.numQGramDimensions;
-                            qGramVectors[fieldIndex][qQgramPosition]++;
+                            int qQgramPosition = Math.abs(hashFunction.hashBytes(qGram).asInt()) % numQGramDimensions;
+                            qGramMatrix[fieldIndex][qQgramPosition]++;
                         }
                     }
                 }
 
                 // Create the sketches.
-                for (int columnIndex = 0; columnIndex < qGramVectors.length; columnIndex++) {
-                    int[] qGramVector = qGramVectors[columnIndex];
-                    double[] sketch = new double[this.parameters.numSketchDimensions];
+                for (int columnIndex = 0; columnIndex < qGramMatrix.length; columnIndex++) {
+                    int[] qGramVector = qGramMatrix[columnIndex];
+                    double[] sketch = new double[numSketchDimensions];
                     int sketchDimension = 0;
                     for (ToDoubleFunction<int[]> projection : projections) {
                         sketch[sketchDimension++] = projection.applyAsDouble(qGramVector);
                     }
 
-                    int schemaNumber = this.metadataStore.getIdUtils().getLocalSchemaId(table.getId());
-                    int tableNumber = this.metadataStore.getIdUtils().getLocalTableId(table.getId());
-                    int columnId = this.metadataStore.getIdUtils().createGlobalId(schemaNumber, tableNumber, columnIndex);
+                    int schemaNumber = store.getIdUtils().getLocalSchemaId(table.getId());
+                    int tableNumber = store.getIdUtils().getLocalTableId(table.getId());
+                    int columnId = store.getIdUtils().createGlobalId(schemaNumber, tableNumber, columnIndex);
                     Vector constraint = new Vector(columnId, sketch);
-                    constraintCollection.add(constraint);
+                    qGramVectors.add(constraint);
                 }
             } catch (Exception e) {
-                this.logger.error("Processing {} failed.", table, e);
+                LoggerFactory.getLogger(CreateQGramSketchApp.class).error("Processing {} failed.", table, e);
             }
         }
-
-        this.metadataStore.flush();
-        this.logger.info(String.format("Saved constraint collection %d.", constraintCollection.getId()));
-
-        // Add some metadata about the program results.
-        this.executionMetadata.addCustomData(CONSTRAINT_COLLECTION_ID_RESULT_KEY, constraintCollection.getId());
+        return qGramVectors;
     }
 
 
