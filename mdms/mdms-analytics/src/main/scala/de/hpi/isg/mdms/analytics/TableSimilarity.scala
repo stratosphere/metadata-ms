@@ -1,10 +1,12 @@
 package de.hpi.isg.mdms.analytics
 
 import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InclusionDependency, TupleCount}
+import de.hpi.isg.mdms.domain.util.DependencyPrettyPrinter
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.targets.Table
 import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -15,6 +17,8 @@ import scala.collection.mutable
   *
   */
 object TableSimilarity {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Calculate table similarities.
@@ -96,7 +100,13 @@ object TableSimilarity {
         (math.min(depTable, refTable), math.max(depTable, refTable)),
         if (tupleCountsA == 0 || tupleCountsB == 0) 0d
         else distinctValuesA.toDouble * distinctValuesA / tupleCountsA / tupleCountsB
-      )
+      ) match {
+        case (link, strength: Double) if strength > 1d =>
+          val pp = new DependencyPrettyPrinter(store)
+          logger.warn(s"Got strength $strength for ${pp.prettyPrint(ind)}: DV(A)=$distinctValuesA, |A|=$tupleCountsA, |B|=$tupleCountsB. Inverting...")
+          (link, 1 / strength)
+        case other => other
+      }
     }
       .filter { case ((src, dest), _) => src != dest }
       .groupBy(_._1)
@@ -230,18 +240,22 @@ object TableSimilarity {
 
     // Execute Dijkstra's algorithm to create the join tree.
     val joinTreeEdges = mutable.Map[Int, JoinTreeEdge]()
-    val visitedTables = mutable.Set()
+    val visitedTables = mutable.Set[Int]()
     val visitingQueue = mutable.PriorityQueue[(Int, Double)]()(Ordering.by(-_._2))
     visitingQueue.enqueue((root.getId, 1d))
 
     while (visitingQueue.nonEmpty) {
       val (nextTableId, similarity) = visitingQueue.dequeue()
-      primaryAdjacencyIndex.get(nextTableId).foreach { secondaryAdjacencyIndex =>
-        secondaryAdjacencyIndex.valuesIterator.foreach { jte =>
-          val candidate = JoinTreeEdge(jte.parentTableId, jte.childTableId, similarity * jte.targetSimilarity, jte.childReferenced)
-          if (joinTreeEdges.get(jte.childTableId).forall(_.targetSimilarity < candidate.targetSimilarity)) {
-            joinTreeEdges(jte.childTableId) = candidate
-            visitingQueue.enqueue((candidate.childTableId, candidate.targetSimilarity))
+      if (visitedTables.add(nextTableId)) {
+        primaryAdjacencyIndex.get(nextTableId).foreach { secondaryAdjacencyIndex =>
+          secondaryAdjacencyIndex.valuesIterator.foreach { jte =>
+            if (!visitedTables.contains(jte.childTableId)) {
+              val candidate = JoinTreeEdge(jte.parentTableId, jte.childTableId, similarity * jte.targetSimilarity, jte.childReferenced)
+              if (joinTreeEdges.get(jte.childTableId).forall(_.targetSimilarity < candidate.targetSimilarity)) {
+                joinTreeEdges(jte.childTableId) = candidate
+                visitingQueue.enqueue((candidate.childTableId, candidate.targetSimilarity))
+              }
+            }
           }
         }
       }
