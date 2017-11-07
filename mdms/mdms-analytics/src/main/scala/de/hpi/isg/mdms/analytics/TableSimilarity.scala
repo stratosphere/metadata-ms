@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.analytics
 import de.hpi.isg.mdms.domain.constraints.{ColumnStatistics, InclusionDependency, TupleCount}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
+import de.hpi.isg.mdms.model.targets.Table
 import org.qcri.rheem.api.{DataQuanta, PlanBuilder}
 
 import scala.collection.JavaConversions._
@@ -156,6 +157,99 @@ object TableSimilarity {
     }
   }
 
+  /**
+    * Build a join tree starting from the given `root` [[Table]].
+    *
+    * @param root              from which to span the join tree
+    * @param foreignKeys       from which to select the tree edges
+    * @param tableSimilarities which describe the weight of the tree edges
+    * @param store             in which all the metadata reside
+    * @param planBuilder       to produce [[DataQuanta]]
+    * @return the tree edges as [[DataQuanta]] of [[JoinTreeEdge]]s
+    */
+  def buildJoinTree(root: Table,
+                    foreignKeys: ConstraintCollection[InclusionDependency],
+                    tableSimilarities: ConstraintCollection[TableSimilarity])
+                   (implicit store: MetadataStore,
+                    planBuilder: PlanBuilder):
+  DataQuanta[JoinTreeEdge] = {
+    // Index the table similarities.
+    val tableSimilarityIndex = tableSimilarities.getConstraints
+      .map(sim => (sim.tableId1, sim.tableId2) -> sim)
+      .toMap
+
+    // Index the foreign keys and collect their weights.
+    val idUtils = store.getIdUtils
+    val primaryAdjacencyIndex = mutable.Map[Int, mutable.Map[Int, JoinTreeEdge]]()
+    foreignKeys.getConstraints.foreach { fk =>
+      // Get involved tables.
+      val refTableId = idUtils.getTableId(fk.getDependentColumnIds()(0))
+      val depTableId = idUtils.getTableId(fk.getReferencedColumnIds()(0))
+      val similarity = tableSimilarityIndex
+        .get(if (depTableId < refTableId) (depTableId, refTableId) else (refTableId, depTableId)) match {
+        case Some(sim) => sim.similarity
+        case None => 0
+      }
+
+      if (similarity > 0) {
+        // Update the edges.
+        locally {
+          val secondaryAdjacencyIndex = primaryAdjacencyIndex.get(depTableId) match {
+            case Some(map) => map
+            case None =>
+              val map = mutable.Map[Int, JoinTreeEdge]()
+              primaryAdjacencyIndex(depTableId) = map
+              map
+          }
+          secondaryAdjacencyIndex.get(refTableId) match {
+            case Some(joinTreeEdge) =>
+              if (joinTreeEdge.targetSimilarity < similarity)
+                secondaryAdjacencyIndex(refTableId) = JoinTreeEdge(depTableId, refTableId, similarity, true)
+            case None =>
+              secondaryAdjacencyIndex(refTableId) = JoinTreeEdge(depTableId, refTableId, similarity, true)
+          }
+        }
+        locally {
+          val secondaryAdjacencyIndex = primaryAdjacencyIndex.get(refTableId) match {
+            case Some(map) => map
+            case None =>
+              val map = mutable.Map[Int, JoinTreeEdge]()
+              primaryAdjacencyIndex(refTableId) = map
+              map
+          }
+          secondaryAdjacencyIndex.get(depTableId) match {
+            case Some(joinTreeEdge) =>
+              if (joinTreeEdge.targetSimilarity < similarity)
+                secondaryAdjacencyIndex(depTableId) = JoinTreeEdge(refTableId, depTableId, similarity, false)
+            case None =>
+              secondaryAdjacencyIndex(depTableId) = JoinTreeEdge(refTableId, depTableId, similarity, false)
+          }
+        }
+      }
+    }
+
+    // Execute Dijkstra's algorithm to create the join tree.
+    val joinTreeEdges = mutable.Map[Int, JoinTreeEdge]()
+    val visitedTables = mutable.Set()
+    val visitingQueue = mutable.PriorityQueue[(Int, Double)]()(Ordering.by(-_._2))
+    visitingQueue.enqueue((root.getId, 1d))
+
+    while (visitingQueue.nonEmpty) {
+      val (nextTableId, similarity) = visitingQueue.dequeue()
+      primaryAdjacencyIndex.get(nextTableId).foreach { secondaryAdjacencyIndex =>
+        secondaryAdjacencyIndex.valuesIterator.foreach { jte =>
+          val candidate = JoinTreeEdge(jte.parentTableId, jte.childTableId, similarity * jte.targetSimilarity, jte.childReferenced)
+          if (joinTreeEdges.get(jte.childTableId).forall(_.targetSimilarity < candidate.targetSimilarity)) {
+            joinTreeEdges(jte.childTableId) = candidate
+            visitingQueue.enqueue((candidate.childTableId, candidate.targetSimilarity))
+          }
+        }
+      }
+    }
+
+    planBuilder.loadCollection(joinTreeEdges.values)
+  }
+
 }
 
 /**
@@ -166,4 +260,14 @@ object TableSimilarity {
   * @param similarity the similarity score
   */
 case class TableSimilarity(tableId1: Int, tableId2: Int, similarity: Double)
+
+/**
+  * Defines an edge of a join tree.
+  *
+  * @param parentTableId    the ID of the [[Table]] that forms the parent node in the join tree
+  * @param childTableId     the ID of the [[Table]] that forms the child node in the join tree
+  * @param targetSimilarity the similarity of the child [[Table]] to the root [[Table]]
+  * @param childReferenced  whether the parent [[Table]] references the child [[Table]]
+  */
+case class JoinTreeEdge(parentTableId: Int, childTableId: Int, targetSimilarity: Double, childReferenced: Boolean)
 
