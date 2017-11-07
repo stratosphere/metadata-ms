@@ -13,7 +13,7 @@ requirejs(["d3"], function (d3) {
 
     var svg = d3.select("#metacrate-svg-$id");
     var parentDiv = svg[0][0].parentNode;
-    var nodeColors = d3.scale.category20();
+    var nodeColors = d3.scale.category10();
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
