@@ -112,13 +112,13 @@ class Visualizations(publish: Publish) {
                         width: String = "100%",
                         height: String = "100%",
                         linkDistance: Int = 100,
-                        charge: Int = -300)
+                        charge: Int = 300)
                        (implicit publish: Publish) = {
 
     ensureD3Initialized(publish)
 
     // Initialize the canvas.
-    val svgId = addSvg(height = height)
+    val id = nextId()
 
     // Build the nodes array.
     val jsNodes = JsonSerializer.toJson({
@@ -130,14 +130,15 @@ class Visualizations(publish: Publish) {
     val jsLinks = JsonSerializer.toJson(links)
 
     val frontendVariables = Map(
-      "svgId" -> svgId,
+      "id" -> id.toString,
       "nodes" -> jsNodes,
       "links" -> jsLinks,
       "linkDistance" -> linkDistance.toString,
-      "charge" -> charge.toString,
-      "pathStyle" -> s"$svgId-path",
-      "circleStyle" -> s"$svgId-circle",
-      "textStyle" -> s"$svgId-text"
+      "charge" -> (-charge).toString,
+      "pathStyle" -> s"metacrate-directed-graph-path",
+      "circleStyle" -> s"metacrate-directed-graph-circle",
+      "textStyle" -> s"metacrate-directed-graph-text",
+      "height" -> height
     )
 
     // Initialize the styles.

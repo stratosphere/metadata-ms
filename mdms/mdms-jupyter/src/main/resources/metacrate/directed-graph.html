@@ -18,3 +18,12 @@
     }
 
 </style>
+
+<div>
+    <button type="button" id="freeze-button-$id">Freeze</button>
+    &nbsp;
+    <span>Link distance: <input type="range" min="1" max="1000" value="$linkDistance" class="slider" id="distance-slider-$id" style="width:200px;display:inline"></span>
+    &nbsp;
+    <span>Charge: <input type="range" min="1" max="1000" value="$charge" class="slider" id="charge-slider-$id" style="width:200px;display:inline"></span>
+</div>
+<svg id="metacrate-svg-$id" style="width:100%; height:$height"></svg>

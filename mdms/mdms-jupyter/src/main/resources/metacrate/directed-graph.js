@@ -11,7 +11,7 @@ requirejs(["d3"], function (d3) {
         if (link.source === undefined || link.target === undefined) links.splice(i--, 1);
     }
 
-    var svg = d3.select("#$svgId");
+    var svg = d3.select("#metacrate-svg-$id");
     var parentDiv = svg[0][0].parentNode;
     var nodeColors = d3.scale.category20();
 
@@ -20,7 +20,7 @@ requirejs(["d3"], function (d3) {
         .links(links)
         .size([parentDiv.clientWidth, parentDiv.clientHeight])
         .linkDistance($linkDistance)
-        .charge($charge)
+        .charge(-$charge)
         .on("tick", tick)
         .start();
 
@@ -60,6 +60,10 @@ requirejs(["d3"], function (d3) {
         .attr("y", ".31em")
         .text(function(d) { return d.name; });
 
+    d3.select("#freeze-button-$id").on("click", buttonClicked);
+    d3.select("#distance-slider-$id").on("change", distanceSliderChanged);
+    d3.select("#charge-slider-$id").on("change", chargeSliderChanged);
+
     // Use elliptical arc path segments to doubly-encode directionality.
     function tick() {
         path.attr("d", linkArc);
@@ -76,6 +80,28 @@ requirejs(["d3"], function (d3) {
 
     function transform(d) {
         return "translate(" + d.x + "," + d.y + ")";
+    }
+
+    function buttonClicked() {
+        if (this.firstChild.data == "Freeze") {
+            force.stop()
+            this.firstChild.data = "Continue"
+        } else {
+            force.start()
+            this.firstChild.data = "Freeze"
+        }
+    }
+
+    function distanceSliderChanged() {
+        force.stop();
+        force.linkDistance(this.value);
+        force.start();
+    }
+
+    function chargeSliderChanged() {
+        force.stop();
+        force.charge(-this.value);
+        force.start();
     }
 
 });
