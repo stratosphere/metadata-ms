@@ -142,7 +142,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
             }
 
             // Create the columns and try to provide meaningful names.
-            final int numAttributes = this.attributeIndexer.getNumAttributes(tableName);
+            final int numAttributes = this.attributeIndexer.getNumAttributes(file.getName());
             for (int attributeIndex = 0; attributeIndex < numAttributes; attributeIndex++) {
                 final String attributeName;
                 if (tableLocation.getHasHeader()) {
@@ -265,15 +265,21 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
 
         @Override
         public String provideTableName(Path file) {
-            return file.getName();
+            String fileName = file.getName();
+            if (fileName.length() > 4) {
+                String suffix = fileName.substring(fileName.length() - 4);
+                if (suffix.equalsIgnoreCase(".csv") || suffix.equalsIgnoreCase(".tsv")) {
+                    return fileName.substring(0, fileName.length() - 4);
+                }
+            }
+            return fileName;
         }
-
         @Override
         public String provideColumnName(int offset) {
             return String.format("[%d]", offset);
         }
-    }
 
+    }
     /**
      * Names Metanome-style.
      */

@@ -45,10 +45,10 @@ public class CreateSchemaForCsvFilesAppTest {
         Schema schema = metadataStore.getSchemaByName("test-schema");
         Assert.assertNotNull("test-schema");
         Assert.assertEquals(2, schema.getTables().size());
-        Table table1 = metadataStore.getTableByName("test-schema.table1.csv");
+        Table table1 = metadataStore.getTableByName("test-schema.table1");
         Assert.assertNotNull(table1);
         Assert.assertEquals(3, table1.getColumns().size());
-        Column table1Comments = metadataStore.getColumnByName("test-schema.table2.csv.Comments");
+        Column table1Comments = metadataStore.getColumnByName("test-schema.table2.dat.Comments");
         Assert.assertNotNull(table1Comments);
     }
 
@@ -72,16 +72,16 @@ public class CreateSchemaForCsvFilesAppTest {
         Schema schema = metadataStore.getSchemaByName("test-schema");
         Assert.assertNotNull("test-schema");
         Assert.assertEquals(2, schema.getTables().size());
-        Table table1 = metadataStore.getTableByName("test-schema.table1.csv");
+        Table table1 = metadataStore.getTableByName("test-schema.table1");
         Assert.assertNotNull(table1);
         Assert.assertEquals(3, table1.getColumns().size());
         List<Column> columns = new ArrayList<>(table1.getColumns());
-        Assert.assertEquals("NAME", columns.get(0).getName());
         columns.sort(Comparator.comparingInt(c -> metadataStore.getIdUtils().getLocalColumnId(c.getId())));
+        Assert.assertEquals("NAME", columns.get(0).getName());
         Assert.assertEquals("FIRST_NAME", columns.get(1).getName());
         Assert.assertEquals("PROFESSION", columns.get(2).getName());
 
-        Table table2 = metadataStore.getTableByName("test-schema.table2.csv");
+        Table table2 = metadataStore.getTableByName("test-schema.table2.dat");
         Assert.assertNotNull(table2);
         Assert.assertEquals(3, table2.getColumns().size());
         columns = new ArrayList<>(table2.getColumns());
@@ -112,10 +112,10 @@ public class CreateSchemaForCsvFilesAppTest {
         Schema schema = metadataStore.getSchemaByName("test-schema");
         Assert.assertNotNull("test-schema");
         Assert.assertEquals(2, schema.getTables().size());
-        Table table1 = metadataStore.getTableByName("test-schema.table1.csv");
+        Table table1 = metadataStore.getTableByName("test-schema.table1");
         Assert.assertNotNull(table1);
         Assert.assertEquals(3, table1.getColumns().size());
-        Column table1Comments = metadataStore.getColumnByName("test-schema.table2.csv.Comments");
+        Column table1Comments = metadataStore.getColumnByName("test-schema.table2.dat.Comments");
         Assert.assertNotNull(table1Comments);
     }
 
