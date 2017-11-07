@@ -93,9 +93,16 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   def storeConstraintCollection(scope: Iterable[Target],
                                 userDefinedId: String = null,
                                 description: String = "(no description)",
-                                experiment: Experiment = null)
+                                experiment: Experiment = null,
+                                overwrite: Boolean = false)
                                (implicit store: MetadataStore):
   ConstraintCollection[Out] = {
+    if (userDefinedId != null && overwrite) {
+      store.getConstraintCollection(userDefinedId) match {
+        case existingCC => store.removeConstraintCollection(existingCC)
+        case null =>
+      }
+    }
     val cls = implicitly[ClassTag[Out]].runtimeClass.asInstanceOf[Class[Out]]
     val cc = store.createConstraintCollection(userDefinedId, description, experiment, cls, scope.toSeq: _*)
     this.store(cc)
