@@ -117,7 +117,7 @@ package object jupyter {
                               height: String = "100%")
                              (implicit publish: Publish): String = {
     val id = s"metacrate-svg-${idCounter.getAndAdd(1)}"
-    publish.html(s"""<svg id="$id" style="width: $width; height: $height"></svg>""")
+    publish.html(s"""<svg id="$id" style="width: $width; height: $height; margin: 0 auto"></svg>""")
     id
   }
 

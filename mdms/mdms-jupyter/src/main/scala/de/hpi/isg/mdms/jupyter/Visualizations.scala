@@ -222,7 +222,7 @@ class Visualizations(publish: Publish) {
     publish.html(html)
 
     // Create the SVG element.
-    val svgId = addSvg()
+    val svgId = addSvg(width = s"${diameter + 50}", height = s"${diameter + 50}")
 
     // Publish the script with the data.
     val js = ResourceManager.get("/metacrate/chord-diagram.js", Map(
