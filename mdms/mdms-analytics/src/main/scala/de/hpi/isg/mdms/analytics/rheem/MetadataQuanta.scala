@@ -99,8 +99,8 @@ class MetadataQuanta[Out: ClassTag](dataQuanta: DataQuanta[Out]) {
   ConstraintCollection[Out] = {
     if (userDefinedId != null && overwrite) {
       store.getConstraintCollection(userDefinedId) match {
-        case existingCC => store.removeConstraintCollection(existingCC)
-        case null =>
+        case existingCC: ConstraintCollection[_] => store.removeConstraintCollection(existingCC)
+        case _ =>
       }
     }
     val cls = implicitly[ClassTag[Out]].runtimeClass.asInstanceOf[Class[Out]]
