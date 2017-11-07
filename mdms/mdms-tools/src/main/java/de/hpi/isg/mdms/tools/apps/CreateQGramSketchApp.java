@@ -21,11 +21,13 @@ import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
 import de.hpi.isg.mdms.clients.parameters.MetadataStoreParameters;
+import de.hpi.isg.mdms.domain.constraints.Signature;
 import de.hpi.isg.mdms.domain.constraints.Vector;
 import de.hpi.isg.mdms.flink.util.FileUtils;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection;
 import de.hpi.isg.mdms.model.location.Location;
+import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
 import org.apache.flink.core.fs.Path;
@@ -33,11 +35,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
 
 /**
  * This job creates {@link Vector}s of Q-gram sketches for columns and saves them to a {@link MetadataStore}.
@@ -110,7 +110,7 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
     }
 
     /**
-     * Profile all tables of a {@link Schema} for q-grams.
+     * Profile all tables of a {@link Schema} for q-gram sketches (dimension-reduced q-gram vectors).
      *
      * @param store               within which the {@code schema} resides
      * @param schema              the {@link Schema} whose (CSV) tables should be profiled
@@ -229,6 +229,112 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
             }
         }
         return qGramVectors;
+    }
+
+    /**
+     * Profile all tables of a {@link Schema} for q-gram signatures (min-hash signatures).
+     *
+     * @param store         within which the {@code schema} resides
+     * @param schema        the {@link Schema} whose (CSV) tables should be profiled
+     * @param numDimensions number of min-hash dimensions
+     * @param seed          to create random transformation matrix from the sketch space to the q-gram vector space
+     * @param q             the size of the q-grams
+     * @return the q-gram {@link Signature}s
+     */
+    public static Collection<Signature> profileQGramSignatures(
+            MetadataStore store,
+            Schema schema,
+            int numDimensions,
+            int seed,
+            int q) {
+
+        List<Signature> qGramSignatures = new ArrayList<>();
+
+        // Initialize the random hash functions.
+        Random random = new Random(seed);
+        List<ToIntFunction<byte[]>> hashFunctions = new ArrayList<>(numDimensions);
+        for (int i = 0; i < numDimensions; i++) {
+            HashFunction hashFunction = Hashing.murmur3_32(random.nextInt());
+            hashFunctions.add(qGram -> hashFunction.hashBytes(qGram).asInt());
+        }
+
+        // Go over the files and create the signatures.
+        for (Table table : schema.getTables()) {
+            // Get the CSV file location.
+            Location location = table.getLocation();
+            if (!(location instanceof CsvFileLocation)) {
+                LoggerFactory.getLogger(CreateQGramSketchApp.class).error(
+                        "Cannot process {} at {}. Only CSV files are supported. Skipping...", table, location
+                );
+                continue;
+            }
+            CsvFileLocation csvFileLocation = (CsvFileLocation) location;
+
+
+            // Prepare the q-gram signature calculation.
+            List<int[]> minHashes = new ArrayList<>();
+            for (Column column : table.getColumns()) {
+                int[] signature = new int[numDimensions];
+                Arrays.fill(signature, Integer.MAX_VALUE);
+                minHashes.add(signature);
+            }
+            byte[] qGram = new byte[q * 2]; // UTF-16 encoded q-grams.
+            CSVParser csvParser = new CSVParser(
+                    csvFileLocation.getFieldSeparator(),
+                    csvFileLocation.getQuoteChar(),
+                    '\0',
+                    false,
+                    true
+            );
+            try (BufferedReader bufferedReader = new BufferedReader(
+                    csvFileLocation.getEncoding().applyTo(
+                            FileUtils.open(new Path(csvFileLocation.getPath()), null)
+                    ))) {
+
+                // Go over the file and collect the q-grams.
+                if (csvFileLocation.getHasHeader()) bufferedReader.readLine();
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    String[] fields = csvParser.parseLine(line);
+                    for (int fieldIndex = 0; fieldIndex < Math.max(fields.length, minHashes.size()); fieldIndex++) {
+                        String field = fields[fieldIndex];
+                        if (field == null || field.isEmpty()) continue;
+
+                        // Create the q-grams.
+                        for (int start = 1 - q; start < field.length(); start++) {
+                            // Assemble the q-gram.
+                            for (int offset = 0; offset < q; offset++) {
+                                int pos = start + offset;
+                                char c = pos < 0 || pos >= field.length() ? '\0' : field.charAt(pos);
+                                qGram[2 * offset] = (byte) (c >>> 8);
+                                qGram[2 * offset + 1] = (byte) c;
+                            }
+
+                            // Update the min-hash signature.
+                            int[] columnMinHashes = minHashes.get(fieldIndex);
+                            for (int i = 0; i < hashFunctions.size(); i++) {
+                                int hash = hashFunctions.get(i).applyAsInt(qGram);
+                                if (hash < columnMinHashes[i]) columnMinHashes[i] = hash;
+                            }
+
+                        }
+                    }
+                }
+
+                // Create the sketches.
+                for (int columnIndex = 0; columnIndex < minHashes.size(); columnIndex++) {
+                    int[] columnMinHashes = minHashes.get(columnIndex);
+                    int schemaNumber = store.getIdUtils().getLocalSchemaId(table.getId());
+                    int tableNumber = store.getIdUtils().getLocalTableId(table.getId());
+                    int columnId = store.getIdUtils().createGlobalId(schemaNumber, tableNumber, columnIndex);
+                    Signature signature = new Signature(columnId, columnMinHashes);
+                    qGramSignatures.add(signature);
+                }
+            } catch (Exception e) {
+                LoggerFactory.getLogger(CreateQGramSketchApp.class).error("Processing {} failed.", table, e);
+            }
+        }
+        return qGramSignatures;
     }
 
 
