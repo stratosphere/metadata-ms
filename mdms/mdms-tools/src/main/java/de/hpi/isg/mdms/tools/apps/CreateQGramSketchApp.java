@@ -15,8 +15,6 @@ package de.hpi.isg.mdms.tools.apps;
 import au.com.bytecode.opencsv.CSVParser;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import de.hpi.isg.mdms.clients.apps.MdmsAppTemplate;
 import de.hpi.isg.mdms.clients.location.CsvFileLocation;
 import de.hpi.isg.mdms.clients.parameters.JCommanderParser;
@@ -36,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.IntConsumer;
 import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
 
 /**
  * This job creates {@link Vector}s of Q-gram sketches for columns and saves them to a {@link MetadataStore}.
@@ -114,8 +112,8 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
      *
      * @param store               within which the {@code schema} resides
      * @param schema              the {@link Schema} whose (CSV) tables should be profiled
-     * @param numSketchDimensions the number of dimensions to sketch the space of q-grams
-     * @param numQGramDimensions  the dimensionality of the resulting q-gram {@link Vector}s
+     * @param numSketchDimensions the number of dimensions to resulting sketches
+     * @param numQGramDimensions  dimension of q-gram counting vectors
      * @param seed                to create random transformation matrix from the sketch space to the q-gram vector space
      * @param q                   the size of the q-grams
      * @return the q-gram {@link Vector}s
@@ -143,19 +141,16 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                     qGramVector -> {
                         assert projectionVector.length == qGramVector.length;
                         double dotProduct = 0d;
-                        long qGramVectorSum = 0;
                         for (int i = 0; i < projectionVector.length; i++) {
                             dotProduct += projectionVector[i] * qGramVector[i];
-                            qGramVectorSum += qGramVector[i];
                         }
-                        return dotProduct / qGramVectorSum;
+                        return dotProduct;
                     }
             );
         }
 
-        // Initialize a hash function to map the q-grams to positions in the
-        HashFunction hashFunction = Hashing.murmur3_32();
-        byte[] qGram = new byte[q * 2];
+        // Create parameters for independent hash functions.
+        int hashingCoefficient = new Random(42).nextInt();
 
         // Go over the files and create the sketches.
         for (Table table : schema.getTables()) {
@@ -189,23 +184,16 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] fields = csvParser.parseLine(line);
                     for (int fieldIndex = 0; fieldIndex < Math.max(fields.length, qGramMatrix.length); fieldIndex++) {
+                        int fieldIndexCopy = fieldIndex;
                         String field = fields[fieldIndex];
                         if (field == null || field.isEmpty()) continue;
 
-                        // Create the q-grams.
-                        for (int start = 1 - q; start < field.length(); start++) {
-                            // Assemble the q-gram.
-                            for (int offset = 0; offset < q; offset++) {
-                                int pos = start + offset;
-                                char c = pos < 0 || pos >= field.length() ? '\0' : field.charAt(pos);
-                                qGram[2 * offset] = (byte) (c >>> 8);
-                                qGram[2 * offset + 1] = (byte) c;
-                            }
-
+                        createQGramHashes(field, hashingCoefficient, q, h -> {
                             // Put it into the q-gram vector.
-                            int qQgramPosition = Math.abs(hashFunction.hashBytes(qGram).asInt()) % numQGramDimensions;
-                            qGramMatrix[fieldIndex][qQgramPosition]++;
-                        }
+                            if (h < 0) h = ~h;
+                            int qQgramPosition = h % numQGramDimensions;
+                            qGramMatrix[fieldIndexCopy][qQgramPosition]++;
+                        });
                     }
                 }
 
@@ -217,7 +205,7 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                     for (ToDoubleFunction<int[]> projection : projections) {
                         sketch[sketchDimension++] = projection.applyAsDouble(qGramVector);
                     }
-
+                    normalize(sketch);
                     int schemaNumber = store.getIdUtils().getLocalSchemaId(table.getId());
                     int tableNumber = store.getIdUtils().getLocalTableId(table.getId());
                     int columnId = store.getIdUtils().createGlobalId(schemaNumber, tableNumber, columnIndex);
@@ -231,13 +219,27 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
         return qGramVectors;
     }
 
+    private static void normalize(double[] vector) {
+        double length = 0d;
+        for (int i = 0; i < vector.length; i++) {
+            double v = vector[i];
+            length += v * v;
+        }
+        if (length > 0) {
+            length = Math.sqrt(length);
+            for (int i = 0; i < vector.length; i++) {
+                vector[i] /= length;
+
+            }
+        }
+    }
+
     /**
      * Profile all tables of a {@link Schema} for q-gram signatures (min-hash signatures).
      *
      * @param store         within which the {@code schema} resides
      * @param schema        the {@link Schema} whose (CSV) tables should be profiled
      * @param numDimensions number of min-hash dimensions
-     * @param seed          to create random transformation matrix from the sketch space to the q-gram vector space
      * @param q             the size of the q-grams
      * @return the q-gram {@link Signature}s
      */
@@ -245,17 +247,15 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
             MetadataStore store,
             Schema schema,
             int numDimensions,
-            int seed,
             int q) {
 
         List<Signature> qGramSignatures = new ArrayList<>();
 
-        // Initialize the random hash functions.
-        Random random = new Random(seed);
-        List<ToIntFunction<byte[]>> hashFunctions = new ArrayList<>(numDimensions);
-        for (int i = 0; i < numDimensions; i++) {
-            HashFunction hashFunction = Hashing.murmur3_32(random.nextInt());
-            hashFunctions.add(qGram -> hashFunction.hashBytes(qGram).asInt());
+        // Create parameters for independent hash functions.
+        int[] hashingCoefficients = new int[numDimensions];
+        Random random = new Random(42);
+        for (int i = 0; i < hashingCoefficients.length; i++) {
+            hashingCoefficients[i] = random.nextInt();
         }
 
         // Go over the files and create the signatures.
@@ -269,7 +269,6 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                 continue;
             }
             CsvFileLocation csvFileLocation = (CsvFileLocation) location;
-
 
             // Prepare the q-gram signature calculation.
             List<int[]> minHashes = new ArrayList<>();
@@ -300,28 +299,19 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
                         String field = fields[fieldIndex];
                         if (field == null || field.isEmpty()) continue;
 
-                        // Create the q-grams.
-                        for (int start = 1 - q; start < field.length(); start++) {
-                            // Assemble the q-gram.
-                            for (int offset = 0; offset < q; offset++) {
-                                int pos = start + offset;
-                                char c = pos < 0 || pos >= field.length() ? '\0' : field.charAt(pos);
-                                qGram[2 * offset] = (byte) (c >>> 8);
-                                qGram[2 * offset + 1] = (byte) c;
-                            }
-
-                            // Update the min-hash signature.
-                            int[] columnMinHashes = minHashes.get(fieldIndex);
-                            for (int i = 0; i < hashFunctions.size(); i++) {
-                                int hash = hashFunctions.get(i).applyAsInt(qGram);
-                                if (hash < columnMinHashes[i]) columnMinHashes[i] = hash;
-                            }
-
+                        // Create the q-gram min hashes.
+                        int[] fieldMinHashes = minHashes.get(fieldIndex);
+                        for (int i = 0; i < numDimensions; i++) {
+                            final int i_ = i;
+                            createQGramHashes(field, hashingCoefficients[i], q, h -> {
+                                if (h < 0) h = ~h;
+                                if (fieldMinHashes[i_] > h) fieldMinHashes[i_] = h;
+                            });
                         }
                     }
                 }
 
-                // Create the sketches.
+                // Create the signatures.
                 for (int columnIndex = 0; columnIndex < minHashes.size(); columnIndex++) {
                     int[] columnMinHashes = minHashes.get(columnIndex);
                     int schemaNumber = store.getIdUtils().getLocalSchemaId(table.getId());
@@ -335,6 +325,38 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
             }
         }
         return qGramSignatures;
+    }
+
+
+    /**
+     * This function creates a rolling hash over the given {@code string}. The hash function is basically a polynomial
+     * function w.r.t. the {@code hashingCoefficient}.
+     *
+     * @param string             the {@link String}
+     * @param hashingCoefficient the coefficient for the polynomial rolling hash
+     * @param windowSize         the size of the window to hash
+     * @param hashConsumer       receives the hash values
+     */
+    public static void createQGramHashes(String string, int hashingCoefficient, int windowSize, IntConsumer hashConsumer) {
+        // We treat virtual out-of-bound elements as "0", which allows us to neglect them.
+        int highestCoefficient = hashingCoefficient;
+        for (int i = 1; i < windowSize; i++) {
+            highestCoefficient *= hashingCoefficient;
+        }
+        int rollingHash = 0;
+
+        for (int pos = 0; pos < string.length() + windowSize - 1; pos++) {
+            // Remove an element from the window.
+            if (pos >= windowSize) {
+                char droppedValue = string.charAt(pos - windowSize);
+                rollingHash -= highestCoefficient * droppedValue;
+            }
+            // Add an element.
+            if (pos < string.length()) rollingHash += string.charAt(pos);
+            // Shift.
+            rollingHash *= hashingCoefficient;
+            hashConsumer.accept(rollingHash);
+        }
     }
 
 

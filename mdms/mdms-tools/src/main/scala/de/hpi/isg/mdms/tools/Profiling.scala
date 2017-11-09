@@ -18,19 +18,17 @@ object Profiling {
     *
     * @param schema        the [[Schema]] whose (CSV) tables should be profiled
     * @param numDimensions the number of dimensions of the signature vectors
-    * @param seed          to create random transformation matrix from the sketch space to the q-gram vector space
     * @param q             the size of the q-grams
     * @param scope         of the [[ConstraintCollection]]; defaults to `schema`
     * @param store         within which the `schema` resides
     */
   def profileQGramSignatures(schema: Schema,
                              userDefinedId: String = null,
-                             numDimensions: Int = 1024,
-                             seed: Int = 42,
+                             numDimensions: Int = 128,
                              q: Int = 2,
                              scope: Target = null)
                             (implicit store: MetadataStore): Unit = {
-    val signatures = CreateQGramSketchApp.profileQGramSignatures(store, schema, numDimensions, seed, q)
+    val signatures = CreateQGramSketchApp.profileQGramSignatures(store, schema, numDimensions, q)
     val constraintCollection = store.createConstraintCollection(
       userDefinedId,
       s"Q-gram sketches profiled for schema ${schema.getName}",
@@ -55,8 +53,8 @@ object Profiling {
     */
   def profileQGramSketches(schema: Schema,
                            userDefinedId: String = null,
-                           numSketchDimensions: Int = 1024,
-                           numQGramDimensions: Int = 16,
+                           numSketchDimensions: Int = 16,
+                           numQGramDimensions: Int = 1024,
                            seed: Int = 42,
                            q: Int = 2,
                            scope: Target = null)
