@@ -28,6 +28,8 @@ import de.hpi.isg.mdms.model.location.Location;
 import de.hpi.isg.mdms.model.targets.Column;
 import de.hpi.isg.mdms.model.targets.Schema;
 import de.hpi.isg.mdms.model.targets.Table;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import org.apache.flink.core.fs.Path;
 import org.slf4j.LoggerFactory;
 
@@ -237,22 +239,25 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
     /**
      * Profile all tables of a {@link Schema} for q-gram signatures (min-hash signatures).
      *
-     * @param store         within which the {@code schema} resides
-     * @param schema        the {@link Schema} whose (CSV) tables should be profiled
-     * @param numDimensions number of min-hash dimensions
-     * @param q             the size of the q-grams
+     * @param store              within which the {@code schema} resides
+     * @param schema             the {@link Schema} whose (CSV) tables should be profiled
+     * @param numDimensions      number of min-hash dimensions
+     * @param isUseDoubleHashing whether to hash every q-gram only twice and derive all hashes as a linear combination of the two resulting hashes
+     * @param q                  the size of the q-grams
      * @return the q-gram {@link Signature}s
      */
     public static Collection<Signature> profileQGramSignatures(
             MetadataStore store,
             Schema schema,
             int numDimensions,
+            boolean isUseDoubleHashing,
             int q) {
 
         List<Signature> qGramSignatures = new ArrayList<>();
 
         // Create parameters for independent hash functions.
-        int[] hashingCoefficients = new int[numDimensions];
+        int numHashCoefficients = isUseDoubleHashing ? 2 : numDimensions;
+        int[] hashingCoefficients = new int[numHashCoefficients];
         Random random = new Random(42);
         for (int i = 0; i < hashingCoefficients.length; i++) {
             hashingCoefficients[i] = random.nextInt();
@@ -301,12 +306,29 @@ public class CreateQGramSketchApp extends MdmsAppTemplate<CreateQGramSketchApp.P
 
                         // Create the q-gram min hashes.
                         int[] fieldMinHashes = minHashes.get(fieldIndex);
-                        for (int i = 0; i < numDimensions; i++) {
-                            final int i_ = i;
-                            createQGramHashes(field, hashingCoefficients[i], q, h -> {
-                                if (h < 0) h = ~h;
-                                if (fieldMinHashes[i_] > h) fieldMinHashes[i_] = h;
-                            });
+                        if (isUseDoubleHashing) {
+                            IntList baseHashes = new IntArrayList(numDimensions);
+                            createQGramHashes(field, hashingCoefficients[0], q, baseHashes::add);
+                            IntList deltaHashes = new IntArrayList(numDimensions);
+                            createQGramHashes(field, hashingCoefficients[1], q, deltaHashes::add);
+
+                            for (int hashIndex = 0; hashIndex < baseHashes.size(); hashIndex++) {
+                                int hash = baseHashes.getInt(hashIndex);
+                                int delta = deltaHashes.getInt(hashIndex);
+
+                                for (int signatureIndex = 0; signatureIndex < numDimensions; signatureIndex++, hash += delta) {
+                                    int h = hash < 0 ? ~hash : hash;
+                                    if (fieldMinHashes[signatureIndex] > h) fieldMinHashes[signatureIndex] = h;
+                                }
+                            }
+                        } else {
+                            for (int i = 0; i < numDimensions; i++) {
+                                final int i_ = i;
+                                createQGramHashes(field, hashingCoefficients[i], q, h -> {
+                                    if (h < 0) h = ~h;
+                                    if (fieldMinHashes[i_] > h) fieldMinHashes[i_] = h;
+                                });
+                            }
                         }
                     }
                 }
