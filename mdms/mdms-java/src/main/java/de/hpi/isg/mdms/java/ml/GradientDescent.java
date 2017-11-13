@@ -1,6 +1,5 @@
 package de.hpi.isg.mdms.java.ml;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
@@ -61,7 +60,7 @@ public class GradientDescent {
             // Generate an initial model.
             final double[] parameters = new double[dimensionality];
             for (int dimension = 0; dimension < parameters.length; dimension++) {
-                parameters[dimension] = random.nextInt(); // We don't use nextDouble(), which generates number only from [0, 1).
+                parameters[dimension] = random.nextGaussian() * 10; // TODO: It might be important to allow a meaningful customization of the initial weights.
             }
             final VectorModel model = new VectorModel(parameters);
 
@@ -78,7 +77,6 @@ public class GradientDescent {
                 }
                 model.add(gradient);
                 stepSize = calculateEuclidianDistance(gradient);
-                System.out.printf("Loss: %+10.10f\tGradient: %s\tModel: %s\n", lossDefinition.calculateLoss(model, observations), Arrays.toString(gradient), Arrays.toString(model.getParameters()));
 
                 // Adapt the learning rate (Bold Driver):
                 // If we we are getting better, increase the learning rate by 5%. Otherwise, decrease it by 50%.

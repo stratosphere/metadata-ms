@@ -36,9 +36,10 @@ public class LogisticRegression {
                 final double label = observation.getObservation();
                 final double prediction = predict(observation, model);
                 final double[] featureVector = observation.getFeatureVector();
-                for (int i = 0; i < gradient.length; i++) {
+                for (int i = 0; i < featureVector.length; i++) {
                     gradient[i] += (prediction - label) * featureVector[i];
                 }
+                gradient[gradient.length - 1] += (prediction - label);
             }
             return gradient;
         }
@@ -57,8 +58,8 @@ public class LogisticRegression {
     public static double predict(Instance<?> instance, VectorModel model) {
         double[] parameters = model.getParameters();
         double[] features = instance.getFeatureVector();
-        Validate.isTrue(parameters.length == features.length);
-        double linearResult = 0d;
+        Validate.isTrue(parameters.length == features.length + 1);
+        double linearResult = parameters[parameters.length - 1];
         for (int i = 0; i < features.length; i++) {
             linearResult += parameters[i] * features[i];
         }
