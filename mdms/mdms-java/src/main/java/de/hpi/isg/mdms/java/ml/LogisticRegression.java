@@ -3,6 +3,7 @@ package de.hpi.isg.mdms.java.ml;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * This class provides a logistic regression model.
@@ -21,7 +22,7 @@ public class LogisticRegression {
             double loss = 0d;
             for (Observation<?> observation : observations) {
                 final double label = observation.getObservation();
-                final double prediction = predict(observation, model);
+                final double prediction = estimate(observation, model);
                 loss -= label * Math.log(Math.max(prediction, Double.MIN_VALUE))
                         + (1 - label) * Math.log(Math.max(1 - prediction, Double.MIN_VALUE));
             }
@@ -34,7 +35,7 @@ public class LogisticRegression {
             double[] gradient = new double[parameters.length];
             for (Observation<?> observation : observations) {
                 final double label = observation.getObservation();
-                final double prediction = predict(observation, model);
+                final double prediction = estimate(observation, model);
                 final double[] featureVector = observation.getFeatureVector();
                 for (int i = 0; i < featureVector.length; i++) {
                     gradient[i] += (prediction - label) * featureVector[i];
@@ -46,16 +47,16 @@ public class LogisticRegression {
     }
 
     public static <T> VectorModel train(Collection<Observation<T>> observations,
-                                    int dimensionality,
-                                    double learningRate,
-                                    int numRepetitions,
-                                    double minStepSize) {
+                                        int numFeatures,
+                                        double learningRate,
+                                        int numRepetitions,
+                                        double minStepSize) {
         return GradientDescent.minimize(
-                new LossDefinition<>(), observations, dimensionality, learningRate, numRepetitions, minStepSize
+                new LossDefinition<>(), observations, numFeatures + 1, learningRate, numRepetitions, minStepSize
         );
     }
 
-    public static double predict(Instance<?> instance, VectorModel model) {
+    public static double estimate(Instance<?> instance, VectorModel model) {
         double[] parameters = model.getParameters();
         double[] features = instance.getFeatureVector();
         Validate.isTrue(parameters.length == features.length + 1);
@@ -64,6 +65,12 @@ public class LogisticRegression {
             linearResult += parameters[i] * features[i];
         }
         return sigmoid(linearResult);
+    }
+
+    public static <T> Collection<Prediction<T, Double>> estimateAll(Collection<Instance<T>> instances, VectorModel model) {
+        return instances.stream()
+                .map(instance -> new Prediction<>(instance, estimate(instance, model)))
+                .collect(Collectors.toList());
     }
 
     private static double sigmoid(double v) {

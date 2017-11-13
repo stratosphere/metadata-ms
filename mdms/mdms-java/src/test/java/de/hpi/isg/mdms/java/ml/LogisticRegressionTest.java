@@ -27,11 +27,11 @@ public class LogisticRegressionTest {
         );
 
         VectorModel model = LogisticRegression.train(
-                trainingData, 2, 1, 1, 0.00001
+                trainingData, 1, 1, 1, 0.00001
         );
 
         for (Observation<Void> trainingDatum : trainingData) {
-            Assert.assertEquals(trainingDatum.getObservation(), LogisticRegression.predict(trainingDatum, model), 0.01);
+            Assert.assertEquals(trainingDatum.getObservation(), LogisticRegression.estimate(trainingDatum, model), 0.01);
         }
 
     }
@@ -43,11 +43,11 @@ public class LogisticRegressionTest {
         );
 
         VectorModel model = LogisticRegression.train(
-                trainingData, 1, 1, 1, 0.00001
+                trainingData, 0, 1, 1, 0.00001
         );
 
         for (Observation<Void> trainingDatum : trainingData) {
-            Assert.assertEquals(trainingDatum.getObservation(), LogisticRegression.predict(trainingDatum, model), 0.01);
+            Assert.assertEquals(trainingDatum.getObservation(), LogisticRegression.estimate(trainingDatum, model), 0.01);
         }
 
     }
