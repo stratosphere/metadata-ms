@@ -13,7 +13,7 @@ public class GradientDescent {
      * Describes a type of loss function to be minimized. The actual loss function is only instantiated when given
      * {@link Observation}s and a {@link VectorModel}.
      */
-    public interface LossDefinition {
+    public interface LossDefinition<T> {
 
         /**
          * Calculate the loss of a certain {@code model} with the given {@code observations}.
@@ -22,7 +22,7 @@ public class GradientDescent {
          * @param observations the data to evaluate on
          * @return the loss
          */
-        double calculateLoss(VectorModel model, Collection<Observation<?>> observations);
+        double calculateLoss(VectorModel model, Collection<Observation<T>> observations);
 
         /**
          * Calculate the loss function's gradient of a certain {@code model} with the given {@code observations}.
@@ -31,7 +31,7 @@ public class GradientDescent {
          * @param observations the data to evaluate on
          * @return the gradient
          */
-        double[] calculateGradient(VectorModel model, Collection<Observation<?>> observations);
+        double[] calculateGradient(VectorModel model, Collection<Observation<T>> observations);
 
     }
 
@@ -42,15 +42,15 @@ public class GradientDescent {
      * @param observations   defines the data on which to calculate the loss
      * @param dimensionality the number of dimensions of the loss functions parameter vector
      * @param learningRate   the learning rate for the minimization
-     * @param numRepetitions     how often to restart from a random
-     * @return
+     * @param numRepetitions how often to restart from a random
+     * @return a {@link VectorModel} that represents the best discovered minimum
      */
-    public static VectorModel minimize(LossDefinition lossDefinition,
-                                       Collection<Observation<?>> observations,
-                                       int dimensionality,
-                                       double learningRate,
-                                       int numRepetitions,
-                                       double minStepSize) {
+    public static <T> VectorModel minimize(LossDefinition<T> lossDefinition,
+                                           Collection<Observation<T>> observations,
+                                           int dimensionality,
+                                           double learningRate,
+                                           int numRepetitions,
+                                           double minStepSize) {
 
         final Random random = new Random();
 
@@ -67,6 +67,7 @@ public class GradientDescent {
 
             // Repeatedly go against the gradient until convergence.
             double stepSize;
+            double lastLoss = Double.NaN;
             do {
                 // Calculate the gradient of the current model.
                 final double[] gradient = lossDefinition.calculateGradient(model, observations);
@@ -77,6 +78,16 @@ public class GradientDescent {
                 }
                 model.add(gradient);
                 stepSize = calculateEuclidianDistance(gradient);
+                System.out.printf("Loss: %+10.10f\tGradient: %s\tModel: %s\n", lossDefinition.calculateLoss(model, observations), Arrays.toString(gradient), Arrays.toString(model.getParameters()));
+
+                // Adapt the learning rate (Bold Driver):
+                // If we we are getting better, increase the learning rate by 5%. Otherwise, decrease it by 50%.
+                double loss = lossDefinition.calculateLoss(model, observations);
+                if (!Double.isNaN(lastLoss)) {
+                    if (lastLoss >= loss) learningRate *= 1.05;
+                    else learningRate *= .5;
+                }
+                lastLoss = loss;
             } while (stepSize > minStepSize);
 
             // Update the best model.

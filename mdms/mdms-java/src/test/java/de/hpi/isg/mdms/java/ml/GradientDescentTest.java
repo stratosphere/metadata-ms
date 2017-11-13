@@ -19,9 +19,9 @@ public class GradientDescentTest {
     @Test
     public void testFindSingleLocalMinimum() {
         final int numDimension = 10;
-        GradientDescent.LossDefinition lossDefinition = new GradientDescent.LossDefinition() {
+        GradientDescent.LossDefinition<Void> lossDefinition = new GradientDescent.LossDefinition<Void>() {
             @Override
-            public double calculateLoss(VectorModel model, Collection<Observation<?>> observations) {
+            public double calculateLoss(VectorModel model, Collection<Observation<Void>> observations) {
                 double loss = 0d;
                 double[] parameters = model.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
@@ -32,7 +32,7 @@ public class GradientDescentTest {
             }
 
             @Override
-            public double[] calculateGradient(VectorModel model, Collection<Observation<?>> observations) {
+            public double[] calculateGradient(VectorModel model, Collection<Observation<Void>> observations) {
                 double[] gradient = new double[numDimension];
                 double[] parameters = model.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
@@ -43,7 +43,7 @@ public class GradientDescentTest {
             }
         };
 
-        Collection<Observation<?>> observations = Collections.emptyList();
+        Collection<Observation<Void>> observations = Collections.emptyList();
         VectorModel model = GradientDescent.minimize(lossDefinition, observations, numDimension, 0.1, 1, 0.0001);
         double loss = lossDefinition.calculateLoss(model, observations);
 
@@ -64,9 +64,9 @@ public class GradientDescentTest {
     @Test
     public void testFindSingleLocalMinimum2() {
         final int numDimension = 10;
-        GradientDescent.LossDefinition lossDefinition = new GradientDescent.LossDefinition() {
+        GradientDescent.LossDefinition<Void> lossDefinition = new GradientDescent.LossDefinition<Void>() {
             @Override
-            public double calculateLoss(VectorModel model, Collection<Observation<?>> observations) {
+            public double calculateLoss(VectorModel model, Collection<Observation<Void>> observations) {
                 double loss = 0d;
                 double[] parameters = model.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
@@ -77,7 +77,7 @@ public class GradientDescentTest {
             }
 
             @Override
-            public double[] calculateGradient(VectorModel model, Collection<Observation<?>> observations) {
+            public double[] calculateGradient(VectorModel model, Collection<Observation<Void>> observations) {
                 double[] gradient = new double[numDimension];
                 double[] parameters = model.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
@@ -88,7 +88,7 @@ public class GradientDescentTest {
             }
         };
 
-        Collection<Observation<?>> observations = Collections.emptyList();
+        Collection<Observation<Void>> observations = Collections.emptyList();
         VectorModel model = GradientDescent.minimize(lossDefinition, observations, numDimension, 0.1, 1, 0.0001);
         double loss = lossDefinition.calculateLoss(model, observations);
 
