@@ -31,10 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Random;
+import java.util.*;
 
 /**
  * This job creates {@link TableSample} using reservoir sampling.
@@ -124,6 +121,7 @@ public class CreateSampleApp extends MdmsAppTemplate<CreateSampleApp.Parameters>
                     false,
                     true
             );
+            final String nullString = csvFileLocation.getNullString();
             try (BufferedReader bufferedReader = new BufferedReader(
                     csvFileLocation.getEncoding().applyTo(
                             FileUtils.open(new Path(csvFileLocation.getPath()), null)
@@ -138,6 +136,11 @@ public class CreateSampleApp extends MdmsAppTemplate<CreateSampleApp.Parameters>
                     if (index < sampleSize) {
                         String[] fields = csvParser.parseLine(line);
                         sample[index] = fields;
+                        for (int i = 0; i < fields.length; i++) {
+                            if (Objects.equals(fields[i], nullString)) {
+                                fields[i] = null;
+                            }
+                        }
                     }
                     rowNum++;
                 }
