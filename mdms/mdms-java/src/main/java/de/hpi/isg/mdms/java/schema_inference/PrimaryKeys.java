@@ -142,7 +142,7 @@ public class PrimaryKeys {
         Collection<Observation<UniqueColumnCombination>> trainingSet =
                 createTrainingSet(store, primaryKeyCC, uccCC, columnStatisticCC, textColumnStatisticCC);
         trainingSet = oversample(trainingSet);
-        return LogisticRegression.train(trainingSet, numFeatures, 1d, 5, 0.0001);
+        return LogisticRegression.train(trainingSet, features.length - 1, 1d, 5, 0.0001);
     }
 
     /**
@@ -195,7 +195,14 @@ public class PrimaryKeys {
                 .collect(Collectors.toList());
     }
 
-    private static final int numFeatures = 5;
+    public static final String[] features = {
+            "Fill status",
+            "Arity",
+            "Maximum value length",
+            "Columns to the left",
+            "Gaps between attributes",
+            "Offset"
+    };
 
     /**
      * Combine several data profiles to form a vector representation of a {@link UniqueColumnCombination}.
