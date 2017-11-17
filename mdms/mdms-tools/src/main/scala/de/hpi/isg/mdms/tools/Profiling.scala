@@ -1,10 +1,10 @@
 package de.hpi.isg.mdms.tools
 
-import de.hpi.isg.mdms.domain.constraints.{Signature, Vector}
+import de.hpi.isg.mdms.domain.constraints.{Signature, TableSample, Vector}
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.ConstraintCollection
 import de.hpi.isg.mdms.model.targets.{Schema, Target}
-import de.hpi.isg.mdms.tools.apps.CreateQGramSketchApp
+import de.hpi.isg.mdms.tools.apps.{CreateQGramSketchApp, CreateSampleApp}
 
 import scala.collection.JavaConversions._
 
@@ -12,6 +12,33 @@ import scala.collection.JavaConversions._
   * This object offers a Scala facade to access Metacrate's profiling capabilities.
   */
 object Profiling {
+
+  /**
+    * Profile all tables of a [[Schema]] for q-grams and store them in a [[ConstraintCollection]].
+    *
+    * @param schema     the [[Schema]] whose (CSV) tables should be profiled
+    * @param sampleSize the maximum size of tuples to sample from each table
+    * @param seed       the seed for the randomization
+    * @param scope      of the [[ConstraintCollection]]; defaults to `schema`
+    * @param store      within which the `schema` resides
+    */
+  def profileSamples(schema: Schema,
+                     userDefinedId: String = null,
+                     sampleSize: Int = 100,
+                     seed: Int = 42,
+                     scope: Target = null)
+                    (implicit store: MetadataStore): Unit = {
+    val samples = CreateSampleApp.profileSamples(store, schema, sampleSize, seed)
+    val constraintCollection = store.createConstraintCollection(
+      userDefinedId,
+      s"Table samples for schema ${schema.getName}",
+      null,
+      classOf[TableSample],
+      if (scope != null) scope else schema
+    )
+    samples.foreach(constraintCollection.add)
+    store.flush()
+  }
 
   /**
     * Profile all tables of a [[Schema]] for q-grams and store them in a [[ConstraintCollection]].
