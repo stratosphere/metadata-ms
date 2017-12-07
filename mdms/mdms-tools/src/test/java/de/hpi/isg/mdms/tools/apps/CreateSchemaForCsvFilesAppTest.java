@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class CreateSchemaForCsvFilesAppTest {
 
         CreateSchemaForCsvFilesApp.fromParameters(
                 metadataStore,
-                testFolder.getAbsolutePath(),
+                Collections.singleton(testFolder.getAbsolutePath()),
                 "test-schema",
                 ";",
                 "\"",
@@ -61,7 +62,7 @@ public class CreateSchemaForCsvFilesAppTest {
 
         CreateSchemaForCsvFilesApp.fromParameters(
                 metadataStore,
-                testFolder.getAbsolutePath(),
+                Collections.singleton(testFolder.getAbsolutePath()),
                 "test-schema",
                 ";",
                 "\"",
@@ -102,7 +103,7 @@ public class CreateSchemaForCsvFilesAppTest {
 
         CreateSchemaForCsvFilesApp.fromParameters(
             metadataStore,
-                testFolder.getAbsolutePath(),
+                Collections.singleton(testFolder.getAbsolutePath()),
                 "test-schema",
                 ";",
                 "\"",

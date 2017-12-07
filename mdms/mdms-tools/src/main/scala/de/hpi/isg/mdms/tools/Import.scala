@@ -36,7 +36,7 @@ object Import {
     * Create a [[Schema]] within a [[MetadataStore]] by inspecting CSV files.
     *
     * @param schemaName     the name of the [[Schema]]
-    * @param fileLocation   the location of the CSV files
+    * @param fileLocations   the locations of the CSV files
     * @param fieldSeparator the CSV separator
     * @param quoteChar      the CSV quote character
     * @param hasHeader      whether the CSV files have headers
@@ -44,13 +44,13 @@ object Import {
     * @param mds            the Metacrate instance
     */
   def createSchemaFromCsvFiles(schemaName: String,
-                               fileLocation: String,
+                               fileLocations: Iterable[String],
                                fieldSeparator: String = ",",
                                quoteChar: String = "\"",
                                hasHeader: Boolean = false,
                                sqlFile: String = null)
                               (implicit mds: MetadataStore): Unit = {
-    CreateSchemaForCsvFilesApp.fromParameters(mds, fileLocation, schemaName, fieldSeparator, quoteChar, hasHeader, sqlFile)
+    CreateSchemaForCsvFilesApp.fromParameters(mds, fileLocations, schemaName, fieldSeparator, quoteChar, hasHeader, sqlFile)
   }
 
   /**

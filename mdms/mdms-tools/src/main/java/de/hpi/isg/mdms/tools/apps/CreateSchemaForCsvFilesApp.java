@@ -52,13 +52,17 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         super(parameters);
     }
 
-    public static void fromParameters(MetadataStore mds, String fileLocation, String schemaName,
-                                      String fieldSeparator, String quoteChar, boolean hasHeader) throws Exception {
-        fromParameters(mds, fileLocation, schemaName, fieldSeparator, quoteChar, hasHeader, null);
+    public static void fromParameters(MetadataStore mds,
+                                      Collection<String> fileLocations,
+                                      String schemaName,
+                                      String fieldSeparator,
+                                      String quoteChar,
+                                      boolean hasHeader) throws Exception {
+        fromParameters(mds, fileLocations, schemaName, fieldSeparator, quoteChar, hasHeader, null);
     }
 
     public static void fromParameters(MetadataStore mds,
-                                      String fileLocation,
+                                      Collection<String> fileLocations,
                                       String schemaName,
                                       String fieldSeparator,
                                       String quoteChar,
@@ -68,7 +72,7 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
         CreateSchemaForCsvFilesApp.Parameters parameters = new CreateSchemaForCsvFilesApp.Parameters();
 
         List<String> inputFiles = new ArrayList<>();
-        inputFiles.add(fileLocation);
+        inputFiles.addAll(fileLocations);
         parameters.inputFiles = inputFiles;
 
         parameters.schemaName = schemaName;
@@ -274,12 +278,14 @@ public class CreateSchemaForCsvFilesApp extends CsvAppTemplate<CreateSchemaForCs
             }
             return fileName;
         }
+
         @Override
         public String provideColumnName(int offset) {
             return String.format("[%d]", offset);
         }
 
     }
+
     /**
      * Names Metanome-style.
      */
