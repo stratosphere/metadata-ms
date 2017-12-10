@@ -27,6 +27,11 @@ public class ForeignKeys {
     private static final Logger logger = LoggerFactory.getLogger(ForeignKeys.class);
 
     /**
+     * Values that differ not more than this value from 0 are considered 0.
+     */
+    private static final double emdEpsilon = 1e-5;
+
+    /**
      * Create a training set for foreign key classification.
      *
      * @param store                 where all metadata resides in
@@ -104,12 +109,23 @@ public class ForeignKeys {
                         Function.identity()
                 ));
 
-        return indCC.getConstraints().stream()
-                .map(ind -> new Instance<>(
-                        ind,
-                        createFeatureVector(ind, store, columnStatistics, textColumnStatistics, tableSamples)
-                ))
-                .collect(Collectors.toList());
+        Collection<InclusionDependency> inds = indCC.getConstraints();
+        Collection<Instance<InclusionDependency>> featureVectors = new ArrayList<>(inds.size());
+        long nextLogMillis = System.currentTimeMillis() + 10_000L;
+        for (InclusionDependency ind : inds) {
+            featureVectors.add(new Instance<>(
+                    ind,
+                    createFeatureVector(ind, store, columnStatistics, textColumnStatistics, tableSamples)
+            ));
+            if (System.currentTimeMillis() >= nextLogMillis) {
+                logger.info("Created {} out of {} IND feature vectors.",
+                        String.format("%,d", featureVectors.size()),
+                        String.format("%,d", inds.size())
+                );
+                nextLogMillis += 10_000L;
+            }
+        }
+        return featureVectors;
     }
 
     /**
@@ -755,6 +771,7 @@ public class ForeignKeys {
                 distanceCopy[source][target] -= min;
             }
         }
+        logEmdState("Distance matrix after per-source reduction:", sourceNodes, targetNodes, distanceCopy);
         for (int target = 0; target < targetNodes.length; target++) {
             double min = Double.POSITIVE_INFINITY;
             for (int source = 0; source < sourceNodes.length; source++) {
@@ -765,6 +782,8 @@ public class ForeignKeys {
             }
         }
 
+        logEmdState("Distance matrix after per-target reduction:", sourceNodes, targetNodes, distanceCopy);
+
         // Stores the capacity/demand of the source/target nodes.
         double[] sourceCapacity = sourceNodes.clone();
         double[] targetCapacity = targetNodes.clone();
@@ -774,7 +793,7 @@ public class ForeignKeys {
             FlowGraphNode sourceNode = new FlowGraphNode(source, true);
             for (int target = 0; target < targetNodes.length; target++) {
                 FlowGraphNode targetNode = new FlowGraphNode(target, false);
-                if (distanceCopy[source][target] <= 0d) {
+                if (isZeroOrNegative(distanceCopy[source][target])) {
                     flowGraphEdges.computeIfAbsent(sourceNode, k -> new ArrayList<>()).add(targetNode);
                     flowGraphEdges.computeIfAbsent(targetNode, k -> new ArrayList<>()).add(sourceNode);
                     logger.debug("Adding {} -> {}.", sourceNode, targetNode);
@@ -803,7 +822,7 @@ public class ForeignKeys {
                     FlowGraphPath path = queue.poll();
                     if (!visitedNodes.add(path.node)) continue;
                     // Check whether this path substantiates a complete flow.
-                    if (!path.node.isSourceNode && targetCapacity[path.node.index] > 0d) {
+                    if (!path.node.isSourceNode && isGreaterThanZero(targetCapacity[path.node.index])) {
                         shortestPath = new LinkedList<>();
                         do {
                             shortestPath.addFirst(path.node);
@@ -814,7 +833,7 @@ public class ForeignKeys {
                     // If not, check which edges we can follow.
                     for (FlowGraphNode nextNode : flowGraphEdges.getOrDefault(path.node, Collections.emptyList())) {
                         if (!visitedNodes.contains(nextNode)
-                                && (!nextNode.isSourceNode || flow[nextNode.index][path.node.index] > 0d)) {
+                                && (!nextNode.isSourceNode || isGreaterThanZero(flow[nextNode.index][path.node.index]))) {
                             queue.offer(new FlowGraphPath(nextNode, path, path.distance + 1));
                         }
                     }
@@ -843,14 +862,18 @@ public class ForeignKeys {
                         if (lastNode != null) {
                             if (lastNode.isSourceNode) {
                                 flow[lastNode.index][currentNode.index] += pathFlow;
+                                assert flow[lastNode.index][currentNode.index] >= -0.0000001d;
                             } else {
                                 flow[currentNode.index][lastNode.index] -= pathFlow;
+                                assert flow[currentNode.index][lastNode.index] >= -0.0000001d;
                             }
                         }
                         lastNode = currentNode;
                     }
                     sourceCapacity[shortestPath.getFirst().index] -= pathFlow;
+                    assert sourceCapacity[shortestPath.getFirst().index] >= -0.0000001d;
                     targetCapacity[shortestPath.getLast().index] -= pathFlow;
+                    assert targetCapacity[shortestPath.getLast().index] >= -0.0000001d;
 
                     logger.debug("Augmenting flow {} with {}.", shortestPath, pathFlow);
                     logEmdState("Capacities and flows:", sourceCapacity, targetCapacity, flow);
@@ -944,13 +967,19 @@ public class ForeignKeys {
     }
 
     private static boolean approximatelyEquals(double a, double b) {
-        final double epsilon = 0.000001d;
-        return !Double.isNaN(a) && !Double.isNaN(b) && a - epsilon < b && b < a + epsilon;
+        return !Double.isNaN(a) && !Double.isNaN(b) && a - emdEpsilon < b && b < a + emdEpsilon;
+    }
+
+    private static boolean isZeroOrNegative(double a) {
+        return !Double.isNaN(a) && a < emdEpsilon;
+    }
+
+    private static boolean isGreaterThanZero(double a) {
+        return !Double.isNaN(a) && a >= emdEpsilon;
     }
 
     private static boolean isZero(double d) {
-        final double epsilon = 0.000001d;
-        return !Double.isNaN(d) && -epsilon < d && d < epsilon;
+        return !Double.isNaN(d) && -emdEpsilon < d && d < emdEpsilon;
     }
 
     private static class FlowGraphNode {
