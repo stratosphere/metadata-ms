@@ -220,12 +220,36 @@ public class ForeignKeys {
             ConstraintCollection<TextColumnStatistics> textColumnStatisticCC,
             ConstraintCollection<TableSample> tableSampleCC,
             VectorModel logisticRegressionModel) {
+        return estimateForeignKeys(store, indCC, uccCC, columnStatisticCC, textColumnStatisticCC, tableSampleCC, logisticRegressionModel, 0.5d);
+    }
+
+    /**
+     * Select potential foreign keys among {@link InclusionDependency}s based on their estimated probabilities to be
+     * foreign keys and their table membership.
+     *
+     * @param store                   where all metadata resides in
+     * @param indCC                   the {@link InclusionDependency}s to be classified
+     * @param uccCC                   {@link UniqueColumnCombination}s that may be referenced by foreign keys (primary keys or {@code UNIQUE} constrained columns)
+     * @param columnStatisticCC       {@link ColumnStatistics} for the {@link UniqueColumnCombination} columns
+     * @param textColumnStatisticCC   {@link TextColumnStatistics} for the {@link UniqueColumnCombination} columns
+     * @param logisticRegressionModel a logistic regression model for the estimates
+     * @return one {@link Prediction} per input {@link UniqueColumnCombination}
+     */
+    public static Collection<InclusionDependency> estimateForeignKeys(
+            MetadataStore store,
+            ConstraintCollection<InclusionDependency> indCC,
+            ConstraintCollection<UniqueColumnCombination> uccCC,
+            ConstraintCollection<ColumnStatistics> columnStatisticCC,
+            ConstraintCollection<TextColumnStatistics> textColumnStatisticCC,
+            ConstraintCollection<TableSample> tableSampleCC,
+            VectorModel logisticRegressionModel,
+            double minFkProbability) {
 
         Set<UniqueColumnCombination> uniqueColumnCombinations = new HashSet<>(uccCC.getConstraints());
         Collection<Prediction<InclusionDependency, Double>> foreignKeyProbabilities =
                 estimateForeignKeyProbability(store, indCC, columnStatisticCC, textColumnStatisticCC, tableSampleCC, logisticRegressionModel);
         List<Prediction<InclusionDependency, Double>> sortedPredictions = foreignKeyProbabilities.stream()
-                .filter(prediction -> prediction.getPrediction() >= 0.5d)
+                .filter(prediction -> prediction.getPrediction() >= minFkProbability)
                 .filter(prediction -> {
                     int[] referencedColumnIds = prediction.getInstance().getElement().getReferencedColumnIds().clone();
                     Arrays.sort(referencedColumnIds);
