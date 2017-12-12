@@ -275,6 +275,137 @@ public class SQLParser {
         return foreignKeys;
     }
 
+    /**
+     * Parse the given SQL file and collect any {@code NOT NULL} constraint. Specifically this method handles
+     * <ul>
+     * <li>{@code CREATE TABLE} statements, and</li>
+     * <li>{@code ALTER TABLE} statements.</li>
+     * </ul>
+     *
+     * @param sqlFile the path to a SQL file
+     * @return {@link NotNullDefinition}s
+     */
+    public static Collection<NotNullDefinition> parseNotNullConstraints(String sqlFile) {
+
+        Collection<NotNullDefinition> notNulColumns = new LinkedList<>();
+        List<String> sqlStatements = loadStatements(sqlFile);
+        for (String sqlStatement : sqlStatements) {
+
+            SQLiteLexer lexer = new SQLiteLexer(new ANTLRInputStream(sqlStatement));
+            SQLiteParser parser = new SQLiteParser(new CommonTokenStream(lexer));
+            //avoid warnings in console
+            parser.removeErrorListeners();
+            ParseTree tree = parser.sql_stmt();
+
+            // Walk the `create_table_stmt` production and listen when the parser enters the column_defs.
+            ParseTreeWalker.DEFAULT.walk(new SQLiteBaseListener() {
+
+                /** Keeps track of the table name in the current parsing context. */
+                String tableName;
+
+                /** Keeps track of the column name in the current parsing context. */
+                String columnName;
+
+                @Override
+                public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
+                    super.enterCreate_table_stmt(ctx);
+                    if (ctx.table_name() != null) {
+                        this.tableName = ctx.table_name().getText();
+                    }
+                }
+
+                @Override
+                public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
+                    super.enterAlter_table_stmt(ctx);
+                    if (ctx.table_name() != null) {
+                        this.tableName = ctx.table_name().getText();
+                    }
+                }
+
+                @Override
+                public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
+                    super.enterColumn_def(ctx);
+                    this.columnName = ctx.column_name().getText();
+                }
+
+                @Override
+                public void enterColumn_constraint(SQLiteParser.Column_constraintContext ctx) {
+                    super.enterColumn_constraint(ctx);
+
+                    // Check whether this is actually a NOT NULL definition.
+                    if (ctx.K_NOT() == null || ctx.K_NULL() == null) return;
+
+                    // Make sure that we have a table name.
+                    if (this.tableName == null || this.columnName == null) return;
+
+                    notNulColumns.add(new NotNullDefinition(this.tableName, this.columnName));
+                }
+
+            }, tree);
+        }
+        return notNulColumns;
+    }
+
+    /**
+     * Parse the given SQL file and collect any data type definitions. Specifically this method handles
+     * <ul>
+     * <li>{@code CREATE TABLE} statements, and</li>
+     * <li>{@code ALTER TABLE} statements.</li>
+     * </ul>
+     *
+     * @param sqlFile the path to a SQL file
+     * @return {@link DataTypeDefinition}s
+     */
+    public static Collection<DataTypeDefinition> parseDataTypes(String sqlFile) {
+
+        Collection<DataTypeDefinition> dataTypeDefinitions = new LinkedList<>();
+        List<String> sqlStatements = loadStatements(sqlFile);
+        for (String sqlStatement : sqlStatements) {
+
+            SQLiteLexer lexer = new SQLiteLexer(new ANTLRInputStream(sqlStatement));
+            SQLiteParser parser = new SQLiteParser(new CommonTokenStream(lexer));
+            //avoid warnings in console
+            parser.removeErrorListeners();
+            ParseTree tree = parser.sql_stmt();
+
+            // Walk the `create_table_stmt` production and listen when the parser enters the column_defs.
+            ParseTreeWalker.DEFAULT.walk(new SQLiteBaseListener() {
+
+                /** Keeps track of the table name in the current parsing context. */
+                String tableName;
+
+                @Override
+                public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
+                    super.enterCreate_table_stmt(ctx);
+                    if (ctx.table_name() != null) {
+                        this.tableName = ctx.table_name().getText();
+                    }
+                }
+
+                @Override
+                public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
+                    super.enterAlter_table_stmt(ctx);
+                    if (ctx.table_name() != null) {
+                        this.tableName = ctx.table_name().getText();
+                    }
+                }
+
+                @Override
+                public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
+                    super.enterColumn_def(ctx);
+                    if (ctx.type_name() != null) {
+                        String columnName = ctx.column_name().getText();
+                        String dataType = ctx.type_name().getText();
+                        dataTypeDefinitions.add(new DataTypeDefinition(this.tableName, columnName, dataType));
+                    }
+                }
+
+
+            }, tree);
+        }
+        return dataTypeDefinitions;
+    }
+
     private static List<String> loadStatements(String fileLocation) {
         List<String> sqlStatements = new ArrayList<>();
         try {

@@ -1,6 +1,5 @@
 package de.hpi.isg.mdms.tools.sql;
 
-import akka.actor.FSM;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,6 +62,35 @@ public class SqlParserTest {
                         )
                 )),
                 new HashSet<>(primaryKeyDefinitions)
+        );
+    }
+
+    @Test
+    public void testParseDataTypes() {
+        String inputFile = Thread.currentThread().getContextClassLoader().getResource("test-schema.sql").getFile();
+        Collection<DataTypeDefinition> dataTypeDefinitions = SQLParser.parseDataTypes(inputFile);
+
+        Assert.assertEquals(
+                new HashSet<>(Arrays.asList(
+                        new DataTypeDefinition("TABLE1", "NAME", "VARCHAR(255)"),
+                        new DataTypeDefinition("TABLE1", "FIRST_NAME", "VARCHAR(255)"),
+                        new DataTypeDefinition("TABLE1", "PROFESSION", "VARCHAR(50)"),
+                        new DataTypeDefinition("TABLE2", "PROFESSION", "VARCHAR(255)"),
+                        new DataTypeDefinition("TABLE2", "RECOGNITION", "VARCHAR(255)"),
+                        new DataTypeDefinition("TABLE2", "COMMENTS", "TEXT")
+                )),
+                new HashSet<>(dataTypeDefinitions)
+        );
+    }
+
+    @Test
+    public void testParseNotNullConstraints() {
+        String inputFile = Thread.currentThread().getContextClassLoader().getResource("test-schema.sql").getFile();
+        Collection<NotNullDefinition> notNullDefinitions = SQLParser.parseNotNullConstraints(inputFile);
+
+        Assert.assertEquals(
+                new HashSet<>(Collections.singletonList(new NotNullDefinition("TABLE1", "PROFESSION"))),
+                new HashSet<>(notNullDefinitions)
         );
     }
 

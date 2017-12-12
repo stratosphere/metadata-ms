@@ -1,6 +1,6 @@
 package de.hpi.isg.mdms.tools
 
-import de.hpi.isg.mdms.domain.constraints.{FunctionalDependency, InclusionDependency, OrderDependency, UniqueColumnCombination}
+import de.hpi.isg.mdms.domain.constraints._
 import de.hpi.isg.mdms.model.MetadataStore
 import de.hpi.isg.mdms.model.constraints.{Constraint, ConstraintCollection}
 import de.hpi.isg.mdms.model.location.DefaultLocation
@@ -158,6 +158,56 @@ object Import {
       Option(scope) getOrElse schema
     )
     fks.foreach(constraintCollection.add)
+    mds.flush()
+  }
+
+  /** Imports data types from a SQL file into a [[ConstraintCollection]].
+    *
+    * @param sqlFile       from which the data type definitions should be read
+    * @param schema        to which the SQL file belongs
+    * @param userDefinedId an optional user-defined ID for the created [[ConstraintCollection]]
+    * @param scope         optional scope for the [[ConstraintCollection]]; defaults to `schema`
+    * @param mds           in which the [[ConstraintCollection]] should be created
+    */
+  def importDataTypeDefinitions(sqlFile: String,
+                                  schema: Schema,
+                                  userDefinedId: String = null,
+                                  scope: Target = null)
+                                 (implicit mds: MetadataStore): Unit = {
+    val typeConstraints = SqlImportApp.loadTypeConstraints(schema, Seq(sqlFile))
+    val constraintCollection = mds.createConstraintCollection(
+      userDefinedId,
+      s"Data types loaded from $sqlFile",
+      null,
+      classOf[TypeConstraint],
+      Option(scope) getOrElse schema
+    )
+    typeConstraints.foreach(constraintCollection.add)
+    mds.flush()
+  }
+
+  /** Imports `NOT NULL` constraints from a SQL file into a [[ConstraintCollection]].
+    *
+    * @param sqlFile       from which the constraints should be read
+    * @param schema        to which the SQL file belongs
+    * @param userDefinedId an optional user-defined ID for the created [[ConstraintCollection]]
+    * @param scope         optional scope for the [[ConstraintCollection]]; defaults to `schema`
+    * @param mds           in which the [[ConstraintCollection]] should be created
+    */
+  def importNotNullConstraints(sqlFile: String,
+                                  schema: Schema,
+                                  userDefinedId: String = null,
+                                  scope: Target = null)
+                                 (implicit mds: MetadataStore): Unit = {
+    val notNullConstraints = SqlImportApp.loadNotNullConstraints(schema, Seq(sqlFile))
+    val constraintCollection = mds.createConstraintCollection(
+      userDefinedId,
+      s"NOT NULL constraints loaded from $sqlFile",
+      null,
+      classOf[NotNullConstraint],
+      Option(scope) getOrElse schema
+    )
+    notNullConstraints.foreach(constraintCollection.add)
     mds.flush()
   }
 

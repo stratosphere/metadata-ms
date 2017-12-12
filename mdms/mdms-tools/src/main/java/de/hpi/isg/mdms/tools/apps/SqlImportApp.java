@@ -1,6 +1,8 @@
 package de.hpi.isg.mdms.tools.apps;
 
 import de.hpi.isg.mdms.domain.constraints.InclusionDependency;
+import de.hpi.isg.mdms.domain.constraints.NotNullConstraint;
+import de.hpi.isg.mdms.domain.constraints.TypeConstraint;
 import de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.location.DefaultLocation;
@@ -128,6 +130,62 @@ public class SqlImportApp {
 
                     ReferenceUtils.coSort(depColumnIds, refColumnIds);
                     return new InclusionDependency(depColumnIds, refColumnIds);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Loads the {@code NOT NULL} constraints from SQL files.
+     *
+     * @param schema   the {@link Schema} to which the SQL files belong
+     * @param sqlFiles the SQL files to load from
+     * @return the {@link NotNullConstraint}s
+     */
+    public static Collection<NotNullConstraint> loadNotNullConstraints(Schema schema, Collection<String> sqlFiles) {
+        return sqlFiles.stream()
+                .flatMap(sqlFile -> SQLParser.parseNotNullConstraints(sqlFile).stream())
+                .distinct()
+                .map(def -> {
+                    Table table = schema.getTableByName(def.getTableName());
+                    if (table == null) {
+                        logger.error("Could not resolve the table of {}.", def);
+                        return null;
+                    }
+                    Collection<Column> columns = table.getColumnsByName(def.getColumnName());
+                    if (columns.size() != 1) {
+                        logger.error("Could not (unambiguously) resolve the column of {}.", def);
+                        return null;
+                    }
+                    return new NotNullConstraint(columns.iterator().next().getId());
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Loads the data types from SQL files.
+     *
+     * @param schema   the {@link Schema} to which the SQL files belong
+     * @param sqlFiles the SQL files to load from
+     * @return the {@link TypeConstraint}s
+     */
+    public static Collection<TypeConstraint> loadTypeConstraints(Schema schema, Collection<String> sqlFiles) {
+        return sqlFiles.stream()
+                .flatMap(sqlFile -> SQLParser.parseDataTypes(sqlFile).stream())
+                .distinct()
+                .map(def -> {
+                    Table table = schema.getTableByName(def.getTableName());
+                    if (table == null) {
+                        logger.error("Could not resolve the table of {}.", def);
+                        return null;
+                    }
+                    Collection<Column> columns = table.getColumnsByName(def.getColumnName());
+                    if (columns.size() != 1) {
+                        logger.error("Could not (unambiguously) resolve the column of {}.", def);
+                        return null;
+                    }
+                    return new TypeConstraint(columns.iterator().next().getId(), def.getDataType());
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
