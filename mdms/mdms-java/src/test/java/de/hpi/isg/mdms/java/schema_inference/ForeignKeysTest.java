@@ -2,6 +2,7 @@ package de.hpi.isg.mdms.java.schema_inference;
 
 import de.hpi.isg.mdms.domain.RDBMSMetadataStore;
 import de.hpi.isg.mdms.domain.constraints.TableSample;
+import de.hpi.isg.mdms.java.ml.VectorModel;
 import de.hpi.isg.mdms.model.DefaultMetadataStore;
 import de.hpi.isg.mdms.model.MetadataStore;
 import de.hpi.isg.mdms.model.targets.Column;
@@ -152,14 +153,17 @@ public class ForeignKeysTest {
         SQLiteInterface sqliteInterface = SQLiteInterface.createForFile(file);
         MetadataStore store = RDBMSMetadataStore.load(sqliteInterface);
 
-        ForeignKeys.createTrainingSet(
+        VectorModel vectorModel = ForeignKeys.trainLogisticRegressionModel(
                 store,
                 store.getConstraintCollection("sql-foreign-keys"),
                 store.getConstraintCollection("metanome-inds"),
                 store.getConstraintCollection("metanome-column-stats"),
                 store.getConstraintCollection("metanome-text-stats"),
-                store.getConstraintCollection("table-samples-100")
+                store.getConstraintCollection("table-samples-100"),
+                store.getConstraintCollection("sql-primary-keys")
         );
+
+        System.out.println(vectorModel);
     }
 
 }

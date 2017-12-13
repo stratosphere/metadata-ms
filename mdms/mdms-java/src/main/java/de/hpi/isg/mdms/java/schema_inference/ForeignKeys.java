@@ -40,6 +40,8 @@ public class ForeignKeys {
      * @param columnStatisticCC     {@link ColumnStatistics} for the {@link InclusionDependency} columns
      * @param textColumnStatisticCC {@link TextColumnStatistics} for the {@link InclusionDependency} columns
      * @param tableSampleCC         {@link TableSample} for the {@link InclusionDependency} tables
+     * @param uniqueCC              optional {@link UniqueColumnCombination}s to prefilter {@link InclusionDependency}s if
+     *                              they are not referencing such a {@link UniqueColumnCombination}
      * @return the training dataset consisting of {@link Observation}s
      */
     public static Collection<Observation<InclusionDependency>> createTrainingSet(
@@ -48,7 +50,8 @@ public class ForeignKeys {
             ConstraintCollection<InclusionDependency> indCC,
             ConstraintCollection<ColumnStatistics> columnStatisticCC,
             ConstraintCollection<TextColumnStatistics> textColumnStatisticCC,
-            ConstraintCollection<TableSample> tableSampleCC) {
+            ConstraintCollection<TableSample> tableSampleCC,
+            ConstraintCollection<UniqueColumnCombination> uniqueCC) {
         // Index the constraint collections.
         Map<Integer, ColumnStatistics> columnStatistics = columnStatisticCC.getConstraints().stream()
                 .collect(Collectors.toMap(
@@ -65,9 +68,28 @@ public class ForeignKeys {
                         TableSample::getTableId,
                         Function.identity()
                 ));
+        Map<Integer, Collection<IntSet>> uccsByTable = new HashMap<>();
+        if (uniqueCC != null) {
+            for (UniqueColumnCombination ucc : uniqueCC.getConstraints()) {
+                int tableId = store.getIdUtils().getTableId(ucc.getColumnIds()[0]);
+                uccsByTable.computeIfAbsent(tableId, k -> new ArrayList<>()).add(new IntOpenHashSet(ucc.getColumnIds()));
+            }
+        }
         Set<InclusionDependency> foreignKeys = new HashSet<>(foreignKeyCC.getConstraints());
 
         return indCC.getConstraints().stream()
+                .filter(ind -> {
+                    if (uccsByTable.isEmpty()) return true;
+                    int refTableId = store.getIdUtils().getTableId(ind.getReferencedColumnIds()[0]);
+                    UccLoop:
+                    for (IntSet ucc : uccsByTable.getOrDefault(refTableId, Collections.emptyList())) {
+                        for (int refColumnId : ind.getReferencedColumnIds()) {
+                            if (!ucc.contains(refColumnId)) continue UccLoop;
+                        }
+                        return true;
+                    }
+                    return false;
+                })
                 .map(ind -> new Observation<>(
                         ind,
                         createFeatureVector(ind, store, columnStatistics, textColumnStatistics, tableSamples),
@@ -129,7 +151,7 @@ public class ForeignKeys {
     }
 
     /**
-     * Balance a training set (as per {@link #createTrainingSet(MetadataStore, ConstraintCollection, ConstraintCollection, ConstraintCollection, ConstraintCollection, ConstraintCollection)}
+     * Balance a training set (as per {@link #createTrainingSet(MetadataStore, ConstraintCollection, ConstraintCollection, ConstraintCollection, ConstraintCollection, ConstraintCollection, ConstraintCollection)}
      * via oversampling.
      *
      * @param instances that should be balanced
@@ -164,6 +186,8 @@ public class ForeignKeys {
      * @param indCC                 all {@link InclusionDependency}s
      * @param columnStatisticCC     {@link ColumnStatistics} for the {@link InclusionDependency} columns
      * @param textColumnStatisticCC {@link TextColumnStatistics} for the {@link InclusionDependency} columns
+     * @param uniqueCC              optional {@link UniqueColumnCombination}s to prefilter {@link InclusionDependency}s if
+     *                              they are not referencing such a {@link UniqueColumnCombination}
      * @return the {@link VectorModel} for the trained logistic regression model
      */
     public static VectorModel trainLogisticRegressionModel(
@@ -172,9 +196,11 @@ public class ForeignKeys {
             ConstraintCollection<InclusionDependency> indCC,
             ConstraintCollection<ColumnStatistics> columnStatisticCC,
             ConstraintCollection<TextColumnStatistics> textColumnStatisticCC,
-            ConstraintCollection<TableSample> tableSampleCC) {
+            ConstraintCollection<TableSample> tableSampleCC,
+            ConstraintCollection<UniqueColumnCombination> uniqueCC) {
+
         Collection<Observation<InclusionDependency>> trainingSet =
-                createTrainingSet(store, foreignKeyCC, indCC, columnStatisticCC, textColumnStatisticCC, tableSampleCC);
+                createTrainingSet(store, foreignKeyCC, indCC, columnStatisticCC, textColumnStatisticCC, tableSampleCC, uniqueCC);
         trainingSet = oversample(trainingSet);
         return LogisticRegression.train(trainingSet, features.length - 1, 1d, 5, 0.0001);
     }

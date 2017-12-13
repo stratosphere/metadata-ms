@@ -2,6 +2,8 @@ package de.hpi.isg.mdms.java.ml;
 
 import org.apache.commons.lang3.Validate;
 
+import java.util.Arrays;
+
 /**
  * A vector model is a model of a machine learning algorithm that is represented as a vector of numbers (called parameters).
  */
@@ -27,5 +29,10 @@ public class VectorModel {
 
     public double[] getParameters() {
         return parameters;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("VectorModel%s", Arrays.toString(this.parameters));
     }
 }

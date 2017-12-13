@@ -1,5 +1,8 @@
 package de.hpi.isg.mdms.java.ml;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Random;
 
@@ -7,6 +10,8 @@ import java.util.Random;
  * Gradient descent is an algorithm to minimize a loss function that is differentiable.
  */
 public class GradientDescent {
+
+    private static final Logger logger = LoggerFactory.getLogger(LogisticRegression.class);
 
     /**
      * Describes a type of loss function to be minimized. The actual loss function is only instantiated when given
@@ -57,6 +62,8 @@ public class GradientDescent {
         VectorModel bestModel = null;
         double bestLoss = Double.NaN;
         for (int repetition = 0; repetition < numRepetitions; repetition++) {
+            logger.info("Performing repetition {}/{}.", repetition + 1, numRepetitions);
+
             // Generate an initial model.
             final double[] parameters = new double[dimensionality];
             for (int dimension = 0; dimension < parameters.length; dimension++) {
@@ -67,6 +74,8 @@ public class GradientDescent {
             // Repeatedly go against the gradient until convergence.
             double stepSize;
             double lastLoss = Double.NaN;
+            long nextLogMillis = System.currentTimeMillis() + 30_000L;
+            long round = 1L;
             do {
                 // Calculate the gradient of the current model.
                 final double[] gradient = lossDefinition.calculateGradient(model, observations);
@@ -86,10 +95,17 @@ public class GradientDescent {
                     else learningRate *= .5;
                 }
                 lastLoss = loss;
+
+                if (System.currentTimeMillis() >= nextLogMillis) {
+                    logger.info("Current loss after {} rounds: {}", round, loss);
+                    nextLogMillis += 30_000L;
+                }
+                round++;
             } while (stepSize > minStepSize);
 
             // Update the best model.
             double loss = lossDefinition.calculateLoss(model, observations);
+            logger.info("Final loss after {} rounds: {}", round, loss);
             if (bestModel == null || bestLoss < loss) {
                 bestModel = model;
                 bestLoss = loss;
