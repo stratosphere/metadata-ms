@@ -3,12 +3,14 @@ package de.hpi.isg.mdms.tools.sql;
 import antlrd.SQLiteBaseListener;
 import antlrd.SQLiteLexer;
 import antlrd.SQLiteParser;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATNConfigSet;
+import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
  * This class can parse SQL files and specifically extract the contents of {@code CREATE TABLE} statements.
  */
 public class SQLParser {
+
+    private static final Logger logger = LoggerFactory.getLogger(SQLParser.class);
 
     /**
      * Parse the given SQL file and create a {@link Map} of its tables and columns.
@@ -50,14 +54,14 @@ public class SQLParser {
                 @Override
                 public void enterCreate_table_stmt(@NotNull SQLiteParser.Create_table_stmtContext ctx) {
                     if (ctx.table_name() != null) {
-                        tableName.add(ctx.table_name().getText());
+                        tableName.add(cleanIdentifier(ctx.table_name().getText()));
                     }
                 }
 
                 @Override
                 public void enterColumn_def(@NotNull SQLiteParser.Column_defContext ctx) {
                     if (ctx.column_name() != null) {
-                        columnNames.add(ctx.column_name().getText());
+                        columnNames.add(cleanIdentifier(ctx.column_name().getText()));
                     }
                 }
             }, tree);
@@ -103,7 +107,7 @@ public class SQLParser {
                 public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
                     super.enterCreate_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
@@ -111,14 +115,14 @@ public class SQLParser {
                 public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
                     super.enterAlter_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
                 @Override
                 public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
                     super.enterColumn_def(ctx);
-                    this.columnName = ctx.column_name().getText();
+                    this.columnName = cleanIdentifier(ctx.column_name().getText());
                 }
 
                 @Override
@@ -146,7 +150,7 @@ public class SQLParser {
 
                     List<String> columns = new ArrayList<>();
                     for (SQLiteParser.Indexed_columnContext columnCtx : ctx.indexed_column()) {
-                        columns.add(columnCtx.column_name().getText());
+                        columns.add(cleanIdentifier(columnCtx.column_name().getText()));
                     }
                     primaryKeys.add(new PrimaryKeyDefinition(this.tableName, columns));
                 }
@@ -171,11 +175,48 @@ public class SQLParser {
         Collection<ForeignKeyDefinition> foreignKeys = new LinkedList<>();
         List<String> sqlStatements = loadStatements(sqlFile);
         for (String sqlStatement : sqlStatements) {
-
             SQLiteLexer lexer = new SQLiteLexer(new ANTLRInputStream(sqlStatement));
             SQLiteParser parser = new SQLiteParser(new CommonTokenStream(lexer));
             //avoid warnings in console
             parser.removeErrorListeners();
+            parser.addErrorListener(new ANTLRErrorListener() {
+                @Override
+                public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Syntax error: ").append(msg).append("\n");
+                    int lineStart = 0, lineNumber = 1;
+                    while (lineStart != -1) {
+                        int nextLineStart = sqlStatement.indexOf('\n', lineStart + 1);
+                        String str = nextLineStart == -1 ? sqlStatement.substring(lineStart) : sqlStatement.substring(lineStart, nextLineStart);
+                        sb.append(str).append("\n");
+                        if (lineNumber == line) {
+                            for (int i = 0; i < charPositionInLine - 2; i++) {
+                                sb.append(" ");
+                            }
+                            sb.append("^\n");
+                        }
+                        lineNumber++;
+                        lineStart = nextLineStart;
+                        if (lineStart != -1) lineStart++;
+                    }
+                    logger.error(sb.toString());
+                }
+
+                @Override
+                public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
+                    logger.warn("Ambiguity at {} to {}:\n{}", startIndex, stopIndex, sqlStatement);
+                }
+
+                @Override
+                public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex, BitSet conflictingAlts, ATNConfigSet configs) {
+                    logger.warn("Attempting full context at {} to {}:\n{}", startIndex, stopIndex, sqlStatement);
+                }
+
+                @Override
+                public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction, ATNConfigSet configs) {
+                    logger.warn("Context sensitivity at {} to {}:\n{}", startIndex, stopIndex, sqlStatement);
+                }
+            });
             ParseTree tree = parser.sql_stmt();
 
             // Walk the `create_table_stmt` production and listen when the parser enters the column_defs.
@@ -191,7 +232,7 @@ public class SQLParser {
                 public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
                     super.enterCreate_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
@@ -199,14 +240,14 @@ public class SQLParser {
                 public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
                     super.enterAlter_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
                 @Override
                 public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
                     super.enterColumn_def(ctx);
-                    this.columnName = ctx.column_name().getText();
+                    this.columnName = cleanIdentifier(ctx.column_name().getText());
                 }
 
                 @Override
@@ -233,6 +274,7 @@ public class SQLParser {
                     if (this.tableName == null) return;
 
                     foreignKeys.add(this.createForeignKeyDefinition(ctx));
+
                 }
 
                 /**
@@ -242,7 +284,7 @@ public class SQLParser {
                  * @return the {@link ForeignKeyDefinition}
                  */
                 private ForeignKeyDefinition createForeignKeyDefinition(SQLiteParser.Table_constraintContext tableConstraint) {
-                    List<String> referencedColumns = tableConstraint.column_name().stream().map(RuleContext::getText).collect(Collectors.toList());
+                    List<String> referencedColumns = tableConstraint.column_name().stream().map(RuleContext::getText).map(SQLParser::cleanIdentifier).collect(Collectors.toList());
                     return this.createForeignKeyDefinition(
                             tableConstraint.foreign_key_clause(),
                             this.tableName,
@@ -265,12 +307,13 @@ public class SQLParser {
                 ) {
                     return new ForeignKeyDefinition(
                             dependentTable, Arrays.asList(dependentColumns),
-                            referencesClause.foreign_table().getText(),
-                            referencesClause.column_name().stream().map(RuleContext::getText).collect(Collectors.toList())
+                            cleanIdentifier(referencesClause.foreign_table().getText()),
+                            referencesClause.column_name().stream().map(RuleContext::getText).map(SQLParser::cleanIdentifier).collect(Collectors.toList())
                     );
                 }
 
             }, tree);
+
         }
         return foreignKeys;
     }
@@ -310,7 +353,7 @@ public class SQLParser {
                 public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
                     super.enterCreate_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
@@ -318,14 +361,14 @@ public class SQLParser {
                 public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
                     super.enterAlter_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
                 @Override
                 public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
                     super.enterColumn_def(ctx);
-                    this.columnName = ctx.column_name().getText();
+                    this.columnName = cleanIdentifier(ctx.column_name().getText());
                 }
 
                 @Override
@@ -378,7 +421,7 @@ public class SQLParser {
                 public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
                     super.enterCreate_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
@@ -386,7 +429,7 @@ public class SQLParser {
                 public void enterAlter_table_stmt(SQLiteParser.Alter_table_stmtContext ctx) {
                     super.enterAlter_table_stmt(ctx);
                     if (ctx.table_name() != null) {
-                        this.tableName = ctx.table_name().getText();
+                        this.tableName = cleanIdentifier(ctx.table_name().getText());
                     }
                 }
 
@@ -394,7 +437,7 @@ public class SQLParser {
                 public void enterColumn_def(SQLiteParser.Column_defContext ctx) {
                     super.enterColumn_def(ctx);
                     if (ctx.type_name() != null) {
-                        String columnName = ctx.column_name().getText();
+                        String columnName = cleanIdentifier(ctx.column_name().getText());
                         String dataType = ctx.type_name().getText();
                         dataTypeDefinitions.add(new DataTypeDefinition(this.tableName, columnName, dataType));
                     }
@@ -419,6 +462,40 @@ public class SQLParser {
             System.out.println(ex);
         }
         return sqlStatements;
+    }
+
+    private static String cleanIdentifier(String name) {
+        int startIndex = 0;
+        StartLoop:
+        while (startIndex < name.length() - 1) {
+            switch (name.charAt(startIndex)) {
+                case '"':
+                case ' ':
+                case '[':
+                case '(':
+                case '`':
+                    startIndex++;
+                    break;
+                default:
+                    break StartLoop;
+            }
+        }
+        int endIndex = name.length() - 1;
+        EndLoop:
+        while (endIndex > startIndex) {
+            switch (name.charAt(endIndex)) {
+                case '"':
+                case ' ':
+                case ']':
+                case ')':
+                case '`':
+                    endIndex--;
+                    break;
+                default:
+                    break EndLoop;
+            }
+        }
+        return name.substring(startIndex, endIndex + 1);
     }
 
 }

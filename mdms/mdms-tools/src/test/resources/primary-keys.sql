@@ -3,7 +3,7 @@
 \set ERROR off
 
 CREATE TABLE table1 (
-  id INT PRIMARY KEY,
+  `id` INT PRIMARY KEY,
   not_an_id TEXT
 );
 
@@ -16,7 +16,7 @@ CREATE TABLE table2 (
 CREATE TABLE table3 (
   first_name VARCHAR(32),
   last_name VARCHAR(32),
-  PRIMARY KEY (first_name, last_name)
+  PRIMARY KEY (first_name, [last_name])
 );
 
 alter table table4

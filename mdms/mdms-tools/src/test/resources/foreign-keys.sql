@@ -9,18 +9,18 @@ CREATE TABLE dep1 (
 
 CREATE TABLE dep2 (
   that_id INT,
-  CONSTRAINT my_fk FOREIGN KEY (that_id) REFERENCES ref2 (id)
+  CONSTRAINT my_fk FOREIGN KEY ("that_id") REFERENCES ref2 (id)
 );
 
 
 CREATE TABLE dep3 (
   first_name VARCHAR(32),
   last_name VARCHAR(32),
-  FOREIGN KEY (first_name, last_name) REFERENCES ref3 (fn, ln)
+  FOREIGN KEY ([first_name], last_name) REFERENCES ref3 (fn, ln)
 );
 
 alter table dep4
-add column that_oid text references ref4 (oid);
+add column that_oid text references ref4 (`oid`);
 
 alter table dep5 add foreign key (first_name, last_name) references ref5 (fn, ln);
 
