@@ -64,7 +64,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     private StatisticsResultReceiver statisticsResultReceiver;
 
     @Override
-    public void receiveResult(BasicStatistic statistic) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    synchronized public void receiveResult(BasicStatistic statistic) throws CouldNotReceiveResultException, ColumnNameMismatchException {
         if (this.statisticsResultReceiver == null) this.statisticsResultReceiver = new StatisticsResultReceiver(
                 this.metadataStore,
                 this.schema,
@@ -81,7 +81,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     }
 
     @Override
-    public void receiveResult(ConditionalUniqueColumnCombination conditionalUniqueColumnCombination) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    synchronized public void receiveResult(ConditionalUniqueColumnCombination conditionalUniqueColumnCombination) throws CouldNotReceiveResultException, ColumnNameMismatchException {
         throw new CouldNotReceiveResultException("Result type is not supported.");
     }
 
@@ -93,7 +93,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     private DependencyResultReceiver<de.hpi.isg.mdms.domain.constraints.FunctionalDependency> fdResultReceiver;
 
     @Override
-    public void receiveResult(FunctionalDependency functionalDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    synchronized public void receiveResult(FunctionalDependency functionalDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
         if (this.fdResultReceiver == null) this.fdResultReceiver = new DependencyResultReceiver<>(
                 this.metadataStore,
                 this.schema,
@@ -113,7 +113,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     private DependencyResultReceiver<de.hpi.isg.mdms.domain.constraints.InclusionDependency> indResultReceiver;
 
     @Override
-    public void receiveResult(InclusionDependency inclusionDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    synchronized public void receiveResult(InclusionDependency inclusionDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
         if (this.indResultReceiver == null) this.indResultReceiver = new DependencyResultReceiver<>(
                 this.metadataStore,
                 this.schema,
@@ -153,7 +153,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     private DependencyResultReceiver<de.hpi.isg.mdms.domain.constraints.UniqueColumnCombination> uccResultReceiver;
 
     @Override
-    public void receiveResult(UniqueColumnCombination uniqueColumnCombination) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    synchronized public void receiveResult(UniqueColumnCombination uniqueColumnCombination) throws CouldNotReceiveResultException, ColumnNameMismatchException {
         if (this.uccResultReceiver == null) this.uccResultReceiver = new DependencyResultReceiver<>(
                 this.metadataStore,
                 this.schema,
@@ -180,7 +180,7 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     }
 
     @Override
-    public void close() throws Exception {
+    synchronized public void close() throws Exception {
         if (this.statisticsResultReceiver != null) this.statisticsResultReceiver.close();
         if (this.fdResultReceiver != null) this.fdResultReceiver.close();
         if (this.uccResultReceiver != null) this.uccResultReceiver.close();
