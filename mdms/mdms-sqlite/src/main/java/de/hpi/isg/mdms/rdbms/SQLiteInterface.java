@@ -106,7 +106,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void initializeMetadataStore() throws SQLException {
+    synchronized public void initializeMetadataStore() throws SQLException {
         // Drop any old tables.
         this.dropTablesIfExist();
 
@@ -154,7 +154,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public boolean checkAllTablesExistence() throws SQLException {
+    synchronized public boolean checkAllTablesExistence() throws SQLException {
         for (String tableName : tableNames) {
             // toLowerCase because SQLite is case-insensitive for table names
             if (!this.tableExists(tableName.toLowerCase())) {
@@ -165,24 +165,24 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addSchema(RDBMSSchema schema) throws SQLException {
+    synchronized public void addSchema(RDBMSSchema schema) throws SQLException {
         this.schemaHandler.writeSchema(schema);
     }
 
 
     @Override
-    public boolean isTargetIdInUse(int id) throws SQLException {
+    synchronized public boolean isTargetIdInUse(int id) throws SQLException {
         return this.schemaHandler.isTargetIdInUse(id);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<ConstraintCollection<?>> getAllConstraintCollections() throws SQLException {
+    synchronized public Collection<ConstraintCollection<?>> getAllConstraintCollections() throws SQLException {
         return this.constraintHandler.getAllConstraintCollections();
     }
 
     @Override
-    public void addConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
+    synchronized public void addConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
         this.constraintHandler.addConstraintCollection(constraintCollection);
     }
 
@@ -190,7 +190,7 @@ public class SQLiteInterface implements SQLInterface {
      * @see SQLiteSchemaHandler#getAllSchemas()
      */
     @Override
-    public Collection<Schema> getAllSchemas() throws SQLException {
+    synchronized public Collection<Schema> getAllSchemas() throws SQLException {
         return this.schemaHandler.getAllSchemas();
     }
 
@@ -207,63 +207,63 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) throws SQLException {
+    synchronized public Collection<Table> getAllTablesForSchema(RDBMSSchema rdbmsSchema) throws SQLException {
         return this.schemaHandler.getTables(rdbmsSchema);
     }
 
     @Override
-    public void addTableToSchema(RDBMSTable newTable, Schema schema) throws SQLException {
+    synchronized public void addTableToSchema(RDBMSTable newTable, Schema schema) throws SQLException {
         this.schemaHandler.writeTable(newTable);
     }
 
     @Override
-    public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) throws SQLException {
+    synchronized public Collection<Column> getAllColumnsForTable(RDBMSTable rdbmsTable) throws SQLException {
         return this.schemaHandler.getColumns(rdbmsTable);
     }
 
     @Override
-    public void addColumnToTable(RDBMSColumn newColumn, Table table) throws SQLException {
+    synchronized public void addColumnToTable(RDBMSColumn newColumn, Table table) throws SQLException {
         this.schemaHandler.writeColumn(newColumn);
     }
 
     @Override
-    public <T> Collection<T> getAllConstraintsForConstraintCollection(
+    synchronized public <T> Collection<T> getAllConstraintsForConstraintCollection(
             RDBMSConstraintCollection<T> rdbmsConstraintCollection) throws Exception {
         return this.constraintHandler.getAllConstraintsForConstraintCollection(rdbmsConstraintCollection);
     }
 
     @Override
-    public Column getColumnById(int columnId) throws SQLException {
+    synchronized public Column getColumnById(int columnId) throws SQLException {
         return this.schemaHandler.getColumnById(columnId);
     }
 
     @Override
-    public Table getTableById(int tableId) throws SQLException {
+    synchronized public Table getTableById(int tableId) throws SQLException {
         return this.schemaHandler.getTableById(tableId);
     }
 
     @Override
-    public Collection<Table> getTablesByName(String name, Schema schema) throws SQLException {
+    synchronized public Collection<Table> getTablesByName(String name, Schema schema) throws SQLException {
         return this.schemaHandler.getTables(name, schema);
     }
 
     @Override
-    public Schema getSchemaById(int schemaId) throws SQLException {
+    synchronized public Schema getSchemaById(int schemaId) throws SQLException {
         return this.schemaHandler.getSchemaById(schemaId);
     }
 
     @Override
-    public ConstraintCollection<?> getConstraintCollectionById(int id) throws SQLException {
+    synchronized public ConstraintCollection<?> getConstraintCollectionById(int id) throws SQLException {
         return this.constraintHandler.getConstraintCollectionById(id);
     }
 
     @Override
-    public ConstraintCollection<?> getConstraintCollectionByUserDefinedId(String userDefinedId) throws SQLException {
+    synchronized public ConstraintCollection<?> getConstraintCollectionByUserDefinedId(String userDefinedId) throws SQLException {
         return this.constraintHandler.getConstraintCollectionByUserDefinedId(userDefinedId);
     }
 
     @Override
-    public <T> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException {
+    synchronized public <T> void writeConstraint(T constraint, ConstraintCollection<T> constraintCollection) throws SQLException {
         this.constraintHandler.writeConstraint(constraint, (RDBMSConstraintCollection<T>) constraintCollection);
     }
 
@@ -271,7 +271,7 @@ public class SQLiteInterface implements SQLInterface {
      * Saves configuration of the metadata metadataStore.
      */
     @Override
-    public void saveConfiguration() {
+    synchronized public void saveConfiguration() {
         try {
             Map<String, String> configuration = this.store.getConfiguration();
             for (Map.Entry<String, String> configEntry : configuration.entrySet()) {
@@ -295,7 +295,7 @@ public class SQLiteInterface implements SQLInterface {
      * Load configuration of the metadata metadataStore.
      */
     @Override
-    public Map<String, String> loadConfiguration() throws SQLException {
+    synchronized public Map<String, String> loadConfiguration() throws SQLException {
         Map<String, String> configuration = new HashMap<>();
         try (ResultSet resultSet = this.databaseAccess.query("SELECT [key], [value] FROM [Config];", "Config")) {
             while (resultSet.next()) {
@@ -306,7 +306,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Int2ObjectMap<String> loadCodes() throws SQLException {
+    synchronized public Int2ObjectMap<String> loadCodes() throws SQLException {
         Int2ObjectMap<String> codes = new Int2ObjectOpenHashMap<>();
         try (ResultSet resultSet = this.databaseAccess.query("SELECT [code], [value] FROM [Code];", "Code")) {
             while (resultSet.next()) {
@@ -320,12 +320,12 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void addCode(int code, String value) {
+    synchronized public void addCode(int code, String value) {
 
     }
 
     @Override
-    public void dropTablesIfExist() throws SQLException {
+    synchronized public void dropTablesIfExist() throws SQLException {
         try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
             // Setting up the schema is not supported by database access. Do it with plain JDBC.
             for (String table : tableNames) {
@@ -341,12 +341,12 @@ public class SQLiteInterface implements SQLInterface {
      * @throws java.sql.SQLException
      */
     @Override
-    public void flush() throws SQLException {
+    synchronized public void flush() throws SQLException {
         this.databaseAccess.flush();
     }
 
     @Override
-    public boolean tableExists(String tablename) throws SQLException {
+    synchronized public boolean tableExists(String tablename) throws SQLException {
         if (this.existingTables == null) {
             this.loadTableNames();
         }
@@ -355,7 +355,7 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public void executeCreateTableStatement(String sqlCreateTables) {
+    synchronized public void executeCreateTableStatement(String sqlCreateTables) {
         try {
             // Setting up databases is not supported by DatabaseAccess, so we do it directly.
             Connection connection = this.databaseAccess.getConnection();
@@ -378,33 +378,33 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Schema> getSchemasByName(String schemaName) throws SQLException {
+    synchronized public Collection<Schema> getSchemasByName(String schemaName) throws SQLException {
         return this.schemaHandler.getSchemasByName(schemaName);
     }
 
     @Override
-    public void removeSchema(RDBMSSchema schema) throws SQLException {
+    synchronized public void removeSchema(RDBMSSchema schema) throws SQLException {
         this.schemaHandler.removeSchema(schema);
     }
 
     @Override
-    public void removeColumn(RDBMSColumn column) throws SQLException {
+    synchronized public void removeColumn(RDBMSColumn column) throws SQLException {
         this.schemaHandler.removeColumn(column);
     }
 
     @Override
-    public void removeTable(RDBMSTable table) throws SQLException {
+    synchronized public void removeTable(RDBMSTable table) throws SQLException {
         this.schemaHandler.removeTable(table);
     }
 
     @Override
-    public void removeConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
+    synchronized public void removeConstraintCollection(ConstraintCollection<?> constraintCollection) throws SQLException {
         this.constraintHandler.removeConstraintCollection(constraintCollection);
     }
 
 
     @Override
-    public void setUseJournal(boolean isUseJournal) {
+    synchronized public void setUseJournal(boolean isUseJournal) {
         try {
             this.databaseAccess.flush();
             try (Statement statement = this.databaseAccess.getConnection().createStatement()) {
@@ -421,84 +421,84 @@ public class SQLiteInterface implements SQLInterface {
     }
 
     @Override
-    public Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm algorithm) {
+    synchronized public Collection<Experiment> getAllExperimentsForAlgorithm(RDBMSAlgorithm algorithm) {
         return this.experimentHandler.getAllExperimentsForAlgorithm(algorithm);
     }
 
     @Override
-    public void addAlgorithm(RDBMSAlgorithm algorithm) {
+    synchronized public void addAlgorithm(RDBMSAlgorithm algorithm) {
         this.experimentHandler.addAlgorithm(algorithm);
     }
 
     @Override
-    public void writeExperiment(RDBMSExperiment experiment) {
+    synchronized public void writeExperiment(RDBMSExperiment experiment) {
         this.experimentHandler.writeExperiment(experiment);
     }
 
     @Override
-    public void addParameterToExperiment(RDBMSExperiment experiment, String key,
+    synchronized public void addParameterToExperiment(RDBMSExperiment experiment, String key,
                                          String value) {
         this.experimentHandler.addParameterToExperiment(experiment, key, value);
 
     }
 
     @Override
-    public void setExecutionTimeToExperiment(RDBMSExperiment experiment,
+    synchronized public void setExecutionTimeToExperiment(RDBMSExperiment experiment,
                                              long executionTime) {
         this.experimentHandler.setExecutionTimeToExperiment(experiment, executionTime);
 
     }
 
     @Override
-    public Set<ConstraintCollection<?>> getAllConstraintCollectionsForExperiment(
+    synchronized public Set<ConstraintCollection<?>> getAllConstraintCollectionsForExperiment(
             RDBMSExperiment experiment) {
         return this.constraintHandler.getAllConstraintCollectionsForExperiment(experiment);
     }
 
     @Override
-    public Algorithm getAlgorithmByID(int algorithmId) {
+    synchronized public Algorithm getAlgorithmByID(int algorithmId) {
         return this.experimentHandler.getAlgorithmFor(algorithmId);
     }
 
     @Override
-    public Experiment getExperimentById(int experimentId) {
+    synchronized public Experiment getExperimentById(int experimentId) {
         return this.experimentHandler.getExperimentById(experimentId);
     }
 
     @Override
-    public void removeAlgorithm(Algorithm algorithm) {
+    synchronized public void removeAlgorithm(Algorithm algorithm) {
         this.experimentHandler.removeAlgorithm(algorithm);
     }
 
     @Override
-    public void removeExperiment(Experiment experiment) {
+    synchronized public void removeExperiment(Experiment experiment) {
         this.experimentHandler.removeExperiment(experiment);
     }
 
     @Override
-    public Collection<Algorithm> getAllAlgorithms() {
+    synchronized public Collection<Algorithm> getAllAlgorithms() {
         return this.experimentHandler.getAllAlgorithms();
     }
 
     @Override
-    public Collection<Experiment> getAllExperiments() {
+    synchronized public Collection<Experiment> getAllExperiments() {
         return this.experimentHandler.getAllExperiments();
     }
 
     @Override
-    public Algorithm getAlgorithmByName(String name) {
+    synchronized public Algorithm getAlgorithmByName(String name) {
         return this.experimentHandler.getAlgorithmByName(name);
     }
 
     @Override
-    public void addAnnotation(RDBMSExperiment experiment, String tag,
+    synchronized public void addAnnotation(RDBMSExperiment experiment, String tag,
                               String text) {
         this.experimentHandler.addAnnotation(experiment, tag, text);
 
     }
 
     @Override
-    public String getDatabaseURL() {
+    synchronized public String getDatabaseURL() {
         try {
             return this.databaseAccess.getConnection().getMetaData().getURL();
         } catch (SQLException e) {
@@ -510,7 +510,7 @@ public class SQLiteInterface implements SQLInterface {
 
 
     @Override
-    public void closeMetaDataStore() {
+    synchronized public void closeMetaDataStore() {
         try {
             this.databaseAccess.close();
         } catch (SQLException e) {
