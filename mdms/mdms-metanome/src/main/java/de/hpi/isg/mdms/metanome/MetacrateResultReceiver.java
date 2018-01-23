@@ -12,7 +12,7 @@ import de.metanome.algorithm_integration.results.*;
 import java.util.Collection;
 
 /**
- * A {@link OmniscientResultReceiver} implementaiton that writes any result into a {@link ConstraintCollection}.
+ * A {@link OmniscientResultReceiver} implementation that writes any result into a {@link ConstraintCollection}.
  */
 public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCloseable {
 
@@ -168,6 +168,16 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
     @Override
     public Boolean acceptedResult(UniqueColumnCombination result) {
         return true;
+    }
+
+    @Override
+    public void receiveResult(DenialConstraint denialConstraint) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+        throw new CouldNotReceiveResultException("Result type is not supported.");
+    }
+
+    @Override
+    public Boolean acceptedResult(DenialConstraint result) {
+        return false;
     }
 
     /**
