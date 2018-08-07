@@ -90,6 +90,36 @@ public class MetacrateResultReceiver implements OmniscientResultReceiver, AutoCl
         return false;
     }
 
+    @Override
+    public void receiveResult(MatchingDependency matchingDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+        throw new CouldNotReceiveResultException("Result type is not supported.");
+    }
+
+    @Override
+    public Boolean acceptedResult(MatchingDependency matchingDependency) {
+        return false;
+    }
+
+    @Override
+    public void receiveResult(ConditionalFunctionalDependency conditionalFunctionalDependency) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+        throw new CouldNotReceiveResultException("Result type is not supported.");
+    }
+
+    @Override
+    public Boolean acceptedResult(ConditionalFunctionalDependency conditionalFunctionalDependency) {
+        return false;
+    }
+
+    @Override
+    public void receiveResult(DenialConstraint denialConstraint) throws CouldNotReceiveResultException, ColumnNameMismatchException {
+        throw new CouldNotReceiveResultException("Result type is not supported.");
+    }
+
+    @Override
+    public Boolean acceptedResult(DenialConstraint denialConstraint) {
+        return false;
+    }
+
     private DependencyResultReceiver<de.hpi.isg.mdms.domain.constraints.FunctionalDependency> fdResultReceiver;
 
     @Override
